@@ -1,0 +1,50 @@
+# Gradle / Android builds
+.gradle/
+build/
+**/build/
+
+# Android Studio / IntelliJ local state
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/shelf/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+*.iml
+
+# Local machine configuration
+local.properties
+.kotlin/
+
+# Android generated/native artifacts
+.externalNativeBuild/
+.cxx/
+captures/
+app/release/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Signing and secrets
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+
+# OS / editor noise
+.DS_Store
+.directory
+*.swp
+*.swo
+
+# Project runtime/temp artifacts
+app/images/
+app/temp_files_dir/
+app/src/main/java/**/.artifacts/
+
+# Keep Room schemas under version control.
+!app/schemas/
+!app/schemas/**

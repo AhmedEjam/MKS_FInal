@@ -1,0 +1,55 @@
+package com.ahmedyejam.mks.ui.review
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.ahmedyejam.mks.data.review.ReviewDashboardSummary
+import com.ahmedyejam.mks.data.review.ReviewQueueItem
+import com.ahmedyejam.mks.data.review.ReviewRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+data class ReviewDashboardUiState(
+    val isLoading: Boolean = true,
+    val summary: ReviewDashboardSummary = ReviewDashboardSummary(),
+    val queue: List<ReviewQueueItem> = emptyList(),
+    val error: String? = null
+)
+
+class ReviewDashboardViewModel(private val repository: ReviewRepository) : ViewModel() {
+    private val _state = MutableStateFlow(ReviewDashboardUiState())
+    val state: StateFlow<ReviewDashboardUiState> = _state.asStateFlow()
+
+    init { refresh() }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            runCatching {
+                val summary = repository.loadSummary()
+                val queue = repository.loadQueues()
+                summary to queue
+            }.onSuccess { (summary, queue) ->
+                _state.update { it.copy(isLoading = false, summary = summary, queue = queue) }
+            }.onFailure { error ->
+                _state.update { it.copy(isLoading = false, error = error.message ?: "Could not load review dashboard") }
+            }
+        }
+    }
+
+    fun markReviewed(item: ReviewQueueItem) {
+        viewModelScope.launch {
+            runCatching { repository.markReviewed(item) }
+            refresh()
+        }
+    }
+
+    fun snoozeOneWeek(item: ReviewQueueItem) {
+        viewModelScope.launch {
+            runCatching { repository.snooze(item, 7L * 24L * 60L * 60L * 1000L) }
+            refresh()
+        }
+    }
+}
