@@ -50,11 +50,7 @@ class ZipLibraryParser(
 
             ZipFile(tempZipFile).use { zipFile ->
                 if (zipFile.isEncrypted) {
-                    zipFile.setPassword(ExportManager.SYSTEM_ZIP_PASSWORD.toCharArray())
-
-                    if (!zipFile.isValidZipFile) {
-                        throw IllegalStateException("Invalid or corrupted encrypted ZIP file")
-                    }
+                    zipFile.setPassword("mks_secure_bundle_2024".toCharArray())
 
                     // Pre-extraction validation and individual file extraction.
                     var totalBytes = 0L

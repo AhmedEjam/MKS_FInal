@@ -43,7 +43,6 @@ class ExportManager(
     private val okHttpClient by lazy { okhttp3.OkHttpClient() }
 
     companion object {
-        const val SYSTEM_ZIP_PASSWORD = "mks_secure_bundle_2024"
     }
 
     suspend fun exportQuizAsBundle(quizId: Long): LibraryBundleDto? {
@@ -88,7 +87,7 @@ class ExportManager(
     suspend fun exportQuizToSchema7Zip(quizId: Long, outputStream: OutputStream): ExportResult = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val bundle = exportQuizAsBundle(quizId)
             ?: return@withContext ExportResult(success = false, errorMessage = "Quiz not found.")
-        MksExchangeV7Archive.writeLegacyBundleToSchema7Zip(bundle, outputStream, SYSTEM_ZIP_PASSWORD, collectSchema7SupplementalForQuiz(quizId))
+        MksExchangeV7Archive.writeLegacyBundleToSchema7Zip(bundle, outputStream, collectSchema7SupplementalForQuiz(quizId))
         ExportResult(success = true)
     }
 
@@ -281,7 +280,7 @@ class ExportManager(
     suspend fun exportBundleToSchema7Zip(bookId: Long, outputStream: OutputStream): ExportResult = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val bundle = exportBookAsBundle(bookId)
             ?: return@withContext ExportResult(success = false, errorMessage = "Book not found.")
-        MksExchangeV7Archive.writeLegacyBundleToSchema7Zip(bundle, outputStream, SYSTEM_ZIP_PASSWORD, collectSchema7SupplementalForBook(bookId))
+        MksExchangeV7Archive.writeLegacyBundleToSchema7Zip(bundle, outputStream, collectSchema7SupplementalForBook(bookId))
         ExportResult(success = true)
     }
 
@@ -292,7 +291,7 @@ class ExportManager(
 
     suspend fun exportAllToSchema7Zip(outputStream: OutputStream): ExportResult = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val bundle = exportAllBooksAsBundle()
-        MksExchangeV7Archive.writeLegacyBundleToSchema7Zip(bundle, outputStream, SYSTEM_ZIP_PASSWORD, collectSchema7SupplementalForAll())
+        MksExchangeV7Archive.writeLegacyBundleToSchema7Zip(bundle, outputStream, collectSchema7SupplementalForAll())
         ExportResult(success = true)
     }
 
@@ -718,22 +717,25 @@ class ExportManager(
                 aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
             }
 
-            ZipFile(tempZipFile, SYSTEM_ZIP_PASSWORD.toCharArray()).use { zipFile ->
+            ZipFile(tempZipFile, "mks_secure_bundle_2024".toCharArray()).use { zipFile ->
                 // 1. Write library.json
                 val libraryJsonFile = File(fileManager.getContext().cacheDir, "library_${System.currentTimeMillis()}.json")
                 libraryJsonFile.writeText(jsonStr)
-                zipFile.addFile(libraryJsonFile, zipParameters.apply { fileNameInZip = "library.json" })
+                zipParameters.fileNameInZip = "library.json"
+                zipFile.addFile(libraryJsonFile, zipParameters)
                 libraryJsonFile.delete()
 
                 // 2. Write manifest.json
                 val manifestJsonFile = File(fileManager.getContext().cacheDir, "manifest_${System.currentTimeMillis()}.json")
                 manifestJsonFile.writeText(manifestJsonStr)
-                zipFile.addFile(manifestJsonFile, zipParameters.apply { fileNameInZip = "manifest.json" })
+                zipParameters.fileNameInZip = "manifest.json"
+                zipFile.addFile(manifestJsonFile, zipParameters)
                 manifestJsonFile.delete()
 
                 // 3. Add physical assets
                 zipPathsToInclude.forEach { (zipPath, tempAssetFile) ->
-                    zipFile.addFile(tempAssetFile, zipParameters.apply { fileNameInZip = zipPath })
+                    zipParameters.fileNameInZip = zipPath
+                    zipFile.addFile(tempAssetFile, zipParameters)
                 }
             }
 

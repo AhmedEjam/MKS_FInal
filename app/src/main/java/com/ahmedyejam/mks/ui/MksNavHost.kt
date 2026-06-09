@@ -483,7 +483,7 @@ fun MksNavHost(
             val dataToolsViewModel: DataToolsViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return DataToolsViewModel(appModule.fullImportExportService) as T
+                        return DataToolsViewModel(appModule.repository, appModule.importManager) as T
                     }
                 },
             )

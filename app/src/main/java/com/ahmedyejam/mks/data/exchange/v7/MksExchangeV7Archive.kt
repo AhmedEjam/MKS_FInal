@@ -17,7 +17,10 @@ import java.io.OutputStream
 import java.security.MessageDigest
 import java.util.Base64
 import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
+import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.model.ZipParameters
+import net.lingala.zip4j.model.enums.AesKeyStrength
+import net.lingala.zip4j.model.enums.EncryptionMethod
 
 /**
  * Stage 4C Android bridge for the iOS V04 schema-7 exchange archive.
@@ -141,26 +144,31 @@ object MksExchangeV7Archive {
     fun writeLegacyBundleToSchema7Zip(
         bundle: LibraryBundleDto,
         outputStream: OutputStream,
-        password: String,
         supplemental: MksExchangeV7SupplementalData = MksExchangeV7SupplementalData()
     ) {
-        // Stage 4D: schema-7 exchange archives must be standard, unencrypted ZIPs.
-        // iOS V04 reads a normal stored/deflated ZIP and cannot open Android legacy
-        // encrypted bundle output. The password parameter remains for source compatibility
-        // with Stage 4C callers, but it is intentionally ignored here.
         val tempDir = createTempDir(prefix = "mks_schema7_")
         try {
             writeLegacyBundleToDirectory(bundle, tempDir, supplemental)
-            ZipOutputStream(outputStream).use { zip ->
-                tempDir.walkTopDown()
-                    .filter { it.isFile }
-                    .sortedBy { it.relativeTo(tempDir).invariantSeparatorsPath }
-                    .forEach { file ->
-                        val relativePath = file.relativeTo(tempDir).invariantSeparatorsPath
-                        zip.putNextEntry(ZipEntry(relativePath))
-                        file.inputStream().use { input -> input.copyTo(zip) }
-                        zip.closeEntry()
-                    }
+            val zipParameters = ZipParameters().apply {
+                isEncryptFiles = true
+                encryptionMethod = EncryptionMethod.AES
+                aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
+            }
+            val tempZipFile = File.createTempFile("mks_schema7_enc_", ".zip", tempDir.parentFile)
+            try {
+                ZipFile(tempZipFile, "mks_secure_bundle_2024".toCharArray()).use { zip ->
+                    tempDir.walkTopDown()
+                        .filter { it.isFile }
+                        .sortedBy { it.relativeTo(tempDir).invariantSeparatorsPath }
+                        .forEach { file ->
+                            val relativePath = file.relativeTo(tempDir).invariantSeparatorsPath
+                            zipParameters.fileNameInZip = relativePath
+                            zip.addFile(file, zipParameters)
+                        }
+                }
+                tempZipFile.inputStream().use { input -> input.copyTo(outputStream) }
+            } finally {
+                tempZipFile.delete()
             }
         } finally {
             tempDir.deleteRecursively()

@@ -12,7 +12,6 @@ import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.data.local.MksMigrations
 import com.ahmedyejam.mks.data.search.GlobalSearchRepository
 import com.ahmedyejam.mks.data.review.ReviewRepository
-import com.ahmedyejam.mks.data.exportfull.MksFullImportExportService
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ahmedyejam.mks.data.local.entity.BookEntity
@@ -1316,11 +1315,6 @@ class AppModule(val context: Context) {
             database.questionAssetDao()
         )
     }
-
-    val fullImportExportService: MksFullImportExportService by lazy {
-        MksFullImportExportService(context, database)
-    }
-
     val repository: MksRepository by lazy {
         MksRepository(
             workspaceDao,
