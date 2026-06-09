@@ -1,28 +1,85 @@
 package com.ahmedyejam.mks.data.repository
 
+import android.net.Uri
+import com.ahmedyejam.mks.data.import.model.ImportFormat
+import com.ahmedyejam.mks.data.import.model.ImportResult
+import com.ahmedyejam.mks.data.import.model.MergeStrategy
+import com.ahmedyejam.mks.data.import.model.ParsedQuestion
+import com.ahmedyejam.mks.data.import.repository.ImportLibraryManager
 import com.ahmedyejam.mks.data.local.FileManager
 import com.ahmedyejam.mks.data.local.WorkspaceDefaults
+import com.ahmedyejam.mks.data.local.dao.AnnotationDao
+import com.ahmedyejam.mks.data.local.dao.AssetReferenceDao
 import com.ahmedyejam.mks.data.local.dao.BookDao
+import com.ahmedyejam.mks.data.local.dao.CategoryMetadataDao
+import com.ahmedyejam.mks.data.local.dao.CourseSlideDao
+import com.ahmedyejam.mks.data.local.dao.FlashcardDao
+import com.ahmedyejam.mks.data.local.dao.FlashcardDeckDao
+import com.ahmedyejam.mks.data.local.dao.KnowledgeStudySessionDao
+import com.ahmedyejam.mks.data.local.dao.LearningSessionDao
+import com.ahmedyejam.mks.data.local.dao.MistakeLogDao
+import com.ahmedyejam.mks.data.local.dao.NoteBlueprintDao
+import com.ahmedyejam.mks.data.local.dao.PromptCardDao
+import com.ahmedyejam.mks.data.local.dao.PromptDao
+import com.ahmedyejam.mks.data.local.dao.PromptDeckDao
+import com.ahmedyejam.mks.data.local.dao.PromptRunDao
+import com.ahmedyejam.mks.data.local.dao.QuestionAssetDao
+import com.ahmedyejam.mks.data.local.dao.QuestionCategoryDao
 import com.ahmedyejam.mks.data.local.dao.QuestionDao
 import com.ahmedyejam.mks.data.local.dao.QuizDao
 import com.ahmedyejam.mks.data.local.dao.SessionDao
-import com.ahmedyejam.mks.data.local.dao.*
-import com.ahmedyejam.mks.data.local.entity.*
+import com.ahmedyejam.mks.data.local.dao.SlideshowCourseDao
+import com.ahmedyejam.mks.data.local.dao.SourceDocumentDao
+import com.ahmedyejam.mks.data.local.dao.WorkspaceDao
+import com.ahmedyejam.mks.data.local.entity.AnnotationColorLabel
+import com.ahmedyejam.mks.data.local.entity.AnnotationEntity
+import com.ahmedyejam.mks.data.local.entity.AnnotationOwnerType
+import com.ahmedyejam.mks.data.local.entity.AssetReferenceEntity
+import com.ahmedyejam.mks.data.local.entity.BlueprintMode
+import com.ahmedyejam.mks.data.local.entity.BlueprintReviewStatus
+import com.ahmedyejam.mks.data.local.entity.BookEntity
+import com.ahmedyejam.mks.data.local.entity.CategoryMetadataEntity
+import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
+import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
+import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
+import com.ahmedyejam.mks.data.local.entity.KnowledgeStudySessionEntity
+import com.ahmedyejam.mks.data.local.entity.MistakeLogEntryEntity
+import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
+import com.ahmedyejam.mks.data.local.entity.PromptCardEntity
+import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
+import com.ahmedyejam.mks.data.local.entity.PromptEntity
+import com.ahmedyejam.mks.data.local.entity.PromptOutputType
+import com.ahmedyejam.mks.data.local.entity.PromptRunEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionAssetEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionAssetType
+import com.ahmedyejam.mks.data.local.entity.QuestionEntity
+import com.ahmedyejam.mks.data.local.entity.QuizEntity
+import com.ahmedyejam.mks.data.local.entity.SessionEntity
+import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
+import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
+import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
+import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
+import com.ahmedyejam.mks.data.model.ArticleGenerationConfig
 import com.ahmedyejam.mks.data.model.CategoryWithMetadata
 import com.ahmedyejam.mks.data.model.ExportResult
 import com.ahmedyejam.mks.data.model.FlashcardGenerationConfig
-import com.ahmedyejam.mks.data.import.repository.ImportLibraryManager
-import com.ahmedyejam.mks.data.import.model.ParsedQuestion
+import com.ahmedyejam.mks.data.model.SlideGenerationConfig
+import com.ahmedyejam.mks.data.preview.CategoryMergePreviewService
+import com.ahmedyejam.mks.data.preview.ClearMarksPreviewService
+import com.ahmedyejam.mks.data.preview.DeletePreviewService
+import com.ahmedyejam.mks.data.repair.AssetReferenceAuditService
+import com.ahmedyejam.mks.data.simulation.ChangeSimulationResult
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.map
 import java.io.File
+import java.io.OutputStream
 
 enum class SortOption { LAST_EDIT, LAST_STUDIED, TITLE, COMPLETION, QUESTION_COUNT, ACCURACY, PROGRESS }
 
@@ -133,10 +190,10 @@ class MksRepository(
     private val promptRunDao: PromptRunDao,
     private val mistakeLogDao: MistakeLogDao,
     private val annotationDao: AnnotationDao,
-    private val deletePreviewService: com.ahmedyejam.mks.data.preview.DeletePreviewService? = null,
-    private val categoryMergePreviewService: com.ahmedyejam.mks.data.preview.CategoryMergePreviewService? = null,
-    private val clearMarksPreviewService: com.ahmedyejam.mks.data.preview.ClearMarksPreviewService? = null,
-    private val assetReferenceAuditService: com.ahmedyejam.mks.data.repair.AssetReferenceAuditService? = null
+    private val deletePreviewService: DeletePreviewService? = null,
+    private val categoryMergePreviewService: CategoryMergePreviewService? = null,
+    private val clearMarksPreviewService: ClearMarksPreviewService? = null,
+    private val assetReferenceAuditService: AssetReferenceAuditService? = null
 ) {
 
     // Workspaces
@@ -226,9 +283,9 @@ class MksRepository(
         )
     }
 
-    suspend fun clearMarksForQuizWithPreview(quizId: Long): com.ahmedyejam.mks.data.simulation.ChangeSimulationResult {
+    suspend fun clearMarksForQuizWithPreview(quizId: Long): ChangeSimulationResult {
         return clearMarksPreviewService?.previewClearMarksForQuiz(quizId)
-            ?: com.ahmedyejam.mks.data.simulation.ChangeSimulationResult("Clear Marks", "Preview unavailable")
+            ?: ChangeSimulationResult("Clear Marks", "Preview unavailable")
     }
 
     suspend fun applyClearMarksForQuiz(quizId: Long) {
@@ -1008,7 +1065,7 @@ class MksRepository(
     suspend fun addArticlesFromQuestions(
         bookId: Long,
         questionIds: List<Long>,
-        config: com.ahmedyejam.mks.data.model.ArticleGenerationConfig
+        config: ArticleGenerationConfig
     ): List<Long> {
         val questions = questionDao.getQuestionsByIds(questionIds).sortedBy { questionIds.indexOf(it.id) }
         val ids = mutableListOf<Long>()
@@ -1439,17 +1496,17 @@ class MksRepository(
         questionCategoryDao.getQuestionsByCategoryFlow(category).map { it.size }
 
 
-    suspend fun exportQuizToZip(quizId: Long, outputStream: java.io.OutputStream): ExportResult {
+    suspend fun exportQuizToZip(quizId: Long, outputStream: OutputStream): ExportResult {
         return exportManager?.exportQuizToZip(quizId, outputStream)
             ?: ExportResult(success = false, errorMessage = "Export manager unavailable.")
     }
 
-    suspend fun exportBundleToZip(bookId: Long, outputStream: java.io.OutputStream): ExportResult {
+    suspend fun exportBundleToZip(bookId: Long, outputStream: OutputStream): ExportResult {
         return exportManager?.exportBundleToZip(bookId, outputStream)
             ?: ExportResult(success = false, errorMessage = "Export manager unavailable.")
     }
 
-    suspend fun exportAllToZip(outputStream: java.io.OutputStream): ExportResult {
+    suspend fun exportAllToZip(outputStream: OutputStream): ExportResult {
         return exportManager?.exportAllToZip(outputStream)
             ?: ExportResult(success = false, errorMessage = "Export manager unavailable.")
     }
@@ -1464,31 +1521,31 @@ class MksRepository(
      * preserves the existing architecture and makes the Stage 4 export UI
      * compile against the schema-7 exchange path.
      */
-    suspend fun exportQuizToSchema7Zip(quizId: Long, outputStream: java.io.OutputStream): ExportResult {
+    suspend fun exportQuizToSchema7Zip(quizId: Long, outputStream: OutputStream): ExportResult {
         return exportManager?.exportQuizToSchema7Zip(quizId, outputStream)
             ?: ExportResult(success = false, errorMessage = "Export manager unavailable.")
     }
 
-    suspend fun exportBundleToSchema7Zip(bookId: Long, outputStream: java.io.OutputStream): ExportResult {
+    suspend fun exportBundleToSchema7Zip(bookId: Long, outputStream: OutputStream): ExportResult {
         return exportManager?.exportBundleToSchema7Zip(bookId, outputStream)
             ?: ExportResult(success = false, errorMessage = "Export manager unavailable.")
     }
 
-    suspend fun exportAllToSchema7Zip(outputStream: java.io.OutputStream): ExportResult {
+    suspend fun exportAllToSchema7Zip(outputStream: OutputStream): ExportResult {
         return exportManager?.exportAllToSchema7Zip(outputStream)
             ?: ExportResult(success = false, errorMessage = "Export manager unavailable.")
     }
 
-    suspend fun getImportPreview(uri: android.net.Uri) = importManager?.getImportPreview(uri)
+    suspend fun getImportPreview(uri: Uri) = importManager?.getImportPreview(uri)
 
     suspend fun importFromUri(
-        uri: android.net.Uri,
-        strategy: com.ahmedyejam.mks.data.import.model.MergeStrategy = com.ahmedyejam.mks.data.import.model.MergeStrategy.MERGE_ONLY,
+        uri: Uri,
+        strategy: MergeStrategy = MergeStrategy.MERGE_ONLY,
         targetBookId: Long? = null,
         targetQuizId: Long? = null,
         allowInsecureRemoteImages: Boolean = false,
         onProgress: (Float, String) -> Unit = { _, _ -> },
-    ): com.ahmedyejam.mks.data.import.model.ImportResult? {
+    ): ImportResult? {
         val result = importManager?.import(
             uri = uri,
             strategy = strategy,
@@ -1513,7 +1570,7 @@ class MksRepository(
         targetQuizId: Long? = null,
         newBookTitle: String? = null,
         questions: List<ParsedQuestion>
-    ): com.ahmedyejam.mks.data.import.model.ImportResult? {
+    ): ImportResult? {
         val result = importManager?.importQuestions(
             title = title,
             questions = questions,
@@ -1531,11 +1588,11 @@ class MksRepository(
         return result
     }
 
-    fun detectFormat(uri: android.net.Uri): com.ahmedyejam.mks.data.import.model.ImportFormat {
-        return importManager?.detectFormat(uri) ?: com.ahmedyejam.mks.data.import.model.ImportFormat.UNKNOWN
+    fun detectFormat(uri: Uri): ImportFormat {
+        return importManager?.detectFormat(uri) ?: ImportFormat.UNKNOWN
     }
 
-    fun saveImage(uri: android.net.Uri): String? = fileManager.saveImage(uri)
+    fun saveImage(uri: Uri): String? = fileManager.saveImage(uri)
 
     fun resolveImagePath(path: String?): String? {
         if (path.isNullOrBlank()) return null
@@ -2051,7 +2108,12 @@ class MksRepository(
         slides.firstOrNull()?.courseId?.let { refreshCourseStats(it) }
     }
 
-    private fun questionToSlide(courseId: Long, question: QuestionEntity, orderIndex: Int, config: com.ahmedyejam.mks.data.model.SlideGenerationConfig): CourseSlideEntity {
+    private fun questionToSlide(
+        courseId: Long,
+        question: QuestionEntity,
+        orderIndex: Int,
+        config: SlideGenerationConfig
+    ): CourseSlideEntity {
         val title = if (config.includeStemInTitle && question.text.isNotBlank()) question.text.trim() else "Slide ${orderIndex + 1}"
         
         val body = buildString {
@@ -2099,7 +2161,11 @@ class MksRepository(
         )
     }
 
-    suspend fun addCourseSlidesFromQuestionsToCourse(courseId: Long, questionIds: List<Long>, config: com.ahmedyejam.mks.data.model.SlideGenerationConfig = com.ahmedyejam.mks.data.model.SlideGenerationConfig.DEFAULT): Int {
+    suspend fun addCourseSlidesFromQuestionsToCourse(
+        courseId: Long,
+        questionIds: List<Long>,
+        config: SlideGenerationConfig = SlideGenerationConfig.DEFAULT
+    ): Int {
         val course = slideshowCourseDao.getCourseById(courseId) ?: return 0
         val questions = questionDao.getQuestionsByIds(questionIds).sortedBy { questionIds.indexOf(it.id) }
         val existingSlides = courseSlideDao.getSlidesByCourseIdNow(courseId)

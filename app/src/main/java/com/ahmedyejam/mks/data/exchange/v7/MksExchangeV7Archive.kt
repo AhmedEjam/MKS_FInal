@@ -8,19 +8,16 @@ import com.ahmedyejam.mks.data.import.dto.QuestionDto
 import com.ahmedyejam.mks.data.import.dto.QuizDto
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import java.io.File
-import java.io.OutputStream
-import java.security.MessageDigest
-import java.util.Base64
-import java.util.zip.ZipEntry
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.AesKeyStrength
 import net.lingala.zip4j.model.enums.EncryptionMethod
+import java.io.File
+import java.io.OutputStream
+import java.security.MessageDigest
+import java.util.Base64
+import kotlin.io.path.createTempDirectory
 
 /**
  * Stage 4C Android bridge for the iOS V04 schema-7 exchange archive.
@@ -44,26 +41,32 @@ object MksExchangeV7Archive {
         val manifestFile: MksExchangeV7MediaFile,
         val bytes: ByteArray,
         val source: String
-    )
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+            other as MediaPayload
+            if (manifestFile != other.manifestFile) return false
+            if (!bytes.contentEquals(other.bytes)) return false
+            return source == other.source
+        }
 
-    fun isSchema7Manifest(manifestFile: File): Boolean {
-        if (!manifestFile.exists()) return false
-        return runCatching {
-            val root = json.parseToJsonElement(manifestFile.readText()) as? JsonObject ?: return false
-            root["format"]?.jsonPrimitive?.content == MksExchangeV7Paths.FORMAT &&
-                root["schemaVersion"]?.jsonPrimitive?.content?.toIntOrNull() == MksExchangeV7Paths.SCHEMA_VERSION
-        }.getOrDefault(false)
+        override fun hashCode(): Int {
+            var result = manifestFile.hashCode()
+            result = (31 * result) + (bytes.contentHashCode())
+            result = (31 * result) + (source.hashCode())
+            return result
+        }
     }
 
     fun readLegacyBundleFromDirectory(rootDir: File): LibraryBundleDto {
-        val workspace = readOrDefault(rootDir, MksExchangeV7Paths.WORKSPACE, MksExchangeV7WorkspaceEnvelope.serializer(), MksExchangeV7WorkspaceEnvelope())
+        val workspace = readWorkspace(rootDir)
         val books = readList(rootDir, MksExchangeV7Paths.BOOKS, MksExchangeV7Book.serializer())
         val quizzes = readList(rootDir, MksExchangeV7Paths.QUIZZES, MksExchangeV7Quiz.serializer())
         val questions = readList(rootDir, MksExchangeV7Paths.QUESTIONS, MksExchangeV7Question.serializer())
         val questionCategories = readList(rootDir, MksExchangeV7Paths.QUESTION_CATEGORIES, MksExchangeV7QuestionCategory.serializer())
 
-        val bookExternalById = books.associate { it.id to it.externalId }
-        val quizExternalById = quizzes.associate { it.id to it.externalId }
+        val bookExternalById = books.associateBy({ it.id }) { it.externalId }
         val questionsByQuizId = questions.groupBy { it.quizId }
         val categoriesByQuestionId = questionCategories.groupBy { it.questionId }
         val defaultWorkspaceExternalId = workspace.workspaces.firstOrNull { it.isDefault }?.externalId
@@ -87,8 +90,10 @@ object MksExchangeV7Archive {
         val quizDtos = quizzes.map { quiz ->
             val quizQuestions = questionsByQuizId[quiz.id].orEmpty().map { question ->
                 val categories = (question.categories + categoriesByQuestionId[question.id].orEmpty().map { it.category })
+                    .asSequence()
                     .filter { it.isNotBlank() }
                     .distinct()
+                    .toList()
                 QuestionDto(
                     id = question.externalId,
                     stem = question.text,
@@ -127,9 +132,11 @@ object MksExchangeV7Archive {
         }
 
         val categoryDtos = (questionCategories.map { it.category } + quizzes.mapNotNull { it.category })
+            .asSequence()
             .filter { it.isNotBlank() }
             .distinct()
             .map { CategoryMetadataDto(name = it) }
+            .toList()
 
         return LibraryBundleDto(
             schema = MksExchangeV7Paths.SCHEMA_VERSION,
@@ -146,7 +153,7 @@ object MksExchangeV7Archive {
         outputStream: OutputStream,
         supplemental: MksExchangeV7SupplementalData = MksExchangeV7SupplementalData()
     ) {
-        val tempDir = createTempDir(prefix = "mks_schema7_")
+        val tempDir = createTempDirectory("mks_schema7_").toFile()
         try {
             writeLegacyBundleToDirectory(bundle, tempDir, supplemental)
             val zipParameters = ZipParameters().apply {
@@ -195,14 +202,14 @@ object MksExchangeV7Archive {
         fun payloadFor(source: String?, ownerKind: String, ownerExternalId: String, ownerId: Long, fallbackName: String, mimeType: String? = null): MediaPayload? {
             if (source.isNullOrBlank()) return null
             val payload = buildMediaPayload(source, ownerKind, ownerExternalId, ownerId, fallbackName, mimeType)
-            if (payload == null && isLocalMediaReference(source)) missingMedia += source
+            if ((payload == null) && isLocalMediaReference(source)) missingMedia += source
             return payload
         }
 
         val books = bundle.books.map { book ->
             val localId = bookIdByExternalId[book.id] ?: 0L
             val media = payloadFor(book.coverImage, "book", book.id, localId, "book_${book.id}.bin")
-            if (media != null) mediaPayloads += media
+            media?.let { mediaPayloads += it }
             MksExchangeV7Book(
                 id = localId,
                 workspaceId = 1,
@@ -222,7 +229,7 @@ object MksExchangeV7Archive {
         val quizzes = bundle.quizzes.map { quiz ->
             val quizLocalId = quizIdByExternalId[quiz.id] ?: 0L
             val quizMedia = payloadFor(quiz.coverImage, "quiz", quiz.id, quizLocalId, "quiz_${quiz.id}.bin")
-            if (quizMedia != null) mediaPayloads += quizMedia
+            quizMedia?.let { mediaPayloads += it }
             MksExchangeV7Quiz(
                 id = quizLocalId,
                 externalId = quiz.id,
@@ -251,7 +258,7 @@ object MksExchangeV7Archive {
                 val correctAnswers = question.correct.mapNotNull { it.toIntOrNull() }
                 val imageSource = question.imageDataUrl.takeIf { it.isNotBlank() } ?: question.imageSource.takeIf { it.isNotBlank() }
                 val imagePayload = payloadFor(imageSource, "question", question.id, localQuestionId, question.imageName.takeIf { it.isNotBlank() } ?: "question_${question.id}.bin")
-                if (imagePayload != null) mediaPayloads += imagePayload
+                imagePayload?.let { mediaPayloads += it }
                 val portableImagePath = imagePayload?.manifestFile?.archivePath ?: question.imageDataUrl.takeIf { it.isNotBlank() }
                 questions += MksExchangeV7Question(
                     id = localQuestionId,
@@ -278,13 +285,14 @@ object MksExchangeV7Archive {
                     updatedAt = now,
                     lastEditedAt = now
                 )
-                question.categories.filter { it.isNotBlank() }.distinct().forEach { category ->
+                question.categories.asSequence().filter { it.isNotBlank() }.distinct()
+                    .forEach { category ->
                     questionCategories += MksExchangeV7QuestionCategory(questionId = localQuestionId, category = category)
                 }
             }
         }
 
-        val questionIdByExternalId = questions.associate { it.externalId to it.id }
+        val questionIdByExternalId = questions.associateBy({ it.externalId }) { it.id }
 
         fun localBookId(externalId: String?, fallback: Long? = null): Long =
             externalId?.let { bookIdByExternalId[it] } ?: fallback ?: 0L
@@ -311,7 +319,7 @@ object MksExchangeV7Archive {
                 source.id,
                 source.title.ifBlank { "source_${source.id}.bin" }
             )
-            if (sourcePayload != null) mediaPayloads += sourcePayload
+            sourcePayload?.let { mediaPayloads += it }
             MksExchangeV7SourceDocument(
                 id = source.id,
                 bookId = bookLocalId.takeIf { it > 0 },
@@ -342,7 +350,7 @@ object MksExchangeV7Archive {
                 asset.fileName ?: asset.title.ifBlank { "question_asset_${asset.id}.bin" },
                 asset.mimeType
             )
-            if (assetPayload != null) mediaPayloads += assetPayload
+            assetPayload?.let { mediaPayloads += it }
             MksExchangeV7QuestionAsset(
                 id = asset.id,
                 bookId = bookLocalId,
@@ -528,10 +536,15 @@ object MksExchangeV7Archive {
         return MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
     }
 
-    private fun <T> readOrDefault(rootDir: File, relativePath: String, serializer: KSerializer<T>, defaultValue: T): T {
-        val file = File(rootDir, relativePath)
-        if (!file.exists()) return defaultValue
-        return runCatching { json.decodeFromString(serializer, file.readText()) }.getOrElse { defaultValue }
+    private fun readWorkspace(rootDir: File): MksExchangeV7WorkspaceEnvelope {
+        val file = File(rootDir, MksExchangeV7Paths.WORKSPACE)
+        if (!file.exists()) return MksExchangeV7WorkspaceEnvelope()
+        return runCatching {
+            json.decodeFromString(
+                MksExchangeV7WorkspaceEnvelope.serializer(),
+                file.readText()
+            )
+        }.getOrElse { MksExchangeV7WorkspaceEnvelope() }
     }
 
     private fun <T> readList(rootDir: File, relativePath: String, serializer: KSerializer<T>): List<T> {
