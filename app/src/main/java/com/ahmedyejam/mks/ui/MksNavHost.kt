@@ -24,45 +24,44 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.ahmedyejam.mks.di.AppModule
-import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
-import com.ahmedyejam.mks.ui.category.CategoryQuestionsScreen
-import com.ahmedyejam.mks.ui.category.CategoryQuestionsViewModel
+import com.ahmedyejam.mks.ui.booktools.AiPromptDeckListScreen
 import com.ahmedyejam.mks.ui.booktools.AiPromptDeckScreen
 import com.ahmedyejam.mks.ui.booktools.BookNotesScreen
 import com.ahmedyejam.mks.ui.booktools.BookToolsViewModel
-import com.ahmedyejam.mks.ui.booktools.ReviewBlueprintScreen
-import com.ahmedyejam.mks.ui.slideshow.SlideshowCourseScreen
-import com.ahmedyejam.mks.ui.booktools.AiPromptDeckListScreen
 import com.ahmedyejam.mks.ui.booktools.ReviewBlueprintListScreen
-import com.ahmedyejam.mks.ui.booktools.SourceDocumentListScreen
+import com.ahmedyejam.mks.ui.booktools.ReviewBlueprintScreen
 import com.ahmedyejam.mks.ui.booktools.SlideshowCourseListScreen
+import com.ahmedyejam.mks.ui.booktools.SourceDocumentListScreen
+import com.ahmedyejam.mks.ui.category.CategoryQuestionsScreen
+import com.ahmedyejam.mks.ui.category.CategoryQuestionsViewModel
+import com.ahmedyejam.mks.ui.common.InvalidRouteScreen
+import com.ahmedyejam.mks.ui.data.DataToolsScreen
+import com.ahmedyejam.mks.ui.data.DataToolsViewModel
+import com.ahmedyejam.mks.ui.flashcard.FlashcardDeckScreen
 import com.ahmedyejam.mks.ui.import.ImportViewModel
 import com.ahmedyejam.mks.ui.library.LibraryScreen
 import com.ahmedyejam.mks.ui.library.LibraryViewModel
+import com.ahmedyejam.mks.ui.navigation.requireNonBlankStringArg
+import com.ahmedyejam.mks.ui.navigation.requirePositiveLongArg
 import com.ahmedyejam.mks.ui.quiz.CompilerViewModel
-import com.ahmedyejam.mks.ui.flashcard.FlashcardDeckScreen
 import com.ahmedyejam.mks.ui.quiz.QuizPlayerScreen
 import com.ahmedyejam.mks.ui.quiz.QuizQuestionsScreen
 import com.ahmedyejam.mks.ui.quiz.QuizQuestionsViewModel
 import com.ahmedyejam.mks.ui.quiz.QuizViewModel
+import com.ahmedyejam.mks.ui.review.ReviewDashboardScreen
+import com.ahmedyejam.mks.ui.review.ReviewDashboardViewModel
 import com.ahmedyejam.mks.ui.scanner.ScannerScreen
 import com.ahmedyejam.mks.ui.scanner.ScannerViewModel
+import com.ahmedyejam.mks.ui.search.GlobalSearchScreen
+import com.ahmedyejam.mks.ui.search.GlobalSearchViewModel
 import com.ahmedyejam.mks.ui.session.SessionManagementScreen
 import com.ahmedyejam.mks.ui.session.SessionViewModel
 import com.ahmedyejam.mks.ui.settings.SettingsScreen
-import com.ahmedyejam.mks.ui.search.GlobalSearchScreen
-import com.ahmedyejam.mks.ui.search.GlobalSearchViewModel
-import com.ahmedyejam.mks.ui.review.ReviewDashboardScreen
-import com.ahmedyejam.mks.ui.review.ReviewDashboardViewModel
-import com.ahmedyejam.mks.ui.data.DataToolsScreen
-import com.ahmedyejam.mks.ui.data.DataToolsViewModel
+import com.ahmedyejam.mks.ui.slideshow.SlideshowCourseScreen
 import com.ahmedyejam.mks.ui.summary.SummaryScreen
 import com.ahmedyejam.mks.ui.summary.SummaryViewModel
+import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 import com.ahmedyejam.mks.ui.welcome.WelcomeScreen
-import com.ahmedyejam.mks.ui.common.InvalidRouteScreen
-import com.ahmedyejam.mks.ui.navigation.MksRouteBuilders
-import com.ahmedyejam.mks.ui.navigation.requireNonBlankStringArg
-import com.ahmedyejam.mks.ui.navigation.requirePositiveLongArg
 import kotlinx.coroutines.launch
 
 @Suppress("UNCHECKED_CAST")
@@ -483,7 +482,7 @@ fun MksNavHost(
             val dataToolsViewModel: DataToolsViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return DataToolsViewModel(appModule.repository, appModule.importManager) as T
+                        return DataToolsViewModel(appModule.repository) as T
                     }
                 },
             )

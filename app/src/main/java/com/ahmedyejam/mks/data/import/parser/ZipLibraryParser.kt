@@ -4,7 +4,6 @@ import android.content.Context
 import com.ahmedyejam.mks.data.exchange.v7.MksExchangeV7Archive
 import com.ahmedyejam.mks.data.import.dto.LibraryBundleDto
 import com.ahmedyejam.mks.data.import.dto.ManifestDto
-import com.ahmedyejam.mks.data.repository.ExportManager
 import com.ahmedyejam.mks.data.import.security.ImportLimits
 import com.ahmedyejam.mks.data.import.security.copyToWithLimit
 import com.ahmedyejam.mks.data.import.security.readTextWithLimit
@@ -95,13 +94,13 @@ class ZipLibraryParser(
                 runCatching {
                     val root = json.parseToJsonElement(text) as? JsonObject
                     root?.get("format")?.jsonPrimitive?.content == "mks.exchange" &&
-                        root?.get("schemaVersion")?.jsonPrimitive?.content?.toIntOrNull() == 7
+                            root["schemaVersion"]?.jsonPrimitive?.content?.toIntOrNull() == 7
                 }.getOrDefault(false)
             } ?: false
 
             if (isSchema7Exchange) {
                 val bundle = MksExchangeV7Archive.readLegacyBundleFromDirectory(tempDir)
-                val manifest = manifestText?.let {
+                val manifest = manifestText.let {
                     json.decodeFromString(ManifestDto.serializer(), it)
                 }
                 return ZipResult(bundle, manifest, tempDir, tempDir)

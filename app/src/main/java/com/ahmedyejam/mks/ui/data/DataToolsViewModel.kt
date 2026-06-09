@@ -1,6 +1,5 @@
 package com.ahmedyejam.mks.ui.data
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,8 +15,7 @@ data class DataToolsUiState(
 )
 
 class DataToolsViewModel(
-    private val repository: com.ahmedyejam.mks.data.repository.MksRepository,
-    private val importManager: com.ahmedyejam.mks.data.import.repository.ImportLibraryManager
+    private val repository: com.ahmedyejam.mks.data.repository.MksRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(DataToolsUiState())
     val state: StateFlow<DataToolsUiState> = _state.asStateFlow()
