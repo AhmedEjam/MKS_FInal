@@ -2,7 +2,7 @@ package com.ahmedyejam.mks.ui.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import android.net.Uri
+import androidx.core.net.toUri
 import com.ahmedyejam.mks.data.local.entity.*
 import com.ahmedyejam.mks.data.model.CategoryWithMetadata
 import com.ahmedyejam.mks.data.model.ExportResult
@@ -25,26 +25,21 @@ private data class WorkspaceBookFilter(
     val workspaceId: Long,
     val sortBy: SortOption,
     val filterField: String?,
-    val searchQuery: String
+    val searchQuery: String,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
 class LibraryViewModel(
     private val repository: MksRepository,
-    private val dataStoreManager: DataStoreManager
+    private val dataStoreManager: DataStoreManager,
 ) : ViewModel() {
 
     private val _uiEvent = Channel<LibraryUiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    private val _knowledgeSummary = MutableStateFlow<KnowledgeSummary?>(null)
-    val knowledgeSummary = _knowledgeSummary.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
-
-    private val _globalSearchQuery = MutableStateFlow("")
-    val globalSearchQuery = _globalSearchQuery.asStateFlow()
 
     private val _selectedBookId = MutableStateFlow(-1L)
     val selectedBookId = _selectedBookId.asStateFlow()
@@ -52,10 +47,7 @@ class LibraryViewModel(
     private val _selectedCategory = MutableStateFlow<String?>(null)
     val selectedCategory = _selectedCategory.asStateFlow()
 
-    private val _filterField = MutableStateFlow<String?>(null)
-    val filterField = _filterField.asStateFlow()
-
-    private val _isSearching = MutableStateFlow(false)
+    private val _isSearching = MutableStateFlow(value = false)
     val isSearching = _isSearching.asStateFlow()
 
     val currentWorkspaceId = dataStoreManager.currentWorkspaceId
@@ -77,33 +69,16 @@ class LibraryViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "LIST")
 
     val showCovers = dataStoreManager.showCovers
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), initialValue = true)
 
-    val autoHideKnowledgeSummary = dataStoreManager.autoHideKnowledgeSummary
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
 
     init {
-        refreshKnowledgeSummary()
-    }
-
-    fun refreshKnowledgeSummary() {
-        viewModelScope.launch {
-            try {
-                _knowledgeSummary.value = repository.getLibraryKnowledgeSummary()
-            } catch (e: Exception) {
-                _knowledgeSummary.value = null
-                _uiEvent.trySend(
-                    LibraryUiEvent.ShowSnackbar(
-                        "Knowledge summary unavailable; main library can still be used. ${e.message.orEmpty()}".trim()
-                    )
-                )
-            }
-        }
     }
 
     val categories = combine(
         repository.getAllCategoriesWithMetadata(),
-        sortBy
+        sortBy,
     ) { list, sortOption ->
         list.sortedWith(
             compareByDescending<CategoryWithMetadata> { it.isPinned }
@@ -118,44 +93,33 @@ class LibraryViewModel(
                         else -> 0f
                     }
                 }
-                .thenBy { if (sortOption == SortOption.TITLE) it.name else "" }
+                .thenBy { if (sortOption == SortOption.TITLE) it.name else "" },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val allFields = repository.getAllFields()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val globalSearchResults = _globalSearchQuery
-        .debounce(300)
-        .flatMapLatest { query ->
-            if (query.length < 2) flowOf(emptyList())
-            else repository.searchAllQuestions(query)
-        }
-        .map { list ->
-            list.map { it.copy(imagePath = repository.resolveImagePath(it.imagePath)) }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val books = combine(
         currentWorkspaceId,
         sortBy,
-        _filterField,
-        _searchQuery
-    ) { workspaceId, sortBy, filterField, searchQuery ->
-        WorkspaceBookFilter(workspaceId, sortBy, filterField, searchQuery)
+        _searchQuery,
+    ) { workspaceId, sortBy, searchQuery ->
+        WorkspaceBookFilter(workspaceId, sortBy, null, searchQuery)
     }.flatMapLatest { filter ->
         if (filter.workspaceId <= 0L) {
             flowOf(emptyList())
         } else repository.getBooksByWorkspace(filter.workspaceId, filter.sortBy).map { list ->
-            list.filter { book ->
-                (filter.filterField == null || book.fields.contains(filter.filterField)) &&
-                (filter.searchQuery.isBlank() ||
-                    book.title.contains(filter.searchQuery, ignoreCase = true) ||
-                    book.description.contains(filter.searchQuery, ignoreCase = true) ||
-                    book.fields.any { it.contains(filter.searchQuery, ignoreCase = true) }
-                )
-            }.map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
-             .sortedByDescending { it.isPinned }
+            list.asSequence()
+                .filter { book ->
+                    ((filter.filterField == null) || book.fields.contains(filter.filterField)) &&
+                    (filter.searchQuery.isBlank() ||
+                        book.title.contains(filter.searchQuery, ignoreCase = true) ||
+                        book.description.contains(filter.searchQuery, ignoreCase = true) ||
+                        book.fields.any { it.contains(filter.searchQuery, ignoreCase = true) }
+                    )
+                }
+                .map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
+                .sortedByDescending { it.isPinned }
+                .toList()
         }
     }
     .flowOn(Dispatchers.Default)
@@ -169,7 +133,7 @@ class LibraryViewModel(
         _selectedBookId,
         _selectedCategory,
         bookSortBy,
-        _searchQuery
+        _searchQuery,
     ) { bookId, category, bookSortBy, searchQuery ->
         val baseFlow = when {
             bookId != -1L -> repository.getQuizzesByBookId(bookId, bookSortBy)
@@ -177,13 +141,16 @@ class LibraryViewModel(
             else -> flowOf(emptyList())
         }
         baseFlow.map { list ->
-            list.filter { quiz ->
-                searchQuery.isBlank() || 
-                quiz.title.contains(searchQuery, ignoreCase = true) ||
-                quiz.description.contains(searchQuery, ignoreCase = true) ||
-                (quiz.category?.contains(searchQuery, ignoreCase = true) ?: false)
-            }.map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
-             .sortedByDescending { it.isPinned }
+            list.asSequence()
+                .filter { quiz ->
+                    searchQuery.isBlank() ||
+                    quiz.title.contains(searchQuery, ignoreCase = true) ||
+                    quiz.description.contains(searchQuery, ignoreCase = true) ||
+                    (quiz.category?.contains(searchQuery, ignoreCase = true) ?: false)
+                }
+                .map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
+                .sortedByDescending { it.isPinned }
+                .toList()
         }
     }.flatMapLatest { it }
     .flowOn(Dispatchers.Default)
@@ -191,17 +158,19 @@ class LibraryViewModel(
 
     val flashcardDecks = combine(
         _selectedBookId,
-        bookSortBy,
-        _searchQuery
-    ) { bookId, bookSortBy, searchQuery ->
+        _searchQuery,
+    ) { bookId, searchQuery ->
         if (bookId != -1L) {
             repository.getFlashcardDecksByBookId(bookId).map { list ->
-                list.filter { deck ->
-                    searchQuery.isBlank() ||
-                    deck.title.contains(searchQuery, ignoreCase = true) ||
-                    deck.description?.contains(searchQuery, ignoreCase = true) ?: false
-                }.map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
-                 .sortedByDescending { it.isPinned }
+                list.asSequence()
+                    .filter { deck ->
+                        searchQuery.isBlank() ||
+                        deck.title.contains(searchQuery, ignoreCase = true) ||
+                        (deck.description?.contains(searchQuery, ignoreCase = true) ?: false)
+                    }
+                    .map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
+                    .sortedByDescending { it.isPinned }
+                    .toList()
             }
         } else {
             flowOf(emptyList())
@@ -212,16 +181,18 @@ class LibraryViewModel(
 
     val slideshowCourses = combine(
         _selectedBookId,
-        bookSortBy,
-        _searchQuery
-    ) { bookId, _, searchQuery ->
+        _searchQuery,
+    ) { bookId, searchQuery ->
         if (bookId != -1L) {
             repository.getSlideshowCoursesByBookId(bookId).map { list ->
-                list.filter { course ->
-                    searchQuery.isBlank() ||
-                    course.title.contains(searchQuery, ignoreCase = true) ||
-                    course.description?.contains(searchQuery, ignoreCase = true) ?: false
-                }.sortedByDescending { it.isPinned }
+                list.asSequence()
+                    .filter { course ->
+                        searchQuery.isBlank() ||
+                        course.title.contains(searchQuery, ignoreCase = true) ||
+                        (course.description?.contains(searchQuery, ignoreCase = true) ?: false)
+                    }
+                    .sortedByDescending { it.isPinned }
+                    .toList()
             }
         } else {
             flowOf(emptyList())
@@ -232,7 +203,7 @@ class LibraryViewModel(
 
     val noteBlueprints = combine(
         _selectedBookId,
-        _searchQuery
+        _searchQuery,
     ) { bookId, searchQuery ->
         if (bookId != -1L) {
             repository.getNoteBlueprintsByBookId(bookId).map { list ->
@@ -251,15 +222,17 @@ class LibraryViewModel(
 
     val prompts = combine(
         _selectedBookId,
-        _searchQuery
+        _searchQuery,
     ) { bookId, searchQuery ->
         if (bookId != -1L) {
             repository.getPromptsByBookId(bookId).map { list ->
-                list.filter { prompt ->
-                    searchQuery.isBlank() ||
-                    prompt.title.contains(searchQuery, ignoreCase = true) ||
-                    prompt.stem.contains(searchQuery, ignoreCase = true)
-                }
+                list.asSequence()
+                    .filter { prompt ->
+                        searchQuery.isBlank() ||
+                        prompt.title.contains(searchQuery, ignoreCase = true) ||
+                        prompt.stem.contains(searchQuery, ignoreCase = true)
+                    }
+                    .toList()
             }
         } else {
             flowOf(emptyList())
@@ -270,15 +243,17 @@ class LibraryViewModel(
 
     val promptDecks = combine(
         _selectedBookId,
-        _searchQuery
+        _searchQuery,
     ) { bookId, searchQuery ->
         if (bookId != -1L) {
             repository.getPromptDecksByBookId(bookId).map { list ->
-                list.filter { deck ->
-                    searchQuery.isBlank() ||
-                    deck.title.contains(searchQuery, ignoreCase = true) ||
-                    (deck.description?.contains(searchQuery, ignoreCase = true) ?: false)
-                }
+                list.asSequence()
+                    .filter { deck ->
+                        searchQuery.isBlank() ||
+                        deck.title.contains(searchQuery, ignoreCase = true) ||
+                        (deck.description?.contains(searchQuery, ignoreCase = true) ?: false)
+                    }
+                    .toList()
             }
         } else {
             flowOf(emptyList())
@@ -289,19 +264,21 @@ class LibraryViewModel(
 
     val recentQuizzes = repository.getAllQuizzesFlow()
         .map { list ->
-            list.sortedByDescending { it.updatedAt }
+            list.asSequence()
+                .sortedByDescending { it.updatedAt }
                 .take(5)
                 .map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
+                .toList()
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val resumeQuiz = combine(
         dataStoreManager.lastSession,
-        repository.getAllQuizzesFlow()
+        repository.getAllQuizzesFlow(),
     ) { lastSession, list ->
         val lastQuizId = lastSession?.first
         val selected = lastQuizId?.let { id -> list.find { it.id == id } }
-            ?: list.sortedByDescending { it.updatedAt }.firstOrNull()
+            ?: list.maxByOrNull { it.updatedAt }
         selected?.copy(coverImage = repository.resolveImagePath(selected.coverImage))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
@@ -309,22 +286,9 @@ class LibraryViewModel(
         _searchQuery.value = query
     }
 
-    fun setGlobalSearchQuery(query: String) {
-        _globalSearchQuery.value = query
-    }
-
     fun selectBook(id: Long) {
         _selectedBookId.value = id
         _selectedCategory.value = null
-    }
-
-    fun selectCategory(category: String?) {
-        _selectedCategory.value = category
-        _selectedBookId.value = -1L
-    }
-
-    fun setFilterField(field: String?) {
-        _filterField.value = field
     }
 
     fun setSearching(searching: Boolean) {
@@ -335,7 +299,6 @@ class LibraryViewModel(
     fun resetToLibraryRoot() {
         _selectedBookId.value = -1L
         _selectedCategory.value = null
-        _filterField.value = null
         _isSearching.value = false
         _searchQuery.value = ""
     }
@@ -378,11 +341,6 @@ class LibraryViewModel(
         }
     }
 
-    fun toggleFlashcardDeckPinned(deck: FlashcardDeckEntity) {
-        viewModelScope.launch {
-            repository.updateFlashcardDeck(deck.copy(isPinned = !deck.isPinned))
-        }
-    }
 
     fun deleteBook(book: BookEntity) {
         viewModelScope.launch {
@@ -406,24 +364,13 @@ class LibraryViewModel(
         }
     }
 
-    fun deleteFlashcardDeck(deck: FlashcardDeckEntity) {
-        viewModelScope.launch {
-            try {
-                repository.deleteFlashcardDeck(deck)
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Flashcard deck '${deck.title}' deleted"))
-            } catch (e: Exception) {
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to delete flashcard deck: ${e.message}"))
-            }
-        }
-    }
-
     fun updateBook(book: BookEntity, newCoverUri: String? = null) {
         viewModelScope.launch {
             try {
                 val finalBook = when {
                     newCoverUri?.startsWith("content://") == true -> {
                         val savedPath = withContext(Dispatchers.IO) {
-                            repository.saveImage(Uri.parse(newCoverUri))
+                            repository.saveImage(newCoverUri.toUri())
                         }
                         book.copy(coverImage = savedPath, updatedAt = System.currentTimeMillis())
                     }
@@ -446,7 +393,7 @@ class LibraryViewModel(
                 val finalQuiz = when {
                     newCoverUri?.startsWith("content://") == true -> {
                         val savedPath = withContext(Dispatchers.IO) {
-                            repository.saveImage(Uri.parse(newCoverUri))
+                            repository.saveImage(newCoverUri.toUri())
                         }
                         quiz.copy(coverImage = savedPath, updatedAt = System.currentTimeMillis())
                     }
@@ -463,35 +410,13 @@ class LibraryViewModel(
         }
     }
 
-    fun updateFlashcardDeck(deck: FlashcardDeckEntity, newCoverUri: String? = null) {
-        viewModelScope.launch {
-            try {
-                val finalDeck = when {
-                    newCoverUri?.startsWith("content://") == true -> {
-                        val savedPath = withContext(Dispatchers.IO) {
-                            repository.saveImage(Uri.parse(newCoverUri))
-                        }
-                        deck.copy(coverImage = savedPath, updatedAt = System.currentTimeMillis())
-                    }
-                    newCoverUri != null -> {
-                        deck.copy(coverImage = newCoverUri, updatedAt = System.currentTimeMillis())
-                    }
-                    else -> deck.copy(updatedAt = System.currentTimeMillis())
-                }
-                repository.updateFlashcardDeck(finalDeck)
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Flashcard deck updated"))
-            } catch (e: Exception) {
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to update flashcard deck: ${e.message}"))
-            }
-        }
-    }
 
     fun insertBook(book: BookEntity, coverUri: String? = null) {
         viewModelScope.launch {
             try {
                 val finalBook = if (coverUri?.startsWith("content://") == true) {
                     val savedPath = withContext(Dispatchers.IO) {
-                        repository.saveImage(Uri.parse(coverUri))
+                        repository.saveImage(coverUri.toUri())
                     }
                     book.copy(coverImage = savedPath)
                 } else {
@@ -510,7 +435,7 @@ class LibraryViewModel(
             try {
                 val finalQuiz = if (coverUri?.startsWith("content://") == true) {
                     val savedPath = withContext(Dispatchers.IO) {
-                        repository.saveImage(Uri.parse(coverUri))
+                        repository.saveImage(coverUri.toUri())
                     }
                     quiz.copy(coverImage = savedPath)
                 } else {
@@ -524,46 +449,49 @@ class LibraryViewModel(
         }
     }
 
-    fun insertFlashcardDeck(deck: FlashcardDeckEntity, coverUri: String? = null) {
-        viewModelScope.launch {
-            try {
-                val finalDeck = if (coverUri?.startsWith("content://") == true) {
-                    val savedPath = withContext(Dispatchers.IO) {
-                        repository.saveImage(Uri.parse(coverUri))
-                    }
-                    deck.copy(coverImage = savedPath)
-                } else {
-                    deck
-                }
-                repository.insertFlashcardDeck(finalDeck)
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Flashcard deck created"))
-            } catch (e: Exception) {
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to create flashcard deck: ${e.message}"))
-            }
-        }
-    }
 
     fun createFlashcardDeckFromBook(
         bookId: Long,
         title: String,
         description: String = "",
         coverUri: String? = null,
-        onCreated: (Long) -> Unit = {}
+        onCreated: (Long) -> Unit = {},
     ) {
         viewModelScope.launch {
             try {
+                val finalTitle = if (title.isBlank()) {
+                    val existingDecks = repository.getFlashcardDecksByBookId(bookId).first()
+                    var baseTitle = "Untitled deck"
+                    var count = 1
+                    var newTitle = baseTitle
+                    while (existingDecks.any { it.title.equals(newTitle, ignoreCase = true) }) {
+                        newTitle = "$baseTitle-${count.toString().padStart(2, '0')}"
+                        count++
+                    }
+                    newTitle
+                } else {
+                    title.trim()
+                }
+
                 val coverImage = when {
                     coverUri?.startsWith("content://") == true -> withContext(Dispatchers.IO) {
-                        repository.saveImage(Uri.parse(coverUri))
+                        repository.saveImage(coverUri.toUri())
                     }
                     coverUri.isNullOrBlank() -> null
                     else -> coverUri
                 }
-                val deckId = repository.createFlashcardDeckFromBook(
-                    bookId = bookId,
-                    title = title,
-                    description = description.ifBlank { null },
-                    coverImage = coverImage
+                val now = System.currentTimeMillis()
+                val deckId = repository.insertFlashcardDeck(
+                    FlashcardDeckEntity(
+                        externalId = java.util.UUID.randomUUID().toString(),
+                        bookId = bookId,
+                        title = finalTitle,
+                        description = description.trim().ifBlank { null },
+                        coverImage = coverImage,
+                        createdAt = now,
+                        updatedAt = now,
+                        lastEditedAt = now
+                    )
                 )
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Flashcard deck created"))
                 onCreated(deckId)
@@ -573,9 +501,6 @@ class LibraryViewModel(
         }
     }
 
-    suspend fun importFromUri(uri: android.net.Uri) = repository.importFromUri(uri)
-
-    fun saveImage(uri: android.net.Uri): String? = repository.saveImage(uri)
 
     fun deleteCategory(category: String) {
         viewModelScope.launch { repository.deleteCategory(category) }
@@ -597,50 +522,71 @@ class LibraryViewModel(
         viewModelScope.launch { repository.createQuizFromCategory(category, title, bookId) }
     }
 
-    fun createCustomQuiz(bookId: Long, quizIds: List<Long>) {
+    fun createNewQuiz(
+        bookId: Long,
+        title: String,
+        description: String,
+        coverImage: String?,
+        sourceQuizIds: List<Long>,
+        sourceCategories: List<String>
+    ) {
         viewModelScope.launch {
             try {
-                val bookQuizzes = repository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
-                val customQuizzesCount = bookQuizzes.count { it.title.lowercase().startsWith("custom quiz") }
-                val nextNum = (customQuizzesCount + 1).toString().padStart(2, '0')
-                val title = "Custom Quiz $nextNum"
-                
-                val selectedQuizzes = bookQuizzes.filter { it.id in quizIds }
-                val quizTitles = selectedQuizzes.joinToString { it.title }
-                val description = "Included quizzes: $quizTitles"
-
                 val newQuizId = repository.insertQuiz(
                     QuizEntity(
                         externalId = java.util.UUID.randomUUID().toString(),
                         bookId = bookId,
-                        title = title,
+                        title = title.ifBlank { "New Quiz" },
                         description = description,
+                        coverImage = coverImage,
                         createdAt = System.currentTimeMillis(),
-                        updatedAt = System.currentTimeMillis()
-                    )
+                        updatedAt = System.currentTimeMillis(),
+                    ),
                 )
 
-                val allQuestions = mutableListOf<QuestionEntity>()
-                for (qId in quizIds) {
-                    allQuestions.addAll(repository.getQuestionsByQuizId(qId).first())
+                if (sourceQuizIds.isNotEmpty() || sourceCategories.isNotEmpty()) {
+                    val bookQuizzes = repository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
+                    val allQuestions = mutableListOf<QuestionEntity>()
+
+                    if (sourceQuizIds.isNotEmpty()) {
+                        for (qId in sourceQuizIds) {
+                            allQuestions.addAll(repository.getQuestionsByQuizId(qId).first())
+                        }
+                    } else if (sourceCategories.isNotEmpty()) {
+                        for (quiz in bookQuizzes) {
+                            allQuestions.addAll(repository.getQuestionsByQuizId(quiz.id).first())
+                        }
+                    }
+
+                    val filteredQuestions = if (sourceCategories.isNotEmpty()) {
+                        allQuestions.filter { q ->
+                            q.categories.any { it in sourceCategories }
+                        }
+                    } else {
+                        allQuestions
+                    }
+
+                    val duplicatedQuestions = filteredQuestions.map { q ->
+                        q.copy(
+                            id = 0,
+                            externalId = java.util.UUID.randomUUID().toString(),
+                            quizId = newQuizId,
+                            attempts = 0,
+                            correctCount = 0,
+                            isMarked = false,
+                            createdAt = System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis(),
+                        )
+                    }
+                    
+                    if (duplicatedQuestions.isNotEmpty()) {
+                        repository.insertQuestions(duplicatedQuestions)
+                    }
                 }
 
-                val duplicatedQuestions = allQuestions.map { q ->
-                    q.copy(
-                        id = 0,
-                        externalId = java.util.UUID.randomUUID().toString(),
-                        quizId = newQuizId,
-                        attempts = 0,
-                        correctCount = 0,
-                        isMarked = false,
-                        createdAt = System.currentTimeMillis(),
-                        updatedAt = System.currentTimeMillis()
-                    )
-                }
-                repository.insertQuestions(duplicatedQuestions)
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Custom quiz '$title' created"))
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Quiz '${title.ifBlank { "New Quiz" }}' created"))
             } catch (e: Exception) {
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to create custom quiz: ${e.message}"))
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to create quiz: ${e.message}"))
             }
         }
     }
@@ -648,12 +594,12 @@ class LibraryViewModel(
     fun updateCategoryMetadata(name: String, emoji: String?, color: Int?, isPinned: Boolean) {
         viewModelScope.launch {
             repository.updateCategoryMetadata(
-                com.ahmedyejam.mks.data.local.entity.CategoryMetadataEntity(
+                CategoryMetadataEntity(
                     name = name,
                     emoji = emoji,
                     color = color,
-                    isPinned = isPinned
-                )
+                    isPinned = isPinned,
+                ),
             )
         }
     }
@@ -668,8 +614,8 @@ class LibraryViewModel(
                         title = title,
                         stem = stem,
                         createdAt = System.currentTimeMillis(),
-                        updatedAt = System.currentTimeMillis()
-                    )
+                        updatedAt = System.currentTimeMillis(),
+                    ),
                 )
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Prompt created"))
             } catch (e: Exception) {
@@ -678,26 +624,41 @@ class LibraryViewModel(
         }
     }
 
-    fun deletePrompt(prompt: PromptEntity) {
+    fun deleteFlashcardDeck(deck: FlashcardDeckEntity) {
         viewModelScope.launch {
             try {
-                repository.deletePrompt(prompt)
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Prompt deleted"))
+                repository.deleteFlashcardDeck(deck)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Flashcard deck deleted"))
             } catch (e: Exception) {
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to delete prompt: ${e.message}"))
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to delete flashcard deck: ${e.message}"))
             }
         }
     }
 
-    fun updatePrompt(prompt: PromptEntity) {
+    fun updateFlashcardDeck(deck: FlashcardDeckEntity) {
         viewModelScope.launch {
-            try {
-                repository.updatePrompt(prompt)
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Prompt updated"))
-            } catch (e: Exception) {
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to update prompt: ${e.message}"))
-            }
+            repository.updateFlashcardDeck(deck)
         }
+    }
+
+    fun toggleFlashcardDeckPinned(deck: FlashcardDeckEntity) {
+        viewModelScope.launch { repository.updateFlashcardDeck(deck.copy(isPinned = !deck.isPinned)) }
+    }
+
+    fun toggleSlideshowCoursePinned(course: SlideshowCourseEntity) {
+        viewModelScope.launch { repository.updateSlideshowCourse(course.copy(isPinned = !course.isPinned)) }
+    }
+
+    fun deleteSlideshowCourse(course: SlideshowCourseEntity) {
+        viewModelScope.launch { repository.deleteSlideshowCourse(course) }
+    }
+
+    fun deleteNoteBlueprint(note: NoteBlueprintEntity) {
+        viewModelScope.launch { repository.deleteNoteBlueprint(note) }
+    }
+
+    fun deletePromptDeck(deck: PromptDeckEntity) {
+        viewModelScope.launch { repository.deletePromptDeck(deck) }
     }
 
     suspend fun exportQuiz(quizId: Long, outputStream: java.io.OutputStream): ExportResult {

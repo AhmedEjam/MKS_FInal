@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,35 +36,45 @@ import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 fun CategoryQuestionsScreen(
     viewModel: CategoryQuestionsViewModel,
     onBack: () -> Unit,
-    onStartQuiz: (String) -> Unit = {}
+    onStartQuiz: (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val allQuizzes by viewModel.allQuizzes.collectAsState()
-    var showFilters by rememberSaveable { mutableStateOf(false) }
-    var isSearching by rememberSaveable { mutableStateOf(false) }
-    var showMoveDialog by remember { mutableStateOf(false) }
-    var showCopyDialog by remember { mutableStateOf(false) }
-    var showExportDialog by remember { mutableStateOf(false) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf<QuestionEntity?>(null) }
-    var showAssetsDialog by remember { mutableStateOf<QuestionEntity?>(null) }
-    var showFlashcardDialog by remember { mutableStateOf(false) }
+    val showFiltersState = rememberSaveable { mutableStateOf(value = false) }
+    var showFilters by showFiltersState
+    val isSearchingState = rememberSaveable { mutableStateOf(value = false) }
+    var isSearching by isSearchingState
+    val showMoveDialogState = remember { mutableStateOf(value = false) }
+    var showMoveDialog by showMoveDialogState
+    val showCopyDialogState = remember { mutableStateOf(value = false) }
+    var showCopyDialog by showCopyDialogState
+    val showExportDialogState = remember { mutableStateOf(value = false) }
+    var showExportDialog by showExportDialogState
+    val showDeleteConfirmState = remember { mutableStateOf(value = false) }
+    var showDeleteConfirm by showDeleteConfirmState
+    val showEditDialogState = remember { mutableStateOf<QuestionEntity?>(null) }
+    var showEditDialog by showEditDialogState
+    val showAssetsDialogState = remember { mutableStateOf<QuestionEntity?>(null) }
+    var showAssetsDialog by showAssetsDialogState
+    val showFlashcardDialogState = remember { mutableStateOf(value = false) }
+    var showFlashcardDialog by showFlashcardDialogState
 
     val scrollState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val isSelectionMode = uiState.selectedQuestionIds.isNotEmpty()
-    var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
+    val fullscreenImageUrlState = remember { mutableStateOf<String?>(null) }
+    var fullscreenImageUrl by fullscreenImageUrlState
 
     if (showMoveDialog) {
         MoveQuestionsDialog(
             title = "Move to Quiz",
             confirmText = "Move",
-            onDismiss = { showMoveDialog = false },
+            onDismiss = { showMoveDialogState.value = false },
             onMove = { targetQuizId ->
                 viewModel.moveSelectedQuestionsToQuiz(targetQuizId)
-                showMoveDialog = false
+                showMoveDialogState.value = false
             },
-            viewModel = viewModel
+            viewModel = viewModel,
         )
     }
 
@@ -71,79 +82,77 @@ fun CategoryQuestionsScreen(
         MoveQuestionsDialog(
             title = "Copy to Quiz",
             confirmText = "Copy",
-            onDismiss = { showCopyDialog = false },
+            onDismiss = { showCopyDialogState.value = false },
             onMove = { targetQuizId ->
                 viewModel.copySelectedQuestionsToQuiz(targetQuizId)
-                showCopyDialog = false
+                showCopyDialogState.value = false
             },
-            viewModel = viewModel
+            viewModel = viewModel,
         )
     }
 
     if (showExportDialog) {
         var newQuizTitle by remember { mutableStateOf("") }
         AlertDialog(
-            onDismissRequest = { showExportDialog = false },
+            onDismissRequest = { showExportDialogState.value = false },
             title = { Text("Export to New Quiz") },
             text = {
                 OutlinedTextField(
                     value = newQuizTitle,
                     onValueChange = { newQuizTitle = it },
                     label = { Text("Quiz title") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.exportSelectedQuestionsToNewQuiz(newQuizTitle)
-                        showExportDialog = false
+                        showExportDialogState.value = false
                     },
-                    enabled = newQuizTitle.isNotBlank()
+                    enabled = newQuizTitle.isNotBlank(),
                 ) { Text("Create") }
             },
-            dismissButton = { TextButton(onClick = { showExportDialog = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showExportDialogState.value = false }) { Text("Cancel") } },
         )
     }
 
     if (showFlashcardDialog) {
         CreateFlashcardsFromSelectedDialog(
             selectedCount = uiState.selectedQuestionIds.size,
-            onDismiss = { showFlashcardDialog = false },
-            onConfirm = { title, clearMarks ->
-                viewModel.createFlashcardsFromSelected(title, clearMarks)
-                showFlashcardDialog = false
-            }
-        )
+            onDismiss = { showFlashcardDialogState.value = false },
+        ) { title, clearMarks ->
+            viewModel.createFlashcardsFromSelected(title, clearMarks)
+            showFlashcardDialogState.value = false
+        }
     }
 
     if (showDeleteConfirm) {
         AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
+            onDismissRequest = { showDeleteConfirmState.value = false },
             title = { Text("Delete selected questions?") },
             text = { Text("This will permanently delete ${uiState.selectedQuestionIds.size} selected question(s).") },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.deleteSelectedQuestions()
-                        showDeleteConfirm = false
+                        showDeleteConfirmState.value = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 ) { Text("Delete") }
             },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showDeleteConfirmState.value = false }) { Text("Cancel") } },
         )
     }
 
     showEditDialog?.let { question ->
         EditQuestionDialog(
             question = question,
-            onDismiss = { showEditDialog = null },
-            onConfirm = {
-                viewModel.updateQuestion(it)
-                showEditDialog = null
-            }
-        )
+            onDismiss = { showEditDialogState.value = null },
+        ) {
+            viewModel.updateQuestion(it)
+            showEditDialogState.value = null
+        }
     }
 
     showAssetsDialog?.let { question ->
@@ -159,7 +168,7 @@ fun CategoryQuestionsScreen(
             annotations = annotations,
             sourceDocuments = sources,
             linkedBlueprints = linkedBlueprints,
-            onDismiss = { showAssetsDialog = null },
+            onDismiss = { showAssetsDialogState.value = null },
             onAddAsset = { viewModel.addQuestionAsset(it) },
             onUpdateAsset = { viewModel.updateQuestionAsset(it) },
             onDeleteAsset = { viewModel.deleteQuestionAsset(it) },
@@ -167,7 +176,7 @@ fun CategoryQuestionsScreen(
             onUpdateAnnotation = { viewModel.updateAnnotation(it) },
             onDeleteAnnotation = { viewModel.deleteAnnotation(it) },
             onCreateSourceAndAddAsset = { asset, source -> viewModel.createSourceAndAddQuestionAsset(asset, source) },
-            onCreateBlueprintFromQuestion = { viewModel.createBlueprintFromQuestion(bookId, question.id) }
+            onCreateBlueprintFromQuestion = { viewModel.createBlueprintFromQuestion(bookId, question.id) },
         )
     }
 
@@ -178,16 +187,16 @@ fun CategoryQuestionsScreen(
                 SelectionTopAppBar(
                     selectedCount = uiState.selectedQuestionIds.size,
                     onClearSelection = { viewModel.clearSelection() },
-                    onDelete = { showDeleteConfirm = true },
-                    onMove = { showMoveDialog = true },
+                    onDelete = { showDeleteConfirmState.value = true },
+                    onMove = { showMoveDialogState.value = true },
                     onSelectAll = { viewModel.toggleAllSelection() },
-                    onCopy = { showCopyDialog = true },
-                    onExport = { showExportDialog = true },
-                    onCreateFlashcards = { showFlashcardDialog = true },
-                    onMarkSelected = { viewModel.markSelectedQuestions(true) },
-                    onUnmarkSelected = { viewModel.markSelectedQuestions(false) },
+                    onCopy = { showCopyDialogState.value = true },
+                    onExport = { showExportDialogState.value = true },
+                    onCreateFlashcards = { showFlashcardDialogState.value = true },
+                    onMarkSelected = { viewModel.markSelectedQuestions(marked = true) },
+                    onUnmarkSelected = { viewModel.markSelectedQuestions(marked = false) },
                     showMarkActions = true,
-                    scrollBehavior = scrollBehavior
+                    scrollBehavior = scrollBehavior,
                 )
             } else {
                 DefaultTopAppBar(
@@ -197,10 +206,10 @@ fun CategoryQuestionsScreen(
                     isSearching = isSearching,
                     searchQuery = uiState.searchQuery,
                     onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                    onToggleSearch = { isSearching = !isSearching },
-                    onToggleFilters = { showFilters = !showFilters },
+                    onToggleSearch = { isSearchingState.value = !isSearching },
+                    onToggleFilters = { showFiltersState.value = !showFilters },
                     onBack = onBack,
-                    scrollBehavior = scrollBehavior
+                    scrollBehavior = scrollBehavior,
                 )
             }
         },
@@ -246,10 +255,10 @@ fun CategoryQuestionsScreen(
                             isSelected = uiState.selectedQuestionIds.contains(question.id),
                             onToggleSelection = { viewModel.toggleSelection(question.id) },
                             onToggleMarked = { viewModel.toggleMarked(question) },
-                            onImageClick = { fullscreenImageUrl = it },
-                            onEditClick = { showEditDialog = question },
+                            onImageClick = { fullscreenImageUrlState.value = it },
+                            onEditClick = { showEditDialogState.value = question },
                             hasAssets = question.id in uiState.questionIdsWithAssets,
-                            onAssetsClick = { showAssetsDialog = question }
+                            onAssetsClick = { showAssetsDialogState.value = question },
                         )
                     }
                 }
@@ -260,8 +269,7 @@ fun CategoryQuestionsScreen(
     fullscreenImageUrl?.let { data ->
         com.ahmedyejam.mks.ui.quiz.ZoomableImageDialog(
             imageData = data,
-            onDismiss = { fullscreenImageUrl = null }
-        )
+        ) { fullscreenImageUrlState.value = null }
     }
 }
 
@@ -358,7 +366,7 @@ fun SelectionTopAppBar(
             IconButton(onClick = onSelectAll) {
                 Icon(Icons.Default.SelectAll, contentDescription = "Select All")
             }
-            if (showMarkActions && onMarkSelected != null && onUnmarkSelected != null) {
+            if (showMarkActions && (onMarkSelected != null) && (onUnmarkSelected != null)) {
                 IconButton(onClick = onMarkSelected) {
                     Icon(Icons.Default.Bookmark, contentDescription = "Mark selected")
                 }
@@ -367,23 +375,23 @@ fun SelectionTopAppBar(
                 }
             }
             IconButton(onClick = onMove) {
-                Icon(Icons.Default.DriveFileMove, contentDescription = "Move")
+                Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = "Move")
             }
-            if (onCopy != null) {
-                IconButton(onClick = onCopy) {
+            onCopy?.let {
+                IconButton(onClick = it) {
                     Icon(Icons.Default.ContentCopy, contentDescription = "Copy")
                 }
             }
-            if (onExport != null) {
-                IconButton(onClick = onExport) {
+            onExport?.let {
+                IconButton(onClick = it) {
                     Icon(Icons.Default.FileUpload, contentDescription = "Export")
                 }
             }
-            if (onCreateFlashcards != null) {
-                IconButton(onClick = onCreateFlashcards) {
-                    Icon(Icons.Default.Style, contentDescription = "Create flashcards")
-                }
+            onCreateFlashcards?.let {
+            IconButton(onClick = it) {
+                Icon(Icons.Default.Style, contentDescription = "Create flashcards")
             }
+        }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Delete")
             }
@@ -392,8 +400,8 @@ fun SelectionTopAppBar(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+            actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
     )
 }
 
@@ -447,14 +455,16 @@ fun DefaultTopAppBar(
             }
         },
         navigationIcon = {
-            IconButton(onClick = {
-                if (isSearching) {
-                    onToggleSearch()
-                    onSearchQueryChange("")
-                } else {
-                    onBack()
-                }
-            }) {
+            IconButton(
+                onClick = {
+                    if (isSearching) {
+                        onToggleSearch()
+                        onSearchQueryChange("")
+                    } else {
+                        onBack()
+                    }
+                },
+            ) {
                 Icon(
                     if (isSearching) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back"
@@ -581,9 +591,9 @@ fun QuestionCard(
             if (!displayImage.isNullOrBlank()) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(displayImage)
-                        .crossfade(true)
-                        .build(),
+                    .data(displayImage)
+                    .crossfade(enable = true)
+                    .build(),
                     contentDescription = "Question Image",
                     modifier = Modifier
                         .fillMaxWidth()
@@ -708,7 +718,7 @@ fun MoveQuestionsDialog(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(quiz.title, style = MaterialTheme.typography.bodyLarge)
-                                    quiz.description?.let { desc ->
+                                    quiz.description.let { desc ->
                                         if (desc.isNotBlank()) {
                                             Text(
                                                 desc,
@@ -746,7 +756,7 @@ fun CreateFlashcardsFromSelectedDialog(
     onConfirm: (title: String, clearMarksAfter: Boolean) -> Unit
 ) {
     var title by rememberSaveable { mutableStateOf("Selected question flashcards") }
-    var clearMarks by rememberSaveable { mutableStateOf(false) }
+    var clearMarks by rememberSaveable { mutableStateOf(value = false) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Create flashcards") },

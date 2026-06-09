@@ -99,7 +99,7 @@ data class QuizState(
 data class TimerState(
     val timeLeft: Int = 0,
     val quizTimeLeft: Int = 0,
-    val questionTimeLeft: Int = 0
+    val questionTimeLeft: Int = 0,
 )
 
 /**
@@ -125,7 +125,7 @@ enum class NavigationFilter {
 class QuizViewModel(
     private val repository: MksRepository,
     private val dataStoreManager: DataStoreManager,
-    private val focusManager: FocusManager
+    private val focusManager: FocusManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuizState())
@@ -148,7 +148,7 @@ class QuizViewModel(
             dataStoreManager.oneByOneMode,
             dataStoreManager.eliminationModeEnabled,
             dataStoreManager.doubleTapToSubmit,
-            dataStoreManager.focusModeEnabled
+            dataStoreManager.focusModeEnabled,
         ) { array ->
             @Suppress("UNCHECKED_CAST")
             val categories = array[0] as List<CategoryWithMetadata>
@@ -165,7 +165,7 @@ class QuizViewModel(
                     isOneByOne = oneByOne,
                     eliminationModeEnabled = elimination,
                     doubleTapToSubmitEnabled = doubleTap,
-                    focusModeEnabled = focus
+                    focusModeEnabled = focus,
                 )
             }
             if (focus) focusManager.enableFocusMode() else focusManager.disableFocusMode()
@@ -229,7 +229,7 @@ class QuizViewModel(
                 val session = sessionId?.let { repository.getSessionById(it) }
                 
                 // Pre-fetch session questions if any to avoid many DB calls
-                val sessionQuestionsMap = if (session != null && session.questionIds.isNotEmpty()) {
+                val sessionQuestionsMap = if ((session != null) && session.questionIds.isNotEmpty()) {
                     repository.getQuestionsByIds(session.questionIds).associateBy { it.id }
                 } else emptyMap()
 
@@ -248,7 +248,7 @@ class QuizViewModel(
                     
                     // Final safety: if the current question data is missing, we must repair or block
                     val currentQId = session.questionIds.getOrNull(startIndex)
-                    if (currentQId != null && !sessionQuestionsMap.containsKey(currentQId)) {
+                    if ((currentQId != null) && (!sessionQuestionsMap.containsKey(currentQId))) {
                         _uiState.update { it.copy(isLoading = false, error = "Current question data is missing. This session may be corrupted.") }
                         return@launch
                     }
@@ -288,7 +288,7 @@ class QuizViewModel(
                             includeFilters.any { filter ->
                                 when (filter) {
                                     "unanswered" -> q.attempts == 0
-                                    "missed" -> q.attempts > 0 && (q.correctCount < q.attempts || q.lastAttemptResult == false)
+                                    "missed" -> (q.attempts > 0) && ((q.correctCount < q.attempts) || (q.lastAttemptResult == false))
                                     "marked" -> q.isMarked
                                     "categorized" -> q.categories.isNotEmpty()
                                     "uncategorized" -> q.categories.isEmpty()
@@ -304,13 +304,13 @@ class QuizViewModel(
                     val effectiveRangeFrom = rangeFrom.coerceAtLeast(0)
                         .coerceAtMost((filteredQuestions.size - 1).coerceAtLeast(0))
                     
-                    val effectiveRangeTo = if (rangeTo < 0 || rangeTo >= filteredQuestions.size) {
+                    val effectiveRangeTo = if ((rangeTo < 0) || (rangeTo >= filteredQuestions.size)) {
                         filteredQuestions.size - 1
                     } else {
                         rangeTo
                     }
                     
-                    val rangedQuestions = if (filteredQuestions.isNotEmpty() && effectiveRangeFrom <= effectiveRangeTo) {
+                    val rangedQuestions = if ((filteredQuestions.isNotEmpty()) && (effectiveRangeFrom <= effectiveRangeTo)) {
                         filteredQuestions.subList(effectiveRangeFrom, (effectiveRangeTo + 1).coerceAtMost(filteredQuestions.size))
                     } else {
                         filteredQuestions
@@ -356,7 +356,7 @@ class QuizViewModel(
                         repeatWrong = repeatWrong,
                         quizTimerSeconds = quizTimer,
                         questionTimerSeconds = qTimer,
-                        skipUnansweredGlobal = skipUnanswered
+                        skipUnansweredGlobal = skipUnanswered,
                     )
                 }
 
@@ -370,11 +370,11 @@ class QuizViewModel(
                         quizTimer
                     },
                     questionTimeLeft = qTimer,
-                    timeLeft = if (session != null) {
+                    timeLeft = session?.let {
                         // We don't store exact total elapsed time in SessionEntity currently, 
                         // but it could be inferred or added. For now, reset or approximate.
                         0 
-                    } else 0
+                    } ?: 0
                 )
             }
             
@@ -592,11 +592,13 @@ class QuizViewModel(
             
             // Sync session if active
             currentState.sessionId?.let { sessionId ->
-                repository.getSessionById(sessionId)?.let { session ->
-                    repository.updateSession(session.copy(
-                        lastModifiedAt = System.currentTimeMillis()
-                    ))
-                }
+                repository.getSessionById(sessionId)?.let { currentSession ->
+                repository.updateSession(
+                    currentSession.copy(
+                        lastModifiedAt = System.currentTimeMillis(),
+                    ),
+                )
+            }
             }
 
             nextQuestion()
@@ -632,15 +634,15 @@ class QuizViewModel(
             val state = _uiState.value
             state.sessionId?.let { sessionId ->
                 val session = repository.getSessionById(sessionId)
-                if (session != null) {
+                session?.let {
                     repository.updateSession(
-                        session.copy(
+                        it.copy(
                             isCompleted = true,
                             score = state.score,
                             currentStreak = state.currentStreak,
                             maxStreak = state.maxStreak,
-                            lastModifiedAt = System.currentTimeMillis()
-                        )
+                            lastModifiedAt = System.currentTimeMillis(),
+                        ),
                     )
                 }
             }
@@ -798,14 +800,14 @@ class QuizViewModel(
 
                 // Save progress to session if active
                 state.sessionId?.let {
-                    if (session != null) {
-                        repository.updateSession(
-                            session.copy(
-                                currentQuestionIndex = index,
-                                lastModifiedAt = System.currentTimeMillis()
-                            )
-                        )
-                    }
+                    session?.let { currentSession ->
+                    repository.updateSession(
+                        currentSession.copy(
+                            currentQuestionIndex = index,
+                            lastModifiedAt = System.currentTimeMillis(),
+                        ),
+                    )
+                }
                 }
                 dataStoreManager.saveSession(state.quizId, index)
             }
@@ -1059,12 +1061,12 @@ class QuizViewModel(
             // Save score and incorrect count to session
             sessionId?.let { sId ->
                 val session = repository.getSessionById(sId)
-                if (session != null) {
+                session?.let { currentSession ->
                     val isFirstAttempt = currentIndex < initialQuestionCount
-                    val newIncorrectCount = if (!isCorrect && isFirstAttempt) session.incorrectCount + 1 else session.incorrectCount
+                    val newIncorrectCount = if (!isCorrect && isFirstAttempt) currentSession.incorrectCount + 1 else currentSession.incorrectCount
                     
                     // Update session answers map (by ID)
-                    val updatedAnswersById = session.answers.toMutableMap()
+                    val updatedAnswersById = currentSession.answers.toMutableMap()
                     // Bug 3.3 Fix: Always update answers map to keep latest answer for summary
                     updatedAnswersById[currentQuestion.id] = selectedOptions.toList()
                     
@@ -1139,11 +1141,11 @@ class QuizViewModel(
                 repository.updateQuestionMetrics(currentQuestion.id, isCorrect = false)
                 _uiState.value.sessionId?.let { sessionId ->
                     val session = repository.getSessionById(sessionId)
-                    if (session != null) {
-                        val newIncorrectCount = if (isFirstAttempt) session.incorrectCount + 1 else session.incorrectCount
+                    session?.let { currentSession ->
+                        val newIncorrectCount = if (isFirstAttempt) currentSession.incorrectCount + 1 else currentSession.incorrectCount
                         val newCurrentStreak = _uiState.value.currentStreak
                         val newMaxStreak = _uiState.value.maxStreak
-                        val updatedAnswers = session.answersByIndex.toMutableMap()
+                        val updatedAnswers = currentSession.answersByIndex.toMutableMap()
                         updatedAnswers[currentIndex] = listOf(originalIndex)
                         
                         val updatedQuestionIds = if (_uiState.value.repeatWrong) {
@@ -1257,14 +1259,14 @@ class QuizViewModel(
                 
                 // Save progress to session if active
                 currentState.sessionId?.let {
-                    if (session != null) {
-                        repository.updateSession(
-                            session.copy(
-                                currentQuestionIndex = nextIndex,
-                                lastModifiedAt = System.currentTimeMillis()
-                            )
-                        )
-                    }
+                    session?.let { currentSession ->
+                    repository.updateSession(
+                        currentSession.copy(
+                            currentQuestionIndex = nextIndex,
+                            lastModifiedAt = System.currentTimeMillis(),
+                        ),
+                    )
+                }
                 }
                 dataStoreManager.saveSession(currentState.quizId, nextIndex)
             }
@@ -1284,15 +1286,15 @@ class QuizViewModel(
                     val state = _uiState.value
                     state.sessionId?.let { sessionId ->
                         val session = repository.getSessionById(sessionId)
-                        if (session != null) {
+                        session?.let { currentSession ->
                             repository.updateSession(
-                                session.copy(
+                                currentSession.copy(
                                     isCompleted = true,
                                     score = state.score,
                                     currentStreak = state.currentStreak,
                                     maxStreak = state.maxStreak,
-                                    lastModifiedAt = System.currentTimeMillis()
-                                )
+                                    lastModifiedAt = System.currentTimeMillis(),
+                                ),
                             )
                         }
                     }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Quiz
+import androidx.compose.material.icons.rounded.FactCheck
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -82,7 +83,7 @@ fun CategoryChip(
                 Text(emoji)
             } else if (!hasEmoji) {
                 Icon(
-                    Icons.Rounded.Quiz,
+                    Icons.Rounded.FactCheck,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
                     tint = contentColor
@@ -92,7 +93,10 @@ fun CategoryChip(
             Text(
                 text = category.name,
                 style = MaterialTheme.typography.labelLarge,
-                color = contentColor
+                color = contentColor,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
 
             if (category.questionCount > 0) {
@@ -104,7 +108,8 @@ fun CategoryChip(
                         text = category.questionCount.toString(),
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        color = contentColor
+                        color = contentColor,
+                        maxLines = 1
                     )
                 }
             }

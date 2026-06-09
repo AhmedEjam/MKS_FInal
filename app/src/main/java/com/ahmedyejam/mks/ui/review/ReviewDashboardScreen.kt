@@ -29,6 +29,10 @@ import com.ahmedyejam.mks.data.review.ReviewQueueItem
 import com.ahmedyejam.mks.ui.components.EmptyStateCard
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Alignment
+import com.ahmedyejam.mks.data.repository.KnowledgeSummary
 import com.ahmedyejam.mks.data.review.ReviewQueueType
 import com.ahmedyejam.mks.ui.components.LoadingErrorState
 
@@ -68,6 +72,9 @@ fun ReviewDashboardScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item { LoadingErrorState(state.isLoading, state.error, viewModel::refresh) }
+            state.knowledgeSummary?.let { summary ->
+                item { KnowledgeSummaryCard(summary) }
+            }
             item { com.ahmedyejam.mks.ui.components.SummaryCard("Flashcards due", state.summary.dueFlashcards.toString(), "Cards scheduled for review") }
             item { com.ahmedyejam.mks.ui.components.SummaryCard("Blueprints due", state.summary.dueBlueprints.toString(), "Manual review queue") }
             item { com.ahmedyejam.mks.ui.components.SummaryCard("Mistakes due", state.summary.dueMistakes.toString(), "Open mistake reviews") }
@@ -104,6 +111,54 @@ private fun ReviewQueueCard(
                 TextButton(onClick = { onMarkReviewed(item) }) { Text("Reviewed") }
                 TextButton(onClick = { onSnooze(item) }) { Text("Snooze 1 week") }
             }
+        }
+    }
+}
+
+@Composable
+private fun KnowledgeSummaryCard(summary: KnowledgeSummary) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                text = "Knowledge summary",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SummaryMiniStat("Books", summary.totalBooks, Modifier.weight(1f))
+                SummaryMiniStat("Quizzes", summary.totalQuizzes, Modifier.weight(1f))
+                SummaryMiniStat("Questions", summary.totalQuestions, Modifier.weight(1f))
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SummaryMiniStat("Marked", summary.markedQuestions, Modifier.weight(1f))
+                SummaryMiniStat("Assets", summary.questionsWithAssets, Modifier.weight(1f))
+                SummaryMiniStat("Sources", summary.questionsWithSources, Modifier.weight(1f))
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SummaryMiniStat("Flashcards", summary.totalFlashcards, Modifier.weight(1f))
+                SummaryMiniStat("Blueprints", summary.totalBlueprints, Modifier.weight(1f))
+                SummaryMiniStat("Prompts", summary.promptDecks, Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun SummaryMiniStat(label: String, value: Int, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(value.toString(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

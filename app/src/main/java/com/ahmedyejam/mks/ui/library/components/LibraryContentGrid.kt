@@ -5,8 +5,8 @@ import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Book
-import androidx.compose.material.icons.rounded.Quiz
+import androidx.compose.material.icons.rounded.FactCheck
+import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,7 +25,6 @@ import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
-import com.ahmedyejam.mks.data.local.entity.PromptEntity
 import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
 import com.ahmedyejam.mks.data.repository.KnowledgeSummary
 import com.ahmedyejam.mks.data.model.CategoryWithMetadata
@@ -53,7 +52,6 @@ fun LibraryContentGrid(
     currentThemeMode: String,
     onQuizClick: (Long) -> Unit,
     onLinkClick: (String) -> Unit,
-    categories: List<CategoryWithMetadata>,
     categoriesExpanded: Boolean,
     previewCategories: List<CategoryWithMetadata>,
     onCategorySelected: (String) -> Unit,
@@ -64,34 +62,21 @@ fun LibraryContentGrid(
     flashcardDecks: List<FlashcardDeckEntity>,
     slideshowCourses: List<SlideshowCourseEntity>,
     noteBlueprints: List<NoteBlueprintEntity>,
-    prompts: List<PromptEntity>,
     promptDecks: List<PromptDeckEntity>,
-    knowledgeSummary: KnowledgeSummary?,
-    autoHideKnowledgeSummary: Boolean,
     currentViewMode: String,
     showCovers: Boolean,
     onBookClick: (BookEntity) -> Unit,
     onBookLongClick: (BookEntity) -> Unit,
     onQuizLongClick: (QuizEntity) -> Unit,
     onFlashcardDeckSelected: (Long) -> Unit,
+    onFlashcardDeckLongClick: (FlashcardDeckEntity) -> Unit,
     onSlideshowSelected: (Long) -> Unit,
+    onSlideshowLongClick: (SlideshowCourseEntity) -> Unit,
     onReviewBlueprintSelected: (Long) -> Unit,
-    onAiPromptDeckSelected: (Long) -> Unit
+    onReviewBlueprintLongClick: (NoteBlueprintEntity) -> Unit,
+    onAiPromptDeckSelected: (Long) -> Unit,
+    onAiPromptDeckLongClick: (PromptDeckEntity) -> Unit,
 ) {
-    var showKnowledgeSummary by remember { mutableStateOf(false) }
-
-    LaunchedEffect(knowledgeSummary, selectedBookId, selectedCategory, autoHideKnowledgeSummary) {
-        if (knowledgeSummary != null && selectedBookId == -1L && selectedCategory == null) {
-            showKnowledgeSummary = true
-            if (autoHideKnowledgeSummary) {
-                delay(KNOWLEDGE_SUMMARY_AUTO_HIDE_DELAY_MS)
-                showKnowledgeSummary = false
-            }
-        } else {
-            showKnowledgeSummary = false
-        }
-    }
-
     LazyVerticalGrid(
         state = gridState,
         columns = columns,
@@ -100,51 +85,44 @@ fun LibraryContentGrid(
             .fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        if (selectedBookId == -1L && selectedCategory == null) {
+        if ((selectedBookId == -1L) && (selectedCategory == null)) {
             item(span = { GridItemSpan(maxLineSpan) }, key = "banner_header") {
                 LibraryBanner(
                     resumeQuiz = resumeQuiz,
                     recentQuizzes = recentQuizzes,
                     currentThemeMode = currentThemeMode,
                     onQuizClick = { onQuizClick(it.id) },
-                    onLinkClick = onLinkClick
+                    onLinkClick = onLinkClick,
                 )
             }
 
-            if (showKnowledgeSummary) {
-                knowledgeSummary?.let { summary ->
-                    item(span = { GridItemSpan(maxLineSpan) }, key = "knowledge_summary") {
-                        KnowledgeSummaryCard(summary)
-                    }
-                }
-            }
+
 
             item(span = { GridItemSpan(maxLineSpan) }, key = "categories_header") {
                 CategoriesSection(
-                    categories = categories,
                     categoriesExpanded = categoriesExpanded,
                     previewCategories = previewCategories,
                     onCategorySelected = onCategorySelected,
                     onCategoryLongClick = onCategoryLongClick,
-                    showCategoryBrowser = showCategoryBrowser
+                    showCategoryBrowser = showCategoryBrowser,
                 )
             }
 
             item(span = { GridItemSpan(maxLineSpan) }) {
                 SectionHeader(
                     title = stringResource(R.string.books_header),
-                    subtitle = if (currentViewMode == "LIST") stringResource(R.string.list_view_label) else stringResource(R.string.grid_view_label)
+                    subtitle = if (currentViewMode == "LIST") stringResource(R.string.list_view_label) else stringResource(R.string.grid_view_label),
                 )
             }
 
             if (books.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }, key = "empty_books") {
                     LibraryEmptyStateCard(
-                        icon = Icons.Rounded.Book,
+                        icon = Icons.Rounded.MenuBook,
                         title = stringResource(R.string.empty_books_title),
-                        body = stringResource(R.string.empty_books_body)
+                        body = stringResource(R.string.empty_books_body),
                     )
                 }
             } else {
@@ -154,7 +132,7 @@ fun LibraryContentGrid(
                         viewMode = currentViewMode,
                         showCover = showCovers,
                         onClick = { onBookClick(book) },
-                        onLongClick = { onBookLongClick(book) }
+                        onLongClick = { onBookLongClick(book) },
                     )
                 }
             }
@@ -162,9 +140,9 @@ fun LibraryContentGrid(
             if (quizzes.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }, key = "empty_quizzes") {
                     LibraryEmptyStateCard(
-                        icon = Icons.Rounded.Quiz,
+                        icon = Icons.Rounded.FactCheck,
                         title = stringResource(R.string.empty_quizzes_title),
-                        body = stringResource(R.string.empty_quizzes_body)
+                        body = stringResource(R.string.empty_quizzes_body),
                     )
                 }
             } else {
@@ -174,19 +152,19 @@ fun LibraryContentGrid(
                         viewMode = currentViewMode,
                         showCover = showCovers,
                         onClick = { onQuizClick(quiz.id) },
-                        onLongClick = { onQuizLongClick(quiz) }
+                        onLongClick = { onQuizLongClick(quiz) },
                     )
                 }
             }
         }
 
         // Additional sections (Flashcards, Slideshows, etc.)
-        if (selectedBookId != -1L && selectedCategory == null) {
+        if ((selectedBookId != -1L) && (selectedCategory == null)) {
             if (flashcardDecks.isNotEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     SectionHeader(
                         title = stringResource(R.string.flashcards_title),
-                        subtitle = if (currentViewMode == "LIST") stringResource(R.string.list_view_label) else stringResource(R.string.grid_view_label)
+                        subtitle = if (currentViewMode == "LIST") stringResource(R.string.list_view_label) else stringResource(R.string.grid_view_label),
                     )
                 }
                 items(flashcardDecks, key = { "deck_${it.id}" }) { deck ->
@@ -198,13 +176,13 @@ fun LibraryContentGrid(
                             title = deck.title,
                             description = deck.description ?: "",
                             coverImage = deck.coverImage,
-                            iconName = deck.iconName,
-                            isPinned = deck.isPinned
+                            iconName = deck.iconName ?: "flashcard",
+                            isPinned = deck.isPinned,
                         ),
                         viewMode = currentViewMode,
                         showCover = showCovers,
                         onClick = { onFlashcardDeckSelected(deck.id) },
-                        onLongClick = { }
+                        onLongClick = { onFlashcardDeckLongClick(deck) },
                     )
                 }
             }
@@ -220,12 +198,13 @@ fun LibraryContentGrid(
                             externalId = course.externalId,
                             bookId = course.bookId,
                             title = course.title,
-                            description = course.description ?: ""
+                            description = course.description ?: "",
+                            iconName = "slideshow",
                         ),
                         viewMode = currentViewMode,
                         showCover = showCovers,
                         onClick = { onSlideshowSelected(course.id) },
-                        onLongClick = { }
+                        onLongClick = { onSlideshowLongClick(course) },
                     )
                 }
             }
@@ -241,12 +220,13 @@ fun LibraryContentGrid(
                             externalId = note.externalId,
                             bookId = note.bookId,
                             title = note.title,
-                            description = note.summary ?: ""
+                            description = note.summary ?: "",
+                            iconName = "note",
                         ),
                         viewMode = currentViewMode,
                         showCover = showCovers,
                         onClick = { onReviewBlueprintSelected(note.id) },
-                        onLongClick = { }
+                        onLongClick = { onReviewBlueprintLongClick(note) },
                     )
                 }
             }
@@ -262,12 +242,13 @@ fun LibraryContentGrid(
                             externalId = "prompt-deck-${deck.id}",
                             bookId = deck.bookId,
                             title = deck.title,
-                            description = deck.description ?: "Reusable prompt deck"
+                            description = deck.description ?: "Reusable prompt deck",
+                            iconName = "prompt",
                         ),
                         viewMode = currentViewMode,
                         showCover = showCovers,
                         onClick = { onAiPromptDeckSelected(deck.id) },
-                        onLongClick = { }
+                        onLongClick = { onAiPromptDeckLongClick(deck) },
                     )
                 }
             }
@@ -281,13 +262,13 @@ private fun SectionHeader(title: String, subtitle: String? = null) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
-        if (subtitle != null) {
+        subtitle?.let {
             Text(
-                text = subtitle,
+                text = it,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -296,12 +277,11 @@ private fun SectionHeader(title: String, subtitle: String? = null) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CategoriesSection(
-    categories: List<CategoryWithMetadata>,
     categoriesExpanded: Boolean,
     previewCategories: List<CategoryWithMetadata>,
     onCategorySelected: (String) -> Unit,
     onCategoryLongClick: (CategoryWithMetadata) -> Unit,
-    showCategoryBrowser: () -> Unit
+    showCategoryBrowser: () -> Unit,
 ) {
     val tokens = LocalMksDesignTokens.current
     val haptic = LocalHapticFeedback.current
@@ -313,9 +293,9 @@ private fun CategoriesSection(
             .border(
                 1.dp,
                 MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
-                RoundedCornerShape(26.dp)
+                RoundedCornerShape(26.dp),
             )
-            .padding(16.dp)
+            .padding(16.dp),
     ) {
         Row(
             modifier = Modifier
@@ -325,16 +305,16 @@ private fun CategoriesSection(
                     onLongClick = {
                         if (!tokens.isPlain) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         showCategoryBrowser()
-                    }
+                    },
                 ),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     stringResource(R.string.categories_header),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -348,7 +328,7 @@ private fun CategoriesSection(
         AnimatedVisibility(
             visible = categoriesExpanded && previewCategories.isNotEmpty(),
             enter = if (tokens.isPlain) fadeIn(snap()) else fadeIn() + expandVertically(),
-            exit = if (tokens.isPlain) fadeOut(snap()) else fadeOut() + shrinkVertically()
+            exit = if (tokens.isPlain) fadeOut(snap()) else fadeOut() + shrinkVertically(),
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Spacer(Modifier.height(10.dp))
@@ -356,13 +336,13 @@ private fun CategoriesSection(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     previewCategories.forEach { category ->
                         CategoryPreviewCard(
                             category = category,
                             onCategorySelected = { onCategorySelected(it.name) },
-                            onCategoryLongClick = { onCategoryLongClick(category) }
+                            onCategoryLongClick = { onCategoryLongClick(category) },
                         )
                     }
                 }
@@ -376,7 +356,7 @@ private fun LibraryEmptyStateCard(
     icon: ImageVector,
     title: String,
     body: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
     Card(
@@ -384,17 +364,17 @@ private fun LibraryEmptyStateCard(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = colors.surface.copy(alpha = 0.90f)),
         border = androidx.compose.foundation.BorderStroke(1.dp, colors.outline.copy(alpha = 0.14f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Row(
             modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Surface(
                 shape = RoundedCornerShape(18.dp),
                 color = colors.primary.copy(alpha = 0.10f),
-                contentColor = colors.primary
+                contentColor = colors.primary,
             ) {
                 Icon(icon, contentDescription = null, modifier = Modifier.padding(14.dp).size(30.dp))
             }
@@ -402,66 +382,17 @@ private fun LibraryEmptyStateCard(
                 Text(
                     title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     body,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant
+                    color = colors.onSurfaceVariant,
                 )
             }
         }
     }
 }
 
-@Composable
-private fun KnowledgeSummaryCard(summary: KnowledgeSummary) {
-    val tokens = LocalMksDesignTokens.current
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(tokens.cardRadius),
-        elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = "Knowledge summary",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SummaryMiniStat("Books", summary.totalBooks, Modifier.weight(1f))
-                SummaryMiniStat("Quizzes", summary.totalQuizzes, Modifier.weight(1f))
-                SummaryMiniStat("Questions", summary.totalQuestions, Modifier.weight(1f))
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SummaryMiniStat("Marked", summary.markedQuestions, Modifier.weight(1f))
-                SummaryMiniStat("Assets", summary.questionsWithAssets, Modifier.weight(1f))
-                SummaryMiniStat("Sources", summary.questionsWithSources, Modifier.weight(1f))
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SummaryMiniStat("Flashcards", summary.totalFlashcards, Modifier.weight(1f))
-                SummaryMiniStat("Blueprints", summary.totalBlueprints, Modifier.weight(1f))
-                SummaryMiniStat("Prompts", summary.promptDecks, Modifier.weight(1f))
-            }
-        }
-    }
-}
 
-@Composable
-private fun SummaryMiniStat(label: String, value: Int, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(value.toString(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}

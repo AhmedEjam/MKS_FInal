@@ -3,6 +3,7 @@ package com.ahmedyejam.mks
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import androidx.core.content.IntentCompat
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -52,11 +53,11 @@ class MainActivity : AppCompatActivity() {
             MKSTheme(
                 themeMode = themeMode,
                 fontScale = fontScale,
-                uiDensity = uiDensity
+                uiDensity = uiDensity,
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     val navController = rememberNavController()
                     val showWelcomeOnStartup by appModule.dataStoreManager.showWelcomeOnStartup.collectAsState(initial = initialShowWelcome)
@@ -67,8 +68,7 @@ class MainActivity : AppCompatActivity() {
                         appModule = appModule,
                         showWelcomeOnStartup = showWelcomeOnStartup,
                         sharedUris = sharedUrisByState,
-                        onConsumedSharedUris = { _sharedUris.value = null }
-                    )
+                    ) { _sharedUris.value = null }
                 }
             }
         }
@@ -85,14 +85,12 @@ class MainActivity : AppCompatActivity() {
 
         when (intent.action) {
             Intent.ACTION_SEND -> {
-                val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                if (uri != null) {
+                IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { uri ->
                     _sharedUris.value = listOf(uri)
                 }
             }
             Intent.ACTION_SEND_MULTIPLE -> {
-                val uris = intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
-                if (uris != null) {
+                IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { uris ->
                     _sharedUris.value = uris
                 }
             }

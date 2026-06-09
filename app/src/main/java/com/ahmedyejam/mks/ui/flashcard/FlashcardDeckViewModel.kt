@@ -2,14 +2,17 @@ package com.ahmedyejam.mks.ui.flashcard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ahmedyejam.mks.data.import.parser.TextFlashcardParser
 import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
+import com.ahmedyejam.mks.data.model.FlashcardGenerationConfig
 import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.di.AppModule
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
 const val FLASHCARD_RATING_AGAIN = "again"
@@ -19,10 +22,14 @@ const val FLASHCARD_RATING_EASY = "easy"
 data class FlashcardDeckUiState(
     val deck: FlashcardDeckEntity? = null,
     val cards: List<FlashcardEntity> = emptyList(),
+    val availableDecks: List<FlashcardDeckEntity> = emptyList(),
+    val quizzes: List<com.ahmedyejam.mks.data.local.entity.QuizEntity> = emptyList(),
+    val categories: List<String> = emptyList(),
     val currentIndex: Int = 0,
     val isFlipped: Boolean = false,
     val isLoading: Boolean = true,
     val isStudyMode: Boolean = false,
+    val selectedCardIds: Set<Long> = emptySet(),
     val message: String? = null,
     val error: String? = null
 ) {
@@ -43,19 +50,39 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            combine(
+            kotlinx.coroutines.flow.combine(
                 repository.observeFlashcardDeckById(id),
                 repository.getFlashcardsByDeckId(id)
-            ) { deck, cards -> deck to cards }
-                .collect { (deck, cards) ->
-                    val current = _uiState.value
-                    _uiState.value = current.copy(
-                        deck = deck,
-                        cards = cards,
-                        currentIndex = current.currentIndex.coerceIn(0, (cards.size - 1).coerceAtLeast(0)),
-                        isLoading = false
-                    )
+            ) { deck, cards -> Pair(deck, cards) }
+            .flatMapLatest { pair ->
+                val deck = pair.first
+                val cards = pair.second
+                val decksFlow = deck?.bookId?.let { repository.getFlashcardDecksByBookId(it) } ?: kotlinx.coroutines.flow.flowOf(emptyList<com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity>())
+                val quizzesFlow = deck?.bookId?.let { repository.getQuizzesByBookId(it, com.ahmedyejam.mks.data.repository.SortOption.TITLE) } ?: kotlinx.coroutines.flow.flowOf(emptyList<com.ahmedyejam.mks.data.local.entity.QuizEntity>())
+                val categoriesFlow = repository.getAllCategoriesWithMetadata()
+
+                kotlinx.coroutines.flow.combine(decksFlow, quizzesFlow, categoriesFlow) { allDecks, quizzes, cats ->
+                    Triple(deck, cards, Triple(allDecks, quizzes, cats))
                 }
+            }
+            .collect { result ->
+                val deck = result.first
+                val cards = result.second
+                val extras = result.third
+                val allDecks = extras.first
+                val quizzes = extras.second
+                val cats = extras.third
+                val current = _uiState.value
+                _uiState.value = current.copy(
+                    deck = deck,
+                    cards = cards,
+                    availableDecks = allDecks.filter { it.id != id },
+                    quizzes = quizzes,
+                    categories = cats.map { it.name },
+                    currentIndex = current.currentIndex.coerceIn(0, (cards.size - 1).coerceAtLeast(0)),
+                    isLoading = false
+                )
+            }
         }
     }
 
@@ -83,10 +110,10 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
         _uiState.value = current.copy(currentIndex = previous, isFlipped = false)
     }
 
-    fun updateDeck(title: String, description: String?) {
+    fun updateDeck(title: String, description: String?, coverImage: String?) {
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {
-            repository.updateFlashcardDeck(deck.copy(title = title, description = description))
+            repository.updateFlashcardDeck(deck.copy(title = title, description = description, coverImage = coverImage))
             _uiState.value = _uiState.value.copy(message = "Deck updated")
         }
     }
@@ -141,6 +168,49 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
         viewModelScope.launch { repository.reorderFlashcards(cards) }
     }
 
+    fun toggleCardSelection(id: Long) {
+        val current = _uiState.value.selectedCardIds
+        val next = if (current.contains(id)) current - id else current + id
+        _uiState.value = _uiState.value.copy(selectedCardIds = next)
+    }
+
+    fun clearSelection() {
+        _uiState.value = _uiState.value.copy(selectedCardIds = emptySet())
+    }
+
+    fun selectAllCards() {
+        val allIds = _uiState.value.cards.map { it.id }.toSet()
+        _uiState.value = _uiState.value.copy(selectedCardIds = allIds)
+    }
+
+    fun deleteSelectedCards() {
+        val ids = _uiState.value.selectedCardIds
+        if (ids.isEmpty()) return
+        val cardsToDelete = _uiState.value.cards.filter { it.id in ids }
+        viewModelScope.launch {
+            cardsToDelete.forEach { repository.deleteFlashcard(it) }
+            _uiState.value = _uiState.value.copy(selectedCardIds = emptySet(), message = "${ids.size} cards deleted")
+        }
+    }
+
+    fun moveSelectedCards(targetDeckId: Long) {
+        val ids = _uiState.value.selectedCardIds.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            repository.moveFlashcards(ids, targetDeckId)
+            _uiState.value = _uiState.value.copy(selectedCardIds = emptySet(), message = "${ids.size} cards moved")
+        }
+    }
+
+    fun copySelectedCards(targetDeckId: Long) {
+        val ids = _uiState.value.selectedCardIds.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            repository.copyFlashcards(ids, targetDeckId)
+            _uiState.value = _uiState.value.copy(selectedCardIds = emptySet(), message = "${ids.size} cards copied")
+        }
+    }
+
     fun rateCurrentCard(rating: String) {
         val card = _uiState.value.currentCard ?: return
         viewModelScope.launch {
@@ -149,12 +219,12 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
         }
     }
 
-    fun generateFromMarked(title: String, clearMarksAfter: Boolean) {
+    fun generateFromMarked(title: String, clearMarksAfter: Boolean, config: FlashcardGenerationConfig) {
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {
             runCatching {
                 val markedQuestions = repository.getBookStudyBundle(deck.bookId)?.questions.orEmpty().filter { it.isMarked }
-                val count = repository.addFlashcardsFromQuestionsToDeck(deck.id, markedQuestions.map { it.id })
+                val count = repository.addFlashcardsFromQuestionsToDeck(deck.id, markedQuestions.map { it.id }, config)
                 if (clearMarksAfter) {
                     markedQuestions.forEach { question ->
                         repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
@@ -169,18 +239,97 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
         }
     }
 
-    fun generateFromMissed() {
+    fun generateFromMissed(config: FlashcardGenerationConfig) {
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {
             runCatching {
                 val missedIds = repository.getBookStudyBundle(deck.bookId)?.questions.orEmpty()
                     .filter { it.attempts > 0 && (it.correctCount < it.attempts || it.lastAttemptResult == false) }
                     .map { it.id }
-                repository.addFlashcardsFromQuestionsToDeck(deck.id, missedIds)
+                repository.addFlashcardsFromQuestionsToDeck(deck.id, missedIds, config)
             }.onSuccess { count ->
                 _uiState.value = _uiState.value.copy(message = "$count missed-question card(s) added")
             }.onFailure { error ->
                 _uiState.value = _uiState.value.copy(error = error.message ?: "Failed to generate cards")
+            }
+        }
+    }
+
+    fun generateFromBook(clearMarksAfter: Boolean, config: FlashcardGenerationConfig) {
+        val deck = _uiState.value.deck ?: return
+        viewModelScope.launch {
+            runCatching {
+                val questions = repository.getBookStudyBundle(deck.bookId)?.questions.orEmpty()
+                val count = repository.addFlashcardsFromQuestionsToDeck(deck.id, questions.map { it.id }, config)
+                if (clearMarksAfter) {
+                    questions.filter { it.isMarked }.forEach { question ->
+                        repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
+                    }
+                }
+                count
+            }.onSuccess { count ->
+                _uiState.value = _uiState.value.copy(message = "$count card(s) added from book")
+            }.onFailure { error ->
+                _uiState.value = _uiState.value.copy(error = error.message ?: "Failed to generate cards")
+            }
+        }
+    }
+
+    fun generateFromQuiz(quizId: Long, clearMarksAfter: Boolean, config: FlashcardGenerationConfig) {
+        val deck = _uiState.value.deck ?: return
+        viewModelScope.launch {
+            runCatching {
+                val bundle = repository.getBookStudyBundle(deck.bookId)
+                val questions = bundle?.questionsByQuiz?.get(quizId).orEmpty()
+                val count = repository.addFlashcardsFromQuestionsToDeck(deck.id, questions.map { it.id }, config)
+                if (clearMarksAfter) {
+                    questions.filter { it.isMarked }.forEach { question ->
+                        repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
+                    }
+                }
+                count
+            }.onSuccess { count ->
+                _uiState.value = _uiState.value.copy(message = "$count card(s) added from quiz")
+            }.onFailure { error ->
+                _uiState.value = _uiState.value.copy(error = error.message ?: "Failed to generate cards")
+            }
+        }
+    }
+
+    fun generateFromCategory(categoryName: String, clearMarksAfter: Boolean, config: FlashcardGenerationConfig) {
+        val deck = _uiState.value.deck ?: return
+        viewModelScope.launch {
+            runCatching {
+                val questions = repository.getBookStudyBundle(deck.bookId)?.questions.orEmpty()
+                    .filter { it.categories.contains(categoryName) }
+                val count = repository.addFlashcardsFromQuestionsToDeck(deck.id, questions.map { it.id }, config)
+                if (clearMarksAfter) {
+                    questions.filter { it.isMarked }.forEach { question ->
+                        repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
+                    }
+                }
+                count
+            }.onSuccess { count ->
+                _uiState.value = _uiState.value.copy(message = "$count card(s) added from category '$categoryName'")
+            }.onFailure { error ->
+                _uiState.value = _uiState.value.copy(error = error.message ?: "Failed to generate cards")
+            }
+        }
+    }
+
+    fun importFromText(text: String, mode: com.ahmedyejam.mks.data.import.parser.TextParseMode) {
+        val deck = _uiState.value.deck ?: return
+        viewModelScope.launch {
+            runCatching {
+                val currentOrder = _uiState.value.cards.size
+                val parser = TextFlashcardParser()
+                val flashcards = parser.parse(text, deck.id, currentOrder, mode)
+                repository.insertFlashcards(flashcards)
+                flashcards.size
+            }.onSuccess { count ->
+                _uiState.value = _uiState.value.copy(message = "$count card(s) imported")
+            }.onFailure { error ->
+                _uiState.value = _uiState.value.copy(error = error.message ?: "Failed to import cards")
             }
         }
     }

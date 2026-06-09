@@ -60,8 +60,8 @@ data class NoteBlueprintEntity(
     @ColumnInfo(defaultValue = "'NEW'") val reviewStatus: String = BlueprintReviewStatus.NEW,
     @ColumnInfo(defaultValue = "0") val reviewCount: Int = 0,
     @ColumnInfo(defaultValue = "0") val lastReviewedAt: Long = 0,
-    val createdAt: Long,
-    val updatedAt: Long,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
     val sourceQuestionId: Long? = null,
     val deletedAt: Long? = null
 )

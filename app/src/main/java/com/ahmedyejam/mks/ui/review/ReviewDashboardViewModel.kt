@@ -2,6 +2,8 @@ package com.ahmedyejam.mks.ui.review
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ahmedyejam.mks.data.repository.KnowledgeSummary
+import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.data.review.ReviewDashboardSummary
 import com.ahmedyejam.mks.data.review.ReviewQueueItem
 import com.ahmedyejam.mks.data.review.ReviewRepository
@@ -14,11 +16,12 @@ import kotlinx.coroutines.launch
 data class ReviewDashboardUiState(
     val isLoading: Boolean = true,
     val summary: ReviewDashboardSummary = ReviewDashboardSummary(),
+    val knowledgeSummary: KnowledgeSummary? = null,
     val queue: List<ReviewQueueItem> = emptyList(),
     val error: String? = null
 )
 
-class ReviewDashboardViewModel(private val repository: ReviewRepository) : ViewModel() {
+class ReviewDashboardViewModel(private val repository: ReviewRepository, private val mksRepository: MksRepository) : ViewModel() {
     private val _state = MutableStateFlow(ReviewDashboardUiState())
     val state: StateFlow<ReviewDashboardUiState> = _state.asStateFlow()
 
@@ -29,10 +32,11 @@ class ReviewDashboardViewModel(private val repository: ReviewRepository) : ViewM
             _state.update { it.copy(isLoading = true, error = null) }
             runCatching {
                 val summary = repository.loadSummary()
+                val knowledgeSummary = mksRepository.getLibraryKnowledgeSummary()
                 val queue = repository.loadQueues()
-                summary to queue
-            }.onSuccess { (summary, queue) ->
-                _state.update { it.copy(isLoading = false, summary = summary, queue = queue) }
+                Triple(summary, knowledgeSummary, queue)
+            }.onSuccess { (summary, knowledgeSummary, queue) ->
+                _state.update { it.copy(isLoading = false, summary = summary, knowledgeSummary = knowledgeSummary, queue = queue) }
             }.onFailure { error ->
                 _state.update { it.copy(isLoading = false, error = error.message ?: "Could not load review dashboard") }
             }

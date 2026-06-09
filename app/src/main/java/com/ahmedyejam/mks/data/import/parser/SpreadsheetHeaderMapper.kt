@@ -3,8 +3,8 @@ package com.ahmedyejam.mks.data.import.parser
 class SpreadsheetHeaderMapper {
 
     private val aliases = mapOf(
-        "question" to listOf("question", "question summary", "question text", "q text", "question_text", "q", "stem", "rephrased stem", "question stem", "text", "السؤال", "سؤال", "نص السؤال", "نص"),
-        "answer" to listOf("answer", "answers", "ans", "an", "correct", "key", "correct answer", "answer key", "correct_option", "الإجابة", "الجواب", "مفتاح الإجابة"),
+        "question" to listOf("question", "question summary", "question text", "q text", "question_text", "q", "stem", "rephrased stem", "question stem", "text", "front", "السؤال", "سؤال", "نص السؤال", "نص", "الوجه الأمامي"),
+        "answer" to listOf("answer", "answers", "ans", "an", "correct", "key", "correct answer", "answer key", "correct_option", "back", "الإجابة", "الجواب", "مفتاح الإجابة", "الوجه الخلفي"),
         "explanation" to listOf("explanation", "explanation summary", "rationale", "exp", "reason", "summary", "logic", "الشرح", "تفسير"),
         "hint" to listOf("hint", "hints\\hint", "hints/hint", "high yield", "high-yield", "tip", "clue", "تلميح", "ملمح"),
         "reference" to listOf("reference", "ref", "source", "chapter q", "ch q", "chapter_q", "ch_q", "q#", "question number", "citation", "مرجع", "reference text"),

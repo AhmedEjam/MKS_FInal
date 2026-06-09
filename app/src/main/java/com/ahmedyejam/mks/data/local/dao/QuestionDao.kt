@@ -33,6 +33,9 @@ interface QuestionDao {
     @Update
     suspend fun updateQuestion(question: QuestionEntity)
 
+    @Update
+    suspend fun updateQuestions(questions: List<QuestionEntity>)
+
     @Query("UPDATE questions SET deletedAt = :deletedAt, updatedAt = :deletedAt, lastEditedAt = :deletedAt WHERE id = :questionId")
     suspend fun softDeleteQuestionById(questionId: Long, deletedAt: Long)
 

@@ -430,7 +430,7 @@ fun CategoryEditDialog(
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.make_separate_quiz)) },
-                leadingContent = { Icon(Icons.Rounded.Quiz, contentDescription = null) },
+                leadingContent = { Icon(Icons.Rounded.FactCheck, contentDescription = null) },
                 modifier = Modifier.clickable { 
                     showCreateQuizDialog = true
                 }

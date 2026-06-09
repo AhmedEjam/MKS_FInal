@@ -22,13 +22,13 @@ class MksApplication : Application(), ImageLoaderFactory {
                 MemoryCache.Builder(this)
                     // Set memory cache to 25% of available RAM for maximum smoothness
                     .maxSizePercent(0.25)
-                    .strongReferencesEnabled(true)
+                    .strongReferencesEnabled(enable = true)
                     .build()
             }
             .diskCachePolicy(CachePolicy.ENABLED)
             .memoryCachePolicy(CachePolicy.ENABLED)
             // Allow more concurrent loads for faster grid filling
-            .crossfade(true)
+            .crossfade(enable = true)
             .build()
     }
 }

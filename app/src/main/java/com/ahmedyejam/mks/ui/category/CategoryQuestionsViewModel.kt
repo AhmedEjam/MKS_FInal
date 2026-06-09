@@ -13,7 +13,6 @@ import com.ahmedyejam.mks.data.local.entity.BlueprintMode
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.repository.MksRepository
-import com.ahmedyejam.mks.data.repository.SortOption
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -27,7 +26,7 @@ data class VisibilityState(
     val showHint: Boolean = false,
     val showAdditionalInfo: Boolean = false,
     val showOnlyMarked: Boolean = false,
-    val showOnlyWithAssets: Boolean = false
+    val showOnlyWithAssets: Boolean = false,
 )
 
 data class CategoryQuestionsUiState(
@@ -38,7 +37,7 @@ data class CategoryQuestionsUiState(
     val visibility: VisibilityState = VisibilityState(),
     val isLoading: Boolean = true,
     val selectedQuestionIds: Set<Long> = emptySet(),
-    val questionIdsWithAssets: Set<Long> = emptySet()
+    val questionIdsWithAssets: Set<Long> = emptySet(),
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -49,7 +48,7 @@ class CategoryQuestionsViewModel(
     private val _categoryName = MutableStateFlow("")
     private val _searchQuery = MutableStateFlow("")
     private val _visibility = MutableStateFlow(VisibilityState())
-    private val _isLoading = MutableStateFlow(false)
+    private val _isLoading = MutableStateFlow(value = false)
     private val _selectedQuestionIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _questionIdsWithAssets = repository.getQuestionIdsWithAssetsFlow()
         .map { it.toSet() }
@@ -77,11 +76,14 @@ class CategoryQuestionsViewModel(
         _questionIdsWithAssets
     ) { args: Array<Any> ->
         val category = args[0] as String
+        @Suppress("UNCHECKED_CAST")
         val questions = args[1] as List<QuestionEntity>
         val query = args[2] as String
         val visibility = args[3] as VisibilityState
         val loading = args[4] as Boolean
+        @Suppress("UNCHECKED_CAST")
         val selectedIds = args[5] as Set<Long>
+        @Suppress("UNCHECKED_CAST")
         val assetIds = args[6] as Set<Long>
 
         CategoryQuestionsUiState(
@@ -122,7 +124,10 @@ class CategoryQuestionsViewModel(
             _isLoading.value = true
             // Fetch fresh questions by IDs to ensure we have correct image paths and quiz IDs for cleanup
             val questionsToDelete = repository.getQuestionsByIds(idsToDelete)
-            val affectedQuizIds = questionsToDelete.map { it.quizId }.distinct()
+            val affectedQuizIds = questionsToDelete.asSequence()
+                .map { it.quizId }
+                .distinct()
+                .toList()
             questionsToDelete.forEach { question ->
                 repository.deleteQuestion(question)
             }
@@ -138,7 +143,10 @@ class CategoryQuestionsViewModel(
 
         viewModelScope.launch {
             val questionsToMove = _allQuestions.value.filter { it.id in idsToMove }
-            val affectedQuizIds = questionsToMove.map { it.quizId }.distinct()
+            val affectedQuizIds = questionsToMove.asSequence()
+                .map { it.quizId }
+                .distinct()
+                .toList()
             questionsToMove.forEach { question ->
                 repository.updateQuestion(question.copy(quizId = targetQuizId, updatedAt = System.currentTimeMillis()))
             }

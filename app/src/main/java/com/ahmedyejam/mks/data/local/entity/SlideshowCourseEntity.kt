@@ -32,10 +32,10 @@ data class SlideshowCourseEntity(
     val progress: Float = 0f,
     val isSystem: Boolean = false,
     val isPinned: Boolean = false,
-    val createdAt: Long,
-    val updatedAt: Long,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
     val lastStudiedAt: Long = 0,
-    val lastEditedAt: Long,
+    val lastEditedAt: Long = System.currentTimeMillis(),
     val isDerived: Boolean = false,
     val sourceQuizId: Long? = null,
     val deletedAt: Long? = null

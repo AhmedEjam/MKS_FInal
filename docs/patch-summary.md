@@ -15,6 +15,7 @@ This patch set applies the selected audit remediations while preserving the curr
 - Apache POI upgraded to 5.5.1.
 - Release R8 minification and resource shrinking enabled.
 - Room schema export enabled and database bumped to version 17.
+  > **Note (2026-06-08):** The database has since advanced to v26 with 25 total migration steps.
 - Normalized `question_categories` table and DAO-backed category queries.
 - `asset_references` table for reference-aware local asset deletion.
 - `flashcards.sourceQuestionId` index added in the 16->17 migration.

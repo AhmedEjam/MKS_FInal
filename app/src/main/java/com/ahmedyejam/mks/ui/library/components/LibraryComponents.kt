@@ -564,7 +564,7 @@ private fun BookVisual(
                 drawPath(hills, colors.onSurface.copy(alpha = 0.10f))
             }
             Icon(
-                imageVector = Icons.Rounded.Bookmark,
+                imageVector = Icons.Rounded.MenuBook,
                 contentDescription = null,
                 tint = colors.primary,
                 modifier = Modifier.size(34.dp)
@@ -695,8 +695,15 @@ private fun QuizVisual(
                 clipToBounds = true
             )
         } else {
+            val defaultIcon = when(quiz.iconName) {
+                "flashcard" -> Icons.Rounded.Style
+                "slideshow" -> Icons.Rounded.Slideshow
+                "note" -> Icons.Rounded.Article
+                "prompt" -> Icons.Rounded.AutoAwesome
+                else -> Icons.Rounded.FactCheck
+            }
             Icon(
-                imageVector = Icons.Rounded.Quiz,
+                imageVector = defaultIcon,
                 contentDescription = null,
                 tint = colors.secondary,
                 modifier = Modifier.size(34.dp)
@@ -850,7 +857,7 @@ fun BookOptionsSheet(
                         )
                     } else {
                         Icon(
-                            Icons.Rounded.Book,
+                            Icons.Rounded.MenuBook,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -950,12 +957,12 @@ fun BookOptionsSheet(
 fun QuizOptionsSheet(
     quiz: QuizEntity,
     onDismiss: () -> Unit,
-    onBrowseQuestionsClick: () -> Unit,
-    onScanClick: () -> Unit,
-    onPinClick: () -> Unit,
-    onEditClick: () -> Unit,
-    onExportClick: () -> Unit,
-    onImportClick: () -> Unit,
+    onBrowseQuestionsClick: (() -> Unit)? = null,
+    onScanClick: (() -> Unit)? = null,
+    onPinClick: (() -> Unit)? = null,
+    onEditClick: (() -> Unit)? = null,
+    onExportClick: (() -> Unit)? = null,
+    onImportClick: (() -> Unit)? = null,
     onDeleteClick: () -> Unit
 ) {
     var showInfo by rememberSaveable { mutableStateOf(false) }
@@ -983,7 +990,7 @@ fun QuizOptionsSheet(
                         )
                     } else {
                         Icon(
-                            Icons.Rounded.Quiz,
+                            Icons.Rounded.FactCheck,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSecondaryContainer
                         )
@@ -998,14 +1005,16 @@ fun QuizOptionsSheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(
-                    onClick = onPinClick,
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = if (quiz.isPinned) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (quiz.isPinned) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    Icon(Icons.Rounded.PushPin, contentDescription = stringResource(R.string.pin_label))
+                if (onPinClick != null) {
+                    IconButton(
+                        onClick = onPinClick,
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = if (quiz.isPinned) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (quiz.isPinned) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Icon(Icons.Rounded.PushPin, contentDescription = stringResource(R.string.pin_label))
+                    }
                 }
             }
 
@@ -1042,37 +1051,51 @@ fun QuizOptionsSheet(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.browse_questions)) },
-                leadingContent = { Icon(Icons.Rounded.Search, null) },
-                modifier = Modifier.clickable { onBrowseQuestionsClick(); onDismiss() }
-            )
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.scanner)) },
-                leadingContent = { Icon(Icons.Rounded.QrCodeScanner, null) },
-                modifier = Modifier.clickable { onScanClick(); onDismiss() }
-            )
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-            ListItem(
-                headlineContent = { Text(stringResource(if (quiz.isPinned) R.string.unpin_from_top else R.string.pin_to_top)) },
-                leadingContent = { Icon(Icons.Rounded.PushPin, contentDescription = null) },
-                modifier = Modifier.clickable { onPinClick(); onDismiss() }
-            )
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.edit)) },
-                leadingContent = { Icon(Icons.Rounded.Edit, contentDescription = null) },
-                modifier = Modifier.clickable { onEditClick(); onDismiss() }
-            )
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.export_label)) },
-                leadingContent = { Icon(Icons.Rounded.FileUpload, contentDescription = null) },
-                modifier = Modifier.clickable { onExportClick(); onDismiss() }
-            )
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.import_label)) },
-                leadingContent = { Icon(Icons.Rounded.FileDownload, contentDescription = null) },
-                modifier = Modifier.clickable { onImportClick(); onDismiss() }
-            )
+            onBrowseQuestionsClick?.let { onClick ->
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.browse_questions)) },
+                    leadingContent = { Icon(Icons.Rounded.Search, null) },
+                    modifier = Modifier.clickable { onClick(); onDismiss() }
+                )
+            }
+            onScanClick?.let { onClick ->
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.scanner)) },
+                    leadingContent = { Icon(Icons.Rounded.QrCodeScanner, null) },
+                    modifier = Modifier.clickable { onClick(); onDismiss() }
+                )
+            }
+            if (onBrowseQuestionsClick != null || onScanClick != null) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            }
+            onPinClick?.let { onClick ->
+                ListItem(
+                    headlineContent = { Text(stringResource(if (quiz.isPinned) R.string.unpin_from_top else R.string.pin_to_top)) },
+                    leadingContent = { Icon(Icons.Rounded.PushPin, contentDescription = null) },
+                    modifier = Modifier.clickable { onClick(); onDismiss() }
+                )
+            }
+            onEditClick?.let { onClick ->
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.edit)) },
+                    leadingContent = { Icon(Icons.Rounded.Edit, contentDescription = null) },
+                    modifier = Modifier.clickable { onClick(); onDismiss() }
+                )
+            }
+            onExportClick?.let { onClick ->
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.export_label)) },
+                    leadingContent = { Icon(Icons.Rounded.FileUpload, contentDescription = null) },
+                    modifier = Modifier.clickable { onClick(); onDismiss() }
+                )
+            }
+            onImportClick?.let { onClick ->
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.import_label)) },
+                    leadingContent = { Icon(Icons.Rounded.FileDownload, contentDescription = null) },
+                    modifier = Modifier.clickable { onClick(); onDismiss() }
+                )
+            }
             ListItem(
                 headlineContent = { Text(stringResource(R.string.delete)) },
                 leadingContent = { Icon(Icons.Rounded.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },

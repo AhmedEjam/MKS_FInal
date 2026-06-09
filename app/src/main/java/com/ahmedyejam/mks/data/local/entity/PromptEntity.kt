@@ -29,7 +29,7 @@ data class PromptEntity(
     val conversationLinks: List<String> = emptyList(),
     val usageCount: Int = 0,
     val lastUsedAt: Long = 0,
-    val createdAt: Long,
-    val updatedAt: Long,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
     val deletedAt: Long? = null
 )

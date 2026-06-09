@@ -41,7 +41,7 @@ class DataStoreManager(private val context: Context) {
         private val SHOW_COVERS = booleanPreferencesKey("show_covers")
         private val DOUBLE_TAP_TO_SUBMIT = booleanPreferencesKey("double_tap_to_submit")
         private val FOCUS_MODE_ENABLED = booleanPreferencesKey("focus_mode_enabled")
-        private val AUTO_HIDE_KNOWLEDGE_SUMMARY = booleanPreferencesKey("auto_hide_knowledge_summary")
+
         private val LANGUAGE = stringPreferencesKey("language")
         private val SHOW_WELCOME_ON_STARTUP = booleanPreferencesKey("show_welcome_on_startup")
         private val CURRENT_WORKSPACE_ID = longPreferencesKey("current_workspace_id")
@@ -147,9 +147,7 @@ class DataStoreManager(private val context: Context) {
         preferences[FOCUS_MODE_ENABLED] ?: false
     }
 
-    val autoHideKnowledgeSummary: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[AUTO_HIDE_KNOWLEDGE_SUMMARY] ?: true
-    }.distinctUntilChanged()
+
 
     val language: Flow<String> = context.dataStore.data.map { preferences ->
         SettingsSanitizer.language(preferences[LANGUAGE])
@@ -249,11 +247,7 @@ class DataStoreManager(private val context: Context) {
         }
     }
 
-    suspend fun setAutoHideKnowledgeSummary(enabled: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[AUTO_HIDE_KNOWLEDGE_SUMMARY] = enabled
-        }
-    }
+
 
     suspend fun setLanguage(lang: String) {
         context.dataStore.edit { preferences ->

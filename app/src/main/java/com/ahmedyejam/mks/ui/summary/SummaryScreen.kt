@@ -38,12 +38,12 @@ fun SummaryScreen(
     viewModel: SummaryViewModel,
     sessionId: Long,
     onHomeClick: () -> Unit,
-    onReviewClick: (Long, List<String>) -> Unit, // Filters to apply for review
-    onRetryClick: () -> Unit
+    onRetryClick: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    var showDetailSettings by remember { mutableStateOf(false) }
+    val showDetailSettingsState = remember { mutableStateOf(value = false) }
+    var showDetailSettings by showDetailSettingsState
 
     LaunchedEffect(sessionId) {
         viewModel.loadSummary(sessionId)
@@ -58,7 +58,7 @@ fun SummaryScreen(
 
     val session = state.session ?: return
     val totalCount = session.originalQuestionCount.coerceAtLeast(state.questions.size).coerceAtLeast(1)
-    val percentage = (session.score.toFloat() / totalCount * 100).toInt()
+    val percentage = ((session.score.toFloat() / totalCount) * 100).toInt()
 
     Scaffold(
         topBar = {

@@ -10,6 +10,7 @@ import com.ahmedyejam.mks.data.local.dao.*
 import com.ahmedyejam.mks.data.local.entity.*
 import com.ahmedyejam.mks.data.model.CategoryWithMetadata
 import com.ahmedyejam.mks.data.model.ExportResult
+import com.ahmedyejam.mks.data.model.FlashcardGenerationConfig
 import com.ahmedyejam.mks.data.import.repository.ImportLibraryManager
 import com.ahmedyejam.mks.data.import.model.ParsedQuestion
 import kotlinx.coroutines.Dispatchers
@@ -1004,6 +1005,55 @@ class MksRepository(
         )
     }
 
+    suspend fun addArticlesFromQuestions(
+        bookId: Long,
+        questionIds: List<Long>,
+        config: com.ahmedyejam.mks.data.model.ArticleGenerationConfig
+    ): List<Long> {
+        val questions = questionDao.getQuestionsByIds(questionIds).sortedBy { questionIds.indexOf(it.id) }
+        val ids = mutableListOf<Long>()
+        val now = System.currentTimeMillis()
+        
+        for (q in questions) {
+            val title = if (config.includeStemAsTitle) q.text.take(80) else "Generated Article"
+            val bodyBuilder = StringBuilder()
+            if (config.includeExplanationInBody && !q.explanation.isNullOrBlank()) {
+                bodyBuilder.append(q.explanation).append("\n\n")
+            }
+            if (config.includeHintInBody && !q.hint.isNullOrBlank()) {
+                bodyBuilder.append("Hint: ${q.hint}\n\n")
+            }
+            if (config.includeReferenceInBody && !q.reference.isNullOrBlank()) {
+                bodyBuilder.append("Reference: ${q.reference}\n\n")
+            }
+            val body = bodyBuilder.toString().trim()
+            
+            val bulletPoints = if (config.includeOptionsAsBulletPoints) q.options else emptyList()
+            val tags = if (config.includeTags) q.categories else emptyList()
+            
+            val id = insertNoteBlueprint(
+                NoteBlueprintEntity(
+                    externalId = java.util.UUID.randomUUID().toString(),
+                    bookId = bookId,
+                    title = title,
+                    summary = q.text.take(180),
+                    body = body,
+                    bulletPoints = bulletPoints,
+                    tags = tags,
+                    blueprintMode = config.articleMode,
+                    linkedQuestionsJson = encodeLongList(listOf(q.id)),
+                    linkedAssetsJson = "[]",
+                    reviewStatus = BlueprintReviewStatus.NEW,
+                    createdAt = now,
+                    updatedAt = now,
+                    sourceQuestionId = q.id
+                )
+            )
+            ids.add(id)
+        }
+        return ids
+    }
+
     suspend fun createBlueprintFromMarkedQuestions(bookId: Long, title: String): Long {
         val questions = getBookStudyBundle(bookId)?.questions.orEmpty().filter { it.isMarked }
         return createBlueprintFromQuestions(bookId, title, questions.map { it.id }, BlueprintMode.MISTAKE_REVIEW)
@@ -1533,7 +1583,8 @@ class MksRepository(
         title: String,
         description: String? = null,
         questionIds: List<Long>,
-        clearMarksAfter: Boolean = false
+        clearMarksAfter: Boolean = false,
+        config: FlashcardGenerationConfig = FlashcardGenerationConfig.DEFAULT
     ): Long {
         val questions = questionDao.getQuestionsByIds(questionIds).sortedBy { questionIds.indexOf(it.id) }
         if (questions.isEmpty()) throw IllegalArgumentException("No questions selected for flashcard generation.")
@@ -1549,7 +1600,7 @@ class MksRepository(
                 lastEditedAt = now
             )
         )
-        addFlashcardsFromQuestionsToDeck(deckId, questions.map { it.id })
+        addFlashcardsFromQuestionsToDeck(deckId, questions.map { it.id }, config)
         if (clearMarksAfter) {
             questions.filter { it.isMarked }.forEach { question ->
                 questionDao.updateQuestion(question.copy(isMarked = false, updatedAt = now, lastEditedAt = now))
@@ -1562,59 +1613,92 @@ class MksRepository(
         bookId: Long,
         title: String,
         description: String? = null,
-        clearMarksAfter: Boolean = false
+        clearMarksAfter: Boolean = false,
+        config: FlashcardGenerationConfig = FlashcardGenerationConfig.DEFAULT
     ): Long {
         val questions = getBookStudyBundle(bookId)?.questions.orEmpty().filter { it.isMarked }
-        return createFlashcardDeckFromQuestions(bookId, title, description, questions.map { it.id }, clearMarksAfter)
+        return createFlashcardDeckFromQuestions(bookId, title, description, questions.map { it.id }, clearMarksAfter, config)
     }
 
     suspend fun createFlashcardDeckFromMissedQuestions(
         bookId: Long,
         title: String,
-        description: String? = null
+        description: String? = null,
+        config: FlashcardGenerationConfig = FlashcardGenerationConfig.DEFAULT
     ): Long {
         val questions = getBookStudyBundle(bookId)?.questions.orEmpty().filter { question ->
             question.attempts > 0 && (question.correctCount < question.attempts || question.lastAttemptResult == false)
         }
-        return createFlashcardDeckFromQuestions(bookId, title, description, questions.map { it.id }, clearMarksAfter = false)
+        return createFlashcardDeckFromQuestions(bookId, title, description, questions.map { it.id }, clearMarksAfter = false, config)
     }
 
-    suspend fun addFlashcardsFromQuestionsToDeck(deckId: Long, questionIds: List<Long>): Int {
+    suspend fun addFlashcardsFromQuestionsToDeck(
+        deckId: Long, 
+        questionIds: List<Long>,
+        config: FlashcardGenerationConfig = FlashcardGenerationConfig.DEFAULT
+    ): Int {
         val deck = flashcardDeckDao.getFlashcardDeckById(deckId) ?: return 0
         val questions = questionDao.getQuestionsByIds(questionIds).sortedBy { questionIds.indexOf(it.id) }
         val existingCount = flashcardDao.countCardsInDeck(deckId)
         val cards = questions.mapIndexed { index, question ->
-            questionToFlashcard(deck.id, question, existingCount + index)
+            questionToFlashcard(deckId, question, existingCount + index, config).copy(
+                sourceQuestionId = question.id
+            )
         }
-        if (cards.isNotEmpty()) insertFlashcards(cards)
-        refreshFlashcardDeckStats(deckId)
-        refreshBookStats(deck.bookId)
+        if (cards.isNotEmpty()) {
+            insertFlashcards(cards)
+        }
         return cards.size
     }
 
-    private fun questionToFlashcard(deckId: Long, question: QuestionEntity, orderIndex: Int): FlashcardEntity {
-        val answerText = question.correctAnswers
-            .mapNotNull(question.options::getOrNull)
-            .joinToString(separator = "\n")
-            .ifBlank { "Review the source material for the expected answer." }
+    private fun questionToFlashcard(deckId: Long, question: QuestionEntity, orderIndex: Int, config: FlashcardGenerationConfig): FlashcardEntity {
+        val frontText = buildString {
+            if (config.includeStemInFront) {
+                append(question.text)
+            }
+            if (config.includeOptionsInFront && question.options.isNotEmpty()) {
+                if (isNotEmpty()) append("\n\n")
+                question.options.forEachIndexed { i, opt -> append("${(i + 65).toChar()}) $opt\n") }
+            }
+        }.trim()
+
         val backText = buildString {
-            append(answerText)
-            question.explanation?.takeIf { it.isNotBlank() }?.let {
-                append("\n\nExplanation\n")
-                append(it)
+            if (config.includeAnswerInBack) {
+                val answerText = question.correctAnswers
+                    .mapNotNull(question.options::getOrNull)
+                    .joinToString(separator = "\n")
+                    .ifBlank { "Review the source material for the expected answer." }
+                append(answerText)
             }
-            question.reference?.takeIf { it.isNotBlank() }?.let {
-                append("\n\nReference\n")
-                append(it)
+            
+            if (config.includeExplanationInBack && !question.explanation.isNullOrBlank()) {
+                if (isNotEmpty()) append("\n\n")
+                append("Explanation\n${question.explanation}")
             }
-        }
+            
+            if (config.includeHintInBack && !question.hint.isNullOrBlank()) {
+                if (isNotEmpty()) append("\n\n")
+                append("Hint\n${question.hint}")
+            }
+            
+            if (config.includeReferenceInBack && !question.reference.isNullOrBlank()) {
+                if (isNotEmpty()) append("\n\n")
+                append("Reference\n${question.reference}")
+            }
+            
+            if (config.includeAdditionalInfoInBack && !question.additionalInfo.isNullOrBlank()) {
+                if (isNotEmpty()) append("\n\n")
+                append("Additional Info\n${question.additionalInfo}")
+            }
+        }.trim()
+
         return FlashcardEntity(
             externalId = java.util.UUID.randomUUID().toString(),
             deckId = deckId,
-            frontText = question.text,
-            backText = backText,
-            hint = question.hint,
-            imagePath = question.imagePath,
+            frontText = frontText.ifBlank { "Empty Front" },
+            backText = backText.ifBlank { "Empty Back" },
+            hint = question.hint.takeIf { !config.includeHintInBack }, // Only use standalone hint if not in back
+            imagePath = if (config.includeImageInFront || config.includeImageInBack) question.imagePath else null,
             tags = question.categories,
             orderIndex = orderIndex,
             sourceQuestionId = question.id,
@@ -1627,7 +1711,8 @@ class MksRepository(
         bookId: Long,
         title: String,
         description: String? = null,
-        coverImage: String? = null
+        coverImage: String? = null,
+        config: FlashcardGenerationConfig = FlashcardGenerationConfig.DEFAULT
     ): Long {
         val bundle = getBookStudyBundle(bookId)
             ?: throw IllegalArgumentException("Book $bookId not found")
@@ -1646,42 +1731,11 @@ class MksRepository(
         )
         val cards = bundle.quizzes.flatMap { quiz ->
             bundle.questionsByQuiz[quiz.id].orEmpty().mapIndexed { index, question ->
-                val answerText = question.correctAnswers
-                    .mapNotNull(question.options::getOrNull)
-                    .joinToString(separator = "\n")
-                    .ifBlank { "Review the source material for the expected answer." }
-                val backText = buildString {
-                    append("Answer\n")
-                    append(answerText)
-                    question.explanation?.takeIf { it.isNotBlank() }?.let {
-                        append("\n\nExplanation\n")
-                        append(it)
-                    }
-                    question.hint?.takeIf { it.isNotBlank() }?.let {
-                        append("\n\nHint\n")
-                        append(it)
-                    }
-                    question.additionalInfo?.takeIf { it.isNotBlank() }?.let {
-                        append("\n\nAdditional Info\n")
-                        append(it)
-                    }
-                    question.reference?.takeIf { it.isNotBlank() }?.let {
-                        append("\n\nReference\n")
-                        append(it)
-                    }
-                }
-                FlashcardEntity(
-                    externalId = java.util.UUID.randomUUID().toString(),
-                    deckId = deckId,
-                    frontText = question.text.ifBlank { "${quiz.title} ${index + 1}" },
-                    backText = backText,
-                    hint = question.hint,
-                    imagePath = question.imagePath,
+                questionToFlashcard(deckId, question, index, config).copy(
                     tags = (question.categories + listOfNotNull(quiz.category)).distinct(),
-                    orderIndex = index,
                     createdAt = now,
                     updatedAt = now,
-                    sourceQuestionId = question.id
+                    frontText = if (!config.includeStemInFront || question.text.isBlank()) "${quiz.title} ${index + 1}" else questionToFlashcard(deckId, question, index, config).frontText
                 )
             }
         }
@@ -1797,6 +1851,49 @@ class MksRepository(
             flashcardDao.updateCardOrder(card.id, index, now)
         }
         cards.firstOrNull()?.deckId?.let { refreshFlashcardDeckStats(it) }
+    }
+
+    suspend fun moveFlashcards(cardIds: List<Long>, targetDeckId: Long) {
+        val now = System.currentTimeMillis()
+        val originalDecks = mutableSetOf<Long>()
+        
+        cardIds.chunked(999).forEach { chunk ->
+            val cards = flashcardDao.getFlashcardsByIds(chunk)
+            cards.forEach { originalDecks.add(it.deckId) }
+            flashcardDao.moveCardsToDeck(chunk, targetDeckId, now)
+        }
+        
+        originalDecks.forEach { refreshFlashcardDeckStats(it) }
+        refreshFlashcardDeckStats(targetDeckId)
+    }
+
+    suspend fun copyFlashcards(cardIds: List<Long>, targetDeckId: Long) {
+        val existingCount = flashcardDao.countCardsInDeck(targetDeckId)
+        val now = System.currentTimeMillis()
+        
+        val copiedCards = cardIds.chunked(999).flatMap { chunk ->
+            flashcardDao.getFlashcardsByIds(chunk).mapIndexed { index, card ->
+                card.copy(
+                    id = 0,
+                    externalId = java.util.UUID.randomUUID().toString(),
+                    deckId = targetDeckId,
+                    orderIndex = existingCount + index,
+                    attempts = 0,
+                    correctCount = 0,
+                    difficulty = null,
+                    dueAt = 0,
+                    reviewCount = 0,
+                    lastReviewedAt = 0,
+                    createdAt = now,
+                    updatedAt = now,
+                    deletedAt = null
+                )
+            }
+        }
+        
+        if (copiedCards.isNotEmpty()) {
+            insertFlashcards(copiedCards)
+        }
     }
 
     suspend fun rateFlashcard(card: FlashcardEntity, rating: String) {
@@ -1920,6 +2017,163 @@ class MksRepository(
         replaceOwnerAssetReferences("course_slide", id, listOf(saved.imagePath))
         refreshCourseStats(slide.courseId)
         return id
+    }
+
+    suspend fun insertCourseSlides(slides: List<CourseSlideEntity>): List<Long> {
+        val now = System.currentTimeMillis()
+        val updated = slides.map { slide ->
+            val finalSlide = if (slide.imagePath?.startsWith("http", ignoreCase = true) == true) {
+                val localPath = fileManager.downloadAndSaveImage(slide.imagePath)
+                if (localPath != null) slide.copy(imagePath = localPath) else slide
+            } else slide
+            finalSlide.copy(createdAt = now, updatedAt = now)
+        }
+        
+        // We do a manual insert slide-by-slide to return IDs for asset reference replacing, 
+        // since Dao insertSlides does not return a list of IDs. Or we can just insert one by one.
+        val ids = mutableListOf<Long>()
+        for (slide in updated) {
+            val id = courseSlideDao.insertSlide(slide)
+            replaceOwnerAssetReferences("course_slide", id, listOf(slide.imagePath))
+            ids.add(id)
+        }
+        
+        updated.map { it.courseId }.distinct().forEach { refreshCourseStats(it) }
+        return ids
+    }
+
+    suspend fun reorderCourseSlides(slides: List<CourseSlideEntity>) {
+        val now = System.currentTimeMillis()
+        val updated = slides.mapIndexed { index, slide ->
+            slide.copy(orderIndex = index, updatedAt = now)
+        }
+        courseSlideDao.updateSlides(updated)
+        slides.firstOrNull()?.courseId?.let { refreshCourseStats(it) }
+    }
+
+    private fun questionToSlide(courseId: Long, question: QuestionEntity, orderIndex: Int, config: com.ahmedyejam.mks.data.model.SlideGenerationConfig): CourseSlideEntity {
+        val title = if (config.includeStemInTitle && question.text.isNotBlank()) question.text.trim() else "Slide ${orderIndex + 1}"
+        
+        val body = buildString {
+            if (config.includeOptionsInBody) {
+                val optionsText = question.options.joinToString(separator = "\n") { "- $it" }
+                if (optionsText.isNotBlank()) append(optionsText)
+            }
+            if (config.includeAnswerInBody) {
+                val answerText = question.correctAnswers
+                    .mapNotNull(question.options::getOrNull)
+                    .joinToString(separator = "\n")
+                if (answerText.isNotBlank()) {
+                    if (isNotEmpty()) append("\n\n")
+                    append("Answer:\n$answerText")
+                }
+            }
+            if (config.includeExplanationInBody && !question.explanation.isNullOrBlank()) {
+                if (isNotEmpty()) append("\n\n")
+                append("Explanation:\n${question.explanation}")
+            }
+        }.trim().ifBlank { "No content" }
+
+        val notes = buildString {
+            if (config.includeHintInSpeakerNotes && !question.hint.isNullOrBlank()) {
+                append("Hint: ${question.hint}\n")
+            }
+            if (config.includeReferenceInSpeakerNotes && !question.reference.isNullOrBlank()) {
+                append("Reference: ${question.reference}\n")
+            }
+        }.trim()
+
+        val now = System.currentTimeMillis()
+        return CourseSlideEntity(
+            externalId = java.util.UUID.randomUUID().toString(),
+            courseId = courseId,
+            title = title,
+            body = body,
+            speakerNotes = notes.ifBlank { null },
+            imagePath = if (config.includeImage) question.imagePath else null,
+            orderIndex = orderIndex,
+            sourceQuestionId = question.id,
+            syncConfig = emptyMap(),
+            createdAt = now,
+            updatedAt = now
+        )
+    }
+
+    suspend fun addCourseSlidesFromQuestionsToCourse(courseId: Long, questionIds: List<Long>, config: com.ahmedyejam.mks.data.model.SlideGenerationConfig = com.ahmedyejam.mks.data.model.SlideGenerationConfig.DEFAULT): Int {
+        val course = slideshowCourseDao.getCourseById(courseId) ?: return 0
+        val questions = questionDao.getQuestionsByIds(questionIds).sortedBy { questionIds.indexOf(it.id) }
+        val existingSlides = courseSlideDao.getSlidesByCourseIdNow(courseId)
+        val existingCount = existingSlides.size
+        
+        val slides = questions.mapIndexed { index, question ->
+            questionToSlide(courseId, question, existingCount + index, config)
+        }
+        
+        if (slides.isNotEmpty()) {
+            insertCourseSlides(slides)
+        }
+        return slides.size
+    }
+
+    suspend fun copyCourseSlides(slideIds: List<Long>, targetCourseId: Long) {
+        val existingCount = courseSlideDao.countSlidesInCourse(targetCourseId)
+        val now = System.currentTimeMillis()
+        
+        val copiedSlides = slideIds.chunked(999).flatMap { chunk ->
+            courseSlideDao.getSlidesByIds(chunk).mapIndexed { index, slide ->
+                slide.copy(
+                    id = 0,
+                    externalId = java.util.UUID.randomUUID().toString(),
+                    courseId = targetCourseId,
+                    orderIndex = existingCount + index,
+                    isCompleted = false,
+                    createdAt = now,
+                    updatedAt = now,
+                    deletedAt = null
+                )
+            }
+        }
+        
+        if (copiedSlides.isNotEmpty()) {
+            insertCourseSlides(copiedSlides)
+        }
+    }
+
+    suspend fun moveCourseSlides(slideIds: List<Long>, targetCourseId: Long) {
+        val now = System.currentTimeMillis()
+        val originalCourses = mutableSetOf<Long>()
+        
+        slideIds.chunked(999).forEach { chunk ->
+            val slides = courseSlideDao.getSlidesByIds(chunk)
+            slides.forEach { originalCourses.add(it.courseId) }
+            courseSlideDao.moveSlidesToCourse(chunk, targetCourseId, now)
+        }
+        
+        originalCourses.forEach { refreshCourseStats(it) }
+        refreshCourseStats(targetCourseId)
+    }
+
+    suspend fun createSlideshowCourseFromQuestions(bookId: Long, title: String, description: String?, questionIds: List<Long>, clearMarksAfter: Boolean = false): Long {
+        val now = System.currentTimeMillis()
+        val courseId = insertSlideshowCourse(
+            SlideshowCourseEntity(
+                externalId = java.util.UUID.randomUUID().toString(),
+                bookId = bookId,
+                title = title,
+                description = description,
+                createdAt = now,
+                updatedAt = now,
+                lastEditedAt = now
+            )
+        )
+        
+        addCourseSlidesFromQuestionsToCourse(courseId, questionIds)
+        
+        if (clearMarksAfter && questionIds.isNotEmpty()) {
+            val questions = questionDao.getQuestionsByIds(questionIds).map { it.copy(isMarked = false) }
+            questionDao.updateQuestions(questions)
+        }
+        return courseId
     }
     suspend fun updateCourseSlide(slide: CourseSlideEntity) {
         var finalSlide = slide

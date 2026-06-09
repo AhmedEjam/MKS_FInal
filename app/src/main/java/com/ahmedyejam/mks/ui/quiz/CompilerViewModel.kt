@@ -21,8 +21,10 @@ import com.ahmedyejam.mks.data.import.xlsx.SheetImageResolution
 import com.ahmedyejam.mks.data.import.security.ImportLimits
 import com.ahmedyejam.mks.data.import.security.copyToWithLimit
 import com.ahmedyejam.mks.data.import.security.readTextWithLimit
+import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
 import com.ahmedyejam.mks.data.repository.MksRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -49,6 +51,7 @@ data class CompilerUiState(
     val availableColumns: List<String> = emptyList(),
     val stats: ParseStats = ParseStats(),
     val targetQuizId: Long? = null,
+    val targetDeckId: Long? = null,
 )
 
 class CompilerViewModel(
@@ -122,11 +125,11 @@ class CompilerViewModel(
         }
     }
 
-    fun onFileSelected(uri: Uri, targetQuizId: Long? = null) {
+    fun onFileSelected(uri: Uri, targetQuizId: Long? = null, targetDeckId: Long? = null) {
         currentUri = uri
         closeCurrentResources()
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null, questions = emptyList(), targetQuizId = targetQuizId) }
+            _uiState.update { it.copy(isLoading = true, error = null, questions = emptyList(), targetQuizId = targetQuizId, targetDeckId = targetDeckId) }
             try {
                 val format = withContext(Dispatchers.IO) {
                     importFormatDetector.detectFormat(uri)
@@ -446,6 +449,7 @@ class CompilerViewModel(
         title: String,
         bookId: Long?,
         targetQuizId: Long? = null,
+        targetDeckId: Long? = null,
         newBookTitle: String? = null
     ) {
         val questions = _uiState.value.questions.filter { it.isIncluded }
@@ -454,13 +458,45 @@ class CompilerViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                repository.importCompiledQuestions(
-                    title = title,
-                    targetBookId = bookId,
-                    targetQuizId = targetQuizId,
-                    newBookTitle = newBookTitle,
-                    questions = questions
-                )
+                val currentTargetDeckId = targetDeckId ?: _uiState.value.targetDeckId
+                if (currentTargetDeckId != null) {
+                    val flashcards = questions.mapIndexed { index, q ->
+                        val optionsText = if (q.options.isNotEmpty()) {
+                            q.options.joinToString("\n") { opt -> "${opt.id.removePrefix("opt_")}: ${opt.text}" }
+                        } else ""
+                        val answersText = if (q.correctAnswers.isNotEmpty()) {
+                            q.options.filter { q.correctAnswers.contains(it.id) }.joinToString(", ") { it.text }
+                                .takeIf { it.isNotBlank() } ?: q.correctAnswers.joinToString(", ") { it.removePrefix("opt_") }
+                        } else ""
+                        FlashcardEntity(
+                            externalId = java.util.UUID.randomUUID().toString(),
+                            deckId = currentTargetDeckId,
+                            frontText = buildString {
+                                append(q.stem)
+                                if (optionsText.isNotBlank()) append("\n\n$optionsText")
+                            },
+                            backText = buildString {
+                                append(answersText)
+                                if (!q.explanation.isNullOrBlank()) append("\n\n${q.explanation}")
+                                if (!q.reference.isNullOrBlank()) append("\n\nReference: ${q.reference}")
+                            },
+                            hint = q.hint,
+                            tags = q.categories,
+                            orderIndex = index
+                        )
+                    }
+                    val currentOrder = repository.getFlashcardsByDeckId(currentTargetDeckId).firstOrNull()?.size ?: 0
+                    val finalFlashcards = flashcards.mapIndexed { i, f -> f.copy(orderIndex = currentOrder + i) }
+                    repository.insertFlashcards(finalFlashcards)
+                } else {
+                    repository.importCompiledQuestions(
+                        title = title,
+                        targetBookId = bookId,
+                        targetQuizId = targetQuizId,
+                        newBookTitle = newBookTitle,
+                        questions = questions
+                    )
+                }
                 _uiState.update { it.copy(isLoading = false, questions = emptyList()) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message, isLoading = false) }

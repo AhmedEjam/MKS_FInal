@@ -34,7 +34,8 @@ fun LibraryTopBar(
     currentViewMode: String,
     onToggleViewMode: () -> Unit,
     showOverflowMenu: Boolean,
-    onOverflowMenuToggle: (Boolean) -> Unit
+    onOverflowMenuToggle: (Boolean) -> Unit,
+    onContactClick: () -> Unit
 ) {
     val tokens = LocalMksDesignTokens.current
     MediumTopAppBar(
@@ -91,6 +92,9 @@ fun LibraryTopBar(
         },
         actions = {
             if (!isSearching) {
+                IconButton(onClick = onContactClick) {
+                    Icon(Icons.Rounded.SupportAgent, contentDescription = "Contact")
+                }
                 Box {
                     IconButton(onClick = { onOverflowMenuToggle(true) }) {
                         Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.settings_title))

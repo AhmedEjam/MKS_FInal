@@ -78,4 +78,7 @@ interface FlashcardDao {
 
     @Query("UPDATE flashcards SET orderIndex = :orderIndex, updatedAt = :updatedAt WHERE id = :cardId")
     suspend fun updateCardOrder(cardId: Long, orderIndex: Int, updatedAt: Long)
+
+    @Query("UPDATE flashcards SET deckId = :deckId, updatedAt = :updatedAt WHERE id IN (:cardIds)")
+    suspend fun moveCardsToDeck(cardIds: List<Long>, deckId: Long, updatedAt: Long)
 }

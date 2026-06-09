@@ -31,7 +31,7 @@ import com.ahmedyejam.mks.ui.booktools.AiPromptDeckScreen
 import com.ahmedyejam.mks.ui.booktools.BookNotesScreen
 import com.ahmedyejam.mks.ui.booktools.BookToolsViewModel
 import com.ahmedyejam.mks.ui.booktools.ReviewBlueprintScreen
-import com.ahmedyejam.mks.ui.booktools.SlideshowCourseScreen
+import com.ahmedyejam.mks.ui.slideshow.SlideshowCourseScreen
 import com.ahmedyejam.mks.ui.booktools.AiPromptDeckListScreen
 import com.ahmedyejam.mks.ui.booktools.ReviewBlueprintListScreen
 import com.ahmedyejam.mks.ui.booktools.SourceDocumentListScreen
@@ -72,7 +72,7 @@ fun MksNavHost(
     appModule: AppModule,
     showWelcomeOnStartup: Boolean,
     sharedUris: List<Uri>? = null,
-    onConsumedSharedUris: () -> Unit = {}
+    onConsumedSharedUris: () -> Unit = {},
 ) {
     val currentThemeMode by appModule.dataStoreManager.themeMode.collectAsState(initial = "DAWN")
     val scope = rememberCoroutineScope()
@@ -88,12 +88,12 @@ fun MksNavHost(
 
     val tokens = LocalMksDesignTokens.current
     NavHost(
-        navController = navController, 
+        navController = navController,
         startDestination = startDestination,
         enterTransition = { if (tokens.isPlain) EnterTransition.None else fadeIn() + slideInHorizontally { it } },
         exitTransition = { if (tokens.isPlain) ExitTransition.None else fadeOut() + slideOutHorizontally { -it } },
         popEnterTransition = { if (tokens.isPlain) EnterTransition.None else fadeIn() + slideInHorizontally { -it } },
-        popExitTransition = { if (tokens.isPlain) ExitTransition.None else fadeOut() + slideOutHorizontally { it } }
+        popExitTransition = { if (tokens.isPlain) ExitTransition.None else fadeOut() + slideOutHorizontally { it } },
     ) {
         composable(MksRoutes.WELCOME) {
             // Get initial language for WelcomeScreen without observing it here to avoid NavHost restarts
@@ -106,7 +106,7 @@ fun MksNavHost(
                     scope.launch { appModule.dataStoreManager.setLanguage(lang) }
                 },
             ) {
-                scope.launch { appModule.dataStoreManager.setShowWelcomeOnStartup(false) }
+                scope.launch { appModule.dataStoreManager.setShowWelcomeOnStartup(enabled = false) }
                 navController.navigate(MksRoutes.LIBRARY) {
                     popUpTo(MksRoutes.WELCOME) { inclusive = true }
                     launchSingleTop = true
@@ -120,21 +120,21 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return LibraryViewModel(appModule.repository, appModule.dataStoreManager) as T
                     }
-                }
+                },
             )
             val compilerViewModel: CompilerViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return CompilerViewModel(appModule.context, appModule.repository) as T
                     }
-                }
+                },
             )
             val importViewModel: ImportViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return ImportViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
 
             LibraryScreen(
@@ -159,7 +159,7 @@ fun MksNavHost(
                 onBookNotesSelected = { bookId -> navController.navigate(MksRoutes.bookNotes(bookId)) },
                 onBookAiPromptDeckSelected = { bookId -> navController.navigate(MksRoutes.bookPrompts(bookId)) },
                 onAiPromptDeckSelected = { promptId -> navController.navigate(MksRoutes.promptDeck(promptId)) },
-                onBookDashboardSelected = { bookId -> navController.navigate(MksRoutes.bookDashboard(bookId)) }
+                onBookDashboardSelected = { bookId -> navController.navigate(MksRoutes.bookDashboard(bookId)) },
             )
         }
 
@@ -167,12 +167,12 @@ fun MksNavHost(
             route = "quiz_questions/{quizId}?questionId={questionId}",
             arguments = listOf(
                 navArgument("quizId") { type = NavType.LongType },
-                navArgument("questionId") { type = NavType.LongType; defaultValue = -1L }
-            )
+                navArgument("questionId") { type = NavType.LongType; defaultValue = -1L },
+            ),
         ) { backStackEntry ->
             val quizId = backStackEntry.requirePositiveLongArg("quizId")
             if (quizId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val questionIdInput = backStackEntry.arguments?.getLong("questionId") ?: -1L
@@ -183,7 +183,7 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return QuizQuestionsViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
 
             LaunchedEffect(quizId) {
@@ -200,26 +200,30 @@ fun MksNavHost(
             route = "flashcards/{deckId}?cardId={cardId}",
             arguments = listOf(
                 navArgument("deckId") { type = NavType.LongType },
-                navArgument("cardId") { type = NavType.LongType; defaultValue = -1L }
-            )
+                navArgument("cardId") { type = NavType.LongType; defaultValue = -1L },
+            ),
         ) { backStackEntry ->
             val deckId = backStackEntry.requirePositiveLongArg("deckId")
             if (deckId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val cardIdInput = backStackEntry.arguments?.getLong("cardId") ?: -1L
             val cardId = if (cardIdInput == -1L) null else cardIdInput
-            FlashcardDeckScreen(deckId = deckId, focusedCardId = cardId, appModule = appModule, onBack = { navController.popBackStack() })
+            FlashcardDeckScreen(
+                deckId = deckId,
+                focusedCardId = cardId,
+                appModule = appModule,
+            ) { navController.popBackStack() }
         }
 
         composable(
             route = "book_dashboard/{bookId}",
-            arguments = listOf(navArgument("bookId") { type = NavType.LongType })
+            arguments = listOf(navArgument("bookId") { type = NavType.LongType }),
         ) { backStackEntry ->
             val bookId = backStackEntry.requirePositiveLongArg("bookId")
             if (bookId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val viewModel: BookToolsViewModel = viewModel(
@@ -227,31 +231,30 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return BookToolsViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
             com.ahmedyejam.mks.ui.booktools.BookKnowledgeDashboardScreen(
                 bookId = bookId,
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
-                onOpenQuizzes = { 
+                onOpenQuizzes = {
                     // Special case: just go back to library and select this book?
                     // Or we stay in dashboard.
-                    navController.popBackStack() 
+                    navController.popBackStack()
                 },
                 onOpenFlashcards = { navController.navigate(MksRoutes.bookNotes(bookId)) }, // Wait, flashcards list?
                 onOpenSlideshows = { navController.navigate(MksRoutes.bookSlideshows(bookId)) },
                 onOpenNotes = { navController.navigate(MksRoutes.bookBlueprints(bookId)) },
                 onOpenPrompts = { navController.navigate(MksRoutes.bookPrompts(bookId)) },
-                onOpenSources = { navController.navigate(MksRoutes.bookSources(bookId)) }
-            )
+            ) { navController.navigate(MksRoutes.bookSources(bookId)) }
         }
         composable(
             route = "book_slideshows/{bookId}",
-            arguments = listOf(navArgument("bookId") { type = NavType.LongType })
+            arguments = listOf(navArgument("bookId") { type = NavType.LongType }),
         ) { backStackEntry ->
             val bookId = backStackEntry.requirePositiveLongArg("bookId")
             if (bookId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val viewModel: BookToolsViewModel = viewModel(
@@ -259,23 +262,22 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return BookToolsViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
             SlideshowCourseListScreen(
                 bookId = bookId,
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
-                onOpenCourse = { courseId -> navController.navigate("slideshow/$courseId") }
-            )
+            ) { courseId -> navController.navigate("slideshow/$courseId") }
         }
 
         composable(
             route = "book_blueprints/{bookId}",
-            arguments = listOf(navArgument("bookId") { type = NavType.LongType })
+            arguments = listOf(navArgument("bookId") { type = NavType.LongType }),
         ) { backStackEntry ->
             val bookId = backStackEntry.requirePositiveLongArg("bookId")
             if (bookId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val viewModel: BookToolsViewModel = viewModel(
@@ -283,14 +285,13 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return BookToolsViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
             ReviewBlueprintListScreen(
                 bookId = bookId,
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
-                onOpenNote = { noteId -> navController.navigate("blueprint/$noteId") }
-            )
+            ) { noteId -> navController.navigate("blueprint/$noteId") }
         }
 
 
@@ -298,12 +299,12 @@ fun MksNavHost(
             route = "book_sources/{bookId}?sourceId={sourceId}",
             arguments = listOf(
                 navArgument("bookId") { type = NavType.LongType },
-                navArgument("sourceId") { type = NavType.LongType; defaultValue = -1L }
-            )
+                navArgument("sourceId") { type = NavType.LongType; defaultValue = -1L },
+            ),
         ) { backStackEntry ->
             val bookId = backStackEntry.requirePositiveLongArg("bookId")
             if (bookId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val sourceIdInput = backStackEntry.arguments?.getLong("sourceId") ?: -1L
@@ -313,23 +314,22 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return BookToolsViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
             SourceDocumentListScreen(
                 bookId = bookId,
                 focusedSourceId = sourceId,
                 viewModel = viewModel,
-                onBack = { navController.popBackStack() }
-            )
+            ) { navController.popBackStack() }
         }
 
         composable(
             route = "book_prompts/{bookId}",
-            arguments = listOf(navArgument("bookId") { type = NavType.LongType })
+            arguments = listOf(navArgument("bookId") { type = NavType.LongType }),
         ) { backStackEntry ->
             val bookId = backStackEntry.requirePositiveLongArg("bookId")
             if (bookId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val viewModel: BookToolsViewModel = viewModel(
@@ -337,47 +337,43 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return BookToolsViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
             AiPromptDeckListScreen(
                 bookId = bookId,
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
-                onOpenPrompt = { promptId -> navController.navigate("prompt_deck/$promptId") }
-            )
+            ) { promptId -> navController.navigate("prompt_deck/$promptId") }
         }
 
         composable(
             route = "slideshow/{courseId}?slideId={slideId}",
             arguments = listOf(
                 navArgument("courseId") { type = NavType.LongType },
-                navArgument("slideId") { type = NavType.LongType; defaultValue = -1L }
-            )
+                navArgument("slideId") { type = NavType.LongType; defaultValue = -1L },
+            ),
         ) { backStackEntry ->
             val courseId = backStackEntry.requirePositiveLongArg("courseId")
             if (courseId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val slideIdInput = backStackEntry.arguments?.getLong("slideId") ?: -1L
             val slideId = if (slideIdInput == -1L) null else slideIdInput
-            val viewModel: BookToolsViewModel = viewModel(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return BookToolsViewModel(appModule.repository) as T
-                    }
-                }
-            )
-            SlideshowCourseScreen(courseId = courseId, focusedSlideId = slideId, viewModel = viewModel, onBack = { navController.popBackStack() })
+            SlideshowCourseScreen(
+                courseId = courseId,
+                focusedSlideId = slideId,
+                appModule = appModule,
+            ) { navController.popBackStack() }
         }
 
         composable(
             route = "blueprint/{noteId}",
-            arguments = listOf(navArgument("noteId") { type = NavType.LongType })
+            arguments = listOf(navArgument("noteId") { type = NavType.LongType }),
         ) { backStackEntry ->
             val noteId = backStackEntry.requirePositiveLongArg("noteId")
             if (noteId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val viewModel: BookToolsViewModel = viewModel(
@@ -385,18 +381,21 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return BookToolsViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
-            ReviewBlueprintScreen(noteId = noteId, viewModel = viewModel, onBack = { navController.popBackStack() })
+            ReviewBlueprintScreen(
+                noteId = noteId,
+                viewModel = viewModel,
+            ) { navController.popBackStack() }
         }
 
         composable(
             route = "book_notes/{bookId}",
-            arguments = listOf(navArgument("bookId") { type = NavType.LongType })
+            arguments = listOf(navArgument("bookId") { type = NavType.LongType }),
         ) { backStackEntry ->
             val bookId = backStackEntry.requirePositiveLongArg("bookId")
             if (bookId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val viewModel: BookToolsViewModel = viewModel(
@@ -404,9 +403,12 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return BookToolsViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
-            BookNotesScreen(bookId = bookId, viewModel = viewModel, onBack = { navController.popBackStack() })
+            BookNotesScreen(
+                bookId = bookId,
+                viewModel = viewModel,
+            ) { navController.popBackStack() }
         }
 
         composable(
@@ -414,12 +416,12 @@ fun MksNavHost(
             arguments = listOf(
                 navArgument("promptId") { type = NavType.LongType },
                 navArgument("cardId") { type = NavType.LongType; defaultValue = -1L },
-                navArgument("runId") { type = NavType.LongType; defaultValue = -1L }
-            )
+                navArgument("runId") { type = NavType.LongType; defaultValue = -1L },
+            ),
         ) { backStackEntry ->
             val promptId = backStackEntry.requirePositiveLongArg("promptId")
             if (promptId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val cardIdInput = backStackEntry.arguments?.getLong("cardId") ?: -1L
@@ -432,9 +434,14 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return BookToolsViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
-            AiPromptDeckScreen(promptId = promptId, focusedCardId = cardId, focusedRunId = runId, viewModel = viewModel, onBack = { navController.popBackStack() })
+            AiPromptDeckScreen(
+                promptId = promptId,
+                focusedCardId = cardId,
+                focusedRunId = runId,
+                viewModel = viewModel,
+            ) { navController.popBackStack() }
         }
 
 
@@ -444,34 +451,32 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return GlobalSearchViewModel(appModule.globalSearchRepository) as T
                     }
-                }
+                },
             )
             GlobalSearchScreen(
                 viewModel = searchViewModel,
                 onBack = { navController.popBackStack() },
-                onOpenRoute = { route -> navController.navigate(route) }
-            )
+            ) { route -> navController.navigate(route) }
         }
 
         composable(
             route = "review_dashboard?mistakeId={mistakeId}",
-            arguments = listOf(navArgument("mistakeId") { type = NavType.LongType; defaultValue = -1L })
+            arguments = listOf(navArgument("mistakeId") { type = NavType.LongType; defaultValue = -1L }),
         ) { backStackEntry ->
             val mistakeIdInput = backStackEntry.arguments?.getLong("mistakeId") ?: -1L
             val mistakeId = if (mistakeIdInput == -1L) null else mistakeIdInput
             val reviewViewModel: ReviewDashboardViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return ReviewDashboardViewModel(appModule.reviewRepository) as T
+                        return ReviewDashboardViewModel(appModule.reviewRepository, appModule.repository) as T
                     }
-                }
+                },
             )
             ReviewDashboardScreen(
                 viewModel = reviewViewModel,
                 focusedMistakeId = mistakeId,
                 onBack = { navController.popBackStack() },
-                onOpenRoute = { route -> navController.navigate(route) }
-            )
+            ) { route -> navController.navigate(route) }
         }
 
         composable("data_tools") {
@@ -480,12 +485,11 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return DataToolsViewModel(appModule.fullImportExportService) as T
                     }
-                }
+                },
             )
             DataToolsScreen(
                 viewModel = dataToolsViewModel,
-                onBack = { navController.popBackStack() }
-            )
+            ) { navController.popBackStack() }
         }
 
         composable("settings") {
@@ -494,17 +498,16 @@ fun MksNavHost(
                 onBack = { returnToLibraryRoot() },
                 onGlobalSearch = { navController.navigate("global_search") },
                 onReviewDashboard = { navController.navigate("review_dashboard") },
-                onDataTools = { navController.navigate("data_tools") }
-            )
+            ) { navController.navigate("data_tools") }
         }
 
         composable(
             route = "category/{category}",
-            arguments = listOf(navArgument("category") { type = NavType.StringType })
+            arguments = listOf(navArgument("category") { type = NavType.StringType }),
         ) { backStackEntry ->
             val category = backStackEntry.requireNonBlankStringArg("category")
             if (category == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val viewModel: CategoryQuestionsViewModel = viewModel(
@@ -512,7 +515,7 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return CategoryQuestionsViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
 
             LaunchedEffect(category) {
@@ -522,10 +525,9 @@ fun MksNavHost(
             CategoryQuestionsScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
-                onStartQuiz = { categoryName ->
-                    navController.navigate("adaptive/CATEGORY/${Uri.encode(categoryName)}")
-                }
-            )
+            ) { categoryName ->
+                navController.navigate("adaptive/CATEGORY/${Uri.encode(categoryName)}")
+            }
         }
 
         composable(
@@ -535,12 +537,12 @@ fun MksNavHost(
                 navArgument("sessionId") { 
                     type = NavType.LongType
                     defaultValue = -1L
-                }
-            )
+                },
+            ),
         ) { backStackEntry ->
             val quizId = backStackEntry.requirePositiveLongArg("quizId")
             if (quizId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val sessionIdInput = backStackEntry.arguments?.getLong("sessionId") ?: -1L
@@ -551,7 +553,7 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return QuizViewModel(appModule.repository, appModule.dataStoreManager, appModule.focusManager) as T
                     }
-                }
+                },
             )
             
             LaunchedEffect(quizId, sessionId) {
@@ -566,19 +568,18 @@ fun MksNavHost(
                     }
                 },
                 onBack = { navController.popBackStack() },
-                onViewCategoryQuestions = { category ->
-                    navController.navigate("category/${Uri.encode(category)}")
-                }
-            )
+            ) { category ->
+                navController.navigate("category/${Uri.encode(category)}")
+            }
         }
 
         composable(
             route = "sessions/{quizId}",
-            arguments = listOf(navArgument("quizId") { type = NavType.LongType })
+            arguments = listOf(navArgument("quizId") { type = NavType.LongType }),
         ) { backStackEntry ->
             val quizId = backStackEntry.requirePositiveLongArg("quizId")
             if (quizId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val sessionViewModel: SessionViewModel = viewModel(
@@ -586,7 +587,7 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return SessionViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
             
             SessionManagementScreen(
@@ -600,23 +601,22 @@ fun MksNavHost(
                         navController.navigate("quiz/$quizId?sessionId=$sessionId")
                     }
                 },
-                onNavigateBack = {
-                    navController.navigate("library") {
-                        popUpTo("library") { inclusive = false }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+            ) {
+                navController.navigate("library") {
+                    popUpTo("library") { inclusive = false }
+                    launchSingleTop = true
+                    restoreState = true
                 }
-            )
+            }
         }
 
         composable(
             route = "scanner/{quizId}",
-            arguments = listOf(navArgument("quizId") { type = NavType.LongType })
+            arguments = listOf(navArgument("quizId") { type = NavType.LongType }),
         ) { backStackEntry ->
             val quizId = backStackEntry.requirePositiveLongArg("quizId")
             if (quizId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val scannerViewModel: ScannerViewModel = viewModel(
@@ -624,27 +624,26 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return ScannerViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
             
             ScannerScreen(
                 quizId = quizId,
                 viewModel = scannerViewModel,
-                onNavigateBack = { navController.popBackStack() }
-            )
+            ) { navController.popBackStack() }
         }
 
         composable(
             route = "adaptive/{type}/{id}",
             arguments = listOf(
                 navArgument("type") { type = NavType.StringType },
-                navArgument("id") { type = NavType.StringType }
-            )
+                navArgument("id") { type = NavType.StringType },
+            ),
         ) { backStackEntry ->
             val type = backStackEntry.requireNonBlankStringArg("type")
             val id = backStackEntry.requireNonBlankStringArg("id")
-            if (type == null || id == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+            if ((type == null) || (id == null)) {
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val quizViewModel: QuizViewModel = viewModel(
@@ -652,7 +651,7 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return QuizViewModel(appModule.repository, appModule.dataStoreManager, appModule.focusManager) as T
                     }
-                }
+                },
             )
             
             LaunchedEffect(type, id) {
@@ -672,17 +671,17 @@ fun MksNavHost(
                         }
                     }
                 },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
             )
         }
 
         composable(
             route = "summary/{sessionId}",
-            arguments = listOf(navArgument("sessionId") { type = NavType.LongType })
+            arguments = listOf(navArgument("sessionId") { type = NavType.LongType }),
         ) { backStackEntry ->
             val sessionId = backStackEntry.requirePositiveLongArg("sessionId")
             if (sessionId == null) {
-                InvalidRouteScreen(onBack = { navController.popBackStack() })
+                InvalidRouteScreen { navController.popBackStack() }
                 return@composable
             }
             val summaryViewModel: SummaryViewModel = viewModel(
@@ -690,7 +689,7 @@ fun MksNavHost(
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
                         return SummaryViewModel(appModule.repository) as T
                     }
-                }
+                },
             )
 
             SummaryScreen(
@@ -701,10 +700,7 @@ fun MksNavHost(
                         popUpTo("library") { inclusive = true }
                     }
                 },
-                onReviewClick = { quizId, _ ->
-                    navController.navigate("sessions/$quizId")
-                },
-                onRetryClick = { navController.popBackStack() }
+                onRetryClick = { navController.popBackStack() },
             )
         }
     }

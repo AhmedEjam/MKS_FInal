@@ -27,8 +27,14 @@ interface CourseSlideDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSlide(slide: CourseSlideEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSlides(slides: List<CourseSlideEntity>)
+
     @Update
     suspend fun updateSlide(slide: CourseSlideEntity)
+
+    @Update
+    suspend fun updateSlides(slides: List<CourseSlideEntity>)
 
     @Query("UPDATE course_slides SET deletedAt = :deletedAt, updatedAt = :deletedAt WHERE id = :slideId")
     suspend fun softDeleteSlideById(slideId: Long, deletedAt: Long)
@@ -38,4 +44,13 @@ interface CourseSlideDao {
 
     @Delete
     suspend fun hardDeleteSlide(slide: CourseSlideEntity)
+
+    @Query("SELECT COUNT(*) FROM course_slides WHERE courseId = :courseId AND deletedAt IS NULL")
+    suspend fun countSlidesInCourse(courseId: Long): Int
+
+    @Query("SELECT * FROM course_slides WHERE id IN (:ids) AND deletedAt IS NULL")
+    suspend fun getSlidesByIds(ids: List<Long>): List<CourseSlideEntity>
+
+    @Query("UPDATE course_slides SET courseId = :targetCourseId, updatedAt = :updatedAt WHERE id IN (:ids)")
+    suspend fun moveSlidesToCourse(ids: List<Long>, targetCourseId: Long, updatedAt: Long)
 }

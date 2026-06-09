@@ -65,7 +65,7 @@ fun LibraryFabMenu(
                         },
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
-                        FabActionRow(Icons.Rounded.Style, stringResource(R.string.flashcard_deck))
+                        FabActionRow(Icons.Rounded.ViewCarousel, stringResource(R.string.flashcard_deck))
                     }
                     SmallFloatingActionButton(
                         onClick = {
@@ -74,7 +74,7 @@ fun LibraryFabMenu(
                         },
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
-                        FabActionRow(Icons.Rounded.PlayLesson, stringResource(R.string.slideshow_course))
+                        FabActionRow(Icons.Rounded.Slideshow, stringResource(R.string.slideshow_course))
                     }
                     SmallFloatingActionButton(
                         onClick = {
@@ -83,7 +83,7 @@ fun LibraryFabMenu(
                         },
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
-                        FabActionRow(Icons.Rounded.Description, stringResource(R.string.review_blueprint))
+                        FabActionRow(Icons.Rounded.NoteAlt, stringResource(R.string.review_blueprint))
                     }
                     SmallFloatingActionButton(
                         onClick = {
@@ -92,7 +92,7 @@ fun LibraryFabMenu(
                         },
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
-                        FabActionRow(Icons.Rounded.Book, "Sources")
+                        FabActionRow(Icons.Rounded.Source, "Sources")
                     }
                     SmallFloatingActionButton(
                         onClick = {
@@ -110,7 +110,7 @@ fun LibraryFabMenu(
                         },
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
-                        FabActionRow(Icons.Rounded.SmartToy, stringResource(R.string.ai_prompt_deck))
+                        FabActionRow(Icons.Rounded.Psychology, stringResource(R.string.ai_prompt_deck))
                     }
                     SmallFloatingActionButton(
                         onClick = {
@@ -119,7 +119,7 @@ fun LibraryFabMenu(
                         },
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
-                        FabActionRow(Icons.Rounded.Quiz, stringResource(R.string.new_quiz))
+                        FabActionRow(Icons.Rounded.FactCheck, stringResource(R.string.new_quiz))
                     }
                 } else if (selectedCategory == null) {
                     SmallFloatingActionButton(
@@ -129,7 +129,7 @@ fun LibraryFabMenu(
                         },
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
-                        FabActionRow(Icons.Rounded.Book, stringResource(R.string.new_book))
+                        FabActionRow(Icons.Rounded.MenuBook, stringResource(R.string.new_book))
                     }
                 }
 

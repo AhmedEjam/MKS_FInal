@@ -33,8 +33,6 @@ data class BookToolsUiState(
     val questions: List<QuestionEntity> = emptyList(),
     val questionsByQuiz: Map<Long, List<QuestionEntity>> = emptyMap(),
     val flashcardDecks: List<FlashcardDeckEntity> = emptyList(),
-    val slideshowCourse: SlideshowCourseEntity? = null,
-    val courseSlides: List<CourseSlideEntity> = emptyList(),
     val allCourses: List<SlideshowCourseEntity> = emptyList(),
     val allNotes: List<NoteBlueprintEntity> = emptyList(),
     val allSources: List<SourceDocumentEntity> = emptyList(),
@@ -43,6 +41,8 @@ data class BookToolsUiState(
     val promptDeck: PromptDeckEntity? = null,
     val promptCards: List<PromptCardEntity> = emptyList(),
     val promptRuns: List<PromptRunEntity> = emptyList(),
+    val slideshowCourse: SlideshowCourseEntity? = null,
+    val courseSlides: List<CourseSlideEntity> = emptyList(),
     val bookSummary: BookKnowledgeSummary? = null,
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
@@ -87,21 +87,7 @@ class BookToolsViewModel(
         }
     }
 
-    fun loadCourse(courseId: Long) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            val course = repository.getSlideshowCourseById(courseId)
-            if (course == null) {
-                _uiState.value = _uiState.value.copy(isLoading = false, error = "Course not found")
-                return@launch
-            }
-            _uiState.value = _uiState.value.copy(
-                slideshowCourse = course,
-                courseSlides = repository.getSlidesByCourseId(courseId).first(),
-                isLoading = false
-            )
-        }
-    }
+
 
     fun loadNote(noteId: Long) {
         viewModelScope.launch {
@@ -257,6 +243,67 @@ class BookToolsViewModel(
         }
     }
 
+    fun generateArticlesFromQuestions(questionIds: List<Long>, config: com.ahmedyejam.mks.data.model.ArticleGenerationConfig) {
+        val bookId = _uiState.value.book?.id ?: return
+        viewModelScope.launch {
+            try {
+                val newIds = repository.addArticlesFromQuestions(bookId, questionIds, config)
+                _uiState.value = _uiState.value.copy(
+                    allNotes = repository.getNoteBlueprintsByBookId(bookId).first(),
+                    successMessage = "Generated ${newIds.size} Articles"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to generate articles: ${e.message}")
+            }
+        }
+    }
+
+    fun generateArticlesFromMarked(config: com.ahmedyejam.mks.data.model.ArticleGenerationConfig = com.ahmedyejam.mks.data.model.ArticleGenerationConfig.DEFAULT) {
+        val questions = _uiState.value.questions.filter { it.isMarked }
+        generateArticlesFromQuestions(questions.map { it.id }, config)
+    }
+
+    fun generateArticlesFromMissed(config: com.ahmedyejam.mks.data.model.ArticleGenerationConfig = com.ahmedyejam.mks.data.model.ArticleGenerationConfig.DEFAULT) {
+        val questions = _uiState.value.questions.filter { it.attempts > 0 && (it.correctCount < it.attempts || it.lastAttemptResult == false) }
+        generateArticlesFromQuestions(questions.map { it.id }, config)
+    }
+    
+    fun generateArticlesFromQuiz(quizId: Long, config: com.ahmedyejam.mks.data.model.ArticleGenerationConfig = com.ahmedyejam.mks.data.model.ArticleGenerationConfig.DEFAULT) {
+        val questions = _uiState.value.questionsByQuiz[quizId] ?: return
+        generateArticlesFromQuestions(questions.map { it.id }, config)
+    }
+    
+    fun generateArticlesFromCategory(categoryId: Long, config: com.ahmedyejam.mks.data.model.ArticleGenerationConfig = com.ahmedyejam.mks.data.model.ArticleGenerationConfig.DEFAULT) {
+        val questions = _uiState.value.questions.filter { categoryId.toString() in it.categories }
+        generateArticlesFromQuestions(questions.map { it.id }, config)
+    }
+    
+    fun importArticlesFromText(text: String, mode: com.ahmedyejam.mks.data.import.parser.TextArticleParseMode = com.ahmedyejam.mks.data.import.parser.TextArticleParseMode.BASIC) {
+        val bookId = _uiState.value.book?.id ?: return
+        viewModelScope.launch {
+            try {
+                val parser = com.ahmedyejam.mks.data.import.parser.TextArticleParser()
+                val parsedNotes = parser.parse(text, bookId, mode)
+                
+                if (parsedNotes.isEmpty()) {
+                    _uiState.value = _uiState.value.copy(error = "No valid articles found in text")
+                    return@launch
+                }
+                
+                parsedNotes.forEach { note ->
+                    repository.insertNoteBlueprint(note)
+                }
+                
+                _uiState.value = _uiState.value.copy(
+                    allNotes = repository.getNoteBlueprintsByBookId(bookId).first(),
+                    successMessage = "Imported ${parsedNotes.size} Articles"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to import articles: ${e.message}")
+            }
+        }
+    }
+
     fun createBlueprintFromQuestion(bookId: Long, questionId: Long, mode: String = BlueprintMode.CONCEPT_TEMPLATE) {
         viewModelScope.launch {
             try {
@@ -264,10 +311,10 @@ class BookToolsViewModel(
                 val saved = repository.getNoteBlueprintById(id)
                 _uiState.value = _uiState.value.copy(
                     allNotes = saved?.let { (_uiState.value.allNotes.filter { note -> note.id != id } + it).sortedByDescending { note -> note.updatedAt } } ?: _uiState.value.allNotes,
-                    successMessage = "Blueprint created from question"
+                    successMessage = "Article created from question"
                 )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Failed to create blueprint: ${e.message}")
+                _uiState.value = _uiState.value.copy(error = "Failed to create article: ${e.message}")
             }
         }
     }
@@ -279,10 +326,10 @@ class BookToolsViewModel(
                 val saved = repository.getNoteBlueprintById(id)
                 _uiState.value = _uiState.value.copy(
                     allNotes = saved?.let { (_uiState.value.allNotes.filter { note -> note.id != id } + it).sortedByDescending { note -> note.updatedAt } } ?: _uiState.value.allNotes,
-                    successMessage = "Blueprint created from marked questions"
+                    successMessage = "Article created from marked questions"
                 )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Failed to create marked blueprint: ${e.message}")
+                _uiState.value = _uiState.value.copy(error = "Failed to create marked article: ${e.message}")
             }
         }
     }
@@ -294,10 +341,10 @@ class BookToolsViewModel(
                 val saved = repository.getNoteBlueprintById(id)
                 _uiState.value = _uiState.value.copy(
                     allNotes = saved?.let { (_uiState.value.allNotes.filter { note -> note.id != id } + it).sortedByDescending { note -> note.updatedAt } } ?: _uiState.value.allNotes,
-                    successMessage = "Blueprint created from missed questions"
+                    successMessage = "Article created from missed questions"
                 )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Failed to create missed blueprint: ${e.message}")
+                _uiState.value = _uiState.value.copy(error = "Failed to create missed article: ${e.message}")
             }
         }
     }
@@ -390,63 +437,6 @@ class BookToolsViewModel(
         }
     }
 
-    fun createCourseSlide(courseId: Long, title: String, body: String, imagePath: String? = null) {
-        viewModelScope.launch {
-            try {
-                val slide = CourseSlideEntity(
-                    externalId = java.util.UUID.randomUUID().toString(),
-                    courseId = courseId,
-                    title = title.ifBlank { "Untitled slide" },
-                    body = body,
-                    speakerNotes = null,
-                    imagePath = imagePath,
-                    orderIndex = _uiState.value.courseSlides.size,
-                    isCompleted = false,
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis(),
-                    sourceQuestionId = null,
-                    syncConfig = emptyMap()
-                )
-                val id = repository.insertCourseSlide(slide)
-                val saved = slide.copy(id = id)
-                _uiState.value = _uiState.value.copy(
-                    courseSlides = (_uiState.value.courseSlides.filter { it.id != id } + saved).sortedBy { it.orderIndex },
-                    successMessage = "Slide created"
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Failed to create slide: ${e.message}")
-            }
-        }
-    }
-
-    fun updateCourseSlide(slide: CourseSlideEntity) {
-        viewModelScope.launch {
-            try {
-                val updated = slide.copy(updatedAt = System.currentTimeMillis())
-                repository.updateCourseSlide(updated)
-                _uiState.value = _uiState.value.copy(
-                    courseSlides = _uiState.value.courseSlides.map { if (it.id == updated.id) updated else it },
-                    successMessage = "Slide updated"
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Failed to update slide: ${e.message}")
-            }
-        }
-    }
-
-    fun deleteCourseSlide(slide: CourseSlideEntity) {
-        viewModelScope.launch {
-            try {
-                repository.deleteCourseSlide(slide)
-                _uiState.value = _uiState.value.copy(
-                    courseSlides = _uiState.value.courseSlides.filter { it.id != slide.id },
-                    successMessage = "Slide deleted"
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Failed to delete slide: ${e.message}")
-            }
-        }
-    }
 
     fun loadPromptDeck(deckId: Long) {
         viewModelScope.launch {

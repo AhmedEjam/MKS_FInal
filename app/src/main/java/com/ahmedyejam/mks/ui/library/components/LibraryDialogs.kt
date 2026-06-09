@@ -36,6 +36,7 @@ fun EditEntityDialog(
     initialCoverImage: String?,
     titleLabel: String,
     descriptionLabel: String,
+    allowBlankTitle: Boolean = false,
     onDismiss: () -> Unit,
     onConfirm: (String, String, String?) -> Unit
 ) {
@@ -101,7 +102,7 @@ fun EditEntityDialog(
         confirmButton = {
             Button(
                 onClick = { onConfirm(titleText, descriptionText, coverImage) },
-                enabled = titleText.isNotBlank()
+                enabled = allowBlankTitle || titleText.isNotBlank()
             ) {
                 Text(stringResource(R.string.save))
             }
@@ -373,66 +374,155 @@ fun ImportWarningsDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QuizSelectionDialog(
+fun CreateQuizDialog(
     quizzes: List<QuizEntity>,
+    categories: List<String>,
     onDismiss: () -> Unit,
-    onConfirm: (List<Long>) -> Unit
+    onConfirm: (title: String, description: String, coverImage: String?, sourceQuizIds: List<Long>, sourceCategories: List<String>) -> Unit
 ) {
-    var selectedIds by remember { mutableStateOf(setOf<Long>()) }
-    val allSelected = quizzes.isNotEmpty() && selectedIds.size == quizzes.size
+    var titleText by remember { mutableStateOf("") }
+    var descriptionText by remember { mutableStateOf("") }
+    var coverImage by remember { mutableStateOf<String?>(null) }
+    
+    var isFromExisting by remember { mutableStateOf(false) }
+    var selectedQuizIds by remember { mutableStateOf(setOf<Long>()) }
+    var selectedCategories by remember { mutableStateOf(setOf<String>()) }
+    
+    val allQuizzesSelected = quizzes.isNotEmpty() && selectedQuizIds.size == quizzes.size
+    val allCategoriesSelected = categories.isNotEmpty() && selectedCategories.size == categories.size
+
+    val imageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { coverImage = it.toString() }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.select_quizzes_custom)) },
+        title = { Text("Create New Quiz") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Image Picker
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            selectedIds = if (allSelected) emptySet() else quizzes.map { it.id }.toSet()
-                        }
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { imageLauncher.launch(arrayOf("image/*")) },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Checkbox(
-                        checked = allSelected,
-                        onCheckedChange = { 
-                            selectedIds = if (it) quizzes.map { it.id }.toSet() else emptySet()
+                    if (!coverImage.isNullOrBlank()) {
+                        AsyncImage(
+                            model = coverImage,
+                            contentDescription = "Cover Image",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.AddPhotoAlternate, null, modifier = Modifier.size(32.dp))
+                            Text(stringResource(R.string.show_cover_images), style = MaterialTheme.typography.labelSmall)
                         }
-                    )
-                    Text(stringResource(R.string.select_all), style = MaterialTheme.typography.titleSmall)
+                    }
                 }
 
-                HorizontalDivider()
+                OutlinedTextField(
+                    value = titleText,
+                    onValueChange = { titleText = it },
+                    label = { Text("Quiz Title") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = descriptionText,
+                    onValueChange = { descriptionText = it },
+                    label = { Text("Description (Optional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 400.dp)
-                ) {
-                    items(quizzes, key = { it.id }) { quiz ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selectedIds = if (selectedIds.contains(quiz.id)) {
-                                        selectedIds - quiz.id
-                                    } else {
-                                        selectedIds + quiz.id
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                // Mode Selection
+                Text("Quiz Content", style = MaterialTheme.typography.titleMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = !isFromExisting, onClick = { isFromExisting = false })
+                    Text("Empty Quiz", modifier = Modifier.clickable { isFromExisting = false })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = isFromExisting, onClick = { isFromExisting = true })
+                    Text("From Existing Quizzes & Categories", modifier = Modifier.clickable { isFromExisting = true })
+                }
+
+                if (isFromExisting) {
+                    if (quizzes.isNotEmpty()) {
+                        Text("Source Quizzes", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))
+                        Card(modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp)) {
+                            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().clickable {
+                                        selectedQuizIds = if (allQuizzesSelected) emptySet() else quizzes.map { it.id }.toSet()
+                                    }.padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(checked = allQuizzesSelected, onCheckedChange = { 
+                                        selectedQuizIds = if (it) quizzes.map { q -> q.id }.toSet() else emptySet()
+                                    })
+                                    Text("Select All", style = MaterialTheme.typography.bodyMedium)
+                                }
+                                quizzes.forEach { quiz ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            selectedQuizIds = if (selectedQuizIds.contains(quiz.id)) selectedQuizIds - quiz.id else selectedQuizIds + quiz.id
+                                        }.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(checked = selectedQuizIds.contains(quiz.id), onCheckedChange = { checked ->
+                                            selectedQuizIds = if (checked) selectedQuizIds + quiz.id else selectedQuizIds - quiz.id
+                                        })
+                                        Text(quiz.title, style = MaterialTheme.typography.bodySmall)
                                     }
                                 }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = selectedIds.contains(quiz.id),
-                                onCheckedChange = { checked ->
-                                    selectedIds = if (checked) selectedIds + quiz.id else selectedIds - quiz.id
+                            }
+                        }
+                    }
+
+                    if (categories.isNotEmpty()) {
+                        Text("Source Categories (Filters)", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))
+                        Card(modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp)) {
+                            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().clickable {
+                                        selectedCategories = if (allCategoriesSelected) emptySet() else categories.toSet()
+                                    }.padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(checked = allCategoriesSelected, onCheckedChange = { 
+                                        selectedCategories = if (it) categories.toSet() else emptySet()
+                                    })
+                                    Text("Select All", style = MaterialTheme.typography.bodyMedium)
                                 }
-                            )
-                            Text(quiz.title, style = MaterialTheme.typography.bodyMedium)
+                                categories.forEach { cat ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            selectedCategories = if (selectedCategories.contains(cat)) selectedCategories - cat else selectedCategories + cat
+                                        }.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(checked = selectedCategories.contains(cat), onCheckedChange = { checked ->
+                                            selectedCategories = if (checked) selectedCategories + cat else selectedCategories - cat
+                                        })
+                                        Text(cat, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -440,8 +530,16 @@ fun QuizSelectionDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(selectedIds.toList()) },
-                enabled = selectedIds.isNotEmpty()
+                onClick = { 
+                    onConfirm(
+                        titleText, 
+                        descriptionText, 
+                        coverImage, 
+                        if (isFromExisting) selectedQuizIds.toList() else emptyList(),
+                        if (isFromExisting) selectedCategories.toList() else emptyList()
+                    )
+                },
+                enabled = titleText.isNotBlank() && (!isFromExisting || (selectedQuizIds.isNotEmpty() || selectedCategories.isNotEmpty()))
             ) {
                 Text(stringResource(R.string.create))
             }

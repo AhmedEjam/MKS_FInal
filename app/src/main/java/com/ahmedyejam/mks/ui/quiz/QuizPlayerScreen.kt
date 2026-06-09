@@ -1,8 +1,7 @@
 package com.ahmedyejam.mks.ui.quiz
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -57,7 +56,6 @@ import com.ahmedyejam.mks.ui.category.CategoryChip
 import com.ahmedyejam.mks.ui.category.CategoryEditDialog
 import com.ahmedyejam.mks.ui.category.QuestionAssetsReadOnlyDialog
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
-import com.ahmedyejam.mks.ui.theme.MksDesignTokens
 import com.ahmedyejam.mks.ui.theme.normalizeMksThemeMode
 import com.ahmedyejam.mks.data.model.CategoryWithMetadata
 
@@ -83,7 +81,7 @@ fun QuizPlayerScreen(
     viewModel: QuizViewModel,
     onQuizFinished: (Long, Int, Int) -> Unit,
     onBack: () -> Unit,
-    onViewCategoryQuestions: (String) -> Unit = {}
+    onViewCategoryQuestions: (String) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     
@@ -95,30 +93,35 @@ fun QuizPlayerScreen(
     
     val totalQuestions = state.questions.size
 
-    var fullscreenImageUrl by remember { mutableStateOf<Any?>(null) }
-    var showDropQuestionDialog by rememberSaveable { mutableStateOf(false) }
-    var showQuestionAssets by rememberSaveable { mutableStateOf(false) }
+    val fullscreenImageUrlState = remember { mutableStateOf<Any?>(null) }
+    var fullscreenImageUrl by fullscreenImageUrlState
+    val showDropQuestionDialogState = rememberSaveable { mutableStateOf(value = false) }
+    var showDropQuestionDialog by showDropQuestionDialogState
+    val showQuestionAssetsState = rememberSaveable { mutableStateOf(value = false) }
+    var showQuestionAssets by showQuestionAssetsState
     var selectedCategoryForEdit by rememberSaveable(state.allCategoriesWithMetadata) { mutableStateOf<CategoryWithMetadata?>(null) }
 
 
     if (showDropQuestionDialog) {
         AlertDialog(
-            onDismissRequest = { showDropQuestionDialog = false },
+            onDismissRequest = { showDropQuestionDialogState.value = false },
             title = { Text(stringResource(R.string.drop_question_title)) },
             text = { Text(stringResource(R.string.drop_question_msg)) },
             confirmButton = {
-                TextButton(onClick = {
-                    viewModel.dropQuestion()
-                    showDropQuestionDialog = false
-                }) {
+                TextButton(
+                    onClick = {
+                        viewModel.dropQuestion()
+                        showDropQuestionDialogState.value = false
+                    },
+                ) {
                     Text(stringResource(R.string.drop), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDropQuestionDialog = false }) {
+                TextButton(onClick = { showDropQuestionDialogState.value = false }) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
+            },
         )
     }
 
@@ -135,8 +138,7 @@ fun QuizPlayerScreen(
                 question = question,
                 assets = currentQuestionAssets,
                 sourceDocuments = currentBookSources,
-                onDismiss = { showQuestionAssets = false }
-            )
+            ) { showQuestionAssetsState.value = false }
         }
     }
 
@@ -154,7 +156,7 @@ fun QuizPlayerScreen(
     }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val fullHeight = constraints.maxHeight.toFloat()
+        val fullHeight = maxHeight.value * LocalDensity.current.density
         val density = LocalDensity.current
         var sheetContentHeight by remember { mutableFloatStateOf(0f) }
         
@@ -165,8 +167,8 @@ fun QuizPlayerScreen(
         
         val anchors = remember(fullHeight, sheetContentHeight) {
             DraggableAnchors {
-                QuizSheetValue.Collapsed at fullHeight - collapsedHeight
-                QuizSheetValue.PartiallyExpanded at fullHeight - partialHeight
+                QuizSheetValue.Collapsed at (fullHeight - collapsedHeight)
+                QuizSheetValue.PartiallyExpanded at (fullHeight - partialHeight)
                 
                 val targetExpanded = if (sheetContentHeight > 0) {
                     (fullHeight - sheetContentHeight).coerceAtLeast(expandedOffset)
@@ -184,7 +186,7 @@ fun QuizPlayerScreen(
                 positionalThreshold = { distance: Float -> distance * 0.5f },
                 velocityThreshold = { with(density) { 100.dp.toPx() } },
                 snapAnimationSpec = spring(),
-                decayAnimationSpec = exponentialDecay()
+                decayAnimationSpec = exponentialDecay(),
             )
         }
 
@@ -205,7 +207,7 @@ fun QuizPlayerScreen(
                     isAnswered = state.isAnswered,
                     score = state.score,
                     currentStreak = state.currentStreak,
-                    onBack = onBack
+                    onBack = onBack,
                 )
             }
         ) { padding ->
@@ -213,10 +215,11 @@ fun QuizPlayerScreen(
             val isOffsetNan = currentOffset.isNaN()
             val bottomPadding = if (isOffsetNan) 100.dp else with(density) { (fullHeight - currentOffset).toDp() }
 
-            Box(modifier = Modifier
-                .padding(padding)
-                .padding(bottom = bottomPadding.coerceAtLeast(0.dp))
-                .fillMaxSize()
+            Box(
+                modifier = Modifier
+                    .padding(padding)
+                    .padding(bottom = bottomPadding.coerceAtLeast(0.dp))
+                    .fillMaxSize(),
             ) {
                 if (totalQuestions == 0) {
                     EmptyQuestionsPlaceholder(error = state.error)
@@ -229,8 +232,7 @@ fun QuizPlayerScreen(
                             onEditCategory = { selectedCategoryForEdit = it },
                             onImageClick = { fullscreenImageUrl = it },
                             assetCount = currentQuestionAssets.size,
-                            onAssetsClick = { showQuestionAssets = true }
-                        )
+                        ) { showQuestionAssetsState.value = true }
                     } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
@@ -284,9 +286,8 @@ fun QuizPlayerScreen(
                 QuizSheetContent(
                     state = state,
                     viewModel = viewModel,
-                    onDropQuestion = { showDropQuestionDialog = true },
-                    onEditCategory = { selectedCategoryForEdit = it }
-                )
+                    onDropQuestion = { showDropQuestionDialogState.value = true },
+                ) { selectedCategoryForEdit = it }
             }
         }
     }
@@ -294,8 +295,7 @@ fun QuizPlayerScreen(
     fullscreenImageUrl?.let { data ->
         ZoomableImageDialog(
             imageData = data,
-            onDismiss = { fullscreenImageUrl = null }
-        )
+        ) { fullscreenImageUrlState.value = null }
     }
 
     selectedCategoryForEdit?.let { category ->
@@ -368,8 +368,8 @@ fun QuestionContent(
     val haptic = LocalHapticFeedback.current
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
-    var newCategoryName by rememberSaveable { mutableStateOf("") }
-    var totalDrag by remember { mutableStateOf(0f) }
+    var newCategoryName by rememberSaveable { mutableStateOf("")    }
+    var totalDrag by remember { mutableFloatStateOf(0f) }
     val swipeThreshold = with(LocalDensity.current) { 50.dp.toPx() }
 
     val tokens = LocalMksDesignTokens.current
@@ -418,7 +418,7 @@ fun QuestionContent(
                     }
                 )
             }
-    ) { targetIndex ->
+    ) { _ ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -450,12 +450,12 @@ fun QuestionContent(
                         }
                     }
 
-                    if (finalImage != null && (finalImage !is String || finalImage.isNotBlank())) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(finalImage)
-                                .crossfade(true)
-                                .build(),
+                    if ((finalImage != null) && ((finalImage !is String) || finalImage.isNotBlank())) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(finalImage)
+                    .crossfade(enable = true)
+                    .build(),
                             contentDescription = stringResource(R.string.question_image_desc),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -475,9 +475,9 @@ fun QuestionContent(
 
             itemsIndexed(
                 state.shuffledOptions,
-                key = { _, option -> option }
+                key = { _, option -> option },
             ) { index, option ->
-                if (!state.isOneByOne || index < state.visibleOptionsCount || state.isAnswered) {
+                if ((!state.isOneByOne) || (index < state.visibleOptionsCount) || state.isAnswered) {
                     val originalIndex = state.optionMapping[index]
                     val isDropped = state.droppedOptions.contains(originalIndex)
 
@@ -506,7 +506,7 @@ fun QuestionContent(
                 item {
                     QuestionExplanation(
                         isCorrect = state.isCorrect,
-                        explanation = currentQuestion.explanation
+                explanation = currentQuestion.explanation,
                     )
                 }
             }
@@ -639,12 +639,14 @@ fun QuestionCategories(
             label = { Text(stringResource(R.string.add_new_category_label)) },
             modifier = Modifier.fillMaxWidth(),
             trailingIcon = {
-                IconButton(onClick = {
-                    if (newCategoryName.isNotBlank()) {
-                        onToggleCategory(newCategoryName)
-                        onNewCategoryNameChange("")
-                    }
-                }) {
+                IconButton(
+                    onClick = {
+                        if (newCategoryName.isNotBlank()) {
+                            onToggleCategory(newCategoryName)
+                            onNewCategoryNameChange("")
+                        }
+                    },
+                ) {
                     Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add_new_category_label))
                 }
             }
@@ -818,7 +820,7 @@ fun QuizTopBar(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Rounded.Whatshot, contentDescription = "Streak", modifier = Modifier.size(14.dp), tint = Color(0xFFFF9800))
                                 Text(
-                                    text = "$currentStreak",
+                                    text = currentStreak.toString(),
                                     modifier = Modifier.padding(start = 4.dp),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.ExtraBold,
@@ -1180,12 +1182,11 @@ fun OptionItem(
 
     val successColor = tokens.success
     val successContainer = successColor.copy(alpha = 0.12f)
-    val onSuccessContainer = successColor
 
     val backgroundColor by animateColorAsState(
         targetValue = when {
             isAnswered && isCorrect -> successContainer
-            isAnswered && isSelected && !isCorrect -> MaterialTheme.colorScheme.errorContainer
+            isAnswered && isSelected -> MaterialTheme.colorScheme.errorContainer
             isSelected -> MaterialTheme.colorScheme.secondaryContainer
             else -> MaterialTheme.colorScheme.surface
         },
@@ -1194,8 +1195,8 @@ fun OptionItem(
     )
 
     val contentColor = when {
-        isAnswered && isCorrect -> onSuccessContainer
-        isAnswered && isSelected && !isCorrect -> MaterialTheme.colorScheme.onErrorContainer
+        isAnswered && isCorrect -> successColor
+        isAnswered && isSelected -> MaterialTheme.colorScheme.onErrorContainer
         isSelected -> MaterialTheme.colorScheme.onSecondaryContainer
         else -> MaterialTheme.colorScheme.onSurface
     }

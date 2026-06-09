@@ -16,7 +16,7 @@ data class KnowledgeStudySessionEntity(
     val targetId: Long,
     val stateJson: String,
     val isCompleted: Boolean = false,
-    val createdAt: Long,
-    val updatedAt: Long,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
     val deletedAt: Long? = null
 )

@@ -90,7 +90,7 @@ fun BookKnowledgeDashboardScreen(
                     ToolCard(
                         title = "Quizzes",
                         count = uiState.quizzes.size,
-                        icon = Icons.Rounded.Quiz,
+                        icon = Icons.Rounded.FactCheck,
                         onClick = onOpenQuizzes
                     )
                 }
@@ -99,7 +99,7 @@ fun BookKnowledgeDashboardScreen(
                     ToolCard(
                         title = "Flashcards",
                         count = uiState.flashcardDecks.size,
-                        icon = Icons.Rounded.Style,
+                        icon = Icons.Rounded.ViewCarousel,
                         onClick = onOpenFlashcards
                     )
                 }
@@ -108,7 +108,7 @@ fun BookKnowledgeDashboardScreen(
                     ToolCard(
                         title = "Slideshows",
                         count = uiState.allCourses.size,
-                        icon = Icons.Rounded.PlayLesson,
+                        icon = Icons.Rounded.Slideshow,
                         onClick = onOpenSlideshows
                     )
                 }
@@ -117,7 +117,7 @@ fun BookKnowledgeDashboardScreen(
                     ToolCard(
                         title = "Notes",
                         count = uiState.allNotes.size,
-                        icon = Icons.Rounded.Description,
+                        icon = Icons.Rounded.NoteAlt,
                         onClick = onOpenNotes
                     )
                 }
@@ -126,7 +126,7 @@ fun BookKnowledgeDashboardScreen(
                     ToolCard(
                         title = "AI Prompts",
                         count = uiState.allPromptDecks.size,
-                        icon = Icons.Rounded.SmartToy,
+                        icon = Icons.Rounded.Psychology,
                         onClick = onOpenPrompts
                     )
                 }

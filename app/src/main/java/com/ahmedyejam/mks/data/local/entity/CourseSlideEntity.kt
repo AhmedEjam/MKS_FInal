@@ -31,8 +31,8 @@ data class CourseSlideEntity(
     val imagePath: String? = null,
     val orderIndex: Int = 0,
     val isCompleted: Boolean = false,
-    val createdAt: Long,
-    val updatedAt: Long,
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
     val sourceQuestionId: Long? = null,
     val syncConfig: Map<String, Boolean> = emptyMap(),
     val deletedAt: Long? = null

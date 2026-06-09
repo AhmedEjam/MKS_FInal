@@ -377,24 +377,37 @@ welcome                                 # WelcomeScreen (conditional start)
 library                                 # LibraryScreen (start after welcome)
 ├─ quiz/{quizId}?sessionId={sessionId} # QuizPlayerScreen
 │  └─ summary/{sessionId}               # SummaryScreen
-├─ quiz_questions/{quizId}             # QuizQuestionsScreen
-├─ flashcards/{deckId}                 # FlashcardDeckScreen (Knowledge Bank)
-├─ slideshow/{courseId}                # SlideshowCourseScreen (Knowledge Bank)
-├─ blueprint/{noteId}                  # ReviewBlueprintScreen (Knowledge Bank)
+├─ quiz_questions/{quizId}?questionId={questionId} # QuizQuestionsScreen
+├─ flashcards/{deckId}?cardId={cardId} # FlashcardDeckScreen (Knowledge Bank)
+├─ book_dashboard/{bookId}             # BookKnowledgeDashboardScreen
+├─ book_slideshows/{bookId}            # SlideshowCourseListScreen
+├─ book_blueprints/{bookId}            # ReviewBlueprintListScreen
+├─ book_sources/{bookId}?sourceId={sourceId} # SourceDocumentListScreen
+├─ book_prompts/{bookId}               # AiPromptDeckListScreen
 ├─ book_notes/{bookId}                 # BookNotesScreen (Knowledge Bank)
-├─ prompt_deck/{promptId}              # AiPromptDeckScreen (Knowledge Bank)
+├─ slideshow/{courseId}?slideId={slideId} # SlideshowCourseScreen
+├─ blueprint/{noteId}                  # ReviewBlueprintScreen (Knowledge Bank)
+├─ prompt_deck/{promptId}?cardId={cardId}&runId={runId} # AiPromptDeckScreen
+├─ global_search                       # GlobalSearchScreen
+├─ review_dashboard?mistakeId={mistakeId} # ReviewDashboardScreen
+├─ data_tools                          # DataToolsScreen
 ├─ category/{category}                 # CategoryQuestionsScreen
 ├─ adaptive/{type}/{id}                # AdaptiveTrainingScreen
-│  (type = "BOOK"|"CATEGORY"|"QUIZ"|"QUESTION")
+│  (type = "BOOK"|"CATEGORY"|"QUIZ"|"ALL")
 ├─ sessions/{quizId}                   # SessionManagementScreen
 ├─ scanner/{quizId}                    # ScannerScreen
 └─ settings                             # SettingsScreen
 ```
 
-**Knowledge Bank Screens** (new):
+**Knowledge Bank Screens:**
 - All routed through unified `BookToolsViewModel` or dedicated ViewModels
 - All use manual DI pattern like other screens
 - Integrated into `MksNavHost.kt` with appropriate route parameters
+
+**Utility Screens:**
+- `global_search` — cross-entity search via `GlobalSearchViewModel`
+- `review_dashboard` — unified review queue via `ReviewDashboardViewModel`
+- `data_tools` — bulk import/export via `DataToolsViewModel`
 
 ### ViewModelFactory Pattern (Manual DI)
 
@@ -603,7 +616,7 @@ app/src/main/
 │  ├─ MainActivity.kt                 # Single activity
 │  ├─ MksApplication.kt               # App + Coil setup
 │  ├─ di/
-│  │  └─ AppModule.kt                 # DI container (838 lines)
+│  │  └─ AppModule.kt                 # DI container (1403 lines)
 │  ├─ data/
 │  │  ├─ import/                      # Multi-format parsing pipeline
 │  │  │  ├─ detector/ImportFormatDetector.kt
@@ -613,9 +626,10 @@ app/src/main/
 │  │  │  │  ├─ XlsxImageResolver.kt
 │  │  │  │  └─ XlsxLibraryCompiler.kt
 │  │  │  └─ validation/ImportValidator.kt
-│  │  ├─ local/
-│  │  │  ├─ MksDatabase.kt            # Room v17
-│  │  │  ├─ entity/                   # 15 entity classes
+│  │  │  ├─ MksDatabase.kt            # Room v26
+│  │  │  ├─ MksMigrations.kt          # 25 migration steps (1→26)
+│  │  │  ├─ Converters.kt             # TypeConverters
+│  │  │  ├─ entity/                   # 24 entity classes
 │  │  │  │  ├─ {Book,Quiz,Question,Session,Category}Entity.kt
 │  │  │  │  ├─ FlashcardDeckEntity.kt
 │  │  │  │  ├─ FlashcardEntity.kt
@@ -627,41 +641,76 @@ app/src/main/
 │  │  │  │  ├─ KnowledgeStudySessionEntity.kt
 │  │  │  │  ├─ QuestionCategoryEntity.kt
 │  │  │  │  └─ AssetReferenceEntity.kt
-│  │  │  ├─ dao/                      # DAO interfaces
-│  │  │  ├─ converter/                # TypeConverters
+│  │  │  ├─ dao/                      # 24 DAO interfaces
 │  │  │  └─ FileManager.kt
 │  │  ├─ repository/
-│  │  │  ├─ MksRepository.kt          # Main data access
+│  │  │  ├─ MksRepository.kt          # Main data access (2632 lines)
 │  │  │  └─ ExportManager.kt
 │  │  ├─ preferences/DataStoreManager.kt
 │  │  ├─ focus/FocusManager.kt
+│  │  ├─ exchange/                    # Bundle exchange format (v7)
+│  │  ├─ exportfull/                  # Full library export service
+│  │  ├─ network/                     # RemoteAssetFetcher
+│  │  ├─ preview/                     # Delete/merge preview services
+│  │  ├─ repair/                      # Asset reference audit
+│  │  ├─ review/                      # ReviewRepository
+│  │  ├─ search/                      # GlobalSearchRepository
+│  │  ├─ simulation/                  # Training simulation
+│  │  ├─ validation/                  # Data validation
 │  │  └─ model/                       # Domain models
 │  └─ ui/
-│     ├─ MksNavHost.kt                # Navigation setup
-│     ├─ welcome/WelcomeScreen.kt     # Onboarding (new)
-│     ├─ library/LibraryScreen + ViewModel
+│     ├─ MksNavHost.kt                # Navigation setup (708 lines, 22+ routes)
+│     ├─ MksRoutes.kt                 # Route constants & builders
+│     ├─ welcome/WelcomeScreen.kt     # Onboarding
+│     ├─ library/
+│     │  ├─ LibraryScreen.kt (756 lines)
+│     │  ├─ LibraryViewModel.kt (641 lines)
+│     │  └─ components/
+│     │     ├─ LibraryComponents.kt (1128 lines)
+│     │     ├─ LibraryContentGrid.kt
+│     │     ├─ LibraryTopBar.kt
+│     │     ├─ LibraryFabMenu.kt
+│     │     ├─ LibraryDialogs.kt
+│     │     └─ SortDialog.kt
 │     ├─ quiz/
 │     │  ├─ CompilerViewModel.kt      # Import orchestrator
-│     │  ├─ QuizViewModel.kt
+│     │  ├─ QuizViewModel.kt (1396 lines)
 │     │  ├─ QuizQuestionsViewModel.kt
-│     │  ├─ QuizPlayerScreen.kt
-│     │  └─ ...Screen files
+│     │  ├─ QuizPlayerScreen.kt (1336 lines)
+│     │  └─ QuizQuestionsScreen.kt
 │     ├─ flashcard/
-│     │  ├─ FlashcardDeckScreen.kt    # Flashcard display (new)
-│     │  └─ FlashcardDeckViewModel.kt
+│     │  └─ FlashcardDeckScreen.kt    # List & study modes
+│     ├─ slideshow/
+│     │  ├─ SlideshowCourseScreen.kt
+│     │  └─ SlideshowCourseViewModel.kt
 │     ├─ booktools/
-│     │  ├─ BookToolScreens.kt        # Multiple Knowledge Bank screens (new)
-│     │  │  ├─ SlideshowCourseScreen
-│     │  │  ├─ ReviewBlueprintScreen
-│     │  │  ├─ BookNotesScreen
-│     │  │  └─ AiPromptDeckScreen
-│     │  └─ BookToolsViewModel.kt     # Unified ViewModel
-│     ├─ summary/SummaryScreen + ViewModel
+│     │  ├─ BookToolsViewModel.kt      # Unified ViewModel
+│     │  ├─ BookKnowledgeDashboardScreen.kt
+│     │  ├─ AiPromptDeckScreen.kt
+│     │  ├─ AiPromptDeckListScreen.kt
+│     │  ├─ BookNotesScreen.kt
+│     │  ├─ ReviewBlueprintScreen.kt
+│     │  ├─ ReviewBlueprintListScreen.kt
+│     │  ├─ SlideshowCourseListScreen.kt
+│     │  └─ SourceDocumentListScreen.kt
+│     ├─ search/
+│     │  ├─ GlobalSearchScreen.kt
+│     │  └─ GlobalSearchViewModel.kt
+│     ├─ review/
+│     │  ├─ ReviewDashboardScreen.kt
+│     │  └─ ReviewDashboardViewModel.kt
+│     ├─ data/
+│     │  ├─ DataToolsScreen.kt
+│     │  └─ DataToolsViewModel.kt
+│     ├─ summary/SummaryScreen (500 lines) + ViewModel
 │     ├─ category/CategoryQuestionsScreen + ViewModel
 │     ├─ session/SessionManagementScreen + ViewModel
 │     ├─ scanner/ScannerScreen + ViewModel
-│     ├─ settings/SettingsScreen
+│     ├─ settings/SettingsScreen.kt (525 lines)
 │     ├─ import/ImportViewModel.kt
+│     ├─ common/InvalidRouteScreen.kt  # Route error fallback
+│     ├─ components/                   # Shared UI components
+│     ├─ navigation/                   # Route builders & argument helpers
 │     └─ theme/
 │        ├─ Color.kt
 │        ├─ Type.kt
@@ -719,14 +768,16 @@ app/src/main/
 
 ## Additional Resources
 
-The following complementary documentation exists in the project root:
+The following complementary documentation exists in the project:
 
-- **`CLAUDE.md`** - Guidance specific to Claude AI coding sessions
-- **`KNOWLEDGE_BANK_IMPLEMENTATION_PLAN.md`** - Detailed vision and implementation notes for the Knowledge Bank feature
-- **`KNOWLEDGE_BANK_CREATION_UI_NOTES.md`** - UI screen designs and navigation flow for Knowledge Bank screens
+- **`docs/CLAUDE.md`** - Guidance specific to Claude AI coding sessions
+- **`docs/Other docs/KNOWLEDGE_BANK_IMPLEMENTATION_PLAN.md`** - Detailed vision and implementation notes for the Knowledge Bank feature
+- **`docs/Other docs/KNOWLEDGE_BANK_CREATION_UI_NOTES.md`** - UI screen designs and navigation flow for Knowledge Bank screens
 - **`APP_ARCHITECTURE_MAP.md`** - High-level architecture overview with component diagrams
+- **`USER_JOURNEY_MAP_claudeopus.md`** - Detailed screen-by-screen UI interaction map (comprehensive)
+- **`user_Jour_Geminipro.md`** - Condensed user journey and UI map
 
-For most tasks, read the relevant sections in this AGENTS.md. For deep architectural questions, consult the additional markdown files in the project root.
+For most tasks, read the relevant sections in this AGENTS.md. For deep architectural questions, consult the additional markdown files.
 
 ## Common Tasks
 

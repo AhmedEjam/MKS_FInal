@@ -2,7 +2,6 @@ package com.ahmedyejam.mks.ui.booktools
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
@@ -28,8 +28,15 @@ import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.PlayLesson
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.SmartToy
+import androidx.compose.material.icons.rounded.NoteAlt
+import androidx.compose.material.icons.rounded.Psychology
+import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.Source
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -69,7 +76,6 @@ import androidx.compose.ui.unit.dp
 import com.ahmedyejam.mks.R
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 import com.ahmedyejam.mks.data.local.entity.BlueprintMode
-import com.ahmedyejam.mks.data.local.entity.BlueprintReviewStatus
 import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
 import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
 import com.ahmedyejam.mks.data.local.entity.PromptCardEntity
@@ -90,9 +96,12 @@ fun SlideshowCourseListScreen(
     onOpenCourse: (Long) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
-    var showCreate by remember { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<SlideshowCourseEntity?>(null) }
-    var deleting by remember { mutableStateOf<SlideshowCourseEntity?>(null) }
+    val showCreateState = remember { mutableStateOf(false) }
+    var showCreate by showCreateState
+    val editingState = remember { mutableStateOf<SlideshowCourseEntity?>(null) }
+    var editing by editingState
+    val deletingState = remember { mutableStateOf<SlideshowCourseEntity?>(null) }
+    var deleting by deletingState
 
     LaunchedEffect(bookId) { viewModel.loadBook(bookId) }
 
@@ -102,10 +111,10 @@ fun SlideshowCourseListScreen(
             titleLabel = "Course title",
             bodyLabel = "Description",
             confirmLabel = "Create",
-            onDismiss = { showCreate = false },
+            onDismiss = { showCreateState.value = false },
             onConfirm = { title, body ->
                 viewModel.createSlideshowCourse(bookId, title, body.takeIf { it.isNotBlank() })
-                showCreate = false
+                showCreateState.value = false
             }
         )
     }
@@ -117,10 +126,10 @@ fun SlideshowCourseListScreen(
             titleLabel = "Course title",
             bodyLabel = "Description",
             confirmLabel = "Save",
-            onDismiss = { editing = null },
+            onDismiss = { editingState.value = null },
             onConfirm = { title, body ->
                 viewModel.updateSlideshowCourse(course.copy(title = title, description = body.takeIf { it.isNotBlank() }))
-                editing = null
+                editingState.value = null
             }
         )
     }
@@ -128,8 +137,8 @@ fun SlideshowCourseListScreen(
         ConfirmDeleteDialog(
             title = "Delete slideshow?",
             body = "Delete '${course.title}' and its slides?",
-            onDismiss = { deleting = null },
-            onConfirm = { viewModel.deleteSlideshowCourse(course); deleting = null }
+            onDismiss = { deletingState.value = null },
+            onConfirm = { viewModel.deleteSlideshowCourse(course); deletingState.value = null }
         )
     }
 
@@ -141,12 +150,12 @@ fun SlideshowCourseListScreen(
         empty = state.allCourses.isEmpty(),
         emptyTitle = "No slideshow courses",
         emptyBody = "Create a lightweight slideshow course from this book when needed.",
-        floatingActionButton = { FloatingActionButton(onClick = { showCreate = true }) { Icon(Icons.Rounded.Add, null) } }
+        floatingActionButton = { FloatingActionButton(onClick = { showCreateState.value = true }) { Icon(Icons.Rounded.Add, null) } }
     ) { padding ->
         LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { BookSummaryStrip(state.bookSummary) }
             items(state.allCourses, key = { it.id }) { course ->
-                BookToolListItem(course.title, course.description ?: "${course.slideCount} slides", Icons.Rounded.PlayLesson, { onOpenCourse(course.id) }, { editing = course }, { deleting = course })
+                BookToolListItem(course.title, course.description ?: "${course.slideCount} slides", Icons.Rounded.Slideshow, { onOpenCourse(course.id) }, { editingState.value = course }, { deletingState.value = course })
             }
         }
     }
@@ -161,44 +170,56 @@ fun ReviewBlueprintListScreen(
     onOpenNote: (Long) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
-    var showCreate by remember { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<NoteBlueprintEntity?>(null) }
-    var deleting by remember { mutableStateOf<NoteBlueprintEntity?>(null) }
+    val showCreateState = remember { mutableStateOf(false) }
+    var showCreate by showCreateState
+    val editingState = remember { mutableStateOf<NoteBlueprintEntity?>(null) }
+    var editing by editingState
+    val deletingState = remember { mutableStateOf<NoteBlueprintEntity?>(null) }
+    var deleting by deletingState
 
     LaunchedEffect(bookId) { viewModel.loadBook(bookId) }
 
     if (showCreate) {
-        BlueprintCreateDialog(
-            onDismiss = { showCreate = false },
-            onCreate = { title, body, mode -> viewModel.createNote(bookId, title, body, mode = mode); showCreate = false },
-            onMarked = { viewModel.createBlueprintFromMarked(bookId, "Marked questions blueprint"); showCreate = false },
-            onMissed = { viewModel.createBlueprintFromMissed(bookId, "Missed questions blueprint"); showCreate = false }
+        ArticleCreateDialog(
+            onDismiss = { showCreateState.value = false },
+            onCreate = { title, body, mode ->
+                viewModel.createNote(bookId, title, body, mode = mode)
+                showCreateState.value = false
+            },
+            onMarked = {
+                viewModel.createBlueprintFromMarked(bookId, "Marked questions article")
+                showCreateState.value = false
+            },
+            onMissed = {
+                viewModel.createBlueprintFromMissed(bookId, "Missed questions article")
+                showCreateState.value = false
+            }
         )
     }
     editing?.let { note ->
-        BlueprintCreateDialog(
+        ArticleCreateDialog(
             initialTitle = note.title,
             initialBody = note.body,
             initialMode = note.blueprintMode,
-            onDismiss = { editing = null },
-            onCreate = { title, body, mode -> viewModel.updateNote(note.copy(title = title, body = body, blueprintMode = mode)); editing = null },
+            onDismiss = { editingState.value = null },
+            onCreate = { title, body, mode -> viewModel.updateNote(note.copy(title = title, body = body, blueprintMode = mode)); editingState.value = null },
             onMarked = null,
             onMissed = null
         )
     }
     deleting?.let { note ->
-        ConfirmDeleteDialog("Delete blueprint?", "Delete '${note.title}'?", { deleting = null }, { viewModel.deleteNote(note); deleting = null })
+        ConfirmDeleteDialog("Delete article?", "Delete '${note.title}'?", { deletingState.value = null }, { viewModel.deleteNote(note); deletingState.value = null })
     }
 
     BookToolListScaffold(
-        title = "Blueprints",
+        title = "Articles",
         onBack = onBack,
         isLoading = state.isLoading,
         error = state.error,
         empty = state.allNotes.isEmpty(),
-        emptyTitle = "No blueprints",
-        emptyBody = "Create a disease, drug, concept, or mistake-review blueprint.",
-        floatingActionButton = { FloatingActionButton(onClick = { showCreate = true }) { Icon(Icons.Rounded.Add, null) } }
+        emptyTitle = "No articles",
+        emptyBody = "Create a disease, drug, concept, or mistake-review article.",
+        floatingActionButton = { FloatingActionButton(onClick = { showCreateState.value = true }) { Icon(Icons.Rounded.Add, null) } }
     ) { padding ->
         LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { BookSummaryStrip(state.bookSummary) }
@@ -206,10 +227,10 @@ fun ReviewBlueprintListScreen(
                 BookToolListItem(
                     title = note.title,
                     subtitle = "${note.blueprintMode} - ${note.reviewStatus} - ${note.summary ?: note.body.take(120)}",
-                    icon = Icons.Rounded.Description,
+                    icon = Icons.Rounded.NoteAlt,
                     onClick = { onOpenNote(note.id) },
-                    onEdit = { editing = note },
-                    onDelete = { deleting = note }
+                    onEdit = { editingState.value = note },
+                    onDelete = { deletingState.value = note }
                 )
             }
         }
@@ -225,26 +246,37 @@ fun SourceDocumentListScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
-    var showCreate by remember { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<SourceDocumentEntity?>(null) }
-    var deleting by remember { mutableStateOf<SourceDocumentEntity?>(null) }
+    val showCreateState = remember { mutableStateOf(false) }
+    var showCreate by showCreateState
+    val editingState = remember { mutableStateOf<SourceDocumentEntity?>(null) }
+    var editing by editingState
+    val deletingState = remember { mutableStateOf<SourceDocumentEntity?>(null) }
+    var deleting by deletingState
 
     LaunchedEffect(bookId) { viewModel.loadBook(bookId) }
 
+    val listState = rememberLazyListState()
+    LaunchedEffect(state.allSources, focusedSourceId) {
+        focusedSourceId?.let { id ->
+            val index = state.allSources.indexOfFirst { it.id == id }
+            if (index >= 0) listState.animateScrollToItem(index + 1)
+        }
+    }
+
     if (showCreate) {
-        SourceDocumentDialog("Create source", "Create", onDismiss = { showCreate = false }) { title, type, details ->
+        SourceDocumentDialog("Create source", "Create", onDismiss = { showCreateState.value = false }) { title, type, details ->
             viewModel.createSource(bookId, title, type, details)
-            showCreate = false
+            showCreateState.value = false
         }
     }
     editing?.let { source ->
-        SourceDocumentDialog("Edit source", "Save", source.title, source.sourceType, source.description.orEmpty(), { editing = null }) { title, type, details ->
+        SourceDocumentDialog("Edit source", "Save", source.title, source.sourceType, source.description.orEmpty(), { editingState.value = null }) { title, type, details ->
             viewModel.updateSource(source.copy(title = title, sourceType = type, description = details.takeIf { it.isNotBlank() }))
-            editing = null
+            editingState.value = null
         }
     }
     deleting?.let { source ->
-        ConfirmDeleteDialog("Delete source?", "Delete '${source.title}'? Citation assets may keep unresolved references.", { deleting = null }, { viewModel.deleteSource(source); deleting = null })
+        ConfirmDeleteDialog("Delete source?", "Delete '${source.title}'? Citation assets may keep unresolved references.", { deletingState.value = null }, { viewModel.deleteSource(source); deletingState.value = null })
     }
 
     BookToolListScaffold(
@@ -255,12 +287,17 @@ fun SourceDocumentListScreen(
         empty = state.allSources.isEmpty(),
         emptyTitle = "No sources",
         emptyBody = "Add book-specific textbooks, PDFs, lectures, websites, or guidelines.",
-        floatingActionButton = { FloatingActionButton(onClick = { showCreate = true }) { Icon(Icons.Rounded.Add, null) } }
+        floatingActionButton = { FloatingActionButton(onClick = { showCreateState.value = true }) { Icon(Icons.Rounded.Add, null) } }
     ) { padding ->
-        LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(
+            modifier = Modifier.padding(padding).fillMaxSize(),
+            state = listState,
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             item { BookSummaryStrip(state.bookSummary) }
             items(state.allSources, key = { it.id }) { source ->
-                BookToolListItem(source.title, "${source.sourceType} - ${source.description.orEmpty()}", Icons.Rounded.Source, {}, { editing = source }, { deleting = source })
+                BookToolListItem(source.title, "${source.sourceType} - ${source.description.orEmpty()}", Icons.Rounded.Source, {}, { editingState.value = source }, { deletingState.value = source })
             }
         }
     }
@@ -275,26 +312,29 @@ fun AiPromptDeckListScreen(
     onOpenPrompt: (Long) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
-    var showCreate by remember { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<PromptDeckEntity?>(null) }
-    var deleting by remember { mutableStateOf<PromptDeckEntity?>(null) }
+    val showCreateState = remember { mutableStateOf(false) }
+    var showCreate by showCreateState
+    val editingState = remember { mutableStateOf<PromptDeckEntity?>(null) }
+    var editing by editingState
+    val deletingState = remember { mutableStateOf<PromptDeckEntity?>(null) }
+    var deleting by deletingState
 
     LaunchedEffect(bookId) { viewModel.loadBook(bookId) }
 
     if (showCreate) {
-        TitleBodyDialog("Create prompt deck", "Deck title", "Description", "Create", onDismiss = { showCreate = false }) { title, body ->
+        TitleBodyDialog("Create prompt deck", "Deck title", "Description", "Create", onDismiss = { showCreateState.value = false }) { title, body ->
             viewModel.createPromptDeck(bookId, title, body.takeIf { it.isNotBlank() })
-            showCreate = false
+            showCreateState.value = false
         }
     }
     editing?.let { deck ->
-        TitleBodyDialog("Edit prompt deck", "Deck title", "Description", "Save", deck.title, deck.description.orEmpty(), { editing = null }) { title, body ->
+        TitleBodyDialog("Edit prompt deck", "Deck title", "Description", "Save", deck.title, deck.description.orEmpty(), { editingState.value = null }) { title, body ->
             viewModel.updatePromptDeck(deck.copy(title = title, description = body.takeIf { it.isNotBlank() }))
-            editing = null
+            editingState.value = null
         }
     }
     deleting?.let { deck ->
-        ConfirmDeleteDialog("Delete prompt deck?", "Delete '${deck.title}' and its cards/runs?", { deleting = null }, { viewModel.deletePromptDeck(deck); deleting = null })
+        ConfirmDeleteDialog("Delete prompt deck?", "Delete '${deck.title}' and its cards/runs?", { deletingState.value = null }, { viewModel.deletePromptDeck(deck); deletingState.value = null })
     }
 
     BookToolListScaffold(
@@ -304,76 +344,13 @@ fun AiPromptDeckListScreen(
         error = state.error,
         empty = state.allPromptDecks.isEmpty(),
         emptyTitle = "No prompt decks",
-        emptyBody = "Create reusable prompt decks for quiz generation, flashcards, and blueprints.",
-        floatingActionButton = { FloatingActionButton(onClick = { showCreate = true }) { Icon(Icons.Rounded.Add, null) } }
+        emptyBody = "Create reusable prompt decks for quiz generation, flashcards, and articles.",
+        floatingActionButton = { FloatingActionButton(onClick = { showCreateState.value = true }) { Icon(Icons.Rounded.Add, null) } }
     ) { padding ->
         LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { BookSummaryStrip(state.bookSummary) }
             items(state.allPromptDecks, key = { it.id }) { deck ->
-                BookToolListItem(deck.title, deck.description ?: "Reusable prompt deck", Icons.Rounded.SmartToy, { onOpenPrompt(deck.id) }, { editing = deck }, { deleting = deck })
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SlideshowCourseScreen(
-    courseId: Long,
-    focusedSlideId: Long? = null,
-    viewModel: BookToolsViewModel,
-    onBack: () -> Unit
-) {
-    val state by viewModel.uiState.collectAsState()
-    var showCreate by remember { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<CourseSlideEntity?>(null) }
-    var deleting by remember { mutableStateOf<CourseSlideEntity?>(null) }
-
-    LaunchedEffect(courseId) { 
-        viewModel.loadCourse(courseId)
-    }
-
-    // Auto-open/focus slide if provided
-    LaunchedEffect(state.courseSlides, focusedSlideId) {
-        if (focusedSlideId != null && state.courseSlides.isNotEmpty()) {
-            val slide = state.courseSlides.find { it.id == focusedSlideId }
-            if (slide != null) {
-                // In this implementation, SlideshowCourseScreen is a list, 
-                // so we might want to highlight or scroll to it.
-                // For now, let's just make sure we are loaded.
-            }
-        }
-    }
-
-    if (showCreate) {
-        TitleBodyDialog("Create slide", "Slide title", "Body", "Create", onDismiss = { showCreate = false }) { title, body ->
-            viewModel.createCourseSlide(courseId, title, body)
-            showCreate = false
-        }
-    }
-    editing?.let { slide ->
-        TitleBodyDialog("Edit slide", "Slide title", "Body", "Save", slide.title, slide.body, { editing = null }) { title, body ->
-            viewModel.updateCourseSlide(slide.copy(title = title, body = body))
-            editing = null
-        }
-    }
-    deleting?.let { slide ->
-        ConfirmDeleteDialog("Delete slide?", "Delete '${slide.title}'?", { deleting = null }, { viewModel.deleteCourseSlide(slide); deleting = null })
-    }
-
-    BookToolListScaffold(
-        title = state.slideshowCourse?.title ?: "Slideshow",
-        onBack = onBack,
-        isLoading = state.isLoading,
-        error = state.error,
-        empty = state.courseSlides.isEmpty(),
-        emptyTitle = "No slides",
-        emptyBody = "Add slides to this course.",
-        floatingActionButton = { FloatingActionButton(onClick = { showCreate = true }) { Icon(Icons.Rounded.Add, null) } }
-    ) { padding ->
-        LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(state.courseSlides, key = { it.id }) { slide ->
-                BookToolListItem(slide.title, slide.body.take(160), Icons.Rounded.PlayLesson, {}, { editing = slide }, { deleting = slide })
+                BookToolListItem(deck.title, deck.description ?: "Reusable prompt deck", Icons.Rounded.Psychology, { onOpenPrompt(deck.id) }, { editingState.value = deck }, { deletingState.value = deck })
             }
         }
     }
@@ -388,11 +365,11 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
     LaunchedEffect(state.noteBlueprint?.id) { editedBody = state.noteBlueprint?.body.orEmpty() }
     val note = state.noteBlueprint
 
-    Scaffold(topBar = { ToolTopBar(note?.title ?: "Blueprint", onBack) }) { padding ->
+    Scaffold(topBar = { ToolTopBar(note?.title ?: "Article", onBack) }) { padding ->
         when {
             state.isLoading -> LoadingPane(Modifier.padding(padding))
             state.error != null -> MessagePane(Modifier.padding(padding), "Error", state.error ?: "Unknown error")
-            note == null -> MessagePane(Modifier.padding(padding), "Blueprint", "Blueprint not found.")
+            note == null -> MessagePane(Modifier.padding(padding), "Article", "Article not found.")
             else -> LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item {
                     val tokens = LocalMksDesignTokens.current
@@ -401,13 +378,12 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                         elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
                     ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("${note.blueprintMode} - ${note.reviewStatus}", style = MaterialTheme.typography.bodyMedium)
-                        Text("Reviewed ${note.reviewCount} time(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        OutlinedTextField(editedBody, { editedBody = it }, modifier = Modifier.fillMaxWidth(), minLines = 8, label = { Text("Blueprint body") })
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(editedBody, { editedBody = it }, modifier = Modifier.fillMaxWidth(), minLines = 8, label = { Text("Article body") })
+                        Spacer(Modifier.height(16.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { viewModel.updateNote(note.copy(body = editedBody)) }) { Icon(Icons.Rounded.Save, null); Spacer(Modifier.width(6.dp)); Text("Save") }
+                            FilledTonalButton(onClick = { viewModel.updateNote(note.copy(body = editedBody)) }) { Text("Save") }
                             FilledTonalButton(onClick = { viewModel.recordNoteReview(note) }) { Text("Mark reviewed") }
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilledTonalButton(onClick = { viewModel.createFlashcardsFromBlueprint(note.id) }) { Text("To flashcards") }
                             FilledTonalButton(onClick = { viewModel.appendBlueprintToQuestionNote(note.id) }) { Text("Append to question note") }
                         }
@@ -423,17 +399,88 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
 fun BookNotesScreen(bookId: Long, viewModel: BookToolsViewModel, onBack: () -> Unit) {
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(bookId) { viewModel.loadBook(bookId) }
-    BookToolListScaffold("Question notes", onBack, state.isLoading, state.error, state.questions.none { !it.notes.isNullOrBlank() }, "No question notes", "Question notes will appear here.") { padding ->
-        LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(state.questions.filter { !it.notes.isNullOrBlank() }, key = { it.id }) { question ->
-                val tokens = LocalMksDesignTokens.current
-                Card(
-                    shape = RoundedCornerShape(tokens.cardRadius),
-                    elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
-                ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(question.text, fontWeight = FontWeight.Bold)
-                    Text(question.notes.orEmpty())
-                } }
+    
+    var selectedQuizId by remember { mutableStateOf<Long?>(null) }
+    var expanded by remember { mutableStateOf(false) }
+
+    BookToolListScaffold("Question notes", onBack, state.isLoading, state.error, state.questions.none { !it.notes.isNullOrBlank() } && selectedQuizId == null, "No question notes", "Question notes will appear here.") { padding ->
+        Column(Modifier.padding(padding).fillMaxSize()) {
+            if (state.quizzes.isNotEmpty()) {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it },
+                    modifier = Modifier.fillMaxWidth().padding(16.dp)
+                ) {
+                    val selectedQuiz = state.quizzes.find { it.id == selectedQuizId }
+                    OutlinedTextField(
+                        value = selectedQuiz?.title ?: "All existing notes",
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("All existing notes") },
+                            onClick = { selectedQuizId = null; expanded = false }
+                        )
+                        state.quizzes.forEach { quiz ->
+                            DropdownMenuItem(
+                                text = { Text(quiz.title) },
+                                onClick = { selectedQuizId = quiz.id; expanded = false }
+                            )
+                        }
+                    }
+                }
+            }
+
+            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (selectedQuizId == null) {
+                    items(state.questions.filter { !it.notes.isNullOrBlank() }, key = { "note_${it.id}" }) { question ->
+                        val tokens = LocalMksDesignTokens.current
+                        Card(
+                            shape = RoundedCornerShape(tokens.cardRadius),
+                            elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
+                        ) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(question.text, fontWeight = FontWeight.Bold)
+                                Text(question.notes.orEmpty())
+                            }
+                        }
+                    }
+                } else {
+                    val questions = state.questionsByQuiz[selectedQuizId] ?: emptyList()
+                    items(questions, key = { "edit_${it.id}" }) { question ->
+                        val tokens = LocalMksDesignTokens.current
+                        var noteText by remember(question.id, question.notes) { mutableStateOf(question.notes.orEmpty()) }
+                        
+                        Card(
+                            shape = RoundedCornerShape(tokens.cardRadius),
+                            elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
+                        ) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(question.text, fontWeight = FontWeight.Bold)
+                                OutlinedTextField(
+                                    value = noteText,
+                                    onValueChange = { noteText = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    minLines = 2,
+                                    label = { Text("Note") },
+                                    trailingIcon = {
+                                        if (noteText != question.notes.orEmpty()) {
+                                            IconButton(onClick = { viewModel.updateQuestionNote(question.id, noteText) }) {
+                                                Icon(Icons.Rounded.Save, "Save")
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -450,17 +497,27 @@ fun AiPromptDeckScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val clipboard = LocalClipboardManager.current
-    var showCardDialog by remember { mutableStateOf(false) }
-    var editingCard by remember { mutableStateOf<PromptCardEntity?>(null) }
+    val showCardDialogState = remember { mutableStateOf(false) }
+    var showCardDialog by showCardDialogState
+    val editingCardState = remember { mutableStateOf<PromptCardEntity?>(null) }
+    var editingCard by editingCardState
     var selectedCardId by remember { mutableStateOf<Long?>(null) }
     var outputText by remember { mutableStateOf("") }
 
     LaunchedEffect(promptId) { viewModel.loadPromptDeck(promptId) }
 
+    val listState = rememberLazyListState()
+
     // Use focused IDs if provided
     LaunchedEffect(state.promptCards, focusedCardId) {
         if (focusedCardId != null) {
             selectedCardId = focusedCardId
+        }
+    }
+
+    LaunchedEffect(state.promptRuns, focusedRunId) {
+        focusedRunId?.let {
+            // Optional: scroll to run history or highlight
         }
     }
 
@@ -481,10 +538,10 @@ fun AiPromptDeckScreen(
 
     if (showCardDialog) {
         PromptCardDialog(
-            onDismiss = { showCardDialog = false },
+            onDismiss = { showCardDialogState.value = false },
             onConfirm = { title, prompt, type ->
                 state.promptDeck?.let { viewModel.createPromptCard(it.id, title, prompt, type) }
-                showCardDialog = false
+                showCardDialogState.value = false
             }
         )
     }
@@ -493,20 +550,25 @@ fun AiPromptDeckScreen(
             initialTitle = card.title,
             initialPrompt = card.promptText,
             initialType = card.outputType,
-            onDismiss = { editingCard = null },
+            onDismiss = { editingCardState.value = null },
             onConfirm = { title, prompt, type ->
                 viewModel.updatePromptCard(card.copy(title = title, promptText = prompt, outputType = type))
-                editingCard = null
+                editingCardState.value = null
             }
         )
     }
 
-    Scaffold(topBar = { ToolTopBar(state.promptDeck?.title ?: "Prompt deck", onBack) }, floatingActionButton = { FloatingActionButton(onClick = { showCardDialog = true }) { Icon(Icons.Rounded.Add, null) } }) { padding ->
+    Scaffold(topBar = { ToolTopBar(state.promptDeck?.title ?: "Prompt deck", onBack) }, floatingActionButton = { FloatingActionButton(onClick = { showCardDialogState.value = true }) { Icon(Icons.Rounded.Add, null) } }) { padding ->
         when {
             state.isLoading -> LoadingPane(Modifier.padding(padding))
             state.error != null -> MessagePane(Modifier.padding(padding), "Error", state.error ?: "Unknown error")
             state.promptDeck == null -> MessagePane(Modifier.padding(padding), "Prompt deck", "Prompt deck not found.")
-            else -> LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            else -> LazyColumn(
+                modifier = Modifier.padding(padding).fillMaxSize(),
+                state = listState,
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 item {
                     val tokens = LocalMksDesignTokens.current
                     Card(
@@ -535,7 +597,7 @@ fun AiPromptDeckScreen(
                                         Text(card.title, fontWeight = FontWeight.Bold)
                                         Text("${card.outputType} - used ${card.usageCount} time(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                    IconButton(onClick = { editingCard = card }) { Icon(Icons.Rounded.Edit, "Edit") }
+                                    IconButton(onClick = { editingCardState.value = card }) { Icon(Icons.Rounded.Edit, "Edit") }
                                     IconButton(onClick = { viewModel.deletePromptCard(card) }) { Icon(Icons.Rounded.Delete, "Delete") }
                                 }
                                 Text(card.promptText.take(180), style = MaterialTheme.typography.bodySmall)
@@ -566,7 +628,7 @@ fun AiPromptDeckScreen(
                                 FilledTonalButton(onClick = { viewModel.savePromptOutputAsNote(card, outputText, "${card.title} note") }, enabled = outputText.isNotBlank()) { Text("To note") }
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsBlueprint(card, outputText, "${card.title} blueprint") }, enabled = outputText.isNotBlank()) { Text("To blueprint") }
+                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsBlueprint(card, outputText, "${card.title} article") }, enabled = outputText.isNotBlank()) { Text("To article") }
                                 FilledTonalButton(onClick = { viewModel.savePromptOutputAsFlashcards(card, outputText, "${card.title} flashcards") }, enabled = outputText.isNotBlank()) { Text("To flashcards") }
                             }
                         } }
@@ -767,7 +829,7 @@ private fun ConfirmDeleteDialog(title: String, body: String, onDismiss: () -> Un
 }
 
 @Composable
-private fun BlueprintCreateDialog(
+private fun ArticleCreateDialog(
     initialTitle: String = "",
     initialBody: String = "",
     initialMode: String = BlueprintMode.CONCEPT_TEMPLATE,
@@ -781,7 +843,7 @@ private fun BlueprintCreateDialog(
     var mode by remember { mutableStateOf(initialMode) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Blueprint") },
+        title = { Text("Article") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(title, { title = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())

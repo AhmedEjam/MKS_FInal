@@ -28,18 +28,18 @@ data class SummaryState(
         ReviewDetail.STEM,
         ReviewDetail.OPTIONS,
         ReviewDetail.QUESTION_NUMBER,
-        ReviewDetail.EXPLANATION
-    )
+        ReviewDetail.EXPLANATION,
+    ),
 )
 
 data class CategoryStats(
     val correct: Int,
     val total: Int,
-    val percentage: Int
+    val percentage: Int,
 )
 
 class SummaryViewModel(
-    private val repository: MksRepository
+    private val repository: MksRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SummaryState())
@@ -61,7 +61,7 @@ class SummaryViewModel(
                         text = "[Missing Question Data]",
                         type = com.ahmedyejam.mks.data.local.entity.QuestionType.SINGLE_CHOICE,
                         options = emptyList(),
-                        correctAnswers = emptyList()
+                        correctAnswers = emptyList(),
                     )
                 }
                 
@@ -80,7 +80,7 @@ class SummaryViewModel(
                 }
                 
                 val categoryPerformance = catStats.mapValues { (_, stats) ->
-                    CategoryStats(stats.first, stats.second, if (stats.second > 0) (stats.first * 100 / stats.second) else 0)
+                    CategoryStats(stats.first, stats.second, if (stats.second > 0) ((stats.first * 100) / stats.second) else 0)
                 }
 
                 _uiState.update { 
@@ -89,7 +89,7 @@ class SummaryViewModel(
                         questions = sessionQuestions,
                         isLoading = false,
                         categoryPerformance = categoryPerformance,
-                        maxStreak = session.maxStreak
+                        maxStreak = session.maxStreak,
                     )
                 }
                 updateFilteredQuestions()
@@ -122,13 +122,13 @@ class SummaryViewModel(
         // Match state.questions (full sequence) with session.answersByIndex
         val filtered = state.questions.filterIndexed { index, q ->
             val userAnswers = session.answersByIndex[index]
-            val isCorrect = userAnswers != null && q.correctAnswers.toSet() == userAnswers.toSet()
+            val isCorrect = (userAnswers != null) && (q.correctAnswers.toSet() == userAnswers.toSet())
             
             when (state.reviewFilter) {
                 ReviewFilter.ALL -> true
                 ReviewFilter.CORRECT -> isCorrect
-                ReviewFilter.WRONG -> !isCorrect && userAnswers != null && !q.isDropped
-                ReviewFilter.UNANSWERED -> userAnswers == null && !q.isDropped
+                ReviewFilter.WRONG -> (!isCorrect) && (userAnswers != null) && (!q.isDropped)
+                ReviewFilter.UNANSWERED -> (userAnswers == null) && (!q.isDropped)
                 ReviewFilter.DROPPED -> q.isDropped
                 ReviewFilter.WITH_EXPLANATION -> !q.explanation.isNullOrBlank()
             }
@@ -142,16 +142,17 @@ class SummaryViewModel(
         val session = state.session ?: return ""
         val details = state.visibleDetails
 
-        val filteredIndexedQuestions = state.questions.mapIndexed { index, question -> index to question }
+        val filteredIndexedQuestions = state.questions.asSequence()
+            .mapIndexed { index, question -> index to question }
             .filter { (sequenceIndex, question) ->
                 val userAnswers = session.answersByIndex[sequenceIndex]
-                val isCorrect = userAnswers != null && question.correctAnswers.toSet() == userAnswers.toSet()
+                val isCorrect = (userAnswers != null) && (question.correctAnswers.toSet() == userAnswers.toSet())
 
                 when (state.reviewFilter) {
                     ReviewFilter.ALL -> true
                     ReviewFilter.CORRECT -> isCorrect
-                    ReviewFilter.WRONG -> !isCorrect && userAnswers != null && !question.isDropped
-                    ReviewFilter.UNANSWERED -> userAnswers == null && !question.isDropped
+                    ReviewFilter.WRONG -> (!isCorrect) && (userAnswers != null) && (!question.isDropped)
+                    ReviewFilter.UNANSWERED -> (userAnswers == null) && (!question.isDropped)
                     ReviewFilter.DROPPED -> question.isDropped
                     ReviewFilter.WITH_EXPLANATION -> !question.explanation.isNullOrBlank()
                 }
@@ -166,7 +167,7 @@ class SummaryViewModel(
 
             filteredIndexedQuestions.forEachIndexed { exportIndex, (sequenceIndex, q) ->
                 val userAnswers = session.answersByIndex[sequenceIndex]
-                val isCorrect = userAnswers != null && q.correctAnswers.toSet() == userAnswers.toSet()
+                val isCorrect = (userAnswers != null) && (q.correctAnswers.toSet() == userAnswers.toSet())
                 
                 if (details.contains(ReviewDetail.QUESTION_NUMBER)) {
                     append("Q${exportIndex + 1}: ")

@@ -89,7 +89,6 @@ fun SettingsScreen(
     val autoAdvanceDelay by dataStoreManager.autoAdvanceDelay.collectAsState(initial = 2000)
     val currentLanguage by dataStoreManager.language.collectAsState(initial = "en")
     val showWelcomeOnStartup by dataStoreManager.showWelcomeOnStartup.collectAsState(initial = true)
-    val autoHideKnowledgeSummary by dataStoreManager.autoHideKnowledgeSummary.collectAsState(initial = true)
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showClearCategoriesDialog by rememberSaveable { mutableStateOf(false) }
@@ -313,13 +312,6 @@ fun SettingsScreen(
                     description = stringResource(R.string.show_welcome_screen_desc),
                     checked = showWelcomeOnStartup,
                     onCheckedChange = { scope.launch { dataStoreManager.setShowWelcomeOnStartup(it) } }
-                )
-
-                SettingsToggle(
-                    title = stringResource(R.string.auto_hide_knowledge_summary),
-                    description = stringResource(R.string.auto_hide_knowledge_summary_desc),
-                    checked = autoHideKnowledgeSummary,
-                    onCheckedChange = { scope.launch { dataStoreManager.setAutoHideKnowledgeSummary(it) } }
                 )
 
                 val focusModeEnabled by dataStoreManager.focusModeEnabled.collectAsState(initial = false)

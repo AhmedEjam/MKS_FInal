@@ -44,15 +44,15 @@ class LibraryMapper {
         }
 
         // Sanitize imageSource to never store raw Base64 blocks
-        val rawSource = dto.imageSource ?: dto.imageDataUrl
-        val sanitizedSource = if (rawSource?.startsWith("data:") == true || (rawSource?.length ?: 0) > 1000) {
+        val rawSource = dto.imageSource.ifBlank { dto.imageDataUrl }
+        val sanitizedSource = if ((rawSource.startsWith("data:")) || (rawSource.length > 1000)) {
             null
         } else {
             rawSource
         }
 
         // Sanitize imageName to prevent path injection
-        val sanitizedImageName = dto.imageName?.takeIf { !it.startsWith("/") }
+        val sanitizedImageName = dto.imageName.takeIf { !it.startsWith("/") }
 
         return QuestionEntity(
             externalId = dto.id,
@@ -178,7 +178,7 @@ class LibraryMapper {
     }
 
     fun mapToSessionDto(entity: SessionEntity, quizExternalId: String, questions: List<QuestionEntity>): SessionDto {
-        val questionIdMap = questions.associate { it.id to it.externalId }
+        val questionIdMap = questions.associateBy({ it.id }) { it.externalId }
 
         val mappedAnswers = entity.answers.mapNotNull { (qId, optIndices) ->
             questionIdMap[qId]?.let { it to optIndices }
@@ -231,6 +231,7 @@ class LibraryMapper {
 
     // Knowledge Bank Mappings
 
+    @Suppress("unused")
     fun mapToFlashcardDeckEntity(dto: FlashcardDeckDto, localBookId: Long, coverPath: String?): FlashcardDeckEntity {
         return FlashcardDeckEntity(
             externalId = dto.id,
@@ -245,6 +246,7 @@ class LibraryMapper {
         )
     }
 
+    @Suppress("unused")
     fun mapToFlashcardEntity(dto: FlashcardDto, localDeckId: Long, imagePath: String?): FlashcardEntity {
         return FlashcardEntity(
             externalId = dto.id,
@@ -260,6 +262,7 @@ class LibraryMapper {
         )
     }
 
+    @Suppress("unused")
     fun mapToSlideshowCourseEntity(dto: SlideshowCourseDto, localBookId: Long, coverPath: String?): SlideshowCourseEntity {
         return SlideshowCourseEntity(
             externalId = dto.id,
@@ -274,6 +277,7 @@ class LibraryMapper {
         )
     }
 
+    @Suppress("unused")
     fun mapToCourseSlideEntity(dto: CourseSlideDto, localCourseId: Long, imagePath: String?): CourseSlideEntity {
         return CourseSlideEntity(
             externalId = dto.id,
@@ -289,6 +293,7 @@ class LibraryMapper {
         )
     }
 
+    @Suppress("unused")
     fun mapToNoteBlueprintEntity(dto: NoteBlueprintDto, localBookId: Long): NoteBlueprintEntity {
         return NoteBlueprintEntity(
             externalId = dto.id,
@@ -305,6 +310,7 @@ class LibraryMapper {
         )
     }
 
+    @Suppress("unused")
     fun mapToPromptDeckEntity(dto: PromptDeckDto, localBookId: Long): PromptDeckEntity {
         return PromptDeckEntity(
             bookId = localBookId,
@@ -316,6 +322,7 @@ class LibraryMapper {
         )
     }
 
+    @Suppress("unused")
     fun mapToPromptCardEntity(dto: PromptCardDto, localDeckId: Long): PromptCardEntity {
         return PromptCardEntity(
             deckId = localDeckId,
