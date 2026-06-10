@@ -1,21 +1,117 @@
 package com.ahmedyejam.mks.ui.quiz
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.exponentialDecay
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.*
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AttachFile
+import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.BookmarkBorder
+import androidx.compose.material.icons.rounded.Cancel
+import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Filter1
+import androidx.compose.material.icons.rounded.HourglassBottom
+import androidx.compose.material.icons.rounded.Inbox
+import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.NotificationsOff
+import androidx.compose.material.icons.rounded.Restore
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.Update
+import androidx.compose.material.icons.rounded.Whatshot
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -23,41 +119,33 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.ContentScale
-import coil.compose.AsyncImage
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.foundation.gestures.AnchoredDraggableState
-import androidx.compose.foundation.gestures.DraggableAnchors
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.anchoredDraggable
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.exponentialDecay
-import kotlin.math.roundToInt
-import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.flow.StateFlow
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.ahmedyejam.mks.R
 import com.ahmedyejam.mks.data.local.entity.QuestionType
+import com.ahmedyejam.mks.data.model.CategoryWithMetadata
 import com.ahmedyejam.mks.ui.category.CategoryChip
 import com.ahmedyejam.mks.ui.category.CategoryEditDialog
 import com.ahmedyejam.mks.ui.category.QuestionAssetsReadOnlyDialog
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 import com.ahmedyejam.mks.ui.theme.normalizeMksThemeMode
-import com.ahmedyejam.mks.data.model.CategoryWithMetadata
+import kotlinx.coroutines.flow.StateFlow
+import kotlin.math.roundToInt
 
 /**
  * Enum representing the possible states of the bottom sliding sheet.
@@ -557,7 +645,9 @@ fun QuestionExplanation(isCorrect: Boolean, explanation: String?) {
 
     val tokens = LocalMksDesignTokens.current
     Card(
-        modifier = Modifier.padding(top = 16.dp).fillMaxWidth(),
+        modifier = Modifier
+            .padding(top = 16.dp)
+            .fillMaxWidth(),
         shape = RoundedCornerShape(tokens.cardRadius),
         colors = CardDefaults.cardColors(
             containerColor = if (isCorrect)
@@ -620,7 +710,9 @@ fun QuestionCategories(
     Column(modifier = Modifier.padding(top = 16.dp)) {
         Text(stringResource(R.string.import_review_categories), style = MaterialTheme.typography.titleSmall)
         FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -666,7 +758,9 @@ fun QuestionNotes(
             value = permanentNote,
             onValueChange = onPermanentNoteChange,
             label = { Text(stringResource(R.string.permanent_note_label)) },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
             minLines = 2,
             placeholder = { Text(stringResource(R.string.permanent_note_placeholder)) }
         )
@@ -690,7 +784,9 @@ fun QuestionHint(
 
     AnimatedVisibility(visible = showHint) {
         Card(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
         ) {
             Text(
@@ -725,55 +821,41 @@ fun QuizTopBar(
     val timerState by timerStateFlow.collectAsStateWithLifecycle()
 
     Column {
-        TopAppBar(
-            title = {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = stringResource(R.string.question_counter, if (totalQuestions == 0) 0 else currentIndex + 1, totalQuestions),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+        com.ahmedyejam.mks.ui.components.StudyTopAppBar(
+            title = stringResource(
+                R.string.question_counter,
+                if (totalQuestions == 0) 0 else currentIndex + 1,
+                totalQuestions
+            ),
+            subtitle = sessionLabel,
+            onNavigateBack = onBack,
+            actions = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (isMarked) {
+                        Icon(
+                            Icons.Rounded.Bookmark,
+                            contentDescription = stringResource(R.string.mark_toggle),
+                            modifier = Modifier
+                                .size(18.dp)
+                                .padding(end = 4.dp),
+                            tint = MaterialTheme.colorScheme.primary
                         )
-                        if (isMarked) {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                Icons.Rounded.Bookmark,
-                                contentDescription = stringResource(R.string.mark_toggle),
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
                     }
                     if (focusModeEnabled) {
-                        Spacer(modifier = Modifier.width(6.dp))
                         Icon(
                             Icons.Rounded.NotificationsOff,
                             contentDescription = stringResource(R.string.focus_toggle),
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier
+                                .size(18.dp)
+                                .padding(end = 8.dp),
                             tint = MaterialTheme.colorScheme.secondary
                         )
                     }
-                    sessionLabel?.let {
-                        Text(
-                            it,
-                            style = MaterialTheme.typography.labelSmall,
-                            maxLines = 1,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                }
-            },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.cancel))
-                }
-            },
-            actions = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.End) {
+
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Rounded.Timer, contentDescription = null, modifier = Modifier.size(14.dp))
                             Text(
@@ -830,11 +912,7 @@ fun QuizTopBar(
                         }
                     }
                 }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background,
-                scrolledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
-            )
+            }
         )
         if (totalQuestions > 0) {
             LinearProgressIndicator(
@@ -940,7 +1018,9 @@ fun QuizSheetContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val toggleModifier = Modifier.weight(1f).widthIn(min = 100.dp)
+                val toggleModifier = Modifier
+                    .weight(1f)
+                    .widthIn(min = 100.dp)
                 ControlToggle(
                     modifier = toggleModifier,
                     icon = Icons.Rounded.Category,
@@ -1003,7 +1083,9 @@ fun QuizSheetContent(
 
             // Navigation Controls
             LazyRow(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1075,7 +1157,10 @@ fun QuizSheetContent(
                                 Icon(
                                     Icons.Rounded.Bookmark,
                                     contentDescription = null,
-                                    modifier = Modifier.size(12.dp).align(Alignment.TopEnd).padding(2.dp),
+                                    modifier = Modifier
+                                        .size(12.dp)
+                                        .align(Alignment.TopEnd)
+                                        .padding(2.dp),
                                     tint = Color.White
                                 )
                             }

@@ -1,10 +1,12 @@
 package com.ahmedyejam.mks.ui.flashcard
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,18 +16,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -65,12 +64,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -82,8 +77,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
@@ -195,11 +193,15 @@ fun FlashcardDeckScreen(
 
     state.deck?.let { deck ->
         if (showDeckEditor) {
-            DeckEditorDialog(
-                deck = deck,
+            com.ahmedyejam.mks.ui.components.EntityEditDialog(
+                title = "Edit deck",
+                initialName = deck.title,
+                initialDescription = deck.description ?: "",
+                initialImage = deck.coverImage ?: "",
+                showImage = true,
                 onDismiss = { showDeckEditor = false },
-                onSave = { title, desc, cover -> 
-                    vm.updateDeck(title, desc, cover)
+                onSave = { title, desc, image ->
+                    vm.updateDeck(title, desc.ifBlank { null }, image.ifBlank { null })
                     showDeckEditor = false
                 }
             )
@@ -287,9 +289,18 @@ fun FlashcardDeckScreen(
                     }
                 )
             } else {
-                TopAppBar(
-                    title = { Text(state.deck?.title ?: "Flashcards") },
-                    navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } },
+                var subtitle: String? = null
+                if (state.isStudyMode) {
+                    val elapsed by vm.elapsedSeconds.collectAsState()
+                    val minutes = elapsed / 60
+                    val seconds = elapsed % 60
+                    subtitle = String.format("%02d:%02d", minutes, seconds)
+                }
+
+                com.ahmedyejam.mks.ui.components.StudyTopAppBar(
+                    title = state.deck?.title ?: "Flashcards",
+                    subtitle = subtitle,
+                    onNavigateBack = onBack,
                     actions = {
                         IconButton(onClick = { showOptionsMenu = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Options")
@@ -344,7 +355,11 @@ fun FlashcardDeckScreen(
             }
         }
     ) { padding ->
-        Box(Modifier.padding(padding).fillMaxSize()) {
+        Box(
+            Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
             when {
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 state.deck == null -> Text("Deck not found", Modifier.align(Alignment.Center))
@@ -413,7 +428,9 @@ private fun FlashcardDeckDetailContent(
 ) {
     val deck = state.deck ?: return
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
@@ -446,7 +463,9 @@ private fun FlashcardDeckDetailContent(
             val tokens = LocalMksDesignTokens.current
             Button(
                 onClick = onGenerateCards,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 shape = RoundedCornerShape(tokens.cardRadius)
             ) {
                 Icon(Icons.Default.AutoAwesome, contentDescription = null)
@@ -526,7 +545,8 @@ private fun FlashcardListItem(
 ) {
     val tokens = LocalMksDesignTokens.current
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .combinedClickable(
                 onClick = { if (isSelectionMode) onToggleSelect() },
                 onLongClick = onToggleSelect
@@ -596,17 +616,27 @@ private fun FlashcardStudyContent(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(8.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text("${state.currentIndex + 1} / ${state.cards.size}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 8.dp))
         Surface(
-            modifier = Modifier.weight(1f).fillMaxWidth().clickable { viewModel.flipCard() },
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .clickable { viewModel.flipCard() },
             shape = RoundedCornerShape(tokens.cardRadius),
             tonalElevation = 2.dp,
             color = MaterialTheme.colorScheme.surfaceVariant
         ) {
-            Box(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center
+            ) {
                 Text(
                     text = displayText,
                     style = MaterialTheme.typography.headlineSmall
@@ -664,25 +694,6 @@ private fun FlashcardEditorDialog(
     )
 }
 
-@Composable
-private fun DeckEditorDialog(deck: FlashcardDeckEntity, onDismiss: () -> Unit, onSave: (String, String?, String?) -> Unit) {
-    var title by rememberSaveable(deck.id) { mutableStateOf(deck.title) }
-    var description by rememberSaveable(deck.id) { mutableStateOf(deck.description ?: "") }
-    var coverImage by rememberSaveable(deck.id) { mutableStateOf(deck.coverImage ?: "") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Edit deck") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(title, { title = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(description, { description = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-                OutlinedTextField(coverImage, { coverImage = it }, label = { Text("Cover Image URL/Path") }, modifier = Modifier.fillMaxWidth())
-            }
-        },
-        confirmButton = { Button(enabled = title.isNotBlank(), onClick = { onSave(title.trim(), description.trim().ifBlank { null }, coverImage.trim().ifBlank { null }) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -734,7 +745,9 @@ private fun FlashcardGeneratorDialog(
                         readOnly = true,
                         label = { Text("Source") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSource) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = expandedSource,
@@ -763,7 +776,9 @@ private fun FlashcardGeneratorDialog(
                             readOnly = true,
                             label = { Text("Select Quiz") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSubSource) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
                         )
                         ExposedDropdownMenu(
                             expanded = expandedSubSource,
@@ -785,7 +800,9 @@ private fun FlashcardGeneratorDialog(
                             readOnly = true,
                             label = { Text("Select Category") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSubSource) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
                         )
                         ExposedDropdownMenu(
                             expanded = expandedSubSource,
@@ -855,7 +872,9 @@ private fun DeckSelectionDialog(
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(decks, key = { it.id }) { deck ->
                         Card(
-                            modifier = Modifier.fillMaxWidth().clickable { onDeckSelected(deck.id) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onDeckSelected(deck.id) },
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             Column(Modifier.padding(16.dp)) {
@@ -888,14 +907,26 @@ private fun PasteTextDialog(
         title = { Text("Paste text to import") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { mode = com.ahmedyejam.mks.data.import.parser.TextParseMode.ALTERNATING_PARAGRAPHS }) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically, modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            mode =
+                                com.ahmedyejam.mks.data.import.parser.TextParseMode.ALTERNATING_PARAGRAPHS
+                        }) {
                     androidx.compose.material3.RadioButton(
                         selected = mode == com.ahmedyejam.mks.data.import.parser.TextParseMode.ALTERNATING_PARAGRAPHS,
                         onClick = { mode = com.ahmedyejam.mks.data.import.parser.TextParseMode.ALTERNATING_PARAGRAPHS }
                     )
                     Text("Alternating Paragraphs (odd front, even back)", style = MaterialTheme.typography.bodySmall)
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { mode = com.ahmedyejam.mks.data.import.parser.TextParseMode.EXPLICIT_LABELS }) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically, modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            mode =
+                                com.ahmedyejam.mks.data.import.parser.TextParseMode.EXPLICIT_LABELS
+                        }) {
                     androidx.compose.material3.RadioButton(
                         selected = mode == com.ahmedyejam.mks.data.import.parser.TextParseMode.EXPLICIT_LABELS,
                         onClick = { mode = com.ahmedyejam.mks.data.import.parser.TextParseMode.EXPLICIT_LABELS }
@@ -907,7 +938,9 @@ private fun PasteTextDialog(
                     value = text,
                     onValueChange = { text = it },
                     label = { Text("Flashcards text") },
-                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
                     maxLines = 10
                 )
             }

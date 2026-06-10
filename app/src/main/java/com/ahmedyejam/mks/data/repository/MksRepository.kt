@@ -2473,7 +2473,7 @@ class MksRepository(
             PromptCardEntity(
                 deckId = deckId,
                 title = "Quiz generator",
-                promptText = "Create exam-style questions from this material:\n\n{selectedQuestions}\n\nReturn questions with answer choices, correct answers, and explanations.",
+                promptText = "<system_role>You are an expert educator.</system_role>\n<instructions>Create exam-style questions from the provided material. Return questions with answer choices, correct answers, and explanations.</instructions>\n<material>\n{selectedQuestions}\n</material>",
                 variablesJson = "[\"selectedQuestions\"]",
                 outputType = PromptOutputType.QUIZ,
                 sortOrder = 0,
@@ -2483,7 +2483,7 @@ class MksRepository(
             PromptCardEntity(
                 deckId = deckId,
                 title = "Flashcard generator",
-                promptText = "Convert this material into concise flashcards. Use Front / Back / Hint format:\n\n{selectedQuestions}",
+                promptText = "<system_role>You are an expert educator.</system_role>\n<instructions>Convert the provided material into concise flashcards. Use Front / Back / Hint format.</instructions>\n<material>\n{selectedQuestions}\n</material>",
                 variablesJson = "[\"selectedQuestions\"]",
                 outputType = PromptOutputType.FLASHCARDS,
                 sortOrder = 1,
@@ -2493,7 +2493,7 @@ class MksRepository(
             PromptCardEntity(
                 deckId = deckId,
                 title = "Blueprint maker",
-                promptText = "Turn this content into a structured study blueprint with headings, bullets, mistakes to avoid, and review cues:\n\n{selectedQuestions}",
+                promptText = "<system_role>You are an expert educator.</system_role>\n<instructions>Turn the provided content into a structured study blueprint with headings, bullets, mistakes to avoid, and review cues.</instructions>\n<material>\n{selectedQuestions}\n</material>",
                 variablesJson = "[\"selectedQuestions\"]",
                 outputType = PromptOutputType.BLUEPRINT,
                 sortOrder = 2,
