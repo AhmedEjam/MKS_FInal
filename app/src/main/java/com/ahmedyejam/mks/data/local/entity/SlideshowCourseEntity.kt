@@ -1,5 +1,6 @@
 package com.ahmedyejam.mks.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -26,7 +27,9 @@ data class SlideshowCourseEntity(
     val bookId: Long,
     val title: String,
     val description: String? = null,
+    val iconName: String? = null,
     val coverImage: String? = null,
+    @ColumnInfo(defaultValue = "'[]'") val tags: List<String> = emptyList(),
     val slideCount: Int = 0,
     val studiedSlideCount: Int = 0,
     val progress: Float = 0f,

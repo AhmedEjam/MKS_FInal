@@ -1,7 +1,31 @@
 package com.ahmedyejam.mks.data.import.mapping
 
-import com.ahmedyejam.mks.data.import.dto.*
-import com.ahmedyejam.mks.data.local.entity.*
+import com.ahmedyejam.mks.data.import.dto.BookDto
+import com.ahmedyejam.mks.data.import.dto.CategoryMetadataDto
+import com.ahmedyejam.mks.data.import.dto.CourseSlideDto
+import com.ahmedyejam.mks.data.import.dto.FlashcardDeckDto
+import com.ahmedyejam.mks.data.import.dto.FlashcardDto
+import com.ahmedyejam.mks.data.import.dto.NoteBlueprintDto
+import com.ahmedyejam.mks.data.import.dto.OptionDto
+import com.ahmedyejam.mks.data.import.dto.PromptCardDto
+import com.ahmedyejam.mks.data.import.dto.PromptDeckDto
+import com.ahmedyejam.mks.data.import.dto.QuestionDto
+import com.ahmedyejam.mks.data.import.dto.QuizDto
+import com.ahmedyejam.mks.data.import.dto.SessionDto
+import com.ahmedyejam.mks.data.import.dto.SlideshowCourseDto
+import com.ahmedyejam.mks.data.local.entity.BookEntity
+import com.ahmedyejam.mks.data.local.entity.CategoryMetadataEntity
+import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
+import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
+import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
+import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
+import com.ahmedyejam.mks.data.local.entity.PromptCardEntity
+import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionType
+import com.ahmedyejam.mks.data.local.entity.QuizEntity
+import com.ahmedyejam.mks.data.local.entity.SessionEntity
+import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 
 class LibraryMapper {
 
@@ -294,10 +318,13 @@ class LibraryMapper {
     }
 
     @Suppress("unused")
-    fun mapToNoteBlueprintEntity(dto: NoteBlueprintDto, localBookId: Long): NoteBlueprintEntity {
+    fun mapToNoteBlueprintEntity(
+        dto: NoteBlueprintDto,
+        localCollectionId: Long
+    ): NoteBlueprintEntity {
         return NoteBlueprintEntity(
             externalId = dto.id,
-            bookId = localBookId,
+            collectionId = localCollectionId,
             title = dto.title,
             summary = dto.summary,
             body = dto.body,
@@ -316,7 +343,7 @@ class LibraryMapper {
             bookId = localBookId,
             title = dto.title,
             description = dto.description,
-            tagsJson = if (dto.tags.isNotEmpty()) dto.tags.joinToString(",") else null,
+            tags = dto.tags,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
             updatedAt = dto.updatedAt ?: System.currentTimeMillis()
         )
@@ -418,7 +445,7 @@ class LibraryMapper {
             bookId = bookExternalId,
             title = entity.title,
             description = entity.description,
-            tags = entity.tagsJson?.split(",") ?: emptyList(),
+            tags = entity.tags,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
             cards = cards.map { mapToPromptCardDto(it) }

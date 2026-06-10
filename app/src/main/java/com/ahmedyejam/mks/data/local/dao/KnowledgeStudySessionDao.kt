@@ -1,6 +1,11 @@
 package com.ahmedyejam.mks.data.local.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
 import com.ahmedyejam.mks.data.local.entity.KnowledgeStudySessionEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -19,7 +24,7 @@ interface KnowledgeStudySessionDao {
         SELECT * FROM knowledge_study_sessions 
         WHERE deletedAt IS NULL AND ((targetType = 'FLASHCARD_DECK' AND targetId IN (SELECT id FROM flashcard_decks WHERE bookId = :bookId AND deletedAt IS NULL))
            OR (targetType = 'SLIDESHOW' AND targetId IN (SELECT id FROM slideshow_courses WHERE bookId = :bookId AND deletedAt IS NULL))
-           OR (targetType = 'NOTE' AND targetId IN (SELECT id FROM note_blueprints WHERE bookId = :bookId AND deletedAt IS NULL))
+           OR (targetType = 'NOTE' AND targetId IN (SELECT id FROM note_blueprints WHERE collectionId IN (SELECT id FROM note_collections WHERE bookId = :bookId AND deletedAt IS NULL) AND deletedAt IS NULL))
            OR (targetType = 'PROMPT' AND targetId IN (SELECT id FROM prompt_decks WHERE bookId = :bookId AND deletedAt IS NULL)))
         ORDER BY updatedAt DESC
     """)

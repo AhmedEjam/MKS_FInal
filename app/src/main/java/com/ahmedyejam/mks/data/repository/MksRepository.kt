@@ -179,8 +179,10 @@ class MksRepository(
     private val learningSessionDao: LearningSessionDao,
     private val slideshowCourseDao: SlideshowCourseDao,
     private val courseSlideDao: CourseSlideDao,
+    private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao,
     private val noteBlueprintDao: NoteBlueprintDao,
     private val promptDao: PromptDao,
+    private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao,
     private val knowledgeStudySessionDao: KnowledgeStudySessionDao,
     private val questionCategoryDao: QuestionCategoryDao,
     private val assetReferenceDao: AssetReferenceDao,
@@ -1021,6 +1023,21 @@ class MksRepository(
     fun getLinkedBlueprintsForQuestion(bookId: Long, questionId: Long): Flow<List<NoteBlueprintEntity>> =
         noteBlueprintDao.getNotesByLinkedQuestion(bookId, questionId)
 
+    suspend fun getOrCreateDefaultNoteCollection(bookId: Long): Long {
+        val collections = noteCollectionDao.getCollectionsByBookIdNow(bookId)
+        return if (collections.isNotEmpty()) {
+            collections.first().id
+        } else {
+            noteCollectionDao.insertCollection(
+                com.ahmedyejam.mks.data.local.entity.NoteCollectionEntity(
+                    bookId = bookId,
+                    title = "Default Collection",
+                    externalId = java.util.UUID.randomUUID().toString()
+                )
+            )
+        }
+    }
+
     suspend fun createBlueprintFromQuestion(
         bookId: Long,
         questionId: Long,
@@ -1032,7 +1049,7 @@ class MksRepository(
         return insertNoteBlueprint(
             NoteBlueprintEntity(
                 externalId = java.util.UUID.randomUUID().toString(),
-                bookId = bookId,
+                collectionId = getOrCreateDefaultNoteCollection(bookId),
                 title = question.text.take(80).ifBlank { "Question blueprint" },
                 summary = question.explanation?.take(180),
                 body = body,
@@ -1061,7 +1078,7 @@ class MksRepository(
         return insertNoteBlueprint(
             NoteBlueprintEntity(
                 externalId = java.util.UUID.randomUUID().toString(),
-                bookId = bookId,
+                collectionId = getOrCreateDefaultNoteCollection(bookId),
                 title = title.ifBlank { "Question group blueprint" },
                 summary = "Generated from ${questions.size} question(s).",
                 body = body,
@@ -1107,7 +1124,7 @@ class MksRepository(
             val id = insertNoteBlueprint(
                 NoteBlueprintEntity(
                     externalId = java.util.UUID.randomUUID().toString(),
-                    bookId = bookId,
+                    collectionId = getOrCreateDefaultNoteCollection(bookId),
                     title = title,
                     summary = q.text.take(180),
                     body = body,
@@ -1144,7 +1161,7 @@ class MksRepository(
         val deckId = insertFlashcardDeck(
             FlashcardDeckEntity(
                 externalId = java.util.UUID.randomUUID().toString(),
-                bookId = note.bookId,
+                bookId = noteCollectionDao.getCollectionById(note.collectionId)?.bookId ?: 0L,
                 title = "${note.title} Flashcards",
                 description = "Generated from blueprint: ${note.title}"
             )
@@ -2320,7 +2337,8 @@ class MksRepository(
 
     suspend fun restoreNoteBlueprint(noteId: Long) {
         val note = noteBlueprintDao.getNoteByIdIncludingDeleted(noteId) ?: return
-        val book = bookDao.getBookByIdIncludingDeleted(note.bookId)
+        val bookId = noteCollectionDao.getCollectionById(note.collectionId)?.bookId ?: 0L
+        val book = bookDao.getBookByIdIncludingDeleted(bookId)
         if (book != null && book.deletedAt != null) {
             restoreBook(book.id)
         }
@@ -2498,7 +2516,7 @@ class MksRepository(
         val noteId = insertNoteBlueprint(
             NoteBlueprintEntity(
                 externalId = java.util.UUID.randomUUID().toString(),
-                bookId = bookId,
+                collectionId = getOrCreateDefaultNoteCollection(bookId),
                 title = title.ifBlank { "Prompt output note" },
                 summary = "Saved from prompt output.",
                 body = outputText.ifBlank { "No output text was provided." },
@@ -2517,7 +2535,7 @@ class MksRepository(
         val noteId = insertNoteBlueprint(
             NoteBlueprintEntity(
                 externalId = java.util.UUID.randomUUID().toString(),
-                bookId = bookId,
+                collectionId = getOrCreateDefaultNoteCollection(bookId),
                 title = title.ifBlank { "Prompt blueprint" },
                 summary = "Structured blueprint saved from prompt output.",
                 body = outputText.ifBlank { "No output text was provided." },

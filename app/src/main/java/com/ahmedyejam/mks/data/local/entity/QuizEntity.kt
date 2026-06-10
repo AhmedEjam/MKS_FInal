@@ -1,6 +1,7 @@
 package com.ahmedyejam.mks.data.local.entity
 
 import androidx.compose.runtime.Immutable
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -32,6 +33,7 @@ data class QuizEntity(
     val title: String,
     val description: String = "",
     val category: String? = null,
+    @ColumnInfo(defaultValue = "'[]'") val tags: List<String> = emptyList(),
     val iconName: String? = null,
     val coverImage: String? = null,
     val createdAt: Long = System.currentTimeMillis(),

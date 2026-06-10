@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.Assessment
 import androidx.compose.material.icons.rounded.AutoFixHigh
 import androidx.compose.material.icons.rounded.HistoryEdu
@@ -29,6 +30,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -45,8 +47,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -55,6 +59,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ahmedyejam.mks.R
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
+import com.ahmedyejam.mks.ui.library.components.CreateQuizDialog
+import com.ahmedyejam.mks.ui.library.components.EditEntityDialog
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 import kotlinx.coroutines.launch
 
@@ -75,7 +81,14 @@ fun BookKnowledgeDashboardScreen(
     val scope = rememberCoroutineScope()
 
     val tabs = remember { BookTab.entries.toTypedArray() }
-    val pagerState = rememberPagerState(initialPage = 2) { tabs.size }
+    val pagerState = rememberPagerState(initialPage = 4) { tabs.size }
+
+    var showCreateQuiz by remember { mutableStateOf(false) }
+    var showCreateSlideshow by remember { mutableStateOf(false) }
+    var showCreateFlashcard by remember { mutableStateOf(false) }
+    var showCreateNote by remember { mutableStateOf(false) }
+    var showCreatePrompt by remember { mutableStateOf(false) }
+    var showCreateSource by remember { mutableStateOf(false) }
 
     LaunchedEffect(bookId) {
         viewModel.loadBook(bookId)
@@ -123,6 +136,28 @@ fun BookKnowledgeDashboardScreen(
                     }
                 }
             }
+        },
+        floatingActionButton = {
+            val currentTab = tabs[pagerState.currentPage]
+            if (currentTab != BookTab.DASHBOARD && currentTab != BookTab.MISTAKES) {
+                FloatingActionButton(
+                    onClick = {
+                        when (currentTab) {
+                            BookTab.QUIZZES -> showCreateQuiz = true
+                            BookTab.SLIDES -> showCreateSlideshow = true
+                            BookTab.FLASHCARDS -> showCreateFlashcard = true
+                            BookTab.NOTES -> showCreateNote = true
+                            BookTab.PROMPTS -> showCreatePrompt = true
+                            BookTab.SOURCES -> showCreateSource = true
+                            else -> {}
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Create ${currentTab.title}")
+                }
+            }
         }
     ) { padding ->
         if (uiState.isLoading) {
@@ -141,16 +176,146 @@ fun BookKnowledgeDashboardScreen(
             ) { page ->
                 when (tabs[page]) {
                     BookTab.DASHBOARD -> DashboardTab(uiState.bookSummary, bookId, viewModel)
-                    BookTab.SLIDES -> SlidesTab(uiState.allCourses, onOpenSlideshow, {}, {})
-                    BookTab.QUIZZES -> QuizzesTab(uiState.quizzes, onOpenQuiz, {})
-                    BookTab.NOTES -> NotesTab(uiState.allNotes, onOpenNote, {}, {})
-                    BookTab.MISTAKES -> MistakesTab(uiState.mistakes, { viewModel.updateQuestionNote(it, "Marked as fixed") }, {}) // Placeholder logic
-                    BookTab.FLASHCARDS -> FlashcardsTab(uiState.flashcardDecks, onOpenFlashcard, {})
-                    BookTab.PROMPTS -> PromptsTab(uiState.allPromptDecks, onOpenPrompt, {}, {})
-                    BookTab.SOURCES -> SourcesTab(uiState.allSources, {}, {})
+                    BookTab.SLIDES -> SlidesTab(
+                        uiState.allCourses,
+                        onOpenSlideshow,
+                        { /* Edit */ },
+                        { viewModel.deleteSlideshowCourse(it) })
+
+                    BookTab.QUIZZES -> QuizzesTab(
+                        uiState.quizzes,
+                        onOpenQuiz,
+                        { viewModel.deleteQuiz(it) })
+
+                    BookTab.NOTES -> NotesTab(
+                        uiState.allNotes,
+                        onOpenNote,
+                        { /* Edit */ },
+                        { viewModel.deleteNote(it) })
+
+                    BookTab.MISTAKES -> MistakesTab(
+                        uiState.mistakes,
+                        { viewModel.updateQuestionNote(it, "Marked as fixed") },
+                        {})
+
+                    BookTab.FLASHCARDS -> FlashcardsTab(
+                        uiState.flashcardDecks,
+                        onOpenFlashcard,
+                        { viewModel.deleteFlashcardDeck(it) })
+
+                    BookTab.PROMPTS -> PromptsTab(
+                        uiState.allPromptDecks,
+                        onOpenPrompt,
+                        { /* Edit */ },
+                        { viewModel.deletePromptDeck(it) })
+
+                    BookTab.SOURCES -> SourcesTab(
+                        uiState.allSources,
+                        { /* Edit */ },
+                        { viewModel.deleteSource(it) })
                 }
             }
         }
+    }
+
+    if (showCreateQuiz) {
+        CreateQuizDialog(
+            quizzes = uiState.quizzes,
+            categories = uiState.questions.flatMap { it.categories }.distinct(),
+            onDismiss = { showCreateQuiz = false },
+            onConfirm = { title, description, coverImage, sourceQuizIds, sourceCategories ->
+                viewModel.createNewQuiz(
+                    bookId,
+                    title,
+                    description,
+                    coverImage,
+                    sourceQuizIds,
+                    sourceCategories
+                )
+                showCreateQuiz = false
+            }
+        )
+    }
+
+    if (showCreateSlideshow) {
+        TitleBodyDialog(
+            title = stringResource(R.string.create_study_slides),
+            titleLabel = "Course title",
+            bodyLabel = "Description",
+            confirmLabel = "Create",
+            onDismiss = { showCreateSlideshow = false },
+            onConfirm = { title, body ->
+                viewModel.createSlideshowCourse(bookId, title, body.takeIf { it.isNotBlank() })
+                showCreateSlideshow = false
+            }
+        )
+    }
+
+    if (showCreateFlashcard) {
+        EditEntityDialog(
+            title = stringResource(R.string.flashcard_deck),
+            initialTitle = "",
+            initialDescription = "",
+            initialCoverImage = null,
+            titleLabel = stringResource(R.string.name_label),
+            descriptionLabel = stringResource(R.string.description_label),
+            allowBlankTitle = true,
+            onDismiss = { showCreateFlashcard = false },
+            onConfirm = { title, desc, cover ->
+                viewModel.createFlashcardDeckFromBook(
+                    bookId = bookId,
+                    title = title,
+                    description = desc,
+                    coverUri = cover,
+                    onCreated = { onOpenFlashcard(it) }
+                )
+                showCreateFlashcard = false
+            }
+        )
+    }
+
+    if (showCreateNote) {
+        ArticleCreateDialog(
+            onDismiss = { showCreateNote = false },
+            onCreate = { title, body, mode ->
+                viewModel.createNote(bookId, title, body, mode = mode)
+                showCreateNote = false
+            },
+            onMarked = {
+                viewModel.createBlueprintFromMarked(bookId, "Marked questions article")
+                showCreateNote = false
+            },
+            onMissed = {
+                viewModel.createBlueprintFromMissed(bookId, "Missed questions article")
+                showCreateNote = false
+            }
+        )
+    }
+
+    if (showCreatePrompt) {
+        TitleBodyDialog(
+            title = "Create prompt deck",
+            titleLabel = "Deck title",
+            bodyLabel = "Description",
+            confirmLabel = "Create",
+            onDismiss = { showCreatePrompt = false },
+            onConfirm = { title, body ->
+                viewModel.createPromptDeck(bookId, title, body.takeIf { it.isNotBlank() })
+                showCreatePrompt = false
+            }
+        )
+    }
+
+    if (showCreateSource) {
+        SourceDocumentDialog(
+            title = "Create source",
+            confirmLabel = "Create",
+            onDismiss = { showCreateSource = false },
+            onConfirm = { title, type, details ->
+                viewModel.createSource(bookId, title, type, details)
+                showCreateSource = false
+            }
+        )
     }
 }
 

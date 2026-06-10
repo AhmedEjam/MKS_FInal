@@ -37,6 +37,7 @@ data class PromptCardEntity(
     val promptText: String,
     val variablesJson: String? = null,
     val outputType: String = PromptOutputType.OTHER,
+    @ColumnInfo(defaultValue = "'[]'") val tags: List<String> = emptyList(),
     @ColumnInfo(defaultValue = "0") val usageCount: Int = 0,
     val lastUsedAt: Long? = null,
     @ColumnInfo(defaultValue = "0") val sortOrder: Int = 0,

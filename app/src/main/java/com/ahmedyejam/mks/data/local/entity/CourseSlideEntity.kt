@@ -1,5 +1,6 @@
 package com.ahmedyejam.mks.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -44,6 +45,12 @@ data class CourseSlideEntity(
     val imagePath: String? = null,
     val orderIndex: Int = 0,
     val isCompleted: Boolean = false,
+    @ColumnInfo(defaultValue = "'[]'") val tags: List<String> = emptyList(),
+    // Spaced Repetition fields
+    val difficulty: String? = null,
+    @ColumnInfo(defaultValue = "0") val dueAt: Long = 0,
+    @ColumnInfo(defaultValue = "0") val reviewCount: Int = 0,
+    @ColumnInfo(defaultValue = "0") val lastReviewedAt: Long = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val sourceQuestionId: Long? = null,

@@ -1,33 +1,56 @@
 package com.ahmedyejam.mks.ui.booktools
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.Dashboard
+import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.FactCheck
+import androidx.compose.material.icons.rounded.NoteAlt
+import androidx.compose.material.icons.rounded.Psychology
+import androidx.compose.material.icons.rounded.Slideshow
+import androidx.compose.material.icons.rounded.Source
+import androidx.compose.material.icons.rounded.ViewCarousel
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.ahmedyejam.mks.data.local.entity.*
+import com.ahmedyejam.mks.R
+import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
+import com.ahmedyejam.mks.data.local.entity.MistakeLogEntryEntity
+import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
+import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
+import com.ahmedyejam.mks.data.local.entity.QuizEntity
+import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
+import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
 import com.ahmedyejam.mks.ui.review.MistakeCard
 import java.text.SimpleDateFormat
-import java.util.*
-import androidx.compose.ui.res.stringResource
-import com.ahmedyejam.mks.R
+import java.util.Locale
 
 enum class BookTab(val title: String, val icon: ImageVector) {
     DASHBOARD("Dashboard", Icons.Rounded.Dashboard),
+    PROMPTS("Prompts", Icons.Rounded.Psychology),
+    MISTAKES("Mistakes", Icons.Rounded.Error),
     SLIDES("Slides", Icons.Rounded.Slideshow),
     QUIZZES("Quizzes", Icons.Rounded.FactCheck),
-    NOTES("Articles & short notes", Icons.Rounded.NoteAlt),
-    MISTAKES("Mistakes", Icons.Rounded.Error),
     FLASHCARDS("Cards", Icons.Rounded.ViewCarousel),
-    PROMPTS("Prompts", Icons.Rounded.Psychology),
+    NOTES("Articles & short notes", Icons.Rounded.NoteAlt),
     SOURCES("Sources", Icons.Rounded.Source)
 }
 
@@ -253,7 +276,9 @@ fun SourcesTab(
 @Composable
 private fun EmptyTabContent(title: String, body: String, icon: ImageVector) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {

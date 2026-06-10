@@ -1,56 +1,91 @@
 package com.ahmedyejam.mks.ui.booktools
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.snap
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material.icons.rounded.PlayLesson
-import androidx.compose.material.icons.rounded.Save
-import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.NoteAlt
-import androidx.compose.material.icons.rounded.Psychology
-import androidx.compose.material.icons.rounded.Slideshow
-import androidx.compose.material.icons.rounded.Source
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Stop
-import androidx.compose.material.icons.rounded.RecordVoiceOver
-import androidx.compose.material.icons.rounded.PushPin
-import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Psychology
+import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.RecordVoiceOver
+import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.unit.sp
-import androidx.compose.material3.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.Slideshow
+import androidx.compose.material.icons.rounded.SmartToy
+import androidx.compose.material.icons.rounded.Source
+import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,9 +100,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.ahmedyejam.mks.R
-import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
-import com.ahmedyejam.mks.data.local.entity.*
+import com.ahmedyejam.mks.data.local.entity.BlueprintMode
+import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
+import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
+import com.ahmedyejam.mks.data.local.entity.PromptOutputType
+import com.ahmedyejam.mks.data.local.entity.PromptRunEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionEntity
+import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
+import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
+import com.ahmedyejam.mks.data.local.entity.SourceDocumentTypes
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
+import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 
 enum class QuestionComponent(val label: String) {
     OPTIONS("Options"),
@@ -143,7 +186,9 @@ fun SlideshowCourseListScreen(
         emptyBody = stringResource(R.string.no_study_slides_body),
         floatingActionButton = { FloatingActionButton(onClick = { showCreateState.value = true }) { Icon(Icons.Rounded.Add, null) } }
     ) { padding ->
-        LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(Modifier
+            .padding(padding)
+            .fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { BookSummaryStrip(state.bookSummary) }
             items(state.allCourses, key = { it.id }) { course ->
                 BookToolListItem(course.title, course.description ?: "${course.slideCount} slides", Icons.Rounded.Slideshow, { onOpenCourse(course.id) }, { editingState.value = course }, { deletingState.value = course })
@@ -212,7 +257,9 @@ fun ReviewBlueprintListScreen(
         emptyBody = "Create a disease, drug, concept, or mistake-review article.",
         floatingActionButton = { FloatingActionButton(onClick = { showCreateState.value = true }) { Icon(Icons.Rounded.Add, null) } }
     ) { padding ->
-        LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(Modifier
+            .padding(padding)
+            .fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { BookSummaryStrip(state.bookSummary) }
             items(state.allNotes, key = { it.id }) { note ->
                 BookToolListItem(
@@ -281,7 +328,9 @@ fun SourceDocumentListScreen(
         floatingActionButton = { FloatingActionButton(onClick = { showCreateState.value = true }) { Icon(Icons.Rounded.Add, null) } }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.padding(padding).fillMaxSize(),
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize(),
             state = listState,
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -338,7 +387,9 @@ fun AiPromptDeckListScreen(
         emptyBody = "Create reusable prompt decks for quiz generation, flashcards, and articles.",
         floatingActionButton = { FloatingActionButton(onClick = { showCreateState.value = true }) { Icon(Icons.Rounded.Add, null) } }
     ) { padding ->
-        LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(Modifier
+            .padding(padding)
+            .fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { BookSummaryStrip(state.bookSummary) }
             items(state.allPromptDecks, key = { it.id }) { deck ->
                 BookToolListItem(deck.title, deck.description ?: "Reusable prompt deck", Icons.Rounded.Psychology, { onOpenPrompt(deck.id) }, { editingState.value = deck }, { deletingState.value = deck })
@@ -417,7 +468,7 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
 
     Scaffold(
         topBar = {
-            androidx.compose.animation.AnimatedVisibility(visible = controlsVisible || !isPlayerMode, enter = androidx.compose.animation.slideInVertically { -it }, exit = androidx.compose.animation.slideOutVertically { -it }) {
+            AnimatedVisibility(visible = controlsVisible || !isPlayerMode, enter = androidx.compose.animation.slideInVertically { -it }, exit = androidx.compose.animation.slideOutVertically { -it }) {
                 ToolTopBar(note?.title ?: "Article", onBack) {
                     IconButton(onClick = { 
                         isPlayerMode = !isPlayerMode 
@@ -429,7 +480,7 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
             }
         },
         bottomBar = {
-            androidx.compose.animation.AnimatedVisibility(visible = isPlayerMode && controlsVisible, enter = androidx.compose.animation.slideInVertically { it }, exit = androidx.compose.animation.slideOutVertically { it }) {
+            AnimatedVisibility(visible = isPlayerMode && controlsVisible, enter = androidx.compose.animation.slideInVertically { it }, exit = androidx.compose.animation.slideOutVertically { it }) {
                 BottomAppBar {
                     IconButton(onClick = { 
                         if (isTtsPlaying) {
@@ -458,7 +509,9 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
 
                     if (showSettings) {
                         ModalBottomSheet(onDismissRequest = { showSettings = false }) {
-                            Column(Modifier.padding(16.dp).fillMaxWidth()) {
+                            Column(Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth()) {
                                 Text("Player Settings", style = MaterialTheme.typography.titleLarge)
                                 Spacer(Modifier.height(16.dp))
                                 Text("Auto-scroll speed: ${scrollSpeed.toInt()} px/s")
@@ -496,8 +549,10 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                         Text(
                             text = note?.title ?: "",
                             style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            modifier = Modifier.padding(16.dp).fillMaxWidth()
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth()
                         )
                         androidx.compose.material3.Divider()
                     }
@@ -512,8 +567,10 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                             Text(
                                 text = note?.title ?: "",
                                 style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .padding(bottom = 16.dp)
+                                    .fillMaxWidth()
                             )
                         }
                         Text(
@@ -526,7 +583,9 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                 }
             }
         } else {
-            LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            LazyColumn(Modifier
+                .padding(padding)
+                .fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item {
                     val tokens = LocalMksDesignTokens.current
                     Card(
@@ -572,7 +631,10 @@ fun QuestionNoteItem(
                 AsyncImage(
                     model = question.imagePath,
                     contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp).clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 240.dp)
+                        .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Fit
                 )
             }
@@ -648,12 +710,16 @@ fun BookNotesScreen(bookId: Long, viewModel: BookToolsViewModel, onBack: () -> U
     var visibleComponents by remember { mutableStateOf(setOf<QuestionComponent>()) }
 
     BookToolListScaffold("Question notes", onBack, state.isLoading, state.error, state.questions.none { !it.notes.isNullOrBlank() } && selectedQuizId == null, "No question notes", "Question notes will appear here.") { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
+        Column(Modifier
+            .padding(padding)
+            .fillMaxSize()) {
             if (state.quizzes.isNotEmpty()) {
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = it },
-                    modifier = Modifier.fillMaxWidth().padding(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
                 ) {
                     val selectedQuiz = state.quizzes.find { it.id == selectedQuizId }
                     OutlinedTextField(
@@ -661,7 +727,9 @@ fun BookNotesScreen(bookId: Long, viewModel: BookToolsViewModel, onBack: () -> U
                         onValueChange = {},
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -683,7 +751,9 @@ fun BookNotesScreen(bookId: Long, viewModel: BookToolsViewModel, onBack: () -> U
 
             if (selectedQuizId != null) {
                 LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(end = 16.dp)
                 ) {
@@ -805,7 +875,9 @@ fun AiPromptDeckScreen(
             selectedCardId == null -> {
                 // List View
                 LazyColumn(
-                    modifier = Modifier.padding(padding).fillMaxSize(),
+                    modifier = Modifier
+                        .padding(padding)
+                        .fillMaxSize(),
                     state = listState,
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -848,7 +920,9 @@ fun AiPromptDeckScreen(
             selectedCard != null -> {
                 // Editor View
                 LazyColumn(
-                    modifier = Modifier.padding(padding).fillMaxSize(),
+                    modifier = Modifier
+                        .padding(padding)
+                        .fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
@@ -1033,11 +1107,15 @@ fun BookToolListItem(
 ) {
     val tokens = LocalMksDesignTokens.current
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(tokens.cardRadius),
         elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
     ) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier
+            .fillMaxWidth()
+            .padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(icon, contentDescription = null)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(title, fontWeight = FontWeight.Bold)
@@ -1088,7 +1166,9 @@ private fun LoadingPane(modifier: Modifier = Modifier) {
 
 @Composable
 private fun MessagePane(modifier: Modifier = Modifier, title: String, body: String) {
-    Column(modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Column(modifier
+        .fillMaxSize()
+        .padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Icon(Icons.Rounded.Folder, null)
         Spacer(Modifier.height(12.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -1098,7 +1178,7 @@ private fun MessagePane(modifier: Modifier = Modifier, title: String, body: Stri
 }
 
 @Composable
-private fun TitleBodyDialog(
+fun TitleBodyDialog(
     title: String,
     titleLabel: String,
     bodyLabel: String,
@@ -1136,7 +1216,7 @@ private fun ConfirmDeleteDialog(title: String, body: String, onDismiss: () -> Un
 }
 
 @Composable
-private fun ArticleCreateDialog(
+fun ArticleCreateDialog(
     initialTitle: String = "",
     initialBody: String = "",
     initialMode: String = BlueprintMode.CONCEPT_TEMPLATE,
@@ -1168,7 +1248,7 @@ private fun ArticleCreateDialog(
 }
 
 @Composable
-private fun SourceDocumentDialog(
+fun SourceDocumentDialog(
     title: String,
     confirmLabel: String,
     initialTitle: String = "",

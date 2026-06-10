@@ -31,15 +31,16 @@ interface GlobalSearchDao {
         FROM flashcards f JOIN flashcard_decks d ON d.id = f.deckId
         WHERE f.deletedAt IS NULL AND d.deletedAt IS NULL AND (f.frontText LIKE :likeQuery OR f.backText LIKE :likeQuery OR f.hint LIKE :likeQuery OR f.tags LIKE :likeQuery)
         UNION ALL
-        SELECT CAST(id AS TEXT), 'BLUEPRINT', title, summary, body, bookId, NULL, sourceQuestionId, NULL, updatedAt
-        FROM note_blueprints WHERE deletedAt IS NULL AND (title LIKE :likeQuery OR summary LIKE :likeQuery OR body LIKE :likeQuery OR bulletPoints LIKE :likeQuery OR tags LIKE :likeQuery)
+        SELECT CAST(b.id AS TEXT), 'BLUEPRINT', b.title, b.summary, b.body, c.bookId, NULL, b.sourceQuestionId, NULL, b.updatedAt
+        FROM note_blueprints b JOIN note_collections c ON c.id = b.collectionId 
+        WHERE b.deletedAt IS NULL AND c.deletedAt IS NULL AND (b.title LIKE :likeQuery OR b.summary LIKE :likeQuery OR b.body LIKE :likeQuery OR b.bulletPoints LIKE :likeQuery OR b.tags LIKE :likeQuery)
         UNION ALL
         SELECT CAST(s.id AS TEXT), 'SLIDE', s.title, c.title, s.body, c.bookId, NULL, s.sourceQuestionId, c.id, s.updatedAt
         FROM course_slides s JOIN slideshow_courses c ON c.id = s.courseId
         WHERE s.deletedAt IS NULL AND c.deletedAt IS NULL AND (s.title LIKE :likeQuery OR s.body LIKE :likeQuery OR s.speakerNotes LIKE :likeQuery)
         UNION ALL
-        SELECT CAST(id AS TEXT), 'PROMPT_DECK', title, description, tagsJson, bookId, NULL, NULL, NULL, updatedAt
-        FROM prompt_decks WHERE deletedAt IS NULL AND (title LIKE :likeQuery OR description LIKE :likeQuery OR tagsJson LIKE :likeQuery)
+        SELECT CAST(id AS TEXT), 'PROMPT_DECK', title, description, tags, bookId, NULL, NULL, NULL, updatedAt
+        FROM prompt_decks WHERE deletedAt IS NULL AND (title LIKE :likeQuery OR description LIKE :likeQuery OR tags LIKE :likeQuery)
         UNION ALL
         SELECT CAST(c.id AS TEXT), 'PROMPT_CARD', c.title, d.title, c.promptText, d.bookId, NULL, NULL, d.id, c.updatedAt
         FROM prompt_cards c JOIN prompt_decks d ON d.id = c.deckId

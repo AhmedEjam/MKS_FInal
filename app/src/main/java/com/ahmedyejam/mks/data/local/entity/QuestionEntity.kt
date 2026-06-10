@@ -1,5 +1,6 @@
 package com.ahmedyejam.mks.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -52,6 +53,12 @@ data class QuestionEntity(
     val markReviewAt: Long? = null,
     val notes: String? = null,
     val categories: List<String> = emptyList(),
+    @ColumnInfo(defaultValue = "'[]'") val tags: List<String> = emptyList(),
+    // Spaced Repetition fields
+    val difficulty: String? = null,
+    @ColumnInfo(defaultValue = "0") val dueAt: Long = 0,
+    @ColumnInfo(defaultValue = "0") val reviewCount: Int = 0,
+    @ColumnInfo(defaultValue = "0") val lastReviewedAt: Long = 0,
     val additionalInfo: String? = null,
     val sourceBookId: String? = null,
     val sourceQuizId: String? = null,

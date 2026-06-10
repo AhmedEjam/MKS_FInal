@@ -1,19 +1,36 @@
 package com.ahmedyejam.mks.ui.library
 
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.core.net.toUri
-import com.ahmedyejam.mks.data.local.entity.*
+import com.ahmedyejam.mks.data.local.entity.BookEntity
+import com.ahmedyejam.mks.data.local.entity.CategoryMetadataEntity
+import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
+import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
+import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionEntity
+import com.ahmedyejam.mks.data.local.entity.QuizEntity
+import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
+import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.model.CategoryWithMetadata
 import com.ahmedyejam.mks.data.model.ExportResult
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.data.repository.MksRepository
-import com.ahmedyejam.mks.data.repository.KnowledgeSummary
 import com.ahmedyejam.mks.data.repository.SortOption
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -40,9 +57,6 @@ class LibraryViewModel(
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
-
-    private val _selectedBookId = MutableStateFlow(-1L)
-    val selectedBookId = _selectedBookId.asStateFlow()
 
     private val _selectedCategory = MutableStateFlow<String?>(null)
     val selectedCategory = _selectedCategory.asStateFlow()
@@ -125,18 +139,12 @@ class LibraryViewModel(
     .flowOn(Dispatchers.Default)
     .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val currentBook = combine(_selectedBookId, books) { id, list ->
-        list.find { it.id == id }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
     val quizzes = combine(
-        _selectedBookId,
         _selectedCategory,
         bookSortBy,
         _searchQuery,
-    ) { bookId, category, bookSortBy, searchQuery ->
+    ) { category, bookSortBy, searchQuery ->
         val baseFlow = when {
-            bookId != -1L -> repository.getQuizzesByBookId(bookId, bookSortBy)
             category != null -> repository.getQuizzesByCategory(category, bookSortBy)
             else -> flowOf(emptyList())
         }
@@ -151,112 +159,6 @@ class LibraryViewModel(
                 .map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
                 .sortedByDescending { it.isPinned }
                 .toList()
-        }
-    }.flatMapLatest { it }
-    .flowOn(Dispatchers.Default)
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val flashcardDecks = combine(
-        _selectedBookId,
-        _searchQuery,
-    ) { bookId, searchQuery ->
-        if (bookId != -1L) {
-            repository.getFlashcardDecksByBookId(bookId).map { list ->
-                list.asSequence()
-                    .filter { deck ->
-                        searchQuery.isBlank() ||
-                        deck.title.contains(searchQuery, ignoreCase = true) ||
-                        (deck.description?.contains(searchQuery, ignoreCase = true) ?: false)
-                    }
-                    .map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
-                    .sortedByDescending { it.isPinned }
-                    .toList()
-            }
-        } else {
-            flowOf(emptyList())
-        }
-    }.flatMapLatest { it }
-    .flowOn(Dispatchers.Default)
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val slideshowCourses = combine(
-        _selectedBookId,
-        _searchQuery,
-    ) { bookId, searchQuery ->
-        if (bookId != -1L) {
-            repository.getSlideshowCoursesByBookId(bookId).map { list ->
-                list.asSequence()
-                    .filter { course ->
-                        searchQuery.isBlank() ||
-                        course.title.contains(searchQuery, ignoreCase = true) ||
-                        (course.description?.contains(searchQuery, ignoreCase = true) ?: false)
-                    }
-                    .sortedByDescending { it.isPinned }
-                    .toList()
-            }
-        } else {
-            flowOf(emptyList())
-        }
-    }.flatMapLatest { it }
-    .flowOn(Dispatchers.Default)
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val noteBlueprints = combine(
-        _selectedBookId,
-        _searchQuery,
-    ) { bookId, searchQuery ->
-        if (bookId != -1L) {
-            repository.getNoteBlueprintsByBookId(bookId).map { list ->
-                list.filter { note ->
-                    searchQuery.isBlank() ||
-                    note.title.contains(searchQuery, ignoreCase = true) ||
-                    note.body.contains(searchQuery, ignoreCase = true)
-                }
-            }
-        } else {
-            flowOf(emptyList())
-        }
-    }.flatMapLatest { it }
-    .flowOn(Dispatchers.Default)
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val prompts = combine(
-        _selectedBookId,
-        _searchQuery,
-    ) { bookId, searchQuery ->
-        if (bookId != -1L) {
-            repository.getPromptsByBookId(bookId).map { list ->
-                list.asSequence()
-                    .filter { prompt ->
-                        searchQuery.isBlank() ||
-                        prompt.title.contains(searchQuery, ignoreCase = true) ||
-                        prompt.stem.contains(searchQuery, ignoreCase = true)
-                    }
-                    .toList()
-            }
-        } else {
-            flowOf(emptyList())
-        }
-    }.flatMapLatest { it }
-    .flowOn(Dispatchers.Default)
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val promptDecks = combine(
-        _selectedBookId,
-        _searchQuery,
-    ) { bookId, searchQuery ->
-        if (bookId != -1L) {
-            repository.getPromptDecksByBookId(bookId).map { list ->
-                list.asSequence()
-                    .filter { deck ->
-                        searchQuery.isBlank() ||
-                        deck.title.contains(searchQuery, ignoreCase = true) ||
-                        (deck.description?.contains(searchQuery, ignoreCase = true) ?: false)
-                    }
-                    .toList()
-            }
-        } else {
-            flowOf(emptyList())
         }
     }.flatMapLatest { it }
     .flowOn(Dispatchers.Default)
@@ -286,9 +188,8 @@ class LibraryViewModel(
         _searchQuery.value = query
     }
 
-    fun selectBook(id: Long) {
-        _selectedBookId.value = id
-        _selectedCategory.value = null
+    fun selectCategory(name: String) {
+        _selectedCategory.value = name
     }
 
     fun setSearching(searching: Boolean) {
@@ -297,7 +198,6 @@ class LibraryViewModel(
     }
 
     fun resetToLibraryRoot() {
-        _selectedBookId.value = -1L
         _selectedCategory.value = null
         _isSearching.value = false
         _searchQuery.value = ""
@@ -450,58 +350,6 @@ class LibraryViewModel(
     }
 
 
-    fun createFlashcardDeckFromBook(
-        bookId: Long,
-        title: String,
-        description: String = "",
-        coverUri: String? = null,
-        onCreated: (Long) -> Unit = {},
-    ) {
-        viewModelScope.launch {
-            try {
-                val finalTitle = if (title.isBlank()) {
-                    val existingDecks = repository.getFlashcardDecksByBookId(bookId).first()
-                    var baseTitle = "Untitled deck"
-                    var count = 1
-                    var newTitle = baseTitle
-                    while (existingDecks.any { it.title.equals(newTitle, ignoreCase = true) }) {
-                        newTitle = "$baseTitle-${count.toString().padStart(2, '0')}"
-                        count++
-                    }
-                    newTitle
-                } else {
-                    title.trim()
-                }
-
-                val coverImage = when {
-                    coverUri?.startsWith("content://") == true -> withContext(Dispatchers.IO) {
-                        repository.saveImage(coverUri.toUri())
-                    }
-                    coverUri.isNullOrBlank() -> null
-                    else -> coverUri
-                }
-                val now = System.currentTimeMillis()
-                val deckId = repository.insertFlashcardDeck(
-                    FlashcardDeckEntity(
-                        externalId = java.util.UUID.randomUUID().toString(),
-                        bookId = bookId,
-                        title = finalTitle,
-                        description = description.trim().ifBlank { null },
-                        coverImage = coverImage,
-                        createdAt = now,
-                        updatedAt = now,
-                        lastEditedAt = now
-                    )
-                )
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Flashcard deck created"))
-                onCreated(deckId)
-            } catch (e: Exception) {
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to create flashcard deck: ${e.message}"))
-            }
-        }
-    }
-
-
     fun deleteCategory(category: String) {
         viewModelScope.launch { repository.deleteCategory(category) }
     }
@@ -602,63 +450,6 @@ class LibraryViewModel(
                 ),
             )
         }
-    }
-
-    fun insertPrompt(bookId: Long, title: String, stem: String) {
-        viewModelScope.launch {
-            try {
-                repository.insertPrompt(
-                    PromptEntity(
-                        externalId = java.util.UUID.randomUUID().toString(),
-                        bookId = bookId,
-                        title = title,
-                        stem = stem,
-                        createdAt = System.currentTimeMillis(),
-                        updatedAt = System.currentTimeMillis(),
-                    ),
-                )
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Prompt created"))
-            } catch (e: Exception) {
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to create prompt: ${e.message}"))
-            }
-        }
-    }
-
-    fun deleteFlashcardDeck(deck: FlashcardDeckEntity) {
-        viewModelScope.launch {
-            try {
-                repository.deleteFlashcardDeck(deck)
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Flashcard deck deleted"))
-            } catch (e: Exception) {
-                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to delete flashcard deck: ${e.message}"))
-            }
-        }
-    }
-
-    fun updateFlashcardDeck(deck: FlashcardDeckEntity) {
-        viewModelScope.launch {
-            repository.updateFlashcardDeck(deck)
-        }
-    }
-
-    fun toggleFlashcardDeckPinned(deck: FlashcardDeckEntity) {
-        viewModelScope.launch { repository.updateFlashcardDeck(deck.copy(isPinned = !deck.isPinned)) }
-    }
-
-    fun toggleSlideshowCoursePinned(course: SlideshowCourseEntity) {
-        viewModelScope.launch { repository.updateSlideshowCourse(course.copy(isPinned = !course.isPinned)) }
-    }
-
-    fun deleteSlideshowCourse(course: SlideshowCourseEntity) {
-        viewModelScope.launch { repository.deleteSlideshowCourse(course) }
-    }
-
-    fun deleteNoteBlueprint(note: NoteBlueprintEntity) {
-        viewModelScope.launch { repository.deleteNoteBlueprint(note) }
-    }
-
-    fun deletePromptDeck(deck: PromptDeckEntity) {
-        viewModelScope.launch { repository.deletePromptDeck(deck) }
     }
 
     val workspaces = repository.getAllWorkspaces()
@@ -772,7 +563,9 @@ class LibraryViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val deletedPrompts = currentWorkspaceId.flatMapLatest { workspaceId ->
-        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedPromptDecks(workspaceId)
+        if (workspaceId <= 0L) flowOf(emptyOf<PromptDeckEntity>()) else repository.getDeletedPromptDecks(
+            workspaceId
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun restoreBook(bookId: Long) {
@@ -906,4 +699,6 @@ class LibraryViewModel(
             }
         }
     }
+
+    private fun <T> emptyOf(): List<T> = emptyList()
 }

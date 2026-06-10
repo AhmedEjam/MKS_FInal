@@ -3,47 +3,49 @@ package com.ahmedyejam.mks.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.ahmedyejam.mks.data.local.dao.AnnotationDao
+import com.ahmedyejam.mks.data.local.dao.AssetReferenceDao
 import com.ahmedyejam.mks.data.local.dao.BookDao
+import com.ahmedyejam.mks.data.local.dao.GlobalSearchDao
+import com.ahmedyejam.mks.data.local.dao.MistakeLogDao
+import com.ahmedyejam.mks.data.local.dao.PromptCardDao
+import com.ahmedyejam.mks.data.local.dao.PromptDeckDao
+import com.ahmedyejam.mks.data.local.dao.PromptRunDao
+import com.ahmedyejam.mks.data.local.dao.QuestionAssetDao
+import com.ahmedyejam.mks.data.local.dao.QuestionCategoryDao
 import com.ahmedyejam.mks.data.local.dao.QuestionDao
 import com.ahmedyejam.mks.data.local.dao.QuizDao
 import com.ahmedyejam.mks.data.local.dao.SessionDao
+import com.ahmedyejam.mks.data.local.dao.SourceDocumentDao
 import com.ahmedyejam.mks.data.local.dao.WorkspaceDao
+import com.ahmedyejam.mks.data.local.entity.AnnotationEntity
+import com.ahmedyejam.mks.data.local.entity.AssetReferenceEntity
 import com.ahmedyejam.mks.data.local.entity.BookEntity
 import com.ahmedyejam.mks.data.local.entity.CategoryMetadataEntity
+import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
+import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
+import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
+import com.ahmedyejam.mks.data.local.entity.KnowledgeStudySessionEntity
+import com.ahmedyejam.mks.data.local.entity.LearningSessionEntity
+import com.ahmedyejam.mks.data.local.entity.MistakeLogEntryEntity
+import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
+import com.ahmedyejam.mks.data.local.entity.NoteCollectionEntity
+import com.ahmedyejam.mks.data.local.entity.PromptCardEntity
+import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
+import com.ahmedyejam.mks.data.local.entity.PromptEntity
+import com.ahmedyejam.mks.data.local.entity.PromptRunEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionAssetEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionCategoryEntity
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
+import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
+import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
+import com.ahmedyejam.mks.data.local.entity.StudySessionEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
-import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
-import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
-import com.ahmedyejam.mks.data.local.entity.LearningSessionEntity
-import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
-import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
-import com.ahmedyejam.mks.data.local.entity.PromptEntity
-import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
-import com.ahmedyejam.mks.data.local.entity.PromptCardEntity
-import com.ahmedyejam.mks.data.local.entity.PromptRunEntity
-import com.ahmedyejam.mks.data.local.entity.KnowledgeStudySessionEntity
-import com.ahmedyejam.mks.data.local.entity.QuestionCategoryEntity
-import com.ahmedyejam.mks.data.local.entity.AssetReferenceEntity
-import com.ahmedyejam.mks.data.local.entity.QuestionAssetEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
-import com.ahmedyejam.mks.data.local.entity.MistakeLogEntryEntity
-import com.ahmedyejam.mks.data.local.entity.AnnotationEntity
-import com.ahmedyejam.mks.data.local.dao.QuestionCategoryDao
-import com.ahmedyejam.mks.data.local.dao.AssetReferenceDao
-import com.ahmedyejam.mks.data.local.dao.QuestionAssetDao
-import com.ahmedyejam.mks.data.local.dao.SourceDocumentDao
-import com.ahmedyejam.mks.data.local.dao.PromptDeckDao
-import com.ahmedyejam.mks.data.local.dao.PromptCardDao
-import com.ahmedyejam.mks.data.local.dao.PromptRunDao
-import com.ahmedyejam.mks.data.local.dao.MistakeLogDao
-import com.ahmedyejam.mks.data.local.dao.GlobalSearchDao
-import com.ahmedyejam.mks.data.local.dao.AnnotationDao
 
-const val MKS_DATABASE_VERSION = 26
+const val MKS_DATABASE_VERSION = 27
 
 @Database(
     entities = [
@@ -70,7 +72,9 @@ const val MKS_DATABASE_VERSION = 26
         QuestionAssetEntity::class,
         SourceDocumentEntity::class,
         MistakeLogEntryEntity::class,
-        AnnotationEntity::class
+        AnnotationEntity::class,
+        NoteCollectionEntity::class,
+        StudySessionEntity::class
     ],
     version = MKS_DATABASE_VERSION,
     exportSchema = true
@@ -101,12 +105,15 @@ abstract class MksDatabase : RoomDatabase() {
     abstract fun mistakeLogDao(): MistakeLogDao
     abstract fun globalSearchDao(): GlobalSearchDao
     abstract fun annotationDao(): AnnotationDao
+    abstract fun noteCollectionDao(): com.ahmedyejam.mks.data.local.dao.NoteCollectionDao
+    abstract fun studySessionDao(): com.ahmedyejam.mks.data.local.dao.StudySessionDao
 
     companion object {
         const val DATABASE_NAME = "mks_database"
         const val DB_VERSION = MKS_DATABASE_VERSION
         val MIGRATION_15_16 = MksMigrations.MIGRATION_15_16
         val MIGRATION_16_17 = MksMigrations.MIGRATION_16_17
+        val MIGRATION_26_27 = MksMigrations.MIGRATION_26_27
 
         fun addColumnIfMissing(
             db: androidx.sqlite.db.SupportSQLiteDatabase,

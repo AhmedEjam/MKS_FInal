@@ -31,14 +31,14 @@ object BlueprintReviewStatus {
     tableName = "note_blueprints",
     foreignKeys = [
         ForeignKey(
-            entity = BookEntity::class,
+            entity = NoteCollectionEntity::class,
             parentColumns = ["id"],
-            childColumns = ["bookId"],
+            childColumns = ["collectionId"],
             onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [
-        Index("bookId"),
+        Index("collectionId"),
         Index("sourceQuestionId"),
         Index("blueprintMode"),
         Index("reviewStatus"),
@@ -48,9 +48,12 @@ object BlueprintReviewStatus {
 data class NoteBlueprintEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val externalId: String,
-    val bookId: Long,
+    val collectionId: Long,
     val title: String,
+    val description: String? = null,
     val summary: String? = null,
+    val iconName: String? = null,
+    val coverImage: String? = null,
     val body: String,
     @ColumnInfo(defaultValue = "'[]'") val bulletPoints: List<String> = emptyList(),
     @ColumnInfo(defaultValue = "'[]'") val tags: List<String> = emptyList(),

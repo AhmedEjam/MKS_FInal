@@ -9,7 +9,12 @@ enum class TextArticleParseMode {
 }
 
 class TextArticleParser {
-    fun parse(text: String, bookId: Long, mode: TextArticleParseMode = TextArticleParseMode.BASIC, defaultMode: String = "SIMPLE_NOTE"): List<NoteBlueprintEntity> {
+    fun parse(
+        text: String,
+        collectionId: Long,
+        mode: TextArticleParseMode = TextArticleParseMode.BASIC,
+        defaultMode: String = "SIMPLE_NOTE"
+    ): List<NoteBlueprintEntity> {
         val result = mutableListOf<NoteBlueprintEntity>()
         
         if (mode == TextArticleParseMode.BASIC) {
@@ -28,7 +33,7 @@ class TextArticleParser {
                 result.add(
                     NoteBlueprintEntity(
                         externalId = UUID.randomUUID().toString(),
-                        bookId = bookId,
+                        collectionId = collectionId,
                         title = title,
                         summary = summary,
                         body = body,
@@ -56,7 +61,7 @@ class TextArticleParser {
                     result.add(
                         NoteBlueprintEntity(
                             externalId = UUID.randomUUID().toString(),
-                            bookId = bookId,
+                            collectionId = collectionId,
                             title = titleMatch.groupValues.getOrNull(1)?.trim() ?: "Untitled",
                             summary = summaryMatch?.groupValues?.getOrNull(1)?.trim(),
                             body = bodyMatch?.groupValues?.getOrNull(1)?.trim() ?: "",
@@ -70,7 +75,7 @@ class TextArticleParser {
                     result.add(
                         NoteBlueprintEntity(
                             externalId = UUID.randomUUID().toString(),
-                            bookId = bookId,
+                            collectionId = collectionId,
                             title = articleText.take(50).trim() + "...",
                             body = articleText.trim(),
                             blueprintMode = defaultMode

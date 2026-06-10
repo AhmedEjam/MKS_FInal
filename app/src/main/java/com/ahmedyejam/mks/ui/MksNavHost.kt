@@ -149,15 +149,6 @@ fun MksNavHost(
                 onBrowseQuestions = { quizId -> navController.navigate(MksRoutes.quizQuestions(quizId)) },
                 onCategorySelected = { category -> navController.navigate(MksRoutes.category(category)) },
                 onSettingsSelected = { navController.navigate(MksRoutes.SETTINGS) },
-                onFlashcardDeckSelected = { deckId -> navController.navigate(MksRoutes.flashcards(deckId)) },
-                onSlideshowSelected = { courseId -> navController.navigate(MksRoutes.slideshow(courseId)) },
-                onReviewBlueprintSelected = { noteId -> navController.navigate(MksRoutes.blueprint(noteId)) },
-                onBookSlideshowSelected = { bookId -> navController.navigate(MksRoutes.bookSlideshows(bookId)) },
-                onBookReviewBlueprintSelected = { bookId -> navController.navigate(MksRoutes.bookBlueprints(bookId)) },
-                onBookSourcesSelected = { bookId -> navController.navigate(MksRoutes.bookSources(bookId)) },
-                onBookNotesSelected = { bookId -> navController.navigate(MksRoutes.bookNotes(bookId)) },
-                onBookAiPromptDeckSelected = { bookId -> navController.navigate(MksRoutes.bookPrompts(bookId)) },
-                onAiPromptDeckSelected = { promptId -> navController.navigate(MksRoutes.promptDeck(promptId)) },
                 onBookDashboardSelected = { bookId -> navController.navigate(MksRoutes.bookDashboard(bookId)) },
             )
         }

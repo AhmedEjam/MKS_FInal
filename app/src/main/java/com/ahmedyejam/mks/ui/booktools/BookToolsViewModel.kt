@@ -2,9 +2,25 @@ package com.ahmedyejam.mks.ui.booktools
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ahmedyejam.mks.data.local.entity.*
+import com.ahmedyejam.mks.data.local.entity.BlueprintMode
+import com.ahmedyejam.mks.data.local.entity.BlueprintReviewStatus
+import com.ahmedyejam.mks.data.local.entity.BookEntity
+import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
+import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
+import com.ahmedyejam.mks.data.local.entity.MistakeLogEntryEntity
+import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
+import com.ahmedyejam.mks.data.local.entity.PromptCardEntity
+import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
+import com.ahmedyejam.mks.data.local.entity.PromptOutputType
+import com.ahmedyejam.mks.data.local.entity.PromptRunEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionEntity
+import com.ahmedyejam.mks.data.local.entity.QuizEntity
+import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
+import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
+import com.ahmedyejam.mks.data.local.entity.SourceDocumentTypes
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
 import com.ahmedyejam.mks.data.repository.MksRepository
+import com.ahmedyejam.mks.data.repository.SortOption
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -123,7 +139,7 @@ class BookToolsViewModel(
                 _uiState.value = _uiState.value.copy(isSaving = true, error = null)
                 val note = NoteBlueprintEntity(
                     externalId = java.util.UUID.randomUUID().toString(),
-                    bookId = bookId,
+                    collectionId = repository.getOrCreateDefaultNoteCollection(bookId),
                     title = title.ifBlank { "Untitled blueprint" },
                     body = body,
                     bulletPoints = emptyList(),
@@ -681,5 +697,147 @@ class BookToolsViewModel(
 
     fun clearMessages() {
         _uiState.value = _uiState.value.copy(error = null, successMessage = null)
+    }
+
+    fun deleteQuiz(quiz: QuizEntity) {
+        viewModelScope.launch {
+            try {
+                repository.deleteQuiz(quiz)
+                _uiState.value = _uiState.value.copy(
+                    quizzes = _uiState.value.quizzes.filter { it.id != quiz.id },
+                    successMessage = "Quiz deleted"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to delete quiz: ${e.message}")
+            }
+        }
+    }
+
+    fun deleteFlashcardDeck(deck: FlashcardDeckEntity) {
+        viewModelScope.launch {
+            try {
+                repository.deleteFlashcardDeck(deck)
+                _uiState.value = _uiState.value.copy(
+                    flashcardDecks = _uiState.value.flashcardDecks.filter { it.id != deck.id },
+                    successMessage = "Flashcard deck deleted"
+                )
+            } catch (e: Exception) {
+                _uiState.value =
+                    _uiState.value.copy(error = "Failed to delete flashcard deck: ${e.message}")
+            }
+        }
+    }
+
+    fun createFlashcardDeckFromBook(
+        bookId: Long,
+        title: String,
+        description: String = "",
+        coverUri: String? = null,
+        onCreated: (Long) -> Unit = {},
+    ) {
+        viewModelScope.launch {
+            try {
+                val deckId = repository.insertFlashcardDeck(
+                    FlashcardDeckEntity(
+                        externalId = java.util.UUID.randomUUID().toString(),
+                        bookId = bookId,
+                        title = title.ifBlank { "Untitled deck" },
+                        description = description.trim().ifBlank { null },
+                        coverImage = coverUri,
+                        createdAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis(),
+                        lastEditedAt = System.currentTimeMillis()
+                    )
+                )
+                val savedList = repository.getFlashcardDecksByBookId(bookId).first()
+                val saved = savedList.find { it.id == deckId }
+                _uiState.value = _uiState.value.copy(
+                    flashcardDecks = (_uiState.value.flashcardDecks.filter { it.id != deckId } + (saved
+                        ?: return@launch)).sortedByDescending { it.updatedAt },
+                    successMessage = "Flashcard deck created"
+                )
+                onCreated(deckId)
+            } catch (e: Exception) {
+                _uiState.value =
+                    _uiState.value.copy(error = "Failed to create flashcard deck: ${e.message}")
+            }
+        }
+    }
+
+    fun createNewQuiz(
+        bookId: Long,
+        title: String,
+        description: String,
+        coverImage: String?,
+        sourceQuizIds: List<Long>,
+        sourceCategories: List<String>
+    ) {
+        viewModelScope.launch {
+            try {
+                val newQuizId = repository.insertQuiz(
+                    QuizEntity(
+                        externalId = java.util.UUID.randomUUID().toString(),
+                        bookId = bookId,
+                        title = title.ifBlank { "New Quiz" },
+                        description = description,
+                        coverImage = coverImage,
+                        createdAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis(),
+                    ),
+                )
+
+                // Duplicate questions if sources provided
+                if (sourceQuizIds.isNotEmpty() || sourceCategories.isNotEmpty()) {
+                    val bookQuizzes =
+                        repository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
+                    val allQuestions = mutableListOf<QuestionEntity>()
+
+                    if (sourceQuizIds.isNotEmpty()) {
+                        for (qId in sourceQuizIds) {
+                            allQuestions.addAll(repository.getQuestionsByQuizId(qId).first())
+                        }
+                    } else if (sourceCategories.isNotEmpty()) {
+                        for (quiz in bookQuizzes) {
+                            allQuestions.addAll(repository.getQuestionsByQuizId(quiz.id).first())
+                        }
+                    }
+
+                    val filteredQuestions = if (sourceCategories.isNotEmpty()) {
+                        allQuestions.filter { q ->
+                            q.categories.any { it in sourceCategories }
+                        }
+                    } else {
+                        allQuestions
+                    }
+
+                    val duplicatedQuestions = filteredQuestions.map { q ->
+                        q.copy(
+                            id = 0,
+                            externalId = java.util.UUID.randomUUID().toString(),
+                            quizId = newQuizId,
+                            attempts = 0,
+                            correctCount = 0,
+                            isMarked = false,
+                            createdAt = System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis(),
+                        )
+                    }
+
+                    if (duplicatedQuestions.isNotEmpty()) {
+                        repository.insertQuestions(duplicatedQuestions)
+                    }
+                }
+
+                val savedList = repository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
+                val saved = savedList.find { it.id == newQuizId }
+                _uiState.value = _uiState.value.copy(
+                    quizzes = (_uiState.value.quizzes.filter { it.id != newQuizId } + (saved
+                        ?: return@launch)).sortedByDescending { it.updatedAt },
+                    successMessage = "Quiz created"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to create quiz: ${e.message}")
+            }
+        }
     }
 }

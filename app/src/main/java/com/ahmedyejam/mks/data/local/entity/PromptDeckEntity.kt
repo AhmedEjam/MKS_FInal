@@ -26,7 +26,9 @@ data class PromptDeckEntity(
     val bookId: Long,
     val title: String,
     val description: String? = null,
-    val tagsJson: String? = null,
+    val iconName: String? = null,
+    val coverImage: String? = null,
+    @ColumnInfo(defaultValue = "'[]'") val tags: List<String> = emptyList(),
     @ColumnInfo(defaultValue = "0") val createdAt: Long = System.currentTimeMillis(),
     @ColumnInfo(defaultValue = "0") val updatedAt: Long = System.currentTimeMillis(),
     val deletedAt: Long? = null

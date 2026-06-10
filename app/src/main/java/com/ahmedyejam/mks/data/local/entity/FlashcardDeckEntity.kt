@@ -1,6 +1,7 @@
 package com.ahmedyejam.mks.data.local.entity
 
 import androidx.compose.runtime.Immutable
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -32,6 +33,7 @@ data class FlashcardDeckEntity(
     val description: String? = null,
     val iconName: String? = null,
     val coverImage: String? = null, // local path or http URL
+    @ColumnInfo(defaultValue = "'[]'") val tags: List<String> = emptyList(),
     // Stats / UI
     val cardCount: Int = 0,
     val studiedCount: Int = 0,

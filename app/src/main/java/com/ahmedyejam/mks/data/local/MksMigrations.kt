@@ -764,6 +764,195 @@ object MksMigrations {
     }
 
 
+    val MIGRATION_26_27 = object : Migration(26, 27) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // 1. Add fields to Quizzes, FlashcardDecks, SlideshowCourses, PromptDecks, PromptCards
+            MksDatabase.addColumnIfMissing(db, "quizzes", "tags", "TEXT NOT NULL DEFAULT '[]'")
+            MksDatabase.addColumnIfMissing(db, "quizzes", "iconName", "TEXT")
+            MksDatabase.addColumnIfMissing(
+                db,
+                "flashcard_decks",
+                "tags",
+                "TEXT NOT NULL DEFAULT '[]'"
+            )
+            MksDatabase.addColumnIfMissing(
+                db,
+                "slideshow_courses",
+                "tags",
+                "TEXT NOT NULL DEFAULT '[]'"
+            )
+            MksDatabase.addColumnIfMissing(db, "slideshow_courses", "iconName", "TEXT")
+            MksDatabase.addColumnIfMissing(db, "prompt_decks", "tags", "TEXT NOT NULL DEFAULT '[]'")
+            MksDatabase.addColumnIfMissing(db, "prompt_decks", "iconName", "TEXT")
+            MksDatabase.addColumnIfMissing(db, "prompt_decks", "coverImage", "TEXT")
+            MksDatabase.addColumnIfMissing(db, "prompt_cards", "tags", "TEXT NOT NULL DEFAULT '[]'")
+
+            // 2. Add Spaced Repetition fields to Questions and CourseSlides
+            MksDatabase.addColumnIfMissing(db, "questions", "tags", "TEXT NOT NULL DEFAULT '[]'")
+            MksDatabase.addColumnIfMissing(db, "questions", "difficulty", "TEXT")
+            MksDatabase.addColumnIfMissing(db, "questions", "dueAt", "INTEGER NOT NULL DEFAULT 0")
+            MksDatabase.addColumnIfMissing(
+                db,
+                "questions",
+                "reviewCount",
+                "INTEGER NOT NULL DEFAULT 0"
+            )
+            MksDatabase.addColumnIfMissing(
+                db,
+                "questions",
+                "lastReviewedAt",
+                "INTEGER NOT NULL DEFAULT 0"
+            )
+
+            MksDatabase.addColumnIfMissing(
+                db,
+                "course_slides",
+                "tags",
+                "TEXT NOT NULL DEFAULT '[]'"
+            )
+            MksDatabase.addColumnIfMissing(db, "course_slides", "difficulty", "TEXT")
+            MksDatabase.addColumnIfMissing(
+                db,
+                "course_slides",
+                "dueAt",
+                "INTEGER NOT NULL DEFAULT 0"
+            )
+            MksDatabase.addColumnIfMissing(
+                db,
+                "course_slides",
+                "reviewCount",
+                "INTEGER NOT NULL DEFAULT 0"
+            )
+            MksDatabase.addColumnIfMissing(
+                db,
+                "course_slides",
+                "lastReviewedAt",
+                "INTEGER NOT NULL DEFAULT 0"
+            )
+
+            // 3. Create NoteCollections table
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `note_collections` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `externalId` TEXT NOT NULL,
+                    `bookId` INTEGER NOT NULL,
+                    `title` TEXT NOT NULL,
+                    `description` TEXT,
+                    `iconName` TEXT,
+                    `coverImage` TEXT,
+                    `tags` TEXT NOT NULL DEFAULT '[]',
+                    `noteCount` INTEGER NOT NULL DEFAULT 0,
+                    `isSystem` INTEGER NOT NULL DEFAULT 0,
+                    `isPinned` INTEGER NOT NULL DEFAULT 0,
+                    `createdAt` INTEGER NOT NULL,
+                    `updatedAt` INTEGER NOT NULL,
+                    `lastStudiedAt` INTEGER NOT NULL DEFAULT 0,
+                    `lastEditedAt` INTEGER NOT NULL,
+                    `deletedAt` INTEGER,
+                    FOREIGN KEY(`bookId`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+            """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_note_collections_bookId` ON `note_collections` (`bookId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_note_collections_deletedAt` ON `note_collections` (`deletedAt`)")
+
+            // 4. Create StudySessions table
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `study_sessions` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `targetType` TEXT NOT NULL,
+                    `targetId` INTEGER NOT NULL,
+                    `label` TEXT,
+                    `stateJson` TEXT NOT NULL,
+                    `timeSpentMs` INTEGER NOT NULL DEFAULT 0,
+                    `completionPercentage` REAL NOT NULL DEFAULT 0.0,
+                    `isCompleted` INTEGER NOT NULL DEFAULT 0,
+                    `correctCount` INTEGER NOT NULL DEFAULT 0,
+                    `incorrectCount` INTEGER NOT NULL DEFAULT 0,
+                    `createdAt` INTEGER NOT NULL,
+                    `updatedAt` INTEGER NOT NULL,
+                    `deletedAt` INTEGER
+                )
+            """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_study_sessions_targetId_targetType` ON `study_sessions` (`targetId`, `targetType`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_study_sessions_deletedAt` ON `study_sessions` (`deletedAt`)")
+
+            // 5. Migrate NoteBlueprints
+            // Create default collections for existing blueprints
+            val now = System.currentTimeMillis()
+            db.query("SELECT DISTINCT bookId FROM note_blueprints").use { cursor ->
+                while (cursor.moveToNext()) {
+                    val bookId = cursor.getLong(0)
+                    db.execSQL(
+                        """
+                        INSERT INTO note_collections (externalId, bookId, title, description, isSystem, isPinned, createdAt, updatedAt, lastStudiedAt, lastEditedAt)
+                        VALUES ('nc_default_$bookId', $bookId, 'Default Collection', 'Auto-generated collection', 1, 0, $now, $now, 0, $now)
+                    """.trimIndent()
+                    )
+                }
+            }
+
+            // Recreate note_blueprints to point to collectionId instead of bookId
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `note_blueprints_new` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `externalId` TEXT NOT NULL,
+                    `collectionId` INTEGER NOT NULL,
+                    `title` TEXT NOT NULL,
+                    `description` TEXT,
+                    `summary` TEXT,
+                    `iconName` TEXT,
+                    `coverImage` TEXT,
+                    `body` TEXT NOT NULL,
+                    `bulletPoints` TEXT NOT NULL DEFAULT '[]',
+                    `tags` TEXT NOT NULL DEFAULT '[]',
+                    `blueprintMode` TEXT NOT NULL DEFAULT 'SIMPLE_NOTE',
+                    `linkedQuestionsJson` TEXT NOT NULL DEFAULT '[]',
+                    `linkedAssetsJson` TEXT NOT NULL DEFAULT '[]',
+                    `reviewStatus` TEXT NOT NULL DEFAULT 'NEW',
+                    `reviewCount` INTEGER NOT NULL DEFAULT 0,
+                    `lastReviewedAt` INTEGER NOT NULL DEFAULT 0,
+                    `createdAt` INTEGER NOT NULL,
+                    `updatedAt` INTEGER NOT NULL,
+                    `sourceQuestionId` INTEGER,
+                    `deletedAt` INTEGER,
+                    FOREIGN KEY(`collectionId`) REFERENCES `note_collections`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+            """.trimIndent()
+            )
+
+            // Migrate data
+            db.execSQL(
+                """
+                INSERT INTO `note_blueprints_new` (
+                    id, externalId, collectionId, title, summary, body, bulletPoints, tags, blueprintMode, 
+                    linkedQuestionsJson, linkedAssetsJson, reviewStatus, reviewCount, lastReviewedAt, 
+                    createdAt, updatedAt, sourceQuestionId, deletedAt
+                )
+                SELECT 
+                    b.id, b.externalId, c.id, b.title, b.summary, b.body, b.bulletPoints, b.tags, b.blueprintMode, 
+                    b.linkedQuestionsJson, b.linkedAssetsJson, b.reviewStatus, b.reviewCount, b.lastReviewedAt, 
+                    b.createdAt, b.updatedAt, b.sourceQuestionId, b.deletedAt
+                FROM `note_blueprints` b
+                INNER JOIN `note_collections` c ON b.bookId = c.bookId AND c.externalId = 'nc_default_' || b.bookId
+            """.trimIndent()
+            )
+
+            db.execSQL("DROP TABLE `note_blueprints`")
+            db.execSQL("ALTER TABLE `note_blueprints_new` RENAME TO `note_blueprints`")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_note_blueprints_collectionId` ON `note_blueprints` (`collectionId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_note_blueprints_sourceQuestionId` ON `note_blueprints` (`sourceQuestionId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_note_blueprints_blueprintMode` ON `note_blueprints` (`blueprintMode`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_note_blueprints_reviewStatus` ON `note_blueprints` (`reviewStatus`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_note_blueprints_deletedAt` ON `note_blueprints` (`deletedAt`)")
+        }
+    }
+
+
     val ALL = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -789,6 +978,7 @@ object MksMigrations {
         MIGRATION_22_23,
         MIGRATION_23_24,
         MIGRATION_24_25,
-        MIGRATION_25_26
+        MIGRATION_25_26,
+        MIGRATION_26_27
     )
 }

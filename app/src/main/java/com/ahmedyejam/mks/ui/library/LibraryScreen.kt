@@ -15,35 +15,55 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import com.ahmedyejam.mks.R
 import com.ahmedyejam.mks.data.import.model.ImportResult
 import com.ahmedyejam.mks.data.local.entity.BookEntity
-import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
-import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
-import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 import com.ahmedyejam.mks.data.model.CategoryWithMetadata
+import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.ui.category.CategoryBrowserDialog
 import com.ahmedyejam.mks.ui.category.CategoryEditDialog
-import com.ahmedyejam.mks.ui.library.components.*
-import com.ahmedyejam.mks.ui.quiz.CompilerViewModel
-import kotlinx.coroutines.launch
-
 import com.ahmedyejam.mks.ui.import.ImportViewModel
-import com.ahmedyejam.mks.ui.workspace.WorkspaceManagerDialog
+import com.ahmedyejam.mks.ui.library.components.BookOptionsSheet
+import com.ahmedyejam.mks.ui.library.components.DeleteConfirmDialog
+import com.ahmedyejam.mks.ui.library.components.EditEntityDialog
+import com.ahmedyejam.mks.ui.library.components.ImportReviewDialog
+import com.ahmedyejam.mks.ui.library.components.ImportWarningsDialog
+import com.ahmedyejam.mks.ui.library.components.LibraryContentGrid
+import com.ahmedyejam.mks.ui.library.components.LibraryFabMenu
+import com.ahmedyejam.mks.ui.library.components.LibraryTopBar
+import com.ahmedyejam.mks.ui.library.components.QuizOptionsSheet
+import com.ahmedyejam.mks.ui.library.components.SortDialog
+import com.ahmedyejam.mks.ui.quiz.CompilerViewModel
 import com.ahmedyejam.mks.ui.trash.TrashBinDialog
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.grid.GridCells
-import com.ahmedyejam.mks.data.preferences.DataStoreManager
-import androidx.core.net.toUri
+import com.ahmedyejam.mks.ui.workspace.WorkspaceManagerDialog
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,15 +79,6 @@ fun LibraryScreen(
     onBrowseQuestions: (Long) -> Unit,
     onCategorySelected: (String) -> Unit,
     onSettingsSelected: () -> Unit,
-    onFlashcardDeckSelected: (Long) -> Unit = {},
-    onSlideshowSelected: (Long) -> Unit = {},
-    onReviewBlueprintSelected: (Long) -> Unit = {},
-    onBookSlideshowSelected: (Long) -> Unit = {},
-    onBookReviewBlueprintSelected: (Long) -> Unit = {},
-    onBookSourcesSelected: (Long) -> Unit = {},
-    onBookNotesSelected: (Long) -> Unit = {},
-    onBookAiPromptDeckSelected: (Long) -> Unit = {},
-    onAiPromptDeckSelected: (Long) -> Unit = {},
     onBookDashboardSelected: (Long) -> Unit = {},
     returnResetSignal: Int = 0,
 ) {
@@ -82,8 +93,6 @@ fun LibraryScreen(
 
     val showCompilerDialogState = remember { mutableStateOf(value = false) }
     var showCompilerDialog by showCompilerDialogState
-    var pendingImportBookId by remember { mutableStateOf<Long?>(null) }
-    var pendingImportQuizId by remember { mutableStateOf<Long?>(null) }
     val completedImportResultState = remember { mutableStateOf<ImportResult?>(null) }
     var completedImportResult by completedImportResultState
 
@@ -96,7 +105,7 @@ fun LibraryScreen(
         } else if (format == com.ahmedyejam.mks.data.import.model.ImportFormat.ZIP) {
             importViewModel.getImportPreview(
                 uri = uri,
-                targetBookId = pendingImportBookId,
+                targetBookId = null,
                 targetQuizId = targetQuizId,
             )
         }
@@ -128,24 +137,18 @@ fun LibraryScreen(
     val books by viewModel.books.collectAsState(initial = emptyList())
     val quizzes by viewModel.quizzes.collectAsState(initial = emptyList())
     val workspaceId by viewModel.currentWorkspaceId.collectAsState()
-    val flashcardDecks by viewModel.flashcardDecks.collectAsState(initial = emptyList())
-    val slideshowCourses by viewModel.slideshowCourses.collectAsState(initial = emptyList())
-    val noteBlueprints by viewModel.noteBlueprints.collectAsState(initial = emptyList())
-    val promptDecks by viewModel.promptDecks.collectAsState(initial = emptyList())
     val recentQuizzes by viewModel.recentQuizzes.collectAsState(initial = emptyList())
     val resumeQuiz by viewModel.resumeQuiz.collectAsState(initial = null)
     val categories by viewModel.categories.collectAsState(initial = emptyList())
-    val currentBook by viewModel.currentBook.collectAsState(initial = null)
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
-    val selectedBookId by viewModel.selectedBookId.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val libraryViewMode by viewModel.libraryViewMode.collectAsState()
     val bookViewMode by viewModel.bookViewMode.collectAsState()
 
     val currentViewMode by remember {
         derivedStateOf {
-            if ((selectedBookId == -1L) && (selectedCategory == null)) libraryViewMode else bookViewMode
+            if (selectedCategory == null) libraryViewMode else bookViewMode
         }
     }
 
@@ -155,20 +158,10 @@ fun LibraryScreen(
 
     val showSortDialogState = remember { mutableStateOf(value = false) }
     var showSortDialog by showSortDialogState
-    val showQuizSelectionDialogState = remember { mutableStateOf(value = false) }
-    var showQuizSelectionDialog by showQuizSelectionDialogState
     val showBookEditDialogState = rememberSaveable { mutableStateOf(value = false) }
     var showBookEditDialog by showBookEditDialogState
-    val showQuizEditDialogState = rememberSaveable { mutableStateOf(value = false) }
-    var showQuizEditDialog by showQuizEditDialogState
-    val showFlashcardDeckDialogState = rememberSaveable { mutableStateOf(value = false) }
-    var showFlashcardDeckDialog by showFlashcardDeckDialogState
-    val showPromptEditDialogState = rememberSaveable { mutableStateOf(value = false) }
-    var showPromptEditDialog by showPromptEditDialogState
     val editingBookState = remember { mutableStateOf<BookEntity?>(null) }
     var editingBook by editingBookState
-    val editingQuizState = remember { mutableStateOf<QuizEntity?>(null) }
-    var editingQuiz by editingQuizState
     val showDeleteConfirmBookState = remember { mutableStateOf<BookEntity?>(null) }
     var showDeleteConfirmBook by showDeleteConfirmBookState
     val showDeleteConfirmQuizState = remember { mutableStateOf<QuizEntity?>(null) }
@@ -184,28 +177,6 @@ fun LibraryScreen(
     var menuBook by menuBookState
     val menuQuizState = remember { mutableStateOf<QuizEntity?>(null) }
     var menuQuiz by menuQuizState
-    val menuFlashcardDeckState = remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity?>(null) }
-    var menuFlashcardDeck by menuFlashcardDeckState
-
-    val editingFlashcardDeckState = remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity?>(null) }
-    var editingFlashcardDeck by editingFlashcardDeckState
-    val showDeleteConfirmFlashcardDeckState = remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity?>(null) }
-    var showDeleteConfirmFlashcardDeck by showDeleteConfirmFlashcardDeckState
-
-    val menuSlideshowState = remember { mutableStateOf<SlideshowCourseEntity?>(null) }
-    var menuSlideshow by menuSlideshowState
-    val showDeleteConfirmSlideshowState = remember { mutableStateOf<SlideshowCourseEntity?>(null) }
-    var showDeleteConfirmSlideshow by showDeleteConfirmSlideshowState
-
-    val menuNoteState = remember { mutableStateOf<NoteBlueprintEntity?>(null) }
-    var menuNote by menuNoteState
-    val showDeleteConfirmNoteState = remember { mutableStateOf<NoteBlueprintEntity?>(null) }
-    var showDeleteConfirmNote by showDeleteConfirmNoteState
-
-    val menuPromptDeckState = remember { mutableStateOf<PromptDeckEntity?>(null) }
-    var menuPromptDeck by menuPromptDeckState
-    val showDeleteConfirmPromptDeckState = remember { mutableStateOf<PromptDeckEntity?>(null) }
-    var showDeleteConfirmPromptDeck by showDeleteConfirmPromptDeckState
 
     var pendingExportBookId by remember { mutableStateOf<Long?>(null) }
     var pendingExportQuizId by remember { mutableStateOf<Long?>(null) }
@@ -235,7 +206,7 @@ fun LibraryScreen(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri ->
         uri?.let {
-            handleImportUri(it, pendingImportQuizId)
+            handleImportUri(it)
         }
     }
 
@@ -246,8 +217,6 @@ fun LibraryScreen(
                 preview = state.preview,
                 onDismiss = {
                     importViewModel.resetState()
-                    pendingImportBookId = null
-                    pendingImportQuizId = null
                 },
             ) { strategy, allowInsecureHttpImages ->
                 importViewModel.importLibrary(
@@ -351,7 +320,7 @@ fun LibraryScreen(
     val fabExpandedState = remember { mutableStateOf(value = false) }
     var fabExpanded by fabExpandedState
 
-    BackHandler(enabled = fabExpanded || (selectedBookId != -1L) || (selectedCategory != null) || isSearching) {
+    BackHandler(enabled = fabExpanded || (selectedCategory != null) || isSearching) {
         if (fabExpanded) {
             fabExpandedState.value = false
         } else if (isSearching) {
@@ -364,14 +333,8 @@ fun LibraryScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val gridState = rememberLazyGridState()
 
-    LaunchedEffect(selectedBookId, selectedCategory, isSearching) {
+    LaunchedEffect(selectedCategory, isSearching) {
         gridState.scrollToItem(0)
-    }
-
-    LaunchedEffect(selectedBookId, books, currentBook) {
-        if ((selectedBookId != -1L) && (books.isNotEmpty()) && (currentBook == null)) {
-            viewModel.resetToLibraryRoot()
-        }
     }
 
     val columns by remember {
@@ -389,9 +352,9 @@ fun LibraryScreen(
                 isSearching = isSearching,
                 searchQuery = searchQuery,
                 onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                selectedBookId = selectedBookId,
+                selectedBookId = -1L,
                 selectedCategory = selectedCategory,
-                currentBookTitle = currentBook?.title,
+                currentBookTitle = null,
                 onNavigationClick = {
                     if (isSearching) viewModel.setSearching(searching = false)
                     else viewModel.resetToLibraryRoot()
@@ -401,7 +364,7 @@ fun LibraryScreen(
                 onSortClick = { showSortDialog = true },
                 currentViewMode = currentViewMode,
                 onToggleViewMode = {
-                    if ((selectedBookId == -1L) && (selectedCategory == null)) {
+                    if (selectedCategory == null) {
                         viewModel.toggleLibraryViewMode()
                     } else {
                         viewModel.toggleBookViewMode()
@@ -424,23 +387,13 @@ fun LibraryScreen(
             LibraryFabMenu(
                 fabExpanded = fabExpanded,
                 onFabExpandedChange = { fabExpandedState.value = it },
-                selectedBookId = selectedBookId,
                 selectedCategory = selectedCategory,
                 onAdaptiveSelected = onAdaptiveSelected,
-                onFlashcardDeckDialogShow = { showFlashcardDeckDialogState.value = true },
-                onBookSlideshowSelected = onBookSlideshowSelected,
-                onBookReviewBlueprintSelected = onBookReviewBlueprintSelected,
-                onBookSourcesSelected = onBookSourcesSelected,
-                onBookNotesSelected = onBookNotesSelected,
-                onPromptEditDialogShow = { onBookAiPromptDeckSelected(selectedBookId) },
-                onQuizSelectionDialogShow = { showQuizSelectionDialogState.value = true },
                 onNewBookClick = {
                     editingBookState.value = null
                     showBookEditDialogState.value = true
                 },
                 onImportClick = {
-                    pendingImportBookId = if (selectedBookId != -1L) selectedBookId else null
-                    pendingImportQuizId = null
                     importLauncher.launch(
                         arrayOf(
                             "application/zip",
@@ -455,13 +408,8 @@ fun LibraryScreen(
                 },
             ) {
                 val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
-                if (selectedBookId != -1L) {
-                    pendingExportBookId = selectedBookId
-                    exportLauncher.launch("${currentBook?.title?.replace(" ", "_")}_$timestamp.mks.zip")
-                } else {
-                    pendingExportBookId = null
-                    exportLauncher.launch("mks_full_library_$timestamp.zip")
-                }
+                pendingExportBookId = null
+                exportLauncher.launch("mks_full_library_$timestamp.zip")
             }
         },
     ) { padding ->
@@ -470,7 +418,6 @@ fun LibraryScreen(
                 gridState = gridState,
                 columns = columns,
                 padding = padding,
-                selectedBookId = selectedBookId,
                 selectedCategory = selectedCategory,
                 resumeQuiz = resumeQuiz,
                 recentQuizzes = recentQuizzes,
@@ -490,23 +437,11 @@ fun LibraryScreen(
                 showCategoryBrowser = { showCategoryBrowser = true },
                 books = books,
                 quizzes = quizzes,
-                flashcardDecks = flashcardDecks,
-                slideshowCourses = slideshowCourses,
-                noteBlueprints = noteBlueprints,
-                promptDecks = promptDecks,
                 currentViewMode = currentViewMode,
                 showCovers = showCovers,
-                onBookClick = { viewModel.selectBook(it.id) },
+                onBookClick = { onBookDashboardSelected(it.id) },
                 onBookLongClick = { menuBook = it },
                 onQuizLongClick = { menuQuiz = it },
-                onFlashcardDeckSelected = onFlashcardDeckSelected,
-                onFlashcardDeckLongClick = { menuFlashcardDeck = it },
-                onSlideshowSelected = onSlideshowSelected,
-                onSlideshowLongClick = { menuSlideshow = it },
-                onReviewBlueprintSelected = onReviewBlueprintSelected,
-                onReviewBlueprintLongClick = { menuNote = it },
-                onAiPromptDeckSelected = onAiPromptDeckSelected,
-                onAiPromptDeckLongClick = { menuPromptDeck = it },
             )
 
             AnimatedVisibility(
@@ -543,8 +478,8 @@ fun LibraryScreen(
                 exportLauncher.launch("${book.title.replace(" ", "_")}.mks.zip")
             },
             onImportClick = {
-                pendingImportBookId = book.id
-                pendingImportQuizId = null
+                pendingExportQuizId = null
+                pendingExportBookId = book.id
                 importLauncher.launch(arrayOf("*/*"))
             },
             onDeleteClick = { showDeleteConfirmBookState.value = book },
@@ -558,98 +493,14 @@ fun LibraryScreen(
             onBrowseQuestionsClick = { onBrowseQuestions(quiz.id) },
             onScanClick = { onScanSelected(quiz.id) },
             onPinClick = { viewModel.toggleQuizPinned(quiz) },
-            onEditClick = { editingQuizState.value = quiz; showQuizEditDialogState.value = true },
+            onEditClick = null,
             onExportClick = {
                 pendingExportQuizId = quiz.id
                 pendingExportBookId = null
                 exportLauncher.launch("${quiz.title.replace(" ", "_")}.mks.zip")
             },
-            onImportClick = {
-                pendingImportQuizId = quiz.id
-                pendingImportBookId = null
-                importLauncher.launch(arrayOf("*/*"))
-            },
+            onImportClick = null,
         ) { showDeleteConfirmQuizState.value = quiz }
-    }
-
-    menuFlashcardDeck?.let { deck ->
-        QuizOptionsSheet(
-            quiz = QuizEntity(
-                id = deck.id,
-                externalId = deck.externalId,
-                bookId = deck.bookId,
-                title = deck.title,
-                description = deck.description ?: "",
-                isPinned = deck.isPinned
-            ),
-            onDismiss = { menuFlashcardDeckState.value = null },
-            onBrowseQuestionsClick = { onFlashcardDeckSelected(deck.id) },
-            onScanClick = null,
-            onPinClick = { viewModel.toggleFlashcardDeckPinned(deck) },
-            onEditClick = { editingFlashcardDeckState.value = deck; showFlashcardDeckDialogState.value = true },
-            onExportClick = null,
-            onImportClick = null,
-        ) { showDeleteConfirmFlashcardDeckState.value = deck }
-    }
-
-    menuSlideshow?.let { course ->
-        QuizOptionsSheet(
-            quiz = QuizEntity(
-                id = course.id,
-                externalId = course.externalId,
-                bookId = course.bookId,
-                title = course.title,
-                description = course.description ?: "",
-                isPinned = course.isPinned
-            ),
-            onDismiss = { menuSlideshowState.value = null },
-            onBrowseQuestionsClick = { onSlideshowSelected(course.id) },
-            onScanClick = null,
-            onPinClick = { viewModel.toggleSlideshowCoursePinned(course) },
-            onEditClick = null,
-            onExportClick = null,
-            onImportClick = null,
-        ) { showDeleteConfirmSlideshowState.value = course }
-    }
-
-    menuNote?.let { note ->
-        QuizOptionsSheet(
-            quiz = QuizEntity(
-                id = note.id,
-                externalId = note.externalId,
-                bookId = note.bookId,
-                title = note.title,
-                description = note.summary ?: "",
-                isPinned = false
-            ),
-            onDismiss = { menuNoteState.value = null },
-            onBrowseQuestionsClick = { onReviewBlueprintSelected(note.id) },
-            onScanClick = null,
-            onPinClick = null,
-            onEditClick = null,
-            onExportClick = null,
-            onImportClick = null,
-        ) { showDeleteConfirmNoteState.value = note }
-    }
-
-    menuPromptDeck?.let { deck ->
-        QuizOptionsSheet(
-            quiz = QuizEntity(
-                id = deck.id,
-                externalId = "",
-                bookId = deck.bookId,
-                title = deck.title,
-                description = deck.description ?: "",
-                isPinned = false
-            ),
-            onDismiss = { menuPromptDeckState.value = null },
-            onBrowseQuestionsClick = { onAiPromptDeckSelected(deck.id) },
-            onScanClick = null,
-            onPinClick = null,
-            onEditClick = null,
-            onExportClick = null,
-            onImportClick = null,
-        ) { showDeleteConfirmPromptDeckState.value = deck }
     }
 
     if (showCategoryBrowser) {
@@ -690,19 +541,6 @@ fun LibraryScreen(
             quizzes = quizzes,
         ) {
             showCompilerDialogState.value = false
-            pendingImportBookId = null
-            pendingImportQuizId = null
-        }
-    }
-
-    if (showQuizSelectionDialog) {
-        CreateQuizDialog(
-            quizzes = quizzes,
-            categories = categories.map { it.name },
-            onDismiss = { showQuizSelectionDialogState.value = false },
-        ) { title, description, coverImage, sourceQuizIds, sourceCategories ->
-            viewModel.createNewQuiz(selectedBookId, title, description, coverImage, sourceQuizIds, sourceCategories)
-            showQuizSelectionDialogState.value = false
         }
     }
 
@@ -738,72 +576,6 @@ fun LibraryScreen(
         }
     }
 
-    if (showQuizEditDialog) {
-        EditEntityDialog(
-            title = if (editingQuiz == null) stringResource(R.string.new_quiz) else stringResource(R.string.edit),
-            initialTitle = editingQuiz?.title ?: "",
-            initialDescription = editingQuiz?.description ?: "",
-            initialCoverImage = editingQuiz?.coverImage,
-            titleLabel = stringResource(R.string.quiz_title_label),
-            descriptionLabel = stringResource(R.string.description_label),
-            onDismiss = { showQuizEditDialogState.value = false },
-        ) { title, desc, cover ->
-            if (editingQuiz == null) {
-                // Logic to add new quiz if needed
-            } else {
-                editingQuiz?.let { quiz ->
-                    viewModel.updateQuiz(
-                        quiz.copy(title = title, description = desc),
-                        newCoverUri = cover,
-                    )
-                }
-            }
-            showQuizEditDialogState.value = false
-        }
-    }
-
-    if (showFlashcardDeckDialog && (selectedBookId != -1L || editingFlashcardDeck != null)) {
-        EditEntityDialog(
-            title = if (editingFlashcardDeck == null) stringResource(R.string.flashcard_deck) else stringResource(R.string.edit),
-            initialTitle = editingFlashcardDeck?.title ?: "",
-            initialDescription = editingFlashcardDeck?.description ?: "",
-            initialCoverImage = editingFlashcardDeck?.coverImage,
-            titleLabel = stringResource(R.string.name_label),
-            descriptionLabel = stringResource(R.string.description_label),
-            allowBlankTitle = true,
-            onDismiss = { showFlashcardDeckDialogState.value = false; editingFlashcardDeckState.value = null },
-        ) { title, desc, cover ->
-            if (editingFlashcardDeck == null) {
-                viewModel.createFlashcardDeckFromBook(
-                    bookId = selectedBookId,
-                    title = title,
-                    description = desc,
-                    coverUri = cover,
-                    onCreated = onFlashcardDeckSelected,
-                )
-            } else {
-                viewModel.updateFlashcardDeck(editingFlashcardDeck!!.copy(title = title, description = desc, coverImage = cover))
-            }
-            showFlashcardDeckDialogState.value = false
-            editingFlashcardDeckState.value = null
-        }
-    }
-
-    if (showPromptEditDialog && (selectedBookId != -1L)) {
-        EditEntityDialog(
-            title = stringResource(R.string.new_ai_prompt),
-            initialTitle = "",
-            initialDescription = "",
-            initialCoverImage = null,
-            titleLabel = stringResource(R.string.prompt_name_label),
-            descriptionLabel = stringResource(R.string.prompt_stem_desc),
-            onDismiss = { showPromptEditDialogState.value = false },
-        ) { title, stem, _ ->
-            viewModel.insertPrompt(selectedBookId, title, stem)
-            showPromptEditDialogState.value = false
-        }
-    }
-
     showDeleteConfirmBook?.let { book ->
         DeleteConfirmDialog(
             title = stringResource(R.string.delete_book_title),
@@ -820,76 +592,8 @@ fun LibraryScreen(
         ) { viewModel.deleteQuiz(quiz); showDeleteConfirmQuizState.value = null }
     }
 
-    showDeleteConfirmFlashcardDeck?.let { deck ->
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmFlashcardDeckState.value = null },
-            title = { Text("Delete Flashcard Deck") },
-            text = { Text("Are you sure you want to delete '${deck.title}'?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteFlashcardDeck(deck)
-                    showDeleteConfirmFlashcardDeckState.value = null
-                }) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmFlashcardDeckState.value = null }) { Text(stringResource(R.string.cancel)) }
-            }
-        )
-    }
-
-    showDeleteConfirmSlideshow?.let { course ->
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmSlideshowState.value = null },
-            title = { Text("Delete slideshow?") },
-            text = { Text("Are you sure you want to delete '${course.title}'?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteSlideshowCourse(course)
-                    showDeleteConfirmSlideshowState.value = null
-                }) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmSlideshowState.value = null }) { Text(stringResource(R.string.cancel)) }
-            }
-        )
-    }
-
-    showDeleteConfirmNote?.let { note ->
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmNoteState.value = null },
-            title = { Text("Delete article?") },
-            text = { Text("Are you sure you want to delete '${note.title}'?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteNoteBlueprint(note)
-                    showDeleteConfirmNoteState.value = null
-                }) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmNoteState.value = null }) { Text(stringResource(R.string.cancel)) }
-            }
-        )
-    }
-
-    showDeleteConfirmPromptDeck?.let { deck ->
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmPromptDeckState.value = null },
-            title = { Text("Delete prompt deck?") },
-            text = { Text("Are you sure you want to delete '${deck.title}'?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deletePromptDeck(deck)
-                    showDeleteConfirmPromptDeckState.value = null
-                }) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmPromptDeckState.value = null }) { Text(stringResource(R.string.cancel)) }
-            }
-        )
-    }
-
     if (showSortDialog) {
-        val isQuizzes = (selectedBookId != -1L) || (selectedCategory != null)
+        val isQuizzes = (selectedCategory != null)
         SortDialog(
             currentOption = if (isQuizzes) bookSortBy else sortBy,
             onOptionSelected = {

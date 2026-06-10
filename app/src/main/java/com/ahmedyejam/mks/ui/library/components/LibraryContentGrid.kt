@@ -1,14 +1,44 @@
 package com.ahmedyejam.mks.ui.library.components
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.snap
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FactCheck
 import androidx.compose.material.icons.rounded.MenuBook
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,34 +48,17 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 import com.ahmedyejam.mks.R
 import com.ahmedyejam.mks.data.local.entity.BookEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
-import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
-import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
-import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
-import com.ahmedyejam.mks.data.repository.KnowledgeSummary
 import com.ahmedyejam.mks.data.model.CategoryWithMetadata
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.animation.AnimatedVisibility
-import kotlinx.coroutines.delay
-
-private const val KNOWLEDGE_SUMMARY_AUTO_HIDE_DELAY_MS = 5_000L
+import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 
 @Composable
 fun LibraryContentGrid(
     gridState: LazyGridState,
     columns: GridCells,
     padding: PaddingValues,
-    selectedBookId: Long,
     selectedCategory: String?,
     resumeQuiz: QuizEntity?,
     recentQuizzes: List<QuizEntity>,
@@ -59,23 +72,11 @@ fun LibraryContentGrid(
     showCategoryBrowser: () -> Unit,
     books: List<BookEntity>,
     quizzes: List<QuizEntity>,
-    flashcardDecks: List<FlashcardDeckEntity>,
-    slideshowCourses: List<SlideshowCourseEntity>,
-    noteBlueprints: List<NoteBlueprintEntity>,
-    promptDecks: List<PromptDeckEntity>,
     currentViewMode: String,
     showCovers: Boolean,
     onBookClick: (BookEntity) -> Unit,
     onBookLongClick: (BookEntity) -> Unit,
     onQuizLongClick: (QuizEntity) -> Unit,
-    onFlashcardDeckSelected: (Long) -> Unit,
-    onFlashcardDeckLongClick: (FlashcardDeckEntity) -> Unit,
-    onSlideshowSelected: (Long) -> Unit,
-    onSlideshowLongClick: (SlideshowCourseEntity) -> Unit,
-    onReviewBlueprintSelected: (Long) -> Unit,
-    onReviewBlueprintLongClick: (NoteBlueprintEntity) -> Unit,
-    onAiPromptDeckSelected: (Long) -> Unit,
-    onAiPromptDeckLongClick: (PromptDeckEntity) -> Unit,
 ) {
     LazyVerticalGrid(
         state = gridState,
@@ -87,7 +88,7 @@ fun LibraryContentGrid(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        if ((selectedBookId == -1L) && (selectedCategory == null)) {
+        if (selectedCategory == null) {
             item(span = { GridItemSpan(maxLineSpan) }, key = "banner_header") {
                 LibraryBanner(
                     resumeQuiz = resumeQuiz,
@@ -153,102 +154,6 @@ fun LibraryContentGrid(
                         showCover = showCovers,
                         onClick = { onQuizClick(quiz.id) },
                         onLongClick = { onQuizLongClick(quiz) },
-                    )
-                }
-            }
-        }
-
-        // Additional sections (Flashcards, Slideshows, etc.)
-        if ((selectedBookId != -1L) && (selectedCategory == null)) {
-            if (flashcardDecks.isNotEmpty()) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    SectionHeader(
-                        title = stringResource(R.string.flashcards_title),
-                        subtitle = if (currentViewMode == "LIST") stringResource(R.string.list_view_label) else stringResource(R.string.grid_view_label),
-                    )
-                }
-                items(flashcardDecks, key = { "deck_${it.id}" }) { deck ->
-                    QuizItem(
-                        quiz = QuizEntity(
-                            id = deck.id,
-                            externalId = deck.externalId,
-                            bookId = deck.bookId,
-                            title = deck.title,
-                            description = deck.description ?: "",
-                            coverImage = deck.coverImage,
-                            iconName = deck.iconName ?: "flashcard",
-                            isPinned = deck.isPinned,
-                        ),
-                        viewMode = currentViewMode,
-                        showCover = showCovers,
-                        onClick = { onFlashcardDeckSelected(deck.id) },
-                        onLongClick = { onFlashcardDeckLongClick(deck) },
-                    )
-                }
-            }
-
-            if (slideshowCourses.isNotEmpty()) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    SectionHeader(title = stringResource(R.string.slideshow_courses_title))
-                }
-                items(slideshowCourses, key = { "slideshow_${it.id}" }) { course ->
-                    QuizItem(
-                        quiz = QuizEntity(
-                            id = course.id,
-                            externalId = course.externalId,
-                            bookId = course.bookId,
-                            title = course.title,
-                            description = course.description ?: "",
-                            iconName = "slideshow",
-                        ),
-                        viewMode = currentViewMode,
-                        showCover = showCovers,
-                        onClick = { onSlideshowSelected(course.id) },
-                        onLongClick = { onSlideshowLongClick(course) },
-                    )
-                }
-            }
-
-            if (noteBlueprints.isNotEmpty()) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    SectionHeader(title = stringResource(R.string.note_blueprints_title))
-                }
-                items(noteBlueprints, key = { "note_${it.id}" }) { note ->
-                    QuizItem(
-                        quiz = QuizEntity(
-                            id = note.id,
-                            externalId = note.externalId,
-                            bookId = note.bookId,
-                            title = note.title,
-                            description = note.summary ?: "",
-                            iconName = "note",
-                        ),
-                        viewMode = currentViewMode,
-                        showCover = showCovers,
-                        onClick = { onReviewBlueprintSelected(note.id) },
-                        onLongClick = { onReviewBlueprintLongClick(note) },
-                    )
-                }
-            }
-
-            if (promptDecks.isNotEmpty()) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    SectionHeader(title = stringResource(R.string.prompts_title))
-                }
-                items(promptDecks, key = { "prompt_deck_${it.id}" }) { deck ->
-                    QuizItem(
-                        quiz = QuizEntity(
-                            id = deck.id,
-                            externalId = "prompt-deck-${deck.id}",
-                            bookId = deck.bookId,
-                            title = deck.title,
-                            description = deck.description ?: "Reusable prompt deck",
-                            iconName = "prompt",
-                        ),
-                        viewMode = currentViewMode,
-                        showCover = showCovers,
-                        onClick = { onAiPromptDeckSelected(deck.id) },
-                        onLongClick = { onAiPromptDeckLongClick(deck) },
                     )
                 }
             }
@@ -376,7 +281,9 @@ private fun LibraryEmptyStateCard(
                 color = colors.primary.copy(alpha = 0.10f),
                 contentColor = colors.primary,
             ) {
-                Icon(icon, contentDescription = null, modifier = Modifier.padding(14.dp).size(30.dp))
+                Icon(icon, contentDescription = null, modifier = Modifier
+                    .padding(14.dp)
+                    .size(30.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -394,5 +301,3 @@ private fun LibraryEmptyStateCard(
         }
     }
 }
-
-
