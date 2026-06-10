@@ -75,7 +75,7 @@ fun BookKnowledgeDashboardScreen(
     onOpenSlideshow: (Long) -> Unit,
     onOpenNote: (Long) -> Unit,
     onOpenPrompt: (Long) -> Unit,
-    onOpenSource: (Long) -> Unit
+    @Suppress("UNUSED_PARAMETER") onOpenSource: (Long) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
@@ -447,6 +447,7 @@ private fun MagicActionChip(
     )
 }
 
+@Suppress("unused")
 @Composable
 private fun ToolCard(
     title: String,

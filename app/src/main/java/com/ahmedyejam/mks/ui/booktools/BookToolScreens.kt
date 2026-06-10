@@ -533,9 +533,25 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                                 Spacer(Modifier.height(16.dp))
                                 Text("Auto-scroll speed: ${scrollSpeed.toInt()} px/s")
                                 Slider(value = scrollSpeed, onValueChange = { scrollSpeed = it }, valueRange = 10f..200f)
-                                Text("TTS Rate: ${String.format("%.1f", ttsRate)}x")
+                                Text(
+                                    "TTS Rate: ${
+                                        String.format(
+                                            java.util.Locale.getDefault(),
+                                            "%.1f",
+                                            ttsRate
+                                        )
+                                    }x"
+                                )
                                 Slider(value = ttsRate, onValueChange = { ttsRate = it }, valueRange = 0.5f..2.0f)
-                                Text("TTS Pitch: ${String.format("%.1f", ttsPitch)}")
+                                Text(
+                                    "TTS Pitch: ${
+                                        String.format(
+                                            java.util.Locale.getDefault(),
+                                            "%.1f",
+                                            ttsPitch
+                                        )
+                                    }"
+                                )
                                 Slider(value = ttsPitch, onValueChange = { ttsPitch = it }, valueRange = 0.5f..2.0f)
                                 Spacer(Modifier.height(32.dp))
                             }
@@ -571,7 +587,7 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                                 .padding(16.dp)
                                 .fillMaxWidth()
                         )
-                        androidx.compose.material3.Divider()
+                        androidx.compose.material3.HorizontalDivider()
                     }
                     
                     Column(
@@ -745,7 +761,7 @@ fun BookNotesScreen(bookId: Long, viewModel: BookToolsViewModel, onBack: () -> U
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
@@ -824,7 +840,7 @@ fun BookNotesScreen(bookId: Long, viewModel: BookToolsViewModel, onBack: () -> U
 fun AiPromptDeckScreen(
     promptId: Long,
     focusedCardId: Long? = null,
-    focusedRunId: Long? = null,
+    @Suppress("UNUSED_PARAMETER") focusedRunId: Long? = null,
     viewModel: BookToolsViewModel,
     onBack: () -> Unit
 ) {
@@ -1266,6 +1282,7 @@ fun SourceDocumentDialog(
     )
 }
 
+@Suppress("unused")
 @Composable
 private fun PromptCardDialog(
     initialTitle: String = "",

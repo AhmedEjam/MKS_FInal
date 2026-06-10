@@ -626,7 +626,7 @@ fun QuestionContent(
                 item {
                     QuestionHint(
                         showHint = state.showHint,
-                        hintText = animQuestion.hint ?: "",
+                        hintText = animQuestion.hint,
                         onToggleHint = { viewModel.toggleHint() }
                     )
                 }

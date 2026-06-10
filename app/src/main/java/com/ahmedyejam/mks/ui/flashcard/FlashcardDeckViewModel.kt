@@ -37,7 +37,8 @@ data class FlashcardDeckUiState(
         get() = cards.getOrNull(currentIndex.coerceIn(0, (cards.size - 1).coerceAtLeast(0)))
 }
 
-class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+class FlashcardDeckViewModel(private val appModule: AppModule) : ViewModel() {
     private val repository: MksRepository = appModule.repository
     private val _uiState = MutableStateFlow(FlashcardDeckUiState())
     val uiState = _uiState.asStateFlow()
@@ -48,7 +49,6 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
     private val _elapsedSeconds = MutableStateFlow(0L)
     val elapsedSeconds = _elapsedSeconds.asStateFlow()
 
-    private val appModule = appModule
     private val moshi = com.squareup.moshi.Moshi.Builder().build()
     private val sessionStateAdapter = moshi.adapter(com.ahmedyejam.mks.data.model.LearningSessionState::class.java)
 
@@ -117,7 +117,7 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
             timerJob = viewModelScope.launch {
                 while (true) {
                     _elapsedSeconds.value = getSessionElapsedTimeMs() / 1000L
-                    kotlinx.coroutines.delay(1000L)
+                    kotlinx.coroutines.delay(kotlin.time.Duration.parseIsoString("PT1S"))
                 }
             }
         }
@@ -163,7 +163,7 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
         
         val json = try {
             sessionStateAdapter.toJson(stateObj)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
         
@@ -199,7 +199,7 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
         
         val json = try {
             sessionStateAdapter.toJson(stateObj)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ""
         }
         
@@ -374,7 +374,11 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
         }
     }
 
-    fun generateFromMarked(title: String, clearMarksAfter: Boolean, config: FlashcardGenerationConfig) {
+    fun generateFromMarked(
+        @Suppress("UNUSED_PARAMETER") title: String,
+        clearMarksAfter: Boolean,
+        config: FlashcardGenerationConfig
+    ) {
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {
             runCatching {
