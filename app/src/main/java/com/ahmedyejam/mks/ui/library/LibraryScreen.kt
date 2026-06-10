@@ -49,10 +49,10 @@ import com.ahmedyejam.mks.data.model.CategoryWithMetadata
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.ui.category.CategoryBrowserDialog
 import com.ahmedyejam.mks.ui.category.CategoryEditDialog
+import com.ahmedyejam.mks.ui.components.EntityEditDialog
 import com.ahmedyejam.mks.ui.import.ImportViewModel
 import com.ahmedyejam.mks.ui.library.components.BookOptionsSheet
 import com.ahmedyejam.mks.ui.library.components.DeleteConfirmDialog
-import com.ahmedyejam.mks.ui.library.components.EditEntityDialog
 import com.ahmedyejam.mks.ui.library.components.ImportReviewDialog
 import com.ahmedyejam.mks.ui.library.components.ImportWarningsDialog
 import com.ahmedyejam.mks.ui.library.components.LibraryContentGrid
@@ -545,13 +545,14 @@ fun LibraryScreen(
     }
 
     if (showBookEditDialog) {
-        EditEntityDialog(
+        EntityEditDialog(
             title = if (editingBook == null) stringResource(R.string.new_book) else stringResource(R.string.edit),
-            initialTitle = editingBook?.title ?: "",
+            initialName = editingBook?.title ?: "",
             initialDescription = editingBook?.description ?: "",
-            initialCoverImage = editingBook?.coverImage,
+            initialImage = editingBook?.coverImage ?: "",
             titleLabel = stringResource(R.string.book_title_label),
             descriptionLabel = stringResource(R.string.description_label),
+            showImage = true,
             onDismiss = { showBookEditDialogState.value = false },
         ) { title, desc, cover ->
             if (editingBook == null) {

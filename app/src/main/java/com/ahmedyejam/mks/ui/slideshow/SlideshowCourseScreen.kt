@@ -33,6 +33,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TextSnippet
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -47,8 +49,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Slideshow
-import androidx.compose.material.icons.filled.TextSnippet
-import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.NoteAlt
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
@@ -120,6 +120,7 @@ fun SlideshowCourseScreen(
     val tokens = LocalMksDesignTokens.current
     val vm: SlideshowCourseViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return SlideshowCourseViewModel(appModule) as T
             }
@@ -273,7 +274,8 @@ fun SlideshowCourseScreen(
                     val elapsed by vm.elapsedSeconds.collectAsState()
                     val minutes = elapsed / 60
                     val seconds = elapsed % 60
-                    subtitle = String.format("%02d:%02d", minutes, seconds)
+                    subtitle =
+                        String.format(java.util.Locale.getDefault(), "%02d:%02d", minutes, seconds)
                 }
 
                 com.ahmedyejam.mks.ui.components.StudyTopAppBar(
@@ -291,7 +293,10 @@ fun SlideshowCourseScreen(
                             )
                         }
                         IconButton(onClick = { vm.setPresentationMode(!state.isPresentationMode) }) {
-                            Icon(if (state.isPresentationMode) Icons.Default.ViewList else Icons.Default.PlayArrow, contentDescription = "Toggle presentation mode")
+                            Icon(
+                                if (state.isPresentationMode) Icons.AutoMirrored.Filled.ViewList else Icons.Default.PlayArrow,
+                                contentDescription = "Toggle presentation mode"
+                            )
                         }
                     }
                 )
@@ -370,7 +375,7 @@ private fun SlideshowCourseDetailContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedButton(onClick = onImportText, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Default.TextSnippet, null)
+                    Icon(Icons.AutoMirrored.Filled.TextSnippet, null)
                     Spacer(Modifier.width(6.dp))
                     Text(stringResource(R.string.import_text))
                 }
@@ -770,7 +775,7 @@ private fun SlideGeneratorDialog(
                         label = { Text("Source") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSource) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
@@ -801,7 +806,7 @@ private fun SlideGeneratorDialog(
                             label = { Text("Select Quiz") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSubSource) },
                             modifier = Modifier
-                                .menuAnchor()
+                                .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                         )
                         ExposedDropdownMenu(
@@ -825,7 +830,7 @@ private fun SlideGeneratorDialog(
                             label = { Text("Select Category") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSubSource) },
                             modifier = Modifier
-                                .menuAnchor()
+                                .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                         )
                         ExposedDropdownMenu(

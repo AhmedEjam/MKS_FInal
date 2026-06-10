@@ -59,8 +59,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ahmedyejam.mks.R
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
+import com.ahmedyejam.mks.ui.components.EntityEditDialog
 import com.ahmedyejam.mks.ui.library.components.CreateQuizDialog
-import com.ahmedyejam.mks.ui.library.components.EditEntityDialog
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 import kotlinx.coroutines.launch
 
@@ -238,13 +238,12 @@ fun BookKnowledgeDashboardScreen(
     }
 
     if (showCreateSlideshow) {
-        TitleBodyDialog(
+        EntityEditDialog(
             title = stringResource(R.string.create_study_slides),
             titleLabel = "Course title",
-            bodyLabel = "Description",
-            confirmLabel = "Create",
+            descriptionLabel = "Description",
             onDismiss = { showCreateSlideshow = false },
-            onConfirm = { title, body ->
+            onSave = { title, body, _ ->
                 viewModel.createSlideshowCourse(bookId, title, body.takeIf { it.isNotBlank() })
                 showCreateSlideshow = false
             }
@@ -252,21 +251,22 @@ fun BookKnowledgeDashboardScreen(
     }
 
     if (showCreateFlashcard) {
-        EditEntityDialog(
+        EntityEditDialog(
             title = stringResource(R.string.flashcard_deck),
-            initialTitle = "",
+            initialName = "",
             initialDescription = "",
-            initialCoverImage = null,
+            initialImage = "",
             titleLabel = stringResource(R.string.name_label),
             descriptionLabel = stringResource(R.string.description_label),
-            allowBlankTitle = true,
+            showImage = true,
+            allowBlankName = true,
             onDismiss = { showCreateFlashcard = false },
-            onConfirm = { title, desc, cover ->
+            onSave = { title, desc, cover ->
                 viewModel.createFlashcardDeckFromBook(
                     bookId = bookId,
                     title = title,
                     description = desc,
-                    coverUri = cover,
+                    coverUri = cover.ifBlank { null },
                     onCreated = { onOpenFlashcard(it) }
                 )
                 showCreateFlashcard = false
@@ -293,13 +293,12 @@ fun BookKnowledgeDashboardScreen(
     }
 
     if (showCreatePrompt) {
-        TitleBodyDialog(
+        EntityEditDialog(
             title = "Create prompt deck",
             titleLabel = "Deck title",
-            bodyLabel = "Description",
-            confirmLabel = "Create",
+            descriptionLabel = "Description",
             onDismiss = { showCreatePrompt = false },
-            onConfirm = { title, body ->
+            onSave = { title, body, _ ->
                 viewModel.createPromptDeck(bookId, title, body.takeIf { it.isNotBlank() })
                 showCreatePrompt = false
             }

@@ -24,6 +24,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -32,13 +34,11 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Style
-import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -102,6 +102,7 @@ fun FlashcardDeckScreen(
     val tokens = LocalMksDesignTokens.current
     val vm: FlashcardDeckViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return FlashcardDeckViewModel(appModule) as T
             }
@@ -110,6 +111,7 @@ fun FlashcardDeckScreen(
 
     val compilerViewModel: CompilerViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return CompilerViewModel(appModule.context, appModule.repository) as T
             }
@@ -278,7 +280,10 @@ fun FlashcardDeckScreen(
                             Icon(Icons.Default.SelectAll, contentDescription = "Select All")
                         }
                         IconButton(onClick = { showDeckSelectionForMove = true }) {
-                            Icon(Icons.Default.DriveFileMove, contentDescription = "Move")
+                            Icon(
+                                Icons.AutoMirrored.Filled.DriveFileMove,
+                                contentDescription = "Move"
+                            )
                         }
                         IconButton(onClick = { showDeckSelectionForCopy = true }) {
                             Icon(Icons.Default.ContentCopy, contentDescription = "Copy")
@@ -294,7 +299,8 @@ fun FlashcardDeckScreen(
                     val elapsed by vm.elapsedSeconds.collectAsState()
                     val minutes = elapsed / 60
                     val seconds = elapsed % 60
-                    subtitle = String.format("%02d:%02d", minutes, seconds)
+                    subtitle =
+                        String.format(java.util.Locale.getDefault(), "%02d:%02d", minutes, seconds)
                 }
 
                 com.ahmedyejam.mks.ui.components.StudyTopAppBar(
@@ -345,7 +351,10 @@ fun FlashcardDeckScreen(
                             }
                         }
                         IconButton(onClick = { vm.setStudyMode(!state.isStudyMode) }) {
-                            Icon(if (state.isStudyMode) Icons.Default.ViewList else Icons.Default.PlayArrow, contentDescription = "Toggle study mode")
+                            Icon(
+                                if (state.isStudyMode) Icons.AutoMirrored.Filled.ViewList else Icons.Default.PlayArrow,
+                                contentDescription = "Toggle study mode"
+                            )
                         }
                         IconButton(onClick = { showDeckEditor = true }, enabled = state.deck != null) {
                             Icon(Icons.Default.Edit, contentDescription = "Edit deck")
@@ -746,7 +755,7 @@ private fun FlashcardGeneratorDialog(
                         label = { Text("Source") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSource) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
@@ -777,7 +786,7 @@ private fun FlashcardGeneratorDialog(
                             label = { Text("Select Quiz") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSubSource) },
                             modifier = Modifier
-                                .menuAnchor()
+                                .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                         )
                         ExposedDropdownMenu(
@@ -801,7 +810,7 @@ private fun FlashcardGeneratorDialog(
                             label = { Text("Select Category") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSubSource) },
                             modifier = Modifier
-                                .menuAnchor()
+                                .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                         )
                         ExposedDropdownMenu(

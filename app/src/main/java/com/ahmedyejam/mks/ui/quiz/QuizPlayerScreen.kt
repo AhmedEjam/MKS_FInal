@@ -244,7 +244,7 @@ fun QuizPlayerScreen(
     }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val fullHeight = maxHeight.value * LocalDensity.current.density
+        val fullHeight = this.maxHeight.value * LocalDensity.current.density
         val density = LocalDensity.current
         var sheetContentHeight by remember { mutableFloatStateOf(0f) }
         
@@ -374,8 +374,8 @@ fun QuizPlayerScreen(
                 QuizSheetContent(
                     state = state,
                     viewModel = viewModel,
-                    onDropQuestion = { showDropQuestionDialogState.value = true },
-                ) { selectedCategoryForEdit = it }
+                    onDropQuestion = { showDropQuestionDialogState.value = true }
+                )
             }
         }
     }
@@ -506,7 +506,8 @@ fun QuestionContent(
                     }
                 )
             }
-    ) { _ ->
+    ) { targetIndex ->
+        val animQuestion = state.questions.getOrNull(targetIndex) ?: currentQuestion
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -517,15 +518,15 @@ fun QuestionContent(
             item {
                 Column {
                     Text(
-                        text = currentQuestion.text,
+                        text = animQuestion.text,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
                     val finalImage = resolveQuestionImage(
-                        imagePath = currentQuestion.imagePath,
-                        imageSource = currentQuestion.imageSource,
+                        imagePath = animQuestion.imagePath,
+                        imageSource = animQuestion.imageSource,
                         themeMode = themeMode,
                         isRtl = isRtl
                     )
@@ -573,9 +574,9 @@ fun QuestionContent(
                         text = option,
                         isSelected = state.selectedOptions.contains(originalIndex),
                         isAnswered = state.isAnswered,
-                        isCorrect = currentQuestion.correctAnswers.contains(originalIndex),
+                        isCorrect = animQuestion.correctAnswers.contains(originalIndex),
                         isDropped = isDropped,
-                        isSingleChoice = currentQuestion.type == QuestionType.SINGLE_CHOICE,
+                        isSingleChoice = animQuestion.type == QuestionType.SINGLE_CHOICE,
                         eliminationModeEnabled = state.eliminationModeEnabled,
                         onClick = {
                             if (!tokens.isPlain) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -594,7 +595,7 @@ fun QuestionContent(
                 item {
                     QuestionExplanation(
                         isCorrect = state.isCorrect,
-                explanation = currentQuestion.explanation,
+                        explanation = animQuestion.explanation,
                     )
                 }
             }
@@ -603,7 +604,7 @@ fun QuestionContent(
                 item {
                     QuestionCategories(
                         allCategories = state.allCategoriesWithMetadata,
-                        questionCategories = currentQuestion.categories,
+                        questionCategories = animQuestion.categories,
                         onToggleCategory = { viewModel.toggleQuestionCategory(it) },
                         onEditCategory = onEditCategory,
                         newCategoryName = newCategoryName,
@@ -615,17 +616,17 @@ fun QuestionContent(
             if (state.isAnswered) {
                 item {
                     QuestionNotes(
-                        permanentNote = currentQuestion.notes ?: "",
+                        permanentNote = animQuestion.notes ?: "",
                         onPermanentNoteChange = { viewModel.updateQuestionNote(it) }
                     )
                 }
             }
 
-            if (state.hintsEnabled && currentQuestion.hint != null) {
+            if (state.hintsEnabled && animQuestion.hint != null) {
                 item {
                     QuestionHint(
                         showHint = state.showHint,
-                        hintText = currentQuestion.hint ?: "",
+                        hintText = animQuestion.hint ?: "",
                         onToggleHint = { viewModel.toggleHint() }
                     )
                 }
@@ -934,8 +935,7 @@ fun QuizTopBar(
 fun QuizSheetContent(
     state: QuizState,
     viewModel: QuizViewModel,
-    onDropQuestion: () -> Unit,
-    onEditCategory: (CategoryWithMetadata) -> Unit
+    onDropQuestion: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val currentQuestion = remember(state.questions, state.currentIndex) {

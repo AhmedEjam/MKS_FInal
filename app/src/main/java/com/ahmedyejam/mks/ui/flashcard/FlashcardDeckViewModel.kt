@@ -12,7 +12,6 @@ import com.ahmedyejam.mks.util.MksLogger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
@@ -44,6 +43,10 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
     val uiState = _uiState.asStateFlow()
     private var deckId: Long? = null
     private var loadJob: Job? = null
+    private var timerJob: Job? = null
+
+    private val _elapsedSeconds = MutableStateFlow(0L)
+    val elapsedSeconds = _elapsedSeconds.asStateFlow()
 
     private val appModule = appModule
     private val moshi = com.squareup.moshi.Moshi.Builder().build()
@@ -72,7 +75,7 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
             .flatMapLatest { pair ->
                 val deck = pair.first
                 val cards = pair.second
-                val decksFlow = deck?.bookId?.let { repository.getFlashcardDecksByBookId(it) } ?: kotlinx.coroutines.flow.flowOf(emptyList<com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity>())
+                val decksFlow = deck?.bookId?.let { repository.getFlashcardDecksByBookId(it) } ?: kotlinx.coroutines.flow.flowOf(emptyList<FlashcardDeckEntity>())
                 val quizzesFlow = deck?.bookId?.let { repository.getQuizzesByBookId(it, com.ahmedyejam.mks.data.repository.SortOption.TITLE) } ?: kotlinx.coroutines.flow.flowOf(emptyList<com.ahmedyejam.mks.data.local.entity.QuizEntity>())
                 val categoriesFlow = repository.getAllCategoriesWithMetadata()
 
@@ -110,6 +113,13 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
             sessionLastStartedTimestamp = System.currentTimeMillis()
             isSessionTimerRunning = true
             MksLogger.d("FlashcardDeckViewModel", "Stopwatch started/resumed")
+            timerJob?.cancel()
+            timerJob = viewModelScope.launch {
+                while (true) {
+                    _elapsedSeconds.value = getSessionElapsedTimeMs() / 1000L
+                    kotlinx.coroutines.delay(1000L)
+                }
+            }
         }
     }
 
@@ -119,6 +129,7 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
             sessionTimeAccumulatedMs += elapsed
             isSessionTimerRunning = false
             MksLogger.d("FlashcardDeckViewModel", "Stopwatch paused. Accumulated: $sessionTimeAccumulatedMs ms")
+            timerJob?.cancel()
             saveSessionStateIncremental()
         }
     }

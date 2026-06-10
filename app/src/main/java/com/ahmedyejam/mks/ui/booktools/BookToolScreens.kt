@@ -110,6 +110,7 @@ import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentTypes
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
+import com.ahmedyejam.mks.ui.components.EntityEditDialog
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 
 enum class QuestionComponent(val label: String) {
@@ -140,28 +141,26 @@ fun SlideshowCourseListScreen(
     LaunchedEffect(bookId) { viewModel.loadBook(bookId) }
 
     if (showCreate) {
-        TitleBodyDialog(
+        EntityEditDialog(
             title = stringResource(R.string.create_study_slides),
             titleLabel = "Course title",
-            bodyLabel = "Description",
-            confirmLabel = "Create",
+            descriptionLabel = "Description",
             onDismiss = { showCreateState.value = false },
-            onConfirm = { title, body ->
+            onSave = { title, body, _ ->
                 viewModel.createSlideshowCourse(bookId, title, body.takeIf { it.isNotBlank() })
                 showCreateState.value = false
             }
         )
     }
     editing?.let { course ->
-        TitleBodyDialog(
+        EntityEditDialog(
             title = stringResource(R.string.edit_slide),
-            titleValue = course.title,
-            bodyValue = course.description.orEmpty(),
+            initialName = course.title,
+            initialDescription = course.description.orEmpty(),
             titleLabel = "Course title",
-            bodyLabel = "Description",
-            confirmLabel = "Save",
+            descriptionLabel = "Description",
             onDismiss = { editingState.value = null },
-            onConfirm = { title, body ->
+            onSave = { title, body, _ ->
                 viewModel.updateSlideshowCourse(course.copy(title = title, description = body.takeIf { it.isNotBlank() }))
                 editingState.value = null
             }
@@ -362,16 +361,34 @@ fun AiPromptDeckListScreen(
     LaunchedEffect(bookId) { viewModel.loadBook(bookId) }
 
     if (showCreate) {
-        TitleBodyDialog("Create prompt deck", "Deck title", "Description", "Create", onDismiss = { showCreateState.value = false }) { title, body ->
-            viewModel.createPromptDeck(bookId, title, body.takeIf { it.isNotBlank() })
-            showCreateState.value = false
-        }
+        EntityEditDialog(
+            title = "Create prompt deck",
+            titleLabel = "Deck title",
+            descriptionLabel = "Description",
+            onDismiss = { showCreateState.value = false },
+            onSave = { title, body, _ ->
+                viewModel.createPromptDeck(bookId, title, body.takeIf { it.isNotBlank() })
+                showCreateState.value = false
+            }
+        )
     }
     editing?.let { deck ->
-        TitleBodyDialog("Edit prompt deck", "Deck title", "Description", "Save", deck.title, deck.description.orEmpty(), { editingState.value = null }) { title, body ->
-            viewModel.updatePromptDeck(deck.copy(title = title, description = body.takeIf { it.isNotBlank() }))
-            editingState.value = null
-        }
+        EntityEditDialog(
+            title = "Edit prompt deck",
+            titleLabel = "Deck title",
+            descriptionLabel = "Description",
+            initialName = deck.title,
+            initialDescription = deck.description.orEmpty(),
+            onDismiss = { editingState.value = null },
+            onSave = { title, body, _ ->
+                viewModel.updatePromptDeck(
+                    deck.copy(
+                        title = title,
+                        description = body.takeIf { it.isNotBlank() })
+                )
+                editingState.value = null
+            }
+        )
     }
     deleting?.let { deck ->
         ConfirmDeleteDialog("Delete prompt deck?", "Delete '${deck.title}' and its cards/runs?", { deletingState.value = null }, { viewModel.deletePromptDeck(deck); deletingState.value = null })
@@ -1177,32 +1194,6 @@ private fun MessagePane(modifier: Modifier = Modifier, title: String, body: Stri
     }
 }
 
-@Composable
-fun TitleBodyDialog(
-    title: String,
-    titleLabel: String,
-    bodyLabel: String,
-    confirmLabel: String,
-    titleValue: String = "",
-    bodyValue: String = "",
-    onDismiss: () -> Unit,
-    onConfirm: (String, String) -> Unit
-) {
-    var currentTitle by remember { mutableStateOf(titleValue) }
-    var currentBody by remember { mutableStateOf(bodyValue) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(currentTitle, { currentTitle = it }, label = { Text(titleLabel) }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(currentBody, { currentBody = it }, label = { Text(bodyLabel) }, modifier = Modifier.fillMaxWidth(), minLines = 3)
-            }
-        },
-        confirmButton = { Button(onClick = { onConfirm(currentTitle, currentBody) }, enabled = currentTitle.isNotBlank()) { Text(confirmLabel) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
-}
 
 @Composable
 private fun ConfirmDeleteDialog(title: String, body: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
