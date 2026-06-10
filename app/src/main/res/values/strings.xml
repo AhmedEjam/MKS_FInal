@@ -41,7 +41,7 @@
     <string name="import_label">Import</string>
     <string name="export_label">Export</string>
     <string name="flashcard_deck">Flashcard Deck</string>
-    <string name="slideshow_course">Slideshow Course</string>
+    <string name="slideshow_course">Study Slides</string>
     <string name="review_blueprint">Review Blueprint</string>
     <string name="book_notes">Book Notes</string>
     <string name="ai_prompt_deck">AI Prompt Deck</string>
@@ -376,10 +376,26 @@ grow in every session.</string>
     <string name="question_image_desc">Question Image</string>
     <string name="eliminate_label">Eliminate</string>
     <string name="flashcards_title">Flashcards</string>
-    <string name="slideshow_courses_title">Slideshow Courses</string>
+    <string name="slideshow_courses_title">Study Slides</string>
     <string name="note_blueprints_title">Note Blueprints</string>
     <string name="prompts_title">Prompts</string>
     <string name="new_ai_prompt">New AI Prompt</string>
     <string name="prompt_name_label">Prompt Name</string>
     <string name="prompt_stem_desc">Prompt Stem (use (), [], {}, &lt;&gt; for variables)</string>
+
+    <!-- Study Slides -->
+    <string name="study_slides">Study Slides</string>
+    <string name="slide_header">Header</string>
+    <string name="slide_body">Body</string>
+    <string name="slide_notes">Notes</string>
+    <string name="create_study_slides">Create study slides</string>
+    <string name="no_study_slides">No study slides</string>
+    <string name="no_study_slides_body">Create study slides from this book to review key concepts.</string>
+    <string name="add_slide">Add slide</string>
+    <string name="edit_slide">Edit slide</string>
+    <string name="present">Present</string>
+    <string name="generate_from_questions">Generate from questions</string>
+    <string name="slide_counter">Slide %1$d of %2$d</string>
+    <string name="import_text">Import text</string>
+    <string name="import_pptx">Import PPTX</string>
 </resources>

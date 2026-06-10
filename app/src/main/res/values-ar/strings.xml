@@ -41,7 +41,7 @@
     <string name="import_label">استيراد</string>
     <string name="export_label">تصدير</string>
     <string name="flashcard_deck">بطاقات تعليمية</string>
-    <string name="slideshow_course">عرض شرائحي</string>
+    <string name="slideshow_course">شرائح الدراسة</string>
     <string name="review_blueprint">خطة المراجعة</string>
     <string name="book_notes">ملاحظات الكتاب</string>
     <string name="ai_prompt_deck">مجموعة أوامر AI</string>
@@ -376,10 +376,26 @@
     <string name="question_image_desc">صورة السؤال</string>
     <string name="eliminate_label">استبعاد</string>
     <string name="flashcards_title">بطاقات تعليمية</string>
-    <string name="slideshow_courses_title">عرض شرائحي</string>
+    <string name="slideshow_courses_title">شرائح الدراسة</string>
     <string name="note_blueprints_title">خطط المراجعة</string>
     <string name="prompts_title">أوامر AI</string>
     <string name="new_ai_prompt">أمر AI جديد</string>
     <string name="prompt_name_label">اسم الأمر</string>
     <string name="prompt_stem_desc">نص الأمر (استخدم (), [], {}, &lt;&gt; للمتغيرات)</string>
+
+    <!-- Study Slides -->
+    <string name="study_slides">شرائح الدراسة</string>
+    <string name="slide_header">العنوان</string>
+    <string name="slide_body">المحتوى</string>
+    <string name="slide_notes">الملاحظات</string>
+    <string name="create_study_slides">إنشاء شرائح دراسة</string>
+    <string name="no_study_slides">لا توجد شرائح دراسة</string>
+    <string name="no_study_slides_body">أنشئ شرائح دراسة من هذا الكتاب لمراجعة المفاهيم الأساسية.</string>
+    <string name="add_slide">إضافة شريحة</string>
+    <string name="edit_slide">تعديل شريحة</string>
+    <string name="present">عرض</string>
+    <string name="generate_from_questions">إنشاء من الأسئلة</string>
+    <string name="slide_counter">شريحة %1$d من %2$d</string>
+    <string name="import_text">استيراد نص</string>
+    <string name="import_pptx">استيراد عرض تقديمي</string>
 </resources>
