@@ -27,6 +27,9 @@ interface SessionDao {
     @Query("UPDATE sessions SET deletedAt = NULL, updatedAt = :updatedAt, lastModifiedAt = :updatedAt WHERE id = :sessionId")
     suspend fun restoreSessionById(sessionId: Long, updatedAt: Long)
 
+    @Query("UPDATE sessions SET deletedAt = NULL, updatedAt = :updatedAt, lastModifiedAt = :updatedAt WHERE quizId = :quizId AND deletedAt = :deletedAtFilter")
+    suspend fun restoreSessionsByQuizId(quizId: Long, updatedAt: Long, deletedAtFilter: Long)
+
     @Delete
     suspend fun hardDeleteSession(session: SessionEntity)
 

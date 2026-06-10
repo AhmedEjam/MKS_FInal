@@ -38,6 +38,8 @@ import com.ahmedyejam.mks.ui.quiz.CompilerViewModel
 import kotlinx.coroutines.launch
 
 import com.ahmedyejam.mks.ui.import.ImportViewModel
+import com.ahmedyejam.mks.ui.workspace.WorkspaceManagerDialog
+import com.ahmedyejam.mks.ui.trash.TrashBinDialog
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.GridCells
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
@@ -174,6 +176,9 @@ fun LibraryScreen(
 
     val editingCategoryState = remember { mutableStateOf<CategoryWithMetadata?>(null) }
     var editingCategory by editingCategoryState
+
+    var showWorkspaceManager by remember { mutableStateOf(false) }
+    var showTrashBin by remember { mutableStateOf(false) }
 
     val menuBookState = remember { mutableStateOf<BookEntity?>(null) }
     var menuBook by menuBookState
@@ -410,7 +415,9 @@ fun LibraryScreen(
                         "https://linktr.ee/MKSpace".toUri(),
                     )
                     context.startActivity(intent)
-                }
+                },
+                onWorkspaceManagerClick = { showWorkspaceManager = true },
+                onTrashBinClick = { showTrashBin = true }
             )
         },
         floatingActionButton = {
@@ -894,5 +901,20 @@ fun LibraryScreen(
                 showSortDialogState.value = false
             },
         ) { showSortDialogState.value = false }
+    }
+
+    if (showWorkspaceManager) {
+        WorkspaceManagerDialog(
+            viewModel = viewModel,
+            activeWorkspaceId = workspaceId,
+            onDismiss = { showWorkspaceManager = false }
+        )
+    }
+
+    if (showTrashBin) {
+        TrashBinDialog(
+            viewModel = viewModel,
+            onDismiss = { showTrashBin = false }
+        )
     }
 }

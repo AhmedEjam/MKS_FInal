@@ -217,4 +217,17 @@ class SummaryViewModel(
         }
     }
 
+    fun previewClearMarks(quizId: Long, onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val res = repository.clearMarksForQuizWithPreview(quizId)
+            onResult(res.summary)
+        }
+    }
+
+    fun applyClearMarks(quizId: Long) {
+        viewModelScope.launch {
+            repository.applyClearMarksForQuiz(quizId)
+            _uiState.value.session?.id?.let { loadSummary(it) }
+        }
+    }
 }

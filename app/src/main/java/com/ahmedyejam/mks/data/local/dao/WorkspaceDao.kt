@@ -10,11 +10,17 @@ interface WorkspaceDao {
     @Query("SELECT * FROM workspaces WHERE deletedAt IS NULL")
     fun getAllWorkspacesFlow(): Flow<List<WorkspaceEntity>>
 
+    @Query("SELECT * FROM workspaces WHERE deletedAt IS NOT NULL")
+    fun getDeletedWorkspacesFlow(): Flow<List<WorkspaceEntity>>
+
     @Query("SELECT * FROM workspaces WHERE isDefault = 1 AND deletedAt IS NULL LIMIT 1")
     suspend fun getDefaultWorkspace(): WorkspaceEntity?
 
     @Query("SELECT * FROM workspaces WHERE id = :id AND deletedAt IS NULL")
     suspend fun getWorkspaceById(id: Long): WorkspaceEntity?
+
+    @Query("SELECT * FROM workspaces WHERE id = :id LIMIT 1")
+    suspend fun getWorkspaceByIdIncludingDeleted(id: Long): WorkspaceEntity?
 
     @Query("SELECT * FROM workspaces WHERE externalId = :externalId AND deletedAt IS NULL LIMIT 1")
     suspend fun getWorkspaceByExternalId(externalId: String): WorkspaceEntity?

@@ -41,6 +41,9 @@ interface QuizDao {
     @Query("SELECT * FROM quizzes WHERE id = :id AND deletedAt IS NULL")
     suspend fun getQuizById(id: Long): QuizEntity?
 
+    @Query("SELECT * FROM quizzes WHERE id = :id LIMIT 1")
+    suspend fun getQuizByIdIncludingDeleted(id: Long): QuizEntity?
+
     @Query("SELECT * FROM quizzes WHERE externalId = :externalId AND deletedAt IS NULL LIMIT 1")
     suspend fun getQuizByExternalId(externalId: String): QuizEntity?
 
@@ -91,4 +94,7 @@ interface QuizDao {
 
     @Query("SELECT COUNT(*) FROM questions WHERE deletedAt IS NULL AND quizId IN (SELECT id FROM quizzes WHERE bookId = :bookId AND deletedAt IS NULL)")
     fun getBookQuestionCount(bookId: Long): Flow<Int>
+
+    @Query("SELECT * FROM quizzes WHERE deletedAt IS NOT NULL AND bookId IN (SELECT id FROM books WHERE workspaceId = :workspaceId)")
+    fun getDeletedQuizzesByWorkspaceFlow(workspaceId: Long): Flow<List<QuizEntity>>
 }

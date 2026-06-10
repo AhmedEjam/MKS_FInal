@@ -54,6 +54,7 @@ fun SessionManagementScreen(
     quizId: Long,
     viewModel: SessionViewModel,
     dataStoreManager: DataStoreManager,
+    isEmbedded: Boolean = false,
     onSessionSelected: (Long, Boolean) -> Unit,
     onNavigateBack: () -> Unit
 ) {
@@ -67,47 +68,42 @@ fun SessionManagementScreen(
         viewModel.loadSessions(quizId)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.quiz_sessions_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cancel))
+    if (isEmbedded) {
+        SessionManagementContent(
+            sessions = sessions,
+            quizQuestionCounts = quizQuestionCounts,
+            quizId = quizId,
+            onSessionSelected = onSessionSelected,
+            onDeleteSession = { sessionPendingDelete = it },
+            onAddSession = { showNewLabelDialog = true }
+        )
+    } else {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.quiz_sessions_title)) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cancel))
+                        }
                     }
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(onClick = { showNewLabelDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_quiz))
                 }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showNewLabelDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_quiz))
             }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            if (sessions.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(18.dp),
-                    contentAlignment = Alignment.TopCenter
-                ) {
-                    SessionEmptyStateCard(onClick = { showNewLabelDialog = true })
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 12.dp)
-                ) {
-                    items(sessions) { session ->
-                        SessionItem(
-                            session = session,
-                            totalQuestions = quizQuestionCounts[quizId] ?: 0,
-                            onClick = { onSessionSelected(session.id, session.isCompleted) },
-                            onDelete = { sessionPendingDelete = session }
-                        )
-                    }
-                }
+        ) { padding ->
+            Box(Modifier.padding(padding)) {
+                SessionManagementContent(
+                    sessions = sessions,
+                    quizQuestionCounts = quizQuestionCounts,
+                    quizId = quizId,
+                    onSessionSelected = onSessionSelected,
+                    onDeleteSession = { sessionPendingDelete = it },
+                    onAddSession = { showNewLabelDialog = true }
+                )
             }
         }
     }
@@ -189,9 +185,42 @@ fun SessionManagementScreen(
     }
 }
 
-/**
- * Configuration data for a new quiz session.
- */
+@Composable
+private fun SessionManagementContent(
+    sessions: List<SessionEntity>,
+    quizQuestionCounts: Map<Long, Int>,
+    quizId: Long,
+    onSessionSelected: (Long, Boolean) -> Unit,
+    onDeleteSession: (SessionEntity) -> Unit,
+    onAddSession: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (sessions.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(18.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                SessionEmptyStateCard(onClick = onAddSession)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 80.dp, top = 12.dp)
+            ) {
+                items(sessions) { session ->
+                    SessionItem(
+                        session = session,
+                        totalQuestions = quizQuestionCounts[quizId] ?: 0,
+                        onClick = { onSessionSelected(session.id, session.isCompleted) },
+                        onDelete = { onDeleteSession(session) }
+                    )
+                }
+            }
+        }
+    }
+}
 data class SessionConfig(
     val label: String,
     val shuffleQuestions: Boolean,

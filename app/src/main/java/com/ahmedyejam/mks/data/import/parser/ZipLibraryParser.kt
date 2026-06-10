@@ -93,8 +93,8 @@ class ZipLibraryParser(
             val isSchema7Exchange = manifestText?.let { text ->
                 runCatching {
                     val root = json.parseToJsonElement(text) as? JsonObject
-                    root?.get("format")?.jsonPrimitive?.content == "mks.exchange" &&
-                            root["schemaVersion"]?.jsonPrimitive?.content?.toIntOrNull() == 7
+                    (root?.get("format")?.jsonPrimitive?.content == "mks.exchange" &&
+                            root["schemaVersion"]?.jsonPrimitive?.content?.toIntOrNull() == 7)
                 }.getOrDefault(false)
             } ?: false
 

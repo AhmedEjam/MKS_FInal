@@ -15,6 +15,9 @@ interface FlashcardDeckDao {
     @Query("SELECT * FROM flashcard_decks WHERE id = :id AND deletedAt IS NULL")
     suspend fun getFlashcardDeckById(id: Long): FlashcardDeckEntity?
 
+    @Query("SELECT * FROM flashcard_decks WHERE id = :id LIMIT 1")
+    suspend fun getFlashcardDeckByIdIncludingDeleted(id: Long): FlashcardDeckEntity?
+
     @Query("SELECT * FROM flashcard_decks WHERE id = :id AND deletedAt IS NULL")
     fun observeFlashcardDeckById(id: Long): Flow<FlashcardDeckEntity?>
 
@@ -32,6 +35,9 @@ interface FlashcardDeckDao {
 
     @Query("UPDATE flashcard_decks SET deletedAt = NULL, updatedAt = :updatedAt WHERE id = :deckId")
     suspend fun restoreFlashcardDeckById(deckId: Long, updatedAt: Long)
+
+    @Query("SELECT * FROM flashcard_decks WHERE deletedAt IS NOT NULL AND bookId IN (SELECT id FROM books WHERE workspaceId = :workspaceId)")
+    fun getDeletedDecksByWorkspaceFlow(workspaceId: Long): Flow<List<FlashcardDeckEntity>>
 
     @Delete
     suspend fun hardDeleteFlashcardDeck(deck: FlashcardDeckEntity)

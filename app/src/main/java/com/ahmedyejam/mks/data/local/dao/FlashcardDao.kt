@@ -70,6 +70,9 @@ interface FlashcardDao {
     @Query("UPDATE flashcards SET deletedAt = NULL, updatedAt = :updatedAt WHERE id = :cardId")
     suspend fun restoreFlashcardById(cardId: Long, updatedAt: Long)
 
+    @Query("UPDATE flashcards SET deletedAt = NULL, updatedAt = :updatedAt WHERE deckId = :deckId AND deletedAt = :deletedAtFilter")
+    suspend fun restoreAllCardsInDeck(deckId: Long, updatedAt: Long, deletedAtFilter: Long)
+
     @Delete
     suspend fun hardDeleteFlashcard(card: FlashcardEntity)
 

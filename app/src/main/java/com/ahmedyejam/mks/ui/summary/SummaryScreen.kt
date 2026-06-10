@@ -44,6 +44,7 @@ fun SummaryScreen(
     val context = LocalContext.current
     val showDetailSettingsState = remember { mutableStateOf(value = false) }
     var showDetailSettings by showDetailSettingsState
+    var clearMarksPreviewText by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(sessionId) {
         viewModel.loadSummary(sessionId)
@@ -65,6 +66,13 @@ fun SummaryScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.session_summary_title)) },
                 actions = {
+                    IconButton(onClick = {
+                        viewModel.previewClearMarks(session.quizId) { preview ->
+                            clearMarksPreviewText = preview
+                        }
+                    }) {
+                        Icon(Icons.Default.BookmarkBorder, contentDescription = "Clear Marks")
+                    }
                     IconButton(onClick = {
                         val sendIntent = Intent().apply {
                             action = Intent.ACTION_SEND
@@ -311,6 +319,29 @@ fun SummaryScreen(
                 }
             }
         }
+    }
+
+    clearMarksPreviewText?.let { preview ->
+        AlertDialog(
+            onDismissRequest = { clearMarksPreviewText = null },
+            title = { Text("Clear Marks for this Quiz?") },
+            text = { Text(preview) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.applyClearMarks(session.quizId)
+                        clearMarksPreviewText = null
+                    }
+                ) {
+                    Text("Clear")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { clearMarksPreviewText = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

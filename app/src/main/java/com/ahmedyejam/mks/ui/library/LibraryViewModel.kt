@@ -661,15 +661,249 @@ class LibraryViewModel(
         viewModelScope.launch { repository.deletePromptDeck(deck) }
     }
 
+    val workspaces = repository.getAllWorkspaces()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val deletedWorkspaces = repository.getDeletedWorkspaces()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun selectWorkspace(workspaceId: Long) {
+        viewModelScope.launch {
+            dataStoreManager.setCurrentWorkspaceId(workspaceId)
+            resetToLibraryRoot()
+        }
+    }
+
+    fun insertWorkspace(name: String, description: String? = null) {
+        viewModelScope.launch {
+            try {
+                repository.insertWorkspace(
+                    WorkspaceEntity(
+                        externalId = java.util.UUID.randomUUID().toString(),
+                        name = name,
+                        description = description
+                    )
+                )
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Workspace created"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to create workspace: ${e.message}"))
+            }
+        }
+    }
+
+    fun updateWorkspace(workspace: WorkspaceEntity) {
+        viewModelScope.launch {
+            try {
+                repository.updateWorkspace(workspace)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Workspace updated"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to update workspace: ${e.message}"))
+            }
+        }
+    }
+
+    fun deleteWorkspace(workspace: WorkspaceEntity) {
+        viewModelScope.launch {
+            try {
+                repository.deleteWorkspace(workspace)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Workspace deleted"))
+                if (currentWorkspaceId.value == workspace.id) {
+                    val defaultWs = repository.getDefaultWorkspace() ?: repository.getOrCreateDefaultWorkspace()
+                    selectWorkspace(defaultWs.id)
+                }
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to delete workspace: ${e.message}"))
+            }
+        }
+    }
+
+    fun restoreWorkspace(workspaceId: Long) {
+        viewModelScope.launch {
+            try {
+                repository.restoreWorkspace(workspaceId)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Workspace restored"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore workspace: ${e.message}"))
+            }
+        }
+    }
+
+    fun permanentlyDeleteWorkspace(workspace: WorkspaceEntity) {
+        viewModelScope.launch {
+            try {
+                repository.permanentlyDeleteWorkspace(workspace)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Workspace permanently deleted"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete workspace: ${e.message}"))
+            }
+        }
+    }
+
     suspend fun exportQuiz(quizId: Long, outputStream: java.io.OutputStream): ExportResult {
-        return repository.exportQuizToSchema7Zip(quizId, outputStream)
+        return repository.exportQuizToZip(quizId, outputStream)
     }
 
     suspend fun exportBook(bookId: Long, outputStream: java.io.OutputStream): ExportResult {
-        return repository.exportBundleToSchema7Zip(bookId, outputStream)
+        return repository.exportBundleToZip(bookId, outputStream)
     }
 
     suspend fun exportAll(outputStream: java.io.OutputStream): ExportResult {
-        return repository.exportAllToSchema7Zip(outputStream)
+        return repository.exportAllToZip(outputStream)
+    }
+
+    val deletedBooks = currentWorkspaceId.flatMapLatest { workspaceId ->
+        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedBooks(workspaceId)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val deletedQuizzes = currentWorkspaceId.flatMapLatest { workspaceId ->
+        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedQuizzes(workspaceId)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val deletedDecks = currentWorkspaceId.flatMapLatest { workspaceId ->
+        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedFlashcardDecks(workspaceId)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val deletedSlideshows = currentWorkspaceId.flatMapLatest { workspaceId ->
+        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedSlideshowCourses(workspaceId)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val deletedNotes = currentWorkspaceId.flatMapLatest { workspaceId ->
+        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedNoteBlueprints(workspaceId)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val deletedPrompts = currentWorkspaceId.flatMapLatest { workspaceId ->
+        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedPromptDecks(workspaceId)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun restoreBook(bookId: Long) {
+        viewModelScope.launch {
+            try {
+                repository.restoreBook(bookId)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Book restored"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore book: ${e.message}"))
+            }
+        }
+    }
+
+    fun permanentlyDeleteBook(book: BookEntity) {
+        viewModelScope.launch {
+            try {
+                repository.permanentlyDeleteBook(book)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Book permanently deleted"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete book: ${e.message}"))
+            }
+        }
+    }
+
+    fun restoreQuiz(quizId: Long) {
+        viewModelScope.launch {
+            try {
+                repository.restoreQuiz(quizId)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Quiz restored"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore quiz: ${e.message}"))
+            }
+        }
+    }
+
+    fun permanentlyDeleteQuiz(quiz: QuizEntity) {
+        viewModelScope.launch {
+            try {
+                repository.permanentlyDeleteQuiz(quiz)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Quiz permanently deleted"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete quiz: ${e.message}"))
+            }
+        }
+    }
+
+    fun restoreFlashcardDeck(deckId: Long) {
+        viewModelScope.launch {
+            try {
+                repository.restoreFlashcardDeck(deckId)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Flashcard deck restored"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore flashcard deck: ${e.message}"))
+            }
+        }
+    }
+
+    fun permanentlyDeleteFlashcardDeck(deck: FlashcardDeckEntity) {
+        viewModelScope.launch {
+            try {
+                repository.permanentlyDeleteFlashcardDeck(deck)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Flashcard deck permanently deleted"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete deck: ${e.message}"))
+            }
+        }
+    }
+
+    fun restoreSlideshowCourse(courseId: Long) {
+        viewModelScope.launch {
+            try {
+                repository.restoreSlideshowCourse(courseId)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Slideshow course restored"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore slideshow course: ${e.message}"))
+            }
+        }
+    }
+
+    fun permanentlyDeleteSlideshowCourse(course: SlideshowCourseEntity) {
+        viewModelScope.launch {
+            try {
+                repository.permanentlyDeleteSlideshowCourse(course)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Slideshow course permanently deleted"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete slideshow course: ${e.message}"))
+            }
+        }
+    }
+
+    fun restoreNoteBlueprint(noteId: Long) {
+        viewModelScope.launch {
+            try {
+                repository.restoreNoteBlueprint(noteId)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Note blueprint restored"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore note blueprint: ${e.message}"))
+            }
+        }
+    }
+
+    fun permanentlyDeleteNoteBlueprint(note: NoteBlueprintEntity) {
+        viewModelScope.launch {
+            try {
+                repository.permanentlyDeleteNoteBlueprint(note)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Note blueprint permanently deleted"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete note blueprint: ${e.message}"))
+            }
+        }
+    }
+
+    fun restorePromptDeck(deckId: Long) {
+        viewModelScope.launch {
+            try {
+                repository.restorePromptDeck(deckId)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Prompt deck restored"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore prompt deck: ${e.message}"))
+            }
+        }
+    }
+
+    fun permanentlyDeletePromptDeck(deck: PromptDeckEntity) {
+        viewModelScope.launch {
+            try {
+                repository.permanentlyDeletePromptDeck(deck)
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Prompt deck permanently deleted"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete prompt deck: ${e.message}"))
+            }
+        }
     }
 }

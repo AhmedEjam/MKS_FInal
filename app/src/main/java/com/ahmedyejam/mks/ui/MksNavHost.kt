@@ -44,6 +44,7 @@ import com.ahmedyejam.mks.ui.library.LibraryViewModel
 import com.ahmedyejam.mks.ui.navigation.requireNonBlankStringArg
 import com.ahmedyejam.mks.ui.navigation.requirePositiveLongArg
 import com.ahmedyejam.mks.ui.quiz.CompilerViewModel
+import com.ahmedyejam.mks.ui.quiz.QuizDetailTabsScreen
 import com.ahmedyejam.mks.ui.quiz.QuizPlayerScreen
 import com.ahmedyejam.mks.ui.quiz.QuizQuestionsScreen
 import com.ahmedyejam.mks.ui.quiz.QuizQuestionsViewModel
@@ -54,7 +55,6 @@ import com.ahmedyejam.mks.ui.scanner.ScannerScreen
 import com.ahmedyejam.mks.ui.scanner.ScannerViewModel
 import com.ahmedyejam.mks.ui.search.GlobalSearchScreen
 import com.ahmedyejam.mks.ui.search.GlobalSearchViewModel
-import com.ahmedyejam.mks.ui.session.SessionManagementScreen
 import com.ahmedyejam.mks.ui.session.SessionViewModel
 import com.ahmedyejam.mks.ui.settings.SettingsScreen
 import com.ahmedyejam.mks.ui.slideshow.SlideshowCourseScreen
@@ -236,16 +236,13 @@ fun MksNavHost(
                 bookId = bookId,
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
-                onOpenQuizzes = {
-                    // Special case: just go back to library and select this book?
-                    // Or we stay in dashboard.
-                    navController.popBackStack()
-                },
-                onOpenFlashcards = { navController.navigate(MksRoutes.bookNotes(bookId)) }, // Wait, flashcards list?
-                onOpenSlideshows = { navController.navigate(MksRoutes.bookSlideshows(bookId)) },
-                onOpenNotes = { navController.navigate(MksRoutes.bookBlueprints(bookId)) },
-                onOpenPrompts = { navController.navigate(MksRoutes.bookPrompts(bookId)) },
-            ) { navController.navigate(MksRoutes.bookSources(bookId)) }
+                onOpenQuiz = { navController.navigate(MksRoutes.sessions(it)) },
+                onOpenFlashcard = { navController.navigate(MksRoutes.flashcards(it)) },
+                onOpenSlideshow = { navController.navigate(MksRoutes.slideshow(it)) },
+                onOpenNote = { navController.navigate(MksRoutes.blueprint(it)) },
+                onOpenPrompt = { navController.navigate(MksRoutes.promptDeck(it)) },
+                onOpenSource = { navController.navigate(MksRoutes.bookSources(bookId, it)) }
+            )
         }
         composable(
             route = "book_slideshows/{bookId}",
@@ -467,7 +464,7 @@ fun MksNavHost(
             val reviewViewModel: ReviewDashboardViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return ReviewDashboardViewModel(appModule.reviewRepository, appModule.repository) as T
+                        return ReviewDashboardViewModel(appModule.reviewRepository, appModule.repository, appModule.dataStoreManager) as T
                     }
                 },
             )
@@ -588,10 +585,25 @@ fun MksNavHost(
                     }
                 },
             )
+            val questionsViewModel: QuizQuestionsViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        return QuizQuestionsViewModel(appModule.repository) as T
+                    }
+                }
+            )
             
-            SessionManagementScreen(
+            LaunchedEffect(quizId) {
+                questionsViewModel.loadQuiz(quizId)
+            }
+            
+            val questionsState by questionsViewModel.uiState.collectAsState()
+
+            QuizDetailTabsScreen(
                 quizId = quizId,
-                viewModel = sessionViewModel,
+                quizTitle = questionsState.quiz?.title,
+                sessionViewModel = sessionViewModel,
+                questionsViewModel = questionsViewModel,
                 dataStoreManager = appModule.dataStoreManager,
                 onSessionSelected = { sessionId, isCompleted ->
                     if (isCompleted) {
@@ -600,13 +612,14 @@ fun MksNavHost(
                         navController.navigate("quiz/$quizId?sessionId=$sessionId")
                     }
                 },
-            ) {
-                navController.navigate("library") {
-                    popUpTo("library") { inclusive = false }
-                    launchSingleTop = true
-                    restoreState = true
+                onBack = {
+                    navController.navigate("library") {
+                        popUpTo("library") { inclusive = false }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
-            }
+            )
         }
 
         composable(

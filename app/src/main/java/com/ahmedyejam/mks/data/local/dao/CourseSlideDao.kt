@@ -39,8 +39,14 @@ interface CourseSlideDao {
     @Query("UPDATE course_slides SET deletedAt = :deletedAt, updatedAt = :deletedAt WHERE id = :slideId")
     suspend fun softDeleteSlideById(slideId: Long, deletedAt: Long)
 
+    @Query("UPDATE course_slides SET deletedAt = :deletedAt, updatedAt = :deletedAt WHERE courseId = :courseId AND deletedAt IS NULL")
+    suspend fun softDeleteSlidesByCourseId(courseId: Long, deletedAt: Long)
+
     @Query("UPDATE course_slides SET deletedAt = NULL, updatedAt = :updatedAt WHERE id = :slideId")
     suspend fun restoreSlideById(slideId: Long, updatedAt: Long)
+
+    @Query("UPDATE course_slides SET deletedAt = NULL, updatedAt = :updatedAt WHERE courseId = :courseId AND deletedAt = :deletedAtFilter")
+    suspend fun restoreSlidesByCourseId(courseId: Long, updatedAt: Long, deletedAtFilter: Long)
 
     @Delete
     suspend fun hardDeleteSlide(slide: CourseSlideEntity)

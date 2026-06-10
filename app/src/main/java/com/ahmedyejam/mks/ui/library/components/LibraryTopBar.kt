@@ -35,7 +35,9 @@ fun LibraryTopBar(
     onToggleViewMode: () -> Unit,
     showOverflowMenu: Boolean,
     onOverflowMenuToggle: (Boolean) -> Unit,
-    onContactClick: () -> Unit
+    onContactClick: () -> Unit,
+    onWorkspaceManagerClick: () -> Unit,
+    onTrashBinClick: () -> Unit
 ) {
     val tokens = LocalMksDesignTokens.current
     MediumTopAppBar(
@@ -138,6 +140,22 @@ fun LibraryTopBar(
                             onClick = {
                                 onOverflowMenuToggle(false)
                                 onSettingsClick()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Workspaces") },
+                            leadingIcon = { Icon(Icons.Rounded.Workspaces, null) },
+                            onClick = {
+                                onOverflowMenuToggle(false)
+                                onWorkspaceManagerClick()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Trash Bin") },
+                            leadingIcon = { Icon(Icons.Rounded.Delete, null) },
+                            onClick = {
+                                onOverflowMenuToggle(false)
+                                onTrashBinClick()
                             }
                         )
                     }

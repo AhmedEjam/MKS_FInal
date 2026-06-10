@@ -21,6 +21,19 @@ import androidx.room.PrimaryKey
         Index("deletedAt")
     ]
 )
+/**
+ * Represents a single slide within a Study Slides (Slideshow) course.
+ *
+ * @property externalId A unique identifier for the slide.
+ * @property courseId The ID of the parent [SlideshowCourseEntity].
+ * @property title The title or header of the slide.
+ * @property body The main content/body of the slide.
+ * @property speakerNotes Optional notes intended for the presenter or student review.
+ * @property imagePath Optional path to an associated image.
+ * @property orderIndex The position of this slide within the course.
+ * @property isCompleted Whether the student has marked this slide as studied/completed.
+ * @property sourceQuestionId The ID of the question this slide was derived from, if any.
+ */
 data class CourseSlideEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val externalId: String,

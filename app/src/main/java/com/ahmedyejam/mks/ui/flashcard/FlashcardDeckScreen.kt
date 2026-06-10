@@ -65,7 +65,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -115,6 +120,31 @@ fun FlashcardDeckScreen(
 
     val state by vm.uiState.collectAsState()
     val listState = rememberLazyListState()
+
+    BackHandler(enabled = state.isStudyMode) {
+        vm.setStudyMode(false)
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, state.isStudyMode) {
+        if (state.isStudyMode) {
+            vm.startSessionTimer()
+            val observer = LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_RESUME -> vm.startSessionTimer()
+                    Lifecycle.Event.ON_PAUSE -> vm.pauseSessionTimer()
+                    else -> {}
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
+                vm.pauseSessionTimer()
+            }
+        } else {
+            onDispose {}
+        }
+    }
 
     LaunchedEffect(focusedCardId, state.cards) {
         if (focusedCardId != null && state.cards.isNotEmpty()) {

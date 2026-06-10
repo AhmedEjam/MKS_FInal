@@ -60,7 +60,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -80,6 +88,30 @@ import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 import com.ahmedyejam.mks.di.AppModule
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
+import androidx.compose.ui.res.stringResource
+import com.ahmedyejam.mks.R
+
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.NoteAlt
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material3.FilledTonalButton
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.TextSnippet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +133,31 @@ fun SlideshowCourseScreen(
     val state by vm.uiState.collectAsState()
     val listState = rememberLazyListState()
 
+    BackHandler(enabled = state.isPresentationMode) {
+        vm.setPresentationMode(false)
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, state.isPresentationMode) {
+        if (state.isPresentationMode) {
+            vm.startSessionTimer()
+            val observer = LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_RESUME -> vm.startSessionTimer()
+                    Lifecycle.Event.ON_PAUSE -> vm.pauseSessionTimer()
+                    else -> {}
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
+                vm.pauseSessionTimer()
+            }
+        } else {
+            onDispose {}
+        }
+    }
+
     LaunchedEffect(focusedSlideId, state.slides) {
         if (focusedSlideId != null && state.slides.isNotEmpty()) {
             val index = state.slides.indexOfFirst { it.id == focusedSlideId }
@@ -117,7 +174,14 @@ fun SlideshowCourseScreen(
     var showSlideEditor by remember { mutableStateOf<CourseSlideEntity?>(null) }
     var showAddSlide by rememberSaveable { mutableStateOf(false) }
     var showCourseEditor by rememberSaveable { mutableStateOf(false) }
+    var showPasteTextDialog by rememberSaveable { mutableStateOf(false) }
     var showGeneratorDialog by rememberSaveable { mutableStateOf(false) }
+
+    val pptxPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            vm.importFromPptx(uri)
+        }
+    }
 
     LaunchedEffect(courseId) { vm.loadCourseSafe(courseId) }
     LaunchedEffect(state.message, state.error) {
@@ -150,9 +214,9 @@ fun SlideshowCourseScreen(
                 showAddSlide = false
                 showSlideEditor = null
             },
-            onSave = { title, body, imagePath ->
+            onSave = { title, body, notes, imagePath ->
                 val slide = showSlideEditor
-                if (slide == null) vm.addSlide(title, body, imagePath) else vm.updateSlide(slide, title, body, imagePath)
+                if (slide == null) vm.addSlide(title, body, notes, imagePath) else vm.updateSlide(slide, title, body, notes, imagePath)
                 showAddSlide = false
                 showSlideEditor = null
             }
@@ -177,6 +241,16 @@ fun SlideshowCourseScreen(
         )
     }
 
+    if (showPasteTextDialog) {
+        PasteTextDialog(
+            onDismiss = { showPasteTextDialog = false },
+            onImport = { text, mode ->
+                vm.importFromText(text, mode)
+                showPasteTextDialog = false
+            }
+        )
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -195,7 +269,23 @@ fun SlideshowCourseScreen(
                 )
             } else {
                 TopAppBar(
-                    title = { Text(state.course?.title ?: "Slideshow Course") },
+                    title = {
+                        if (state.isPresentationMode) {
+                            val elapsed by vm.elapsedSeconds.collectAsState()
+                            val minutes = elapsed / 60
+                            val seconds = elapsed % 60
+                            Column {
+                                Text(state.course?.title ?: stringResource(R.string.study_slides))
+                                Text(
+                                    text = String.format("%02d:%02d", minutes, seconds),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            Text(state.course?.title ?: stringResource(R.string.study_slides))
+                        }
+                    },
                     navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } },
                     actions = {
                         IconButton(onClick = { showOptionsMenu = true }) {
@@ -231,7 +321,9 @@ fun SlideshowCourseScreen(
                     onMoveSlide = { slide, direction -> vm.moveSlide(slide, direction) },
                     onGenerateSlides = { showGeneratorDialog = true },
                     onStartPresentation = { vm.setPresentationMode(true) },
-                    onToggleSelect = { vm.toggleSlideSelection(it) }
+                    onToggleSelect = { vm.toggleSlideSelection(it) },
+                    onImportText = { showPasteTextDialog = true },
+                    onImportPptx = { pptxPickerLauncher.launch("application/vnd.openxmlformats-officedocument.presentationml.presentation") }
                 )
             }
         }
@@ -247,7 +339,9 @@ private fun SlideshowCourseDetailContent(
     onMoveSlide: (CourseSlideEntity, Int) -> Unit,
     onGenerateSlides: () -> Unit,
     onStartPresentation: () -> Unit,
-    onToggleSelect: (Long) -> Unit
+    onToggleSelect: (Long) -> Unit,
+    onImportText: () -> Unit,
+    onImportPptx: () -> Unit
 ) {
     val course = state.course ?: return
     LazyColumn(
@@ -262,12 +356,29 @@ private fun SlideshowCourseDetailContent(
                 Button(onClick = onAddSlide, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
-                    Text("Add slide")
+                    Text(stringResource(R.string.add_slide))
                 }
                 OutlinedButton(onClick = onStartPresentation, enabled = state.slides.isNotEmpty(), modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
                     Text("Present")
+                }
+            }
+        }
+        item {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedButton(onClick = onImportText, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.TextSnippet, null)
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.import_text))
+                }
+                OutlinedButton(onClick = onImportPptx, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.Slideshow, null)
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.import_pptx))
                 }
             }
         }
@@ -280,7 +391,7 @@ private fun SlideshowCourseDetailContent(
             ) {
                 Icon(Icons.Default.AutoAwesome, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Generate from questions", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.generate_from_questions), fontWeight = FontWeight.Bold)
             }
         }
         if (state.slides.isEmpty()) {
@@ -368,6 +479,23 @@ private fun SlideListItem(
                 Column(Modifier.weight(1f)) {
                     Text(slide.title, fontWeight = FontWeight.SemiBold, maxLines = 1)
                     Text(slide.body, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                    slide.speakerNotes?.takeIf { it.isNotBlank() }?.let { notes ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Icon(
+                                Icons.Rounded.NoteAlt, null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                notes, style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1, color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
                 if (!isSelectionMode) {
                     IconButton(onClick = onMoveUp) { Icon(Icons.Default.ArrowUpward, contentDescription = "Move up") }
@@ -379,49 +507,179 @@ private fun SlideListItem(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SlidePresentationContent(
     state: SlideshowCourseUiState,
     viewModel: SlideshowCourseViewModel
 ) {
     val tokens = LocalMksDesignTokens.current
-    val slide = state.currentSlide
-    if (slide == null) {
+    if (state.slides.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No slides to present")
         }
         return
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text("Slide ${state.currentIndex + 1} / ${state.slides.size}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 8.dp))
-        Surface(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            shape = RoundedCornerShape(tokens.cardRadius),
-            tonalElevation = 2.dp,
-            color = MaterialTheme.colorScheme.surfaceVariant
-        ) {
-            Column(Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
-                Text(
-                    text = slide.title,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    text = slide.body,
-                    style = MaterialTheme.typography.bodyLarge
-                )
+    val pagerState = rememberPagerState(
+        initialPage = state.currentIndex,
+        pageCount = { state.slides.size }
+    )
+
+    LaunchedEffect(pagerState.currentPage) {
+        viewModel.setCurrentIndex(pagerState.currentPage)
+    }
+    LaunchedEffect(state.currentIndex) {
+        if (pagerState.currentPage != state.currentIndex) {
+            pagerState.animateScrollToPage(state.currentIndex)
+        }
+    }
+
+    Column(Modifier.fillMaxSize()) {
+        LinearProgressIndicator(
+            progress = { (state.currentIndex + 1f) / state.slides.size.coerceAtLeast(1) },
+            modifier = Modifier.fillMaxWidth().height(4.dp),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f),
+            beyondViewportPageCount = 1,
+            pageSpacing = 16.dp
+        ) { page ->
+            val slide = state.slides[page]
+            SlidePageContent(slide)
+        }
+
+        val currentSlide = state.currentSlide
+        if (currentSlide != null) {
+            var notesExpanded by rememberSaveable(currentSlide.id) { mutableStateOf(false) }
+            currentSlide.speakerNotes?.takeIf { it.isNotBlank() }?.let { notes ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth().clickable { notesExpanded = !notesExpanded },
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(Icons.Rounded.NoteAlt, null, tint = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    stringResource(R.string.slide_notes),
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Icon(
+                                if (notesExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null
+                            )
+                        }
+                        AnimatedVisibility(notesExpanded) {
+                            Text(
+                                text = notes,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 12.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                contentPadding = PaddingValues(horizontal = 16.dp)
+            ) {
+                items(state.slides.size) { index ->
+                    val isActive = index == state.currentIndex
+                    val isStudied = state.slides[index].isCompleted
+                    Box(
+                        Modifier
+                            .padding(horizontal = 3.dp)
+                            .size(if (isActive) 10.dp else 7.dp)
+                            .clip(CircleShape)
+                            .background(
+                                when {
+                                    isActive -> MaterialTheme.colorScheme.primary
+                                    isStudied -> tokens.success
+                                    else -> MaterialTheme.colorScheme.outlineVariant
+                                }
+                            )
+                            .clickable { viewModel.setCurrentIndex(index) }
+                    )
+                }
+            }
+
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(onClick = { viewModel.previousSlide() }, enabled = state.currentIndex > 0) {
+                    Icon(Icons.Default.ChevronLeft, null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Previous")
+                }
+                FilledTonalButton(onClick = { viewModel.toggleSlideStudied() }) {
+                    Icon(
+                        if (currentSlide.isCompleted) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+                        null
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(if (currentSlide.isCompleted) "Studied" else "Mark studied")
+                }
+                Button(onClick = { viewModel.nextSlide() }, enabled = state.currentIndex < state.slides.size - 1) {
+                    Text("Next")
+                    Spacer(Modifier.width(4.dp))
+                    Icon(Icons.Default.ChevronRight, null)
+                }
             }
         }
-        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(onClick = { viewModel.previousSlide() }) { Text("Previous") }
-            Button(onClick = { viewModel.nextSlide() }) { Text("Next") }
+    }
+}
+
+@Composable
+private fun SlidePageContent(slide: CourseSlideEntity) {
+    val tokens = LocalMksDesignTokens.current
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = slide.title,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        slide.imagePath?.takeIf { it.isNotBlank() }?.let { path ->
+            AsyncImage(
+                model = path,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 280.dp)
+                    .clip(RoundedCornerShape(tokens.cardRadius)),
+                contentScale = ContentScale.Fit
+            )
         }
+
+        Text(
+            text = slide.body,
+            style = MaterialTheme.typography.bodyLarge,
+            lineHeight = 26.sp
+        )
     }
 }
 
@@ -429,19 +687,21 @@ private fun SlidePresentationContent(
 private fun SlideEditorDialog(
     slide: CourseSlideEntity?,
     onDismiss: () -> Unit,
-    onSave: (title: String, body: String, imagePath: String?) -> Unit
+    onSave: (title: String, body: String, notes: String?, imagePath: String?) -> Unit
 ) {
     var title by rememberSaveable(slide?.id) { mutableStateOf(slide?.title ?: "") }
     var body by rememberSaveable(slide?.id) { mutableStateOf(slide?.body ?: "") }
+    var notes by rememberSaveable(slide?.id) { mutableStateOf(slide?.speakerNotes ?: "") }
     var imagePath by rememberSaveable(slide?.id) { mutableStateOf(slide?.imagePath ?: "") }
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (slide == null) "Add Slide" else "Edit Slide") },
+        title = { Text(if (slide == null) stringResource(R.string.add_slide) else stringResource(R.string.edit_slide)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(title, { title = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(body, { body = it }, label = { Text("Body") }, modifier = Modifier.fillMaxWidth(), minLines = 6)
+                OutlinedTextField(title, { title = it }, label = { Text(stringResource(R.string.slide_header)) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(body, { body = it }, label = { Text(stringResource(R.string.slide_body)) }, modifier = Modifier.fillMaxWidth(), minLines = 4)
+                OutlinedTextField(notes, { notes = it }, label = { Text(stringResource(R.string.slide_notes)) }, modifier = Modifier.fillMaxWidth(), minLines = 2)
                 OutlinedTextField(imagePath, { imagePath = it }, label = { Text("Image URL/Path") }, modifier = Modifier.fillMaxWidth())
             }
         },
@@ -450,6 +710,7 @@ private fun SlideEditorDialog(
                 onSave(
                     title.trim(),
                     body.trim(),
+                    notes.trim().ifBlank { null },
                     imagePath.trim().ifBlank { null }
                 )
             }) { Text("Save") }
@@ -495,7 +756,7 @@ private fun SlideGeneratorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Generate slides from questions") },
+        title = { Text(stringResource(R.string.generate_from_questions)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 
@@ -598,5 +859,65 @@ private fun SlideGeneratorDialog(
             }) { Text("Generate") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
+private fun PasteTextDialog(
+    onDismiss: () -> Unit,
+    onImport: (String, com.ahmedyejam.mks.data.import.parser.TextParseMode) -> Unit
+) {
+    var text by rememberSaveable { mutableStateOf("") }
+    var mode by rememberSaveable { mutableStateOf(com.ahmedyejam.mks.data.import.parser.TextParseMode.ALTERNATING_PARAGRAPHS) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Paste text to import") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { mode = com.ahmedyejam.mks.data.import.parser.TextParseMode.ALTERNATING_PARAGRAPHS }) {
+                    androidx.compose.material3.RadioButton(
+                        selected = mode == com.ahmedyejam.mks.data.import.parser.TextParseMode.ALTERNATING_PARAGRAPHS,
+                        onClick = { mode = com.ahmedyejam.mks.data.import.parser.TextParseMode.ALTERNATING_PARAGRAPHS }
+                    )
+                    Text("Alternating Paragraphs (odd title, even body)", style = MaterialTheme.typography.bodySmall)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { mode = com.ahmedyejam.mks.data.import.parser.TextParseMode.EXPLICIT_LABELS }) {
+                    androidx.compose.material3.RadioButton(
+                        selected = mode == com.ahmedyejam.mks.data.import.parser.TextParseMode.EXPLICIT_LABELS,
+                        onClick = { mode = com.ahmedyejam.mks.data.import.parser.TextParseMode.EXPLICIT_LABELS }
+                    )
+                    Text("Explicit Labels (Title: ..., Body: ...)", style = MaterialTheme.typography.bodySmall)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { mode = com.ahmedyejam.mks.data.import.parser.TextParseMode.HEADER_BODY_NOTES }) {
+                    androidx.compose.material3.RadioButton(
+                        selected = mode == com.ahmedyejam.mks.data.import.parser.TextParseMode.HEADER_BODY_NOTES,
+                        onClick = { mode = com.ahmedyejam.mks.data.import.parser.TextParseMode.HEADER_BODY_NOTES }
+                    )
+                    Text("Header/Body/Notes (or separated by ---)", style = MaterialTheme.typography.bodySmall)
+                }
+                
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = { Text("Slides text") },
+                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                    maxLines = 10
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onImport(text, mode) },
+                enabled = text.isNotBlank()
+            ) {
+                Text("Import")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
     )
 }

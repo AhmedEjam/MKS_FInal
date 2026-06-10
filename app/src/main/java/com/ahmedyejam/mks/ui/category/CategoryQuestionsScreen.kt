@@ -497,7 +497,8 @@ fun QuestionCard(
     onImageClick: (String) -> Unit,
     onEditClick: () -> Unit = {},
     hasAssets: Boolean = false,
-    onAssetsClick: () -> Unit = {}
+    onAssetsClick: () -> Unit = {},
+    onToggleDropped: (() -> Unit)? = null
 ) {
     val tokens = LocalMksDesignTokens.current
     Card(
@@ -575,6 +576,17 @@ fun QuestionCard(
                             tint = if (question.isMarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(20.dp)
                         )
+                    }
+                    onToggleDropped?.let { toggleDrop ->
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(onClick = toggleDrop, modifier = Modifier.size(24.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Block,
+                                contentDescription = "Drop",
+                                tint = if (question.isDropped) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }

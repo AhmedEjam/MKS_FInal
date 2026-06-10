@@ -20,6 +20,9 @@ interface PromptDeckDao {
     @Query("SELECT * FROM prompt_decks WHERE id = :id AND deletedAt IS NULL")
     suspend fun getDeckById(id: Long): PromptDeckEntity?
 
+    @Query("SELECT * FROM prompt_decks WHERE id = :id LIMIT 1")
+    suspend fun getDeckByIdIncludingDeleted(id: Long): PromptDeckEntity?
+
     @Query("SELECT COUNT(*) FROM prompt_decks WHERE deletedAt IS NULL")
     suspend fun countAll(): Int
 
@@ -37,6 +40,9 @@ interface PromptDeckDao {
 
     @Query("UPDATE prompt_decks SET deletedAt = NULL, updatedAt = :updatedAt WHERE id = :deckId")
     suspend fun restoreDeckById(deckId: Long, updatedAt: Long)
+
+    @Query("SELECT * FROM prompt_decks WHERE deletedAt IS NOT NULL AND bookId IN (SELECT id FROM books WHERE workspaceId = :workspaceId)")
+    fun getDeletedDecksByWorkspaceFlow(workspaceId: Long): Flow<List<PromptDeckEntity>>
 
     @Delete
     suspend fun hardDeleteDeck(deck: PromptDeckEntity)

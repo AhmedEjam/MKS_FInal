@@ -43,6 +43,7 @@ data class BookToolsUiState(
     val promptRuns: List<PromptRunEntity> = emptyList(),
     val slideshowCourse: SlideshowCourseEntity? = null,
     val courseSlides: List<CourseSlideEntity> = emptyList(),
+    val mistakes: List<MistakeLogEntryEntity> = emptyList(),
     val bookSummary: BookKnowledgeSummary? = null,
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
@@ -78,6 +79,7 @@ class BookToolsViewModel(
                     allNotes = bundle.noteBlueprints,
                     allSources = bundle.sourceDocuments,
                     allPromptDecks = bundle.promptDecks,
+                    mistakes = bundle.mistakes,
                     bookSummary = repository.getBookKnowledgeSummary(bookId),
                     isLoading = false
                 )
@@ -624,7 +626,58 @@ class BookToolsViewModel(
     }
 
     fun extractVariables(text: String): List<String> =
-        Regex("\\{([A-Za-z0-9_]+)\\}").findAll(text).map { it.groupValues[1] }.distinct().toList()
+        Regex("""\{[^}]+\}|\[[^\]]+\]|\([^)]+\)|<[^>]+>""").findAll(text).map { it.value }.distinct().toList()
+
+    fun createFlashcardDeckFromMarkedQuestions(bookId: Long, title: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSaving = true, error = null)
+            runCatching {
+                repository.createFlashcardDeckFromMarkedQuestions(bookId, title, "Generated from marked questions")
+            }.onSuccess {
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    successMessage = "Flashcard deck created from marked questions"
+                )
+                loadBook(bookId)
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(isSaving = false, error = "Failed to create flashcard deck: ${e.message}")
+            }
+        }
+    }
+
+    fun createFlashcardDeckFromMissedQuestions(bookId: Long, title: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSaving = true, error = null)
+            runCatching {
+                repository.createFlashcardDeckFromMissedQuestions(bookId, title, "Generated from missed questions")
+            }.onSuccess {
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    successMessage = "Flashcard deck created from missed questions"
+                )
+                loadBook(bookId)
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(isSaving = false, error = "Failed to create flashcard deck: ${e.message}")
+            }
+        }
+    }
+
+    fun createSlideshowCourseFromQuestions(bookId: Long, title: String, questionIds: List<Long>) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSaving = true, error = null)
+            runCatching {
+                repository.createSlideshowCourseFromQuestions(bookId, title, "Generated from questions", questionIds)
+            }.onSuccess {
+                _uiState.value = _uiState.value.copy(
+                    isSaving = false,
+                    successMessage = "Slideshow course created from questions"
+                )
+                loadBook(bookId)
+            }.onFailure { e ->
+                _uiState.value = _uiState.value.copy(isSaving = false, error = "Failed to create slideshow course: ${e.message}")
+            }
+        }
+    }
 
     fun clearMessages() {
         _uiState.value = _uiState.value.copy(error = null, successMessage = null)

@@ -12,6 +12,9 @@ interface PromptDao {
     @Query("SELECT * FROM prompts WHERE id = :id AND deletedAt IS NULL")
     suspend fun getPromptById(id: Long): PromptEntity?
 
+    @Query("SELECT * FROM prompts WHERE id = :id LIMIT 1")
+    suspend fun getPromptByIdIncludingDeleted(id: Long): PromptEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPrompt(prompt: PromptEntity): Long
 

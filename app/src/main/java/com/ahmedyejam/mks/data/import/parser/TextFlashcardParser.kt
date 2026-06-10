@@ -5,7 +5,8 @@ import java.util.UUID
 
 enum class TextParseMode {
     ALTERNATING_PARAGRAPHS,
-    EXPLICIT_LABELS
+    EXPLICIT_LABELS,
+    HEADER_BODY_NOTES
 }
 
 class TextFlashcardParser {

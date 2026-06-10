@@ -1,40 +1,39 @@
 package com.ahmedyejam.mks.ui.review
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.ahmedyejam.mks.data.review.ReviewQueueItem
-import com.ahmedyejam.mks.ui.components.EmptyStateCard
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.material3.Surface
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import com.ahmedyejam.mks.data.repository.KnowledgeSummary
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.ahmedyejam.mks.data.local.entity.AnnotationEntity
+import com.ahmedyejam.mks.data.local.entity.MistakeLogEntryEntity
+import com.ahmedyejam.mks.data.review.ReviewQueueItem
 import com.ahmedyejam.mks.data.review.ReviewQueueType
+import com.ahmedyejam.mks.ui.components.EmptyStateCard
 import com.ahmedyejam.mks.ui.components.LoadingErrorState
+import java.text.SimpleDateFormat
+import java.util.*
+
+enum class ReviewTab(val title: String) {
+    QUEUE("Review Queue"),
+    MISTAKES("Mistakes"),
+    ANNOTATIONS("Annotations")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,57 +44,188 @@ fun ReviewDashboardScreen(
     onOpenRoute: (String) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-    val listState = rememberLazyListState()
+    val annotations by viewModel.annotations.collectAsState(initial = emptyList())
+    val mistakes by viewModel.mistakes.collectAsState(initial = emptyList())
 
-    LaunchedEffect(focusedMistakeId, state.queue) {
-        if (focusedMistakeId != null && state.queue.isNotEmpty()) {
-            val index = state.queue.indexOfFirst { it.id == focusedMistakeId.toString() && it.type == ReviewQueueType.MISTAKE }
-            if (index != -1) {
-                listState.animateScrollToItem(index + 1) // +1 for summary header
-            }
-        }
-    }
+    var selectedTab by remember { mutableStateOf(ReviewTab.QUEUE) }
+    var itemToSnooze by remember { mutableStateOf<Any?>(null) } // Can be ReviewQueueItem or MistakeLogEntryEntity
+    var editingAnnotation by remember { mutableStateOf<AnnotationEntity?>(null) }
+
+    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Review Dashboard") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } }
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
             )
         }
     ) { padding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            item { LoadingErrorState(state.isLoading, state.error, viewModel::refresh) }
-            state.knowledgeSummary?.let { summary ->
-                item { KnowledgeSummaryCard(summary) }
+            TabRow(
+                selectedTabIndex = selectedTab.ordinal,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                ReviewTab.values().forEach { tab ->
+                    Tab(
+                        selected = selectedTab == tab,
+                        onClick = { selectedTab = tab },
+                        text = { Text(tab.title) }
+                    )
+                }
             }
-            item { com.ahmedyejam.mks.ui.components.SummaryCard("Flashcards due", state.summary.dueFlashcards.toString(), "Cards scheduled for review") }
-            item { com.ahmedyejam.mks.ui.components.SummaryCard("Blueprints due", state.summary.dueBlueprints.toString(), "Manual review queue") }
-            item { com.ahmedyejam.mks.ui.components.SummaryCard("Mistakes due", state.summary.dueMistakes.toString(), "Open mistake reviews") }
-            item { com.ahmedyejam.mks.ui.components.SummaryCard("Mistakes scheduled", state.summary.pendingMistakes.toString(), "Open mistakes not due yet") }
-            item { com.ahmedyejam.mks.ui.components.SummaryCard("Marked / weak", "${state.summary.markedQuestions} / ${state.summary.weakQuestions}", "Marked and weak questions") }
-            if (!state.isLoading && state.queue.isEmpty()) {
-                item { EmptyStateCard("No due reviews", "There are no due review items right now.") }
-            } else {
-                items(state.queue, key = { it.type.name + it.id }) { item ->
-                    ReviewQueueCard(item, viewModel::markReviewed, viewModel::snoozeOneWeek, onOpenRoute)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(16.dp)
+            ) {
+                when (selectedTab) {
+                    ReviewTab.QUEUE -> {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            item { LoadingErrorState(state.isLoading, state.error, viewModel::refresh) }
+                            state.knowledgeSummary?.let { summary ->
+                                item { KnowledgeSummaryCard(summary) }
+                            }
+                            if (!state.isLoading && state.queue.isEmpty()) {
+                                item { EmptyStateCard("No due reviews", "There are no due review items right now.") }
+                            } else {
+                                items(state.queue, key = { it.type.name + it.id }) { item ->
+                                    ReviewQueueCard(
+                                        item = item,
+                                        onMarkReviewed = { viewModel.markReviewed(item) },
+                                        onSnoozeOneWeek = { viewModel.snoozeOneWeek(item) },
+                                        onSnoozeCustom = { itemToSnooze = item },
+                                        onOpenRoute = onOpenRoute
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    ReviewTab.MISTAKES -> {
+                        if (mistakes.isEmpty()) {
+                            EmptyStateCard("No mistakes logged", "Mistakes made during quizzes will appear here.")
+                        } else {
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(mistakes) { mistake ->
+                                    MistakeCard(
+                                        mistake = mistake,
+                                        dateFormat = dateFormat,
+                                        onToggleFixed = { viewModel.markMistakeFixed(mistake.id) },
+                                        onSnooze = { itemToSnooze = mistake },
+                                        onDelete = { viewModel.deleteMistake(mistake) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    ReviewTab.ANNOTATIONS -> {
+                        if (annotations.isEmpty()) {
+                            EmptyStateCard("No annotations found", "Highlights and margin notes will show up here.")
+                        } else {
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(annotations) { annotation ->
+                                    AnnotationCard(
+                                        annotation = annotation,
+                                        onEdit = { editingAnnotation = annotation },
+                                        onDelete = { viewModel.deleteAnnotation(annotation.id) }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+
+    // Custom Date Picker Dialog for custom snooze
+    if (itemToSnooze != null) {
+        CustomDatePickerDialog(
+            onDismiss = { itemToSnooze = null },
+            onDateSelected = { selectedDateMillis ->
+                val delay = (selectedDateMillis - System.currentTimeMillis()).coerceAtLeast(0L)
+                when (val item = itemToSnooze) {
+                    is ReviewQueueItem -> viewModel.snoozeCustom(item, delay)
+                    is MistakeLogEntryEntity -> viewModel.snoozeMistake(item.id, selectedDateMillis)
+                }
+                itemToSnooze = null
+            }
+        )
+    }
+
+    // Annotation Edit Dialog
+    editingAnnotation?.let { annotation ->
+        var noteBody by remember { mutableStateOf(annotation.noteBody ?: "") }
+
+        AlertDialog(
+            onDismissRequest = { editingAnnotation = null },
+            title = { Text("Edit Margin Note") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!annotation.selectedText.isNullOrBlank()) {
+                        Text(
+                            text = "Reference Text:",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "\"${annotation.selectedText}\"",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    OutlinedTextField(
+                        value = noteBody,
+                        onValueChange = { noteBody = it },
+                        label = { Text("Note body") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.updateAnnotation(annotation.copy(noteBody = noteBody.trim().takeIf { it.isNotBlank() }))
+                        editingAnnotation = null
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingAnnotation = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
 @Composable
 private fun ReviewQueueCard(
     item: ReviewQueueItem,
-    onMarkReviewed: (ReviewQueueItem) -> Unit,
-    onSnooze: (ReviewQueueItem) -> Unit,
+    onMarkReviewed: () -> Unit,
+    onSnoozeOneWeek: () -> Unit,
+    onSnoozeCustom: () -> Unit,
     onOpenRoute: (String) -> Unit
 ) {
     Card(
@@ -103,24 +233,191 @@ private fun ReviewQueueCard(
             .fillMaxWidth()
             .clickable(enabled = item.route != null) { item.route?.let(onOpenRoute) }
     ) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(item.type.name.replace('_', ' '), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = item.type.name.replace('_', ' '),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
             Text(item.title, style = MaterialTheme.typography.titleSmall)
-            if (!item.subtitle.isNullOrBlank()) Text(item.subtitle, style = MaterialTheme.typography.bodySmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { onMarkReviewed(item) }) { Text("Reviewed") }
-                TextButton(onClick = { onSnooze(item) }) { Text("Snooze 1 week") }
+            if (!item.subtitle.isNullOrBlank()) {
+                Text(item.subtitle, style = MaterialTheme.typography.bodySmall)
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TextButton(onClick = onMarkReviewed) { Text("Reviewed") }
+                TextButton(onClick = onSnoozeOneWeek) { Text("Snooze 1 week") }
+                IconButton(onClick = onSnoozeCustom) {
+                    Icon(
+                        Icons.Default.Event,
+                        contentDescription = "Snooze Custom",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun KnowledgeSummaryCard(summary: KnowledgeSummary) {
+fun MistakeCard(
+    mistake: MistakeLogEntryEntity,
+    dateFormat: SimpleDateFormat,
+    onToggleFixed: () -> Unit,
+    onSnooze: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (mistake.isFixed) "FIXED" else "OPEN MISTAKE",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (mistake.isFixed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete Mistake",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            if (!mistake.correctConcept.isNullOrBlank()) {
+                Text(
+                    text = mistake.correctConcept,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            if (!mistake.userReason.isNullOrBlank()) {
+                Text(
+                    text = "User Reason: ${mistake.userReason}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            if (!mistake.preventionNote.isNullOrBlank()) {
+                Text(
+                    text = "Prevention Note: ${mistake.preventionNote}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (mistake.selectedAnswer != null || mistake.correctAnswer != null) {
+                Text(
+                    text = "Answer: ${mistake.selectedAnswer ?: "N/A"} (Correct: ${mistake.correctAnswer ?: "N/A"})",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (mistake.reviewAt != null) {
+                Text(
+                    text = "Review scheduled: ${dateFormat.format(Date(mistake.reviewAt))}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onToggleFixed) {
+                    Text(if (mistake.isFixed) "Reopen" else "Mark Fixed")
+                }
+                TextButton(onClick = onSnooze) {
+                    Text("Snooze Custom")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AnnotationCard(
+    annotation: AnnotationEntity,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Margin Note (${annotation.ownerType})",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Row {
+                    IconButton(onClick = onEdit) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit Note",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete Annotation",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+
+            if (!annotation.selectedText.isNullOrBlank()) {
+                Text(
+                    text = "\"${annotation.selectedText}\"",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            if (!annotation.noteBody.isNullOrBlank()) {
+                Text(
+                    text = annotation.noteBody,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun KnowledgeSummaryCard(summary: com.ahmedyejam.mks.data.repository.KnowledgeSummary) {
     Card(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Text(
                 text = "Knowledge summary",
                 style = MaterialTheme.typography.titleMedium,
@@ -149,7 +446,7 @@ private fun KnowledgeSummaryCard(summary: KnowledgeSummary) {
 private fun SummaryMiniStat(label: String, value: Int, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
         Column(
@@ -160,5 +457,38 @@ private fun SummaryMiniStat(label: String, value: Int, modifier: Modifier = Modi
             Text(value.toString(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomDatePickerDialog(
+    onDismiss: () -> Unit,
+    onDateSelected: (Long) -> Unit
+) {
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = System.currentTimeMillis() + 24 * 60 * 60 * 1000 // default to tomorrow
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        onDateSelected(it)
+                    }
+                    onDismiss()
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    ) {
+        DatePicker(state = datePickerState)
     }
 }

@@ -48,6 +48,12 @@ interface QuestionDao {
     @Query("UPDATE questions SET deletedAt = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE id = :questionId")
     suspend fun restoreQuestionById(questionId: Long, updatedAt: Long)
 
+    @Query("UPDATE questions SET deletedAt = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE quizId = :quizId AND deletedAt = :deletedAtFilter")
+    suspend fun restoreQuestionsByQuizId(quizId: Long, updatedAt: Long, deletedAtFilter: Long)
+
+    @Query("SELECT * FROM questions WHERE id = :id LIMIT 1")
+    suspend fun getQuestionByIdIncludingDeleted(id: Long): QuestionEntity?
+
     @Delete
     suspend fun hardDeleteQuestion(question: QuestionEntity)
 

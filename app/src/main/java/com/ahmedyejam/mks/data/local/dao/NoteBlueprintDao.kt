@@ -20,6 +20,9 @@ interface NoteBlueprintDao {
     @Query("SELECT * FROM note_blueprints WHERE id = :id AND deletedAt IS NULL")
     suspend fun getNoteById(id: Long): NoteBlueprintEntity?
 
+    @Query("SELECT * FROM note_blueprints WHERE id = :id LIMIT 1")
+    suspend fun getNoteByIdIncludingDeleted(id: Long): NoteBlueprintEntity?
+
     @Query("SELECT * FROM note_blueprints WHERE deletedAt IS NULL AND (sourceQuestionId = :questionId OR linkedQuestionsJson LIKE '%' || :questionId || '%') ORDER BY updatedAt DESC")
     suspend fun getNotesBySourceQuestionId(questionId: Long): List<NoteBlueprintEntity>
 
@@ -56,6 +59,9 @@ interface NoteBlueprintDao {
 
     @Query("UPDATE note_blueprints SET deletedAt = NULL, updatedAt = :updatedAt WHERE id = :noteId")
     suspend fun restoreNoteById(noteId: Long, updatedAt: Long)
+
+    @Query("SELECT * FROM note_blueprints WHERE deletedAt IS NOT NULL AND bookId IN (SELECT id FROM books WHERE workspaceId = :workspaceId)")
+    fun getDeletedNotesByWorkspaceFlow(workspaceId: Long): Flow<List<NoteBlueprintEntity>>
 
     @Delete
     suspend fun hardDeleteNote(note: NoteBlueprintEntity)

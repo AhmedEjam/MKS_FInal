@@ -37,6 +37,7 @@ import com.ahmedyejam.mks.ui.scanner.EditQuestionDialog
 fun QuizQuestionsScreen(
     viewModel: QuizQuestionsViewModel,
     focusedQuestionId: Long? = null,
+    isEmbedded: Boolean = false,
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -59,7 +60,6 @@ fun QuizQuestionsScreen(
         if (focusedQuestionId != null && uiState.filteredQuestions.isNotEmpty()) {
             val index = uiState.filteredQuestions.indexOfFirst { it.id == focusedQuestionId }
             if (index != -1) {
-                // Add 1 to index because of the header item (summary card) if it exists
                 scrollState.animateScrollToItem(index + 1)
             }
         }
@@ -205,89 +205,86 @@ fun QuizQuestionsScreen(
         )
     }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            if (isSelectionMode) {
-                SelectionTopAppBar(
-                    selectedCount = uiState.selectedQuestionIds.size,
-                    onClearSelection = { viewModel.clearSelection() },
-                    onDelete = { showDeleteConfirm = true },
-                    onMove = { showMoveDialog = true },
-                    onSelectAll = { viewModel.toggleAllSelection() },
-                    onCopy = { showCopyDialog = true },
-                    onExport = { showExportDialog = true },
-                    onCreateFlashcards = { showFlashcardDialog = true },
-                    onMarkSelected = { viewModel.markSelectedQuestions(true) },
-                    onUnmarkSelected = { viewModel.markSelectedQuestions(false) },
-                    showMarkActions = true,
-                    scrollBehavior = scrollBehavior
-                )
-            } else {
-                DefaultTopAppBar(
-                    categoryName = uiState.quiz?.title ?: stringResource(R.string.quizzes_title),
-                    filteredCount = uiState.filteredQuestions.size,
-                    totalCount = uiState.allQuestions.size,
-                    isSearching = isSearching,
-                    searchQuery = uiState.searchQuery,
-                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                    onToggleSearch = { isSearching = !isSearching },
-                    onToggleFilters = { showFilters = !showFilters },
-                    onBack = onBack,
-                    scrollBehavior = scrollBehavior
-                )
-            }
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_question))
-            }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+    if (isEmbedded) {
+        Column(Modifier.fillMaxSize()) {
             if (showFilters) {
                 FilterControls(
                     visibility = uiState.visibility,
                     onToggle = { viewModel.toggleVisibility(it) }
                 )
             }
-
-            if (uiState.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+            QuizQuestionsList(
+                uiState = uiState,
+                scrollState = scrollState,
+                onToggleSelection = { viewModel.toggleSelection(it) },
+                onToggleMarked = { viewModel.toggleMarked(it) },
+                onImageClick = { fullscreenImageUrl = it },
+                onEditClick = { showEditDialog = it },
+                onAssetsClick = { showAssetsDialog = it },
+                onToggleDropped = { viewModel.toggleDropped(it) }
+            )
+        }
+    } else {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                if (isSelectionMode) {
+                    SelectionTopAppBar(
+                        selectedCount = uiState.selectedQuestionIds.size,
+                        onClearSelection = { viewModel.clearSelection() },
+                        onDelete = { showDeleteConfirm = true },
+                        onMove = { showMoveDialog = true },
+                        onSelectAll = { viewModel.toggleAllSelection() },
+                        onCopy = { showCopyDialog = true },
+                        onExport = { showExportDialog = true },
+                        onCreateFlashcards = { showFlashcardDialog = true },
+                        onMarkSelected = { viewModel.markSelectedQuestions(true) },
+                        onUnmarkSelected = { viewModel.markSelectedQuestions(false) },
+                        showMarkActions = true,
+                        scrollBehavior = scrollBehavior
+                    )
+                } else {
+                    DefaultTopAppBar(
+                        categoryName = uiState.quiz?.title ?: stringResource(R.string.quizzes_title),
+                        filteredCount = uiState.filteredQuestions.size,
+                        totalCount = uiState.allQuestions.size,
+                        isSearching = isSearching,
+                        searchQuery = uiState.searchQuery,
+                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                        onToggleSearch = { isSearching = !isSearching },
+                        onToggleFilters = { showFilters = !showFilters },
+                        onBack = onBack,
+                        scrollBehavior = scrollBehavior
+                    )
                 }
-            } else if (uiState.filteredQuestions.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(if (uiState.searchQuery.isBlank()) stringResource(R.string.no_questions_found) else stringResource(R.string.no_questions_match_filter))
-                }
-            } else {
-                LazyColumn(
-                    state = scrollState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp, 16.dp, 16.dp, 80.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { showAddDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
-                    uiState.quizSummary?.let { summary ->
-                        item { QuizKnowledgeSummaryCard(summary) }
-                    }
-                    items(uiState.filteredQuestions, key = { it.id }) { question ->
-                        QuestionCard(
-                            question = question,
-                            visibility = uiState.visibility,
-                            isSelected = uiState.selectedQuestionIds.contains(question.id),
-                            onToggleSelection = { viewModel.toggleSelection(question.id) },
-                            onToggleMarked = { viewModel.toggleMarked(question) },
-                            onImageClick = { fullscreenImageUrl = it },
-                            onEditClick = { showEditDialog = question },
-                            hasAssets = question.id in uiState.questionIdsWithAssets,
-                            onAssetsClick = { showAssetsDialog = question }
-                        )
-                    }
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_question))
                 }
+            }
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+                if (showFilters) {
+                    FilterControls(
+                        visibility = uiState.visibility,
+                        onToggle = { viewModel.toggleVisibility(it) }
+                    )
+                }
+                QuizQuestionsList(
+                    uiState = uiState,
+                    scrollState = scrollState,
+                    onToggleSelection = { viewModel.toggleSelection(it) },
+                    onToggleMarked = { viewModel.toggleMarked(it) },
+                    onImageClick = { fullscreenImageUrl = it },
+                    onEditClick = { showEditDialog = it },
+                    onAssetsClick = { showAssetsDialog = it },
+                    onToggleDropped = { viewModel.toggleDropped(it) }
+                )
             }
         }
     }
@@ -297,6 +294,53 @@ fun QuizQuestionsScreen(
             imageData = data,
             onDismiss = { fullscreenImageUrl = null }
         )
+    }
+}
+
+@Composable
+private fun QuizQuestionsList(
+    uiState: QuizQuestionsUiState,
+    scrollState: androidx.compose.foundation.lazy.LazyListState,
+    onToggleSelection: (Long) -> Unit,
+    onToggleMarked: (QuestionEntity) -> Unit,
+    onImageClick: (String) -> Unit,
+    onEditClick: (QuestionEntity) -> Unit,
+    onAssetsClick: (QuestionEntity) -> Unit,
+    onToggleDropped: (QuestionEntity) -> Unit
+) {
+    if (uiState.isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else if (uiState.filteredQuestions.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(if (uiState.searchQuery.isBlank()) stringResource(R.string.no_questions_found) else stringResource(R.string.no_questions_match_filter))
+        }
+    } else {
+        LazyColumn(
+            state = scrollState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp, 16.dp, 16.dp, 80.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            uiState.quizSummary?.let { summary ->
+                item { QuizKnowledgeSummaryCard(summary) }
+            }
+            items(uiState.filteredQuestions, key = { it.id }) { question ->
+                QuestionCard(
+                    question = question,
+                    visibility = uiState.visibility,
+                    isSelected = uiState.selectedQuestionIds.contains(question.id),
+                    onToggleSelection = { onToggleSelection(question.id) },
+                    onToggleMarked = { onToggleMarked(question) },
+                    onImageClick = { onImageClick(it) },
+                    onEditClick = { onEditClick(question) },
+                    hasAssets = question.id in uiState.questionIdsWithAssets,
+                    onAssetsClick = { onAssetsClick(question) },
+                    onToggleDropped = { onToggleDropped(question) }
+                )
+            }
+        }
     }
 }
 

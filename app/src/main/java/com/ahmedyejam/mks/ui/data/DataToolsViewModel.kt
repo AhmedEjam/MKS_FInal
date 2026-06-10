@@ -23,7 +23,7 @@ class DataToolsViewModel(
     fun exportFullLibrary(outputStream: java.io.OutputStream) {
         viewModelScope.launch {
             _state.update { it.copy(isWorking = true, error = null, message = null) }
-            val result = repository.exportAllToSchema7Zip(outputStream)
+            val result = repository.exportAllToZip(outputStream)
             _state.update {
                 it.copy(
                     isWorking = false,

@@ -8,6 +8,7 @@ import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
 import com.ahmedyejam.mks.data.model.FlashcardGenerationConfig
 import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.di.AppModule
+import com.ahmedyejam.mks.util.MksLogger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,6 +44,20 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
     val uiState = _uiState.asStateFlow()
     private var deckId: Long? = null
     private var loadJob: Job? = null
+
+    private val appModule = appModule
+    private val moshi = com.squareup.moshi.Moshi.Builder().build()
+    private val sessionStateAdapter = moshi.adapter(com.ahmedyejam.mks.data.model.LearningSessionState::class.java)
+
+    private var activeSessionId: Long? = null
+    private var sessionTimeAccumulatedMs: Long = 0L
+    private var sessionLastStartedTimestamp: Long = 0L
+    private var isSessionTimerRunning: Boolean = false
+
+    private var correctAttemptsCount: Int = 0
+    private var totalAttemptsCount: Int = 0
+    private val reviewedCardIds = mutableSetOf<Long>()
+    private val cardScores = mutableMapOf<Long, Float>()
 
     fun loadDeck(id: Long) {
         if (deckId == id && loadJob?.isActive == true) return
@@ -90,8 +105,126 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
         _uiState.value = _uiState.value.copy(message = null, error = null)
     }
 
+    fun startSessionTimer() {
+        if (!isSessionTimerRunning) {
+            sessionLastStartedTimestamp = System.currentTimeMillis()
+            isSessionTimerRunning = true
+            MksLogger.d("FlashcardDeckViewModel", "Stopwatch started/resumed")
+        }
+    }
+
+    fun pauseSessionTimer() {
+        if (isSessionTimerRunning) {
+            val elapsed = System.currentTimeMillis() - sessionLastStartedTimestamp
+            sessionTimeAccumulatedMs += elapsed
+            isSessionTimerRunning = false
+            MksLogger.d("FlashcardDeckViewModel", "Stopwatch paused. Accumulated: $sessionTimeAccumulatedMs ms")
+            saveSessionStateIncremental()
+        }
+    }
+
+    fun getSessionElapsedTimeMs(): Long {
+        return if (isSessionTimerRunning) {
+            sessionTimeAccumulatedMs + (System.currentTimeMillis() - sessionLastStartedTimestamp)
+        } else {
+            sessionTimeAccumulatedMs
+        }
+    }
+
+    private fun saveSessionStateIncremental() {
+        val sessionId = activeSessionId ?: return
+        val deckId = deckId ?: return
+        val current = _uiState.value
+        val elapsed = getSessionElapsedTimeMs()
+        
+        val stateObj = com.ahmedyejam.mks.data.model.LearningSessionState(
+            targetType = "FLASHCARD",
+            targetId = deckId,
+            deckId = deckId,
+            reviewedCardIds = reviewedCardIds.toSet(),
+            cardScores = cardScores.toMap(),
+            currentCardIndex = current.currentIndex,
+            timersActive = mapOf(0L to elapsed),
+            startedAt = System.currentTimeMillis() - elapsed,
+            totalAttempts = totalAttemptsCount,
+            correctAttempts = correctAttemptsCount
+        )
+        
+        val json = try {
+            sessionStateAdapter.toJson(stateObj)
+        } catch (e: Exception) {
+            ""
+        }
+        
+        appModule.applicationScope.launch {
+            repository.getLearningSessionById(sessionId)?.let { session ->
+                repository.updateLearningSession(session.copy(stateJson = json))
+            }
+        }
+    }
+
+    fun endAndSaveSession() {
+        val sessionId = activeSessionId ?: return
+        activeSessionId = null
+        pauseSessionTimer()
+        
+        val deckId = deckId ?: return
+        val current = _uiState.value
+        val elapsed = getSessionElapsedTimeMs()
+        
+        val stateObj = com.ahmedyejam.mks.data.model.LearningSessionState(
+            targetType = "FLASHCARD",
+            targetId = deckId,
+            deckId = deckId,
+            reviewedCardIds = reviewedCardIds.toSet(),
+            cardScores = cardScores.toMap(),
+            currentCardIndex = current.currentIndex,
+            timersActive = mapOf(0L to elapsed),
+            startedAt = System.currentTimeMillis() - elapsed,
+            completedAt = System.currentTimeMillis(),
+            totalAttempts = totalAttemptsCount,
+            correctAttempts = correctAttemptsCount
+        )
+        
+        val json = try {
+            sessionStateAdapter.toJson(stateObj)
+        } catch (e: Exception) {
+            ""
+        }
+        
+        appModule.applicationScope.launch {
+            repository.getLearningSessionById(sessionId)?.let { session ->
+                repository.updateLearningSession(session.copy(stateJson = json, isCompleted = true))
+                repository.completeLearningSession(sessionId)
+            }
+        }
+    }
+
     fun setStudyMode(enabled: Boolean) {
-        _uiState.value = _uiState.value.copy(isStudyMode = enabled, isFlipped = false, currentIndex = 0)
+        if (enabled) {
+            _uiState.value = _uiState.value.copy(isStudyMode = true, isFlipped = false, currentIndex = 0)
+            correctAttemptsCount = 0
+            totalAttemptsCount = 0
+            reviewedCardIds.clear()
+            cardScores.clear()
+            sessionTimeAccumulatedMs = 0L
+            isSessionTimerRunning = false
+            
+            viewModelScope.launch {
+                val deckId = deckId ?: return@launch
+                val sessionId = repository.createLearningSession("FLASHCARD", deckId, "")
+                activeSessionId = sessionId
+                startSessionTimer()
+            }
+        } else {
+            endAndSaveSession()
+            _uiState.value = _uiState.value.copy(isStudyMode = false, isFlipped = false, currentIndex = 0)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        endAndSaveSession()
     }
 
     fun flipCard() {
@@ -102,12 +235,14 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
         val current = _uiState.value
         val next = if (current.cards.isEmpty()) 0 else (current.currentIndex + 1).coerceAtMost(current.cards.lastIndex)
         _uiState.value = current.copy(currentIndex = next, isFlipped = false)
+        saveSessionStateIncremental()
     }
 
     fun previousCard() {
         val current = _uiState.value
         val previous = (current.currentIndex - 1).coerceAtLeast(0)
         _uiState.value = current.copy(currentIndex = previous, isFlipped = false)
+        saveSessionStateIncremental()
     }
 
     fun updateDeck(title: String, description: String?, coverImage: String?) {
@@ -213,9 +348,18 @@ class FlashcardDeckViewModel(appModule: AppModule) : ViewModel() {
 
     fun rateCurrentCard(rating: String) {
         val card = _uiState.value.currentCard ?: return
+        reviewedCardIds.add(card.id)
+        totalAttemptsCount++
+        if (rating == FLASHCARD_RATING_GOOD || rating == FLASHCARD_RATING_EASY) {
+            correctAttemptsCount++
+            cardScores[card.id] = if (rating == FLASHCARD_RATING_EASY) 1.0f else 0.8f
+        } else {
+            cardScores[card.id] = 0.2f
+        }
         viewModelScope.launch {
             repository.rateFlashcard(card, rating)
             nextCard()
+            saveSessionStateIncremental()
         }
     }
 

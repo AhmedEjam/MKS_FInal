@@ -7,6 +7,7 @@ import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.data.repository.SortOption
+import com.ahmedyejam.mks.util.MksLogger
 import com.ahmedyejam.mks.data.model.SlideGenerationConfig
 import com.ahmedyejam.mks.data.import.parser.TextSlideParser
 import com.ahmedyejam.mks.data.import.parser.TextParseMode
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 data class SlideshowCourseUiState(
     val course: SlideshowCourseEntity? = null,
@@ -42,6 +44,20 @@ class SlideshowCourseViewModel(appModule: AppModule) : ViewModel() {
     val uiState = _uiState.asStateFlow()
     private var courseId: Long? = null
     private var loadJob: Job? = null
+
+    private val appModule = appModule
+    private val moshi = com.squareup.moshi.Moshi.Builder().build()
+    private val sessionStateAdapter = moshi.adapter(com.ahmedyejam.mks.data.model.LearningSessionState::class.java)
+
+    private var activeSessionId: Long? = null
+    private var sessionTimeAccumulatedMs: Long = 0L
+    private var sessionLastStartedTimestamp: Long = 0L
+    private var isSessionTimerRunning: Boolean = false
+    private val _elapsedSeconds = MutableStateFlow(0L)
+    val elapsedSeconds = _elapsedSeconds.asStateFlow()
+    private var timerJob: Job? = null
+
+    private val reviewedSlideIds = mutableSetOf<Long>()
 
     fun loadCourse(id: Long) {
         if (courseId == id && loadJob?.isActive == true) return
@@ -130,24 +146,172 @@ class SlideshowCourseViewModel(appModule: AppModule) : ViewModel() {
         _uiState.value = _uiState.value.copy(message = null, error = null)
     }
 
+    fun startSessionTimer() {
+        if (!isSessionTimerRunning) {
+            sessionLastStartedTimestamp = System.currentTimeMillis()
+            isSessionTimerRunning = true
+            MksLogger.d("SlideshowCourseViewModel", "Stopwatch started/resumed")
+            timerJob = viewModelScope.launch {
+                while (isSessionTimerRunning) {
+                    _elapsedSeconds.value = getSessionElapsedTimeMs() / 1000L
+                    delay(1000)
+                }
+            }
+        }
+    }
+
+    fun pauseSessionTimer() {
+        if (isSessionTimerRunning) {
+            val elapsed = System.currentTimeMillis() - sessionLastStartedTimestamp
+            sessionTimeAccumulatedMs += elapsed
+            isSessionTimerRunning = false
+            MksLogger.d("SlideshowCourseViewModel", "Stopwatch paused. Accumulated: $sessionTimeAccumulatedMs ms")
+            saveSessionStateIncremental()
+            timerJob?.cancel()
+        }
+    }
+
+    fun getSessionElapsedTimeMs(): Long {
+        return if (isSessionTimerRunning) {
+            sessionTimeAccumulatedMs + (System.currentTimeMillis() - sessionLastStartedTimestamp)
+        } else {
+            sessionTimeAccumulatedMs
+        }
+    }
+
+    private fun saveSessionStateIncremental() {
+        val sessionId = activeSessionId ?: return
+        val courseId = courseId ?: return
+        val current = _uiState.value
+        val elapsed = getSessionElapsedTimeMs()
+        
+        val stateObj = com.ahmedyejam.mks.data.model.LearningSessionState(
+            targetType = "COURSE",
+            targetId = courseId,
+            courseId = courseId,
+            reviewedCardIds = reviewedSlideIds.toSet(),
+            currentCardIndex = current.currentIndex,
+            timersActive = mapOf(0L to elapsed),
+            startedAt = System.currentTimeMillis() - elapsed,
+            totalAttempts = current.slides.size
+        )
+        
+        val json = try {
+            sessionStateAdapter.toJson(stateObj)
+        } catch (e: Exception) {
+            ""
+        }
+        
+        appModule.applicationScope.launch {
+            repository.getLearningSessionById(sessionId)?.let { session ->
+                repository.updateLearningSession(session.copy(stateJson = json))
+            }
+        }
+    }
+
+    fun endAndSaveSession() {
+        val sessionId = activeSessionId ?: return
+        activeSessionId = null
+        pauseSessionTimer()
+        
+        val courseId = courseId ?: return
+        val current = _uiState.value
+        val elapsed = getSessionElapsedTimeMs()
+        
+        val stateObj = com.ahmedyejam.mks.data.model.LearningSessionState(
+            targetType = "COURSE",
+            targetId = courseId,
+            courseId = courseId,
+            reviewedCardIds = reviewedSlideIds.toSet(),
+            currentCardIndex = current.currentIndex,
+            timersActive = mapOf(0L to elapsed),
+            startedAt = System.currentTimeMillis() - elapsed,
+            completedAt = System.currentTimeMillis(),
+            totalAttempts = current.slides.size
+        )
+        
+        val json = try {
+            sessionStateAdapter.toJson(stateObj)
+        } catch (e: Exception) {
+            ""
+        }
+        
+        appModule.applicationScope.launch {
+            repository.getLearningSessionById(sessionId)?.let { session ->
+                repository.updateLearningSession(session.copy(stateJson = json, isCompleted = true))
+                repository.completeLearningSession(sessionId)
+            }
+        }
+    }
+
     fun setPresentationMode(enabled: Boolean) {
-        _uiState.value = _uiState.value.copy(isPresentationMode = enabled, currentIndex = 0)
+        if (enabled) {
+            _uiState.value = _uiState.value.copy(isPresentationMode = true, currentIndex = 0)
+            reviewedSlideIds.clear()
+            val currentSlide = _uiState.value.currentSlide
+            if (currentSlide != null) {
+                reviewedSlideIds.add(currentSlide.id)
+            }
+            sessionTimeAccumulatedMs = 0L
+            isSessionTimerRunning = false
+            
+            viewModelScope.launch {
+                val courseId = courseId ?: return@launch
+                val sessionId = repository.createLearningSession("COURSE", courseId, "")
+                activeSessionId = sessionId
+                startSessionTimer()
+            }
+        } else {
+            endAndSaveSession()
+            _uiState.value = _uiState.value.copy(isPresentationMode = false, currentIndex = 0)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        endAndSaveSession()
     }
 
     fun nextSlide() {
         val current = _uiState.value
-        val slide = current.currentSlide
-        if (slide != null && !slide.isCompleted) {
-            viewModelScope.launch { repository.updateCourseSlide(slide.copy(isCompleted = true)) }
-        }
         val next = if (current.slides.isEmpty()) 0 else (current.currentIndex + 1).coerceAtMost(current.slides.lastIndex)
         _uiState.value = current.copy(currentIndex = next)
+        val nextSlide = _uiState.value.currentSlide
+        if (nextSlide != null) {
+            reviewedSlideIds.add(nextSlide.id)
+        }
+        saveSessionStateIncremental()
+    }
+
+    fun toggleSlideStudied() {
+        val current = _uiState.value
+        val slide = current.currentSlide ?: return
+        viewModelScope.launch {
+            repository.updateCourseSlide(slide.copy(isCompleted = !slide.isCompleted))
+        }
+    }
+
+    fun setCurrentIndex(index: Int) {
+        val current = _uiState.value
+        if (index in current.slides.indices && index != current.currentIndex) {
+            _uiState.value = current.copy(currentIndex = index)
+            val slide = _uiState.value.currentSlide
+            if (slide != null) {
+                reviewedSlideIds.add(slide.id)
+            }
+            saveSessionStateIncremental()
+        }
     }
 
     fun previousSlide() {
         val current = _uiState.value
         val previous = (current.currentIndex - 1).coerceAtLeast(0)
         _uiState.value = current.copy(currentIndex = previous)
+        val prevSlide = _uiState.value.currentSlide
+        if (prevSlide != null) {
+            reviewedSlideIds.add(prevSlide.id)
+        }
+        saveSessionStateIncremental()
     }
 
     fun updateCourse(title: String, description: String?, coverImage: String?) {
@@ -161,7 +325,7 @@ class SlideshowCourseViewModel(appModule: AppModule) : ViewModel() {
         }
     }
 
-    fun addSlide(title: String, body: String, imagePath: String?) {
+    fun addSlide(title: String, body: String, notes: String?, imagePath: String?) {
         val course = _uiState.value.course ?: return
         viewModelScope.launch {
             val order = _uiState.value.slides.size
@@ -172,6 +336,7 @@ class SlideshowCourseViewModel(appModule: AppModule) : ViewModel() {
                     courseId = course.id,
                     title = title,
                     body = body,
+                    speakerNotes = notes,
                     imagePath = imagePath,
                     orderIndex = order,
                     createdAt = now,
@@ -182,12 +347,13 @@ class SlideshowCourseViewModel(appModule: AppModule) : ViewModel() {
         }
     }
 
-    fun updateSlide(slide: CourseSlideEntity, title: String, body: String, imagePath: String?) {
+    fun updateSlide(slide: CourseSlideEntity, title: String, body: String, notes: String?, imagePath: String?) {
         viewModelScope.launch {
             repository.updateCourseSlide(
                 slide.copy(
                     title = title,
                     body = body,
+                    speakerNotes = notes,
                     imagePath = imagePath
                 )
             )
@@ -270,6 +436,33 @@ class SlideshowCourseViewModel(appModule: AppModule) : ViewModel() {
                 _uiState.value = _uiState.value.copy(message = "$count slide(s) imported")
             }.onFailure { error ->
                 _uiState.value = _uiState.value.copy(error = error.message ?: "Failed to import text")
+            }
+        }
+    }
+
+    fun importFromPptx(uri: android.net.Uri) {
+        val course = _uiState.value.course ?: return
+        val context = appModule.context
+        _uiState.value = _uiState.value.copy(isLoading = true)
+        viewModelScope.launch {
+            runCatching {
+                val parser = com.ahmedyejam.mks.data.import.parser.PptxSlideParser()
+                val orderStart = _uiState.value.slides.size
+                val slides = parser.parse(context, uri, course.id, orderStart)
+                if (slides.isNotEmpty()) {
+                    repository.insertCourseSlides(slides)
+                }
+                slides.size
+            }.onSuccess { count ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    message = "$count slide(s) imported from PPTX"
+                )
+            }.onFailure { error ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = error.message ?: "Failed to import PPTX"
+                )
             }
         }
     }

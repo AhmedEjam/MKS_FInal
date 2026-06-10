@@ -157,7 +157,8 @@ data class BookStudyBundle(
     val noteBlueprints: List<NoteBlueprintEntity> = emptyList(),
     val prompts: List<PromptEntity> = emptyList(),
     val promptDecks: List<PromptDeckEntity> = emptyList(),
-    val sourceDocuments: List<SourceDocumentEntity> = emptyList()
+    val sourceDocuments: List<SourceDocumentEntity> = emptyList(),
+    val mistakes: List<MistakeLogEntryEntity> = emptyList()
 ) {
     val questions: List<QuestionEntity>
         get() = quizzes.flatMap { quiz -> questionsByQuiz[quiz.id].orEmpty() }
@@ -241,12 +242,25 @@ class MksRepository(
     }
 
     suspend fun getWorkspaceById(id: Long): WorkspaceEntity? = workspaceDao.getWorkspaceById(id)
+    suspend fun getWorkspaceByIdIncludingDeleted(id: Long): WorkspaceEntity? = workspaceDao.getWorkspaceByIdIncludingDeleted(id)
+    fun getDeletedWorkspaces(): Flow<List<WorkspaceEntity>> = workspaceDao.getDeletedWorkspacesFlow()
     suspend fun getWorkspaceByExternalId(externalId: String): WorkspaceEntity? = workspaceDao.getWorkspaceByExternalId(externalId)
     suspend fun insertWorkspace(workspace: WorkspaceEntity): Long = workspaceDao.insertWorkspace(workspace)
     suspend fun updateWorkspace(workspace: WorkspaceEntity) = workspaceDao.updateWorkspace(workspace)
-    suspend fun deleteWorkspace(workspace: WorkspaceEntity) = workspaceDao.softDeleteWorkspaceById(workspace.id, System.currentTimeMillis())
+    
+    suspend fun deleteWorkspace(workspace: WorkspaceEntity) {
+        val now = System.currentTimeMillis()
+        workspaceDao.softDeleteWorkspaceById(workspace.id, now)
+        bookDao.softDeleteBooksByWorkspaceId(workspace.id, now)
+    }
 
-    suspend fun restoreWorkspace(workspaceId: Long) = workspaceDao.restoreWorkspaceById(workspaceId, System.currentTimeMillis())
+    suspend fun restoreWorkspace(workspaceId: Long) {
+        val workspace = workspaceDao.getWorkspaceByIdIncludingDeleted(workspaceId) ?: return
+        val deletedAtFilter = workspace.deletedAt ?: return
+        val now = System.currentTimeMillis()
+        workspaceDao.restoreWorkspaceById(workspaceId, now)
+        bookDao.restoreBooksByWorkspaceId(workspaceId, now, deletedAtFilter)
+    }
 
     suspend fun permanentlyDeleteWorkspace(workspace: WorkspaceEntity) = workspaceDao.hardDeleteWorkspace(workspace)
 
@@ -644,6 +658,7 @@ class MksRepository(
         val prompts = promptDao.getPromptsByBookId(bookId).first()
         val promptDecks = promptDeckDao.getDecksByBookId(bookId).first()
         val sourceDocuments = sourceDocumentDao.getSourcesByBookId(bookId).first()
+        val mistakes = mistakeLogDao.getMistakesByBookId(bookId).first()
 
         return BookStudyBundle(
             book = book,
@@ -654,7 +669,8 @@ class MksRepository(
             noteBlueprints = noteBlueprints,
             prompts = prompts,
             promptDecks = promptDecks,
-            sourceDocuments = sourceDocuments
+            sourceDocuments = sourceDocuments,
+            mistakes = mistakes
         )
     }
     suspend fun insertBook(book: BookEntity): Long {
@@ -1254,7 +1270,18 @@ class MksRepository(
     }
 
     suspend fun restoreQuiz(quizId: Long) {
-        quizDao.restoreQuizById(quizId, System.currentTimeMillis())
+        val quiz = quizDao.getQuizByIdIncludingDeleted(quizId) ?: return
+        val book = bookDao.getBookByIdIncludingDeleted(quiz.bookId)
+        if (book != null && book.deletedAt != null) {
+            restoreBook(book.id)
+        }
+        val now = System.currentTimeMillis()
+        val deletedAtFilter = quiz.deletedAt ?: now
+        quizDao.restoreQuizById(quizId, now)
+        questionDao.restoreQuestionsByQuizId(quizId, now, deletedAtFilter)
+        sessionDao.restoreSessionsByQuizId(quizId, now, deletedAtFilter)
+        restoreOwnerAnnotations("quiz", quizId, now)
+        refreshBookStats(quiz.bookId)
     }
 
     suspend fun permanentlyDeleteQuiz(quiz: QuizEntity): QuizEntity {
@@ -1511,30 +1538,7 @@ class MksRepository(
             ?: ExportResult(success = false, errorMessage = "Export manager unavailable.")
     }
 
-    /**
-     * R1 repair gate: repository-level schema-7 export wrappers.
-     *
-     * LibraryViewModel routes the user-facing export buttons through the
-     * repository, not directly through ExportManager. Stage 4D/4F added the
-     * schema-7 writer on ExportManager, but the repository wrappers were
-     * missing in the audited Stage 4 Final base. Keeping these wrappers here
-     * preserves the existing architecture and makes the Stage 4 export UI
-     * compile against the schema-7 exchange path.
-     */
-    suspend fun exportQuizToSchema7Zip(quizId: Long, outputStream: OutputStream): ExportResult {
-        return exportManager?.exportQuizToSchema7Zip(quizId, outputStream)
-            ?: ExportResult(success = false, errorMessage = "Export manager unavailable.")
-    }
 
-    suspend fun exportBundleToSchema7Zip(bookId: Long, outputStream: OutputStream): ExportResult {
-        return exportManager?.exportBundleToSchema7Zip(bookId, outputStream)
-            ?: ExportResult(success = false, errorMessage = "Export manager unavailable.")
-    }
-
-    suspend fun exportAllToSchema7Zip(outputStream: OutputStream): ExportResult {
-        return exportManager?.exportAllToSchema7Zip(outputStream)
-            ?: ExportResult(success = false, errorMessage = "Export manager unavailable.")
-    }
 
     suspend fun getImportPreview(uri: Uri) = importManager?.getImportPreview(uri)
 
@@ -1831,7 +1835,16 @@ class MksRepository(
     }
 
     suspend fun restoreFlashcardDeck(deckId: Long) {
-        flashcardDeckDao.restoreFlashcardDeckById(deckId, System.currentTimeMillis())
+        val deck = flashcardDeckDao.getFlashcardDeckByIdIncludingDeleted(deckId) ?: return
+        val book = bookDao.getBookByIdIncludingDeleted(deck.bookId)
+        if (book != null && book.deletedAt != null) {
+            restoreBook(book.id)
+        }
+        val now = System.currentTimeMillis()
+        val deletedAtFilter = deck.deletedAt ?: now
+        flashcardDeckDao.restoreFlashcardDeckById(deckId, now)
+        flashcardDao.restoreAllCardsInDeck(deckId, now, deletedAtFilter)
+        refreshBookStats(deck.bookId)
     }
 
     suspend fun permanentlyDeleteFlashcardDeck(deck: FlashcardDeckEntity) {
@@ -2046,9 +2059,17 @@ class MksRepository(
     }
 
     suspend fun restoreSlideshowCourse(courseId: Long) {
+        val course = slideshowCourseDao.getCourseByIdIncludingDeleted(courseId) ?: return
+        val book = bookDao.getBookByIdIncludingDeleted(course.bookId)
+        if (book != null && book.deletedAt != null) {
+            restoreBook(book.id)
+        }
         val now = System.currentTimeMillis()
+        val deletedAtFilter = course.deletedAt ?: now
         slideshowCourseDao.restoreCourseById(courseId, now)
+        courseSlideDao.restoreSlidesByCourseId(courseId, now, deletedAtFilter)
         restoreSlideshowAnnotationTree(courseId, now)
+        refreshBookStats(course.bookId)
     }
 
     suspend fun permanentlyDeleteSlideshowCourse(course: SlideshowCourseEntity) {
@@ -2298,6 +2319,11 @@ class MksRepository(
     }
 
     suspend fun restoreNoteBlueprint(noteId: Long) {
+        val note = noteBlueprintDao.getNoteByIdIncludingDeleted(noteId) ?: return
+        val book = bookDao.getBookByIdIncludingDeleted(note.bookId)
+        if (book != null && book.deletedAt != null) {
+            restoreBook(book.id)
+        }
         val now = System.currentTimeMillis()
         noteBlueprintDao.restoreNoteById(noteId, now)
         restoreOwnerAnnotations(AnnotationOwnerType.NOTE, noteId, now)
@@ -2354,7 +2380,14 @@ class MksRepository(
 
     suspend fun deletePromptDeck(deck: PromptDeckEntity) = promptDeckDao.softDeleteDeckById(deck.id, System.currentTimeMillis())
 
-    suspend fun restorePromptDeck(deckId: Long) = promptDeckDao.restoreDeckById(deckId, System.currentTimeMillis())
+    suspend fun restorePromptDeck(deckId: Long) {
+        val deck = promptDeckDao.getDeckByIdIncludingDeleted(deckId) ?: return
+        val book = bookDao.getBookByIdIncludingDeleted(deck.bookId)
+        if (book != null && book.deletedAt != null) {
+            restoreBook(book.id)
+        }
+        promptDeckDao.restoreDeckById(deckId, System.currentTimeMillis())
+    }
 
     suspend fun permanentlyDeletePromptDeck(deck: PromptDeckEntity) = promptDeckDao.hardDeleteDeck(deck)
 
@@ -2695,4 +2728,11 @@ class MksRepository(
     suspend fun permanentlyDeleteLearningSession(session: KnowledgeStudySessionEntity) {
         knowledgeStudySessionDao.hardDeleteSession(session)
     }
+
+    fun getDeletedBooks(workspaceId: Long): Flow<List<BookEntity>> = bookDao.getDeletedBooksByWorkspaceFlow(workspaceId)
+    fun getDeletedQuizzes(workspaceId: Long): Flow<List<QuizEntity>> = quizDao.getDeletedQuizzesByWorkspaceFlow(workspaceId)
+    fun getDeletedFlashcardDecks(workspaceId: Long): Flow<List<FlashcardDeckEntity>> = flashcardDeckDao.getDeletedDecksByWorkspaceFlow(workspaceId)
+    fun getDeletedSlideshowCourses(workspaceId: Long): Flow<List<SlideshowCourseEntity>> = slideshowCourseDao.getDeletedCoursesByWorkspaceFlow(workspaceId)
+    fun getDeletedNoteBlueprints(workspaceId: Long): Flow<List<NoteBlueprintEntity>> = noteBlueprintDao.getDeletedNotesByWorkspaceFlow(workspaceId)
+    fun getDeletedPromptDecks(workspaceId: Long): Flow<List<PromptDeckEntity>> = promptDeckDao.getDeletedDecksByWorkspaceFlow(workspaceId)
 }

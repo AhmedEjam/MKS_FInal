@@ -103,7 +103,7 @@ fun SettingsScreen(
                 withContext(Dispatchers.IO) {
                     try {
                         val result = context.contentResolver.openOutputStream(exportUri)?.use { stream ->
-                            appModule.repository.exportAllToSchema7Zip(stream)
+                            appModule.repository.exportAllToZip(stream)
                         }
                         withContext(Dispatchers.Main) {
                             if (result?.success == true) {

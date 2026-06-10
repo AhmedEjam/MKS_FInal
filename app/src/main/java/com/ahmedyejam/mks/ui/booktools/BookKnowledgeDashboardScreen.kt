@@ -1,26 +1,27 @@
 package com.ahmedyejam.mks.ui.booktools
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ahmedyejam.mks.R
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
-import androidx.compose.foundation.shape.RoundedCornerShape
+import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,14 +29,18 @@ fun BookKnowledgeDashboardScreen(
     bookId: Long,
     viewModel: BookToolsViewModel,
     onBack: () -> Unit,
-    onOpenQuizzes: () -> Unit,
-    onOpenFlashcards: () -> Unit,
-    onOpenSlideshows: () -> Unit,
-    onOpenNotes: () -> Unit,
-    onOpenPrompts: () -> Unit,
-    onOpenSources: () -> Unit
+    onOpenQuiz: (Long) -> Unit,
+    onOpenFlashcard: (Long) -> Unit,
+    onOpenSlideshow: (Long) -> Unit,
+    onOpenNote: (Long) -> Unit,
+    onOpenPrompt: (Long) -> Unit,
+    onOpenSource: (Long) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
+    
+    val tabs = BookTab.entries.toTypedArray()
+    val pagerState = rememberPagerState(initialPage = 2) { tabs.size }
 
     LaunchedEffect(bookId) {
         viewModel.loadBook(bookId)
@@ -43,14 +48,40 @@ fun BookKnowledgeDashboardScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(uiState.book?.title ?: "Book Dashboard") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+            Column {
+                TopAppBar(
+                    title = { Text(uiState.book?.title ?: "Book") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        }
+                    }
+                )
+                ScrollableTabRow(
+                    selectedTabIndex = pagerState.currentPage,
+                    edgePadding = 16.dp,
+                    divider = {},
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    indicator = { tabPositions ->
+                        if (pagerState.currentPage < tabPositions.size) {
+                            TabRowDefaults.SecondaryIndicator(
+                                Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                ) {
+                    tabs.forEachIndexed { index, tab ->
+                        Tab(
+                            selected = pagerState.currentPage == index,
+                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                            text = { Text(tab.title) },
+                            icon = { Icon(tab.icon, null, Modifier.size(20.dp)) }
+                        )
                     }
                 }
-            )
+            }
         }
     ) { padding ->
         if (uiState.isLoading) {
@@ -58,86 +89,20 @@ fun BookKnowledgeDashboardScreen(
                 CircularProgressIndicator()
             }
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 160.dp),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize().padding(padding)
-            ) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    DashboardSummaryCard(uiState.bookSummary)
-                }
-
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    MagicActionsSection(
-                        bookId = bookId,
-                        summary = uiState.bookSummary,
-                        viewModel = viewModel
-                    )
-                }
-
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Text(
-                        "Learning Tools",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-
-                item {
-                    ToolCard(
-                        title = "Quizzes",
-                        count = uiState.quizzes.size,
-                        icon = Icons.Rounded.FactCheck,
-                        onClick = onOpenQuizzes
-                    )
-                }
-
-                item {
-                    ToolCard(
-                        title = "Flashcards",
-                        count = uiState.flashcardDecks.size,
-                        icon = Icons.Rounded.ViewCarousel,
-                        onClick = onOpenFlashcards
-                    )
-                }
-
-                item {
-                    ToolCard(
-                        title = "Slideshows",
-                        count = uiState.allCourses.size,
-                        icon = Icons.Rounded.Slideshow,
-                        onClick = onOpenSlideshows
-                    )
-                }
-
-                item {
-                    ToolCard(
-                        title = "Notes",
-                        count = uiState.allNotes.size,
-                        icon = Icons.Rounded.NoteAlt,
-                        onClick = onOpenNotes
-                    )
-                }
-
-                item {
-                    ToolCard(
-                        title = "AI Prompts",
-                        count = uiState.allPromptDecks.size,
-                        icon = Icons.Rounded.Psychology,
-                        onClick = onOpenPrompts
-                    )
-                }
-
-                item {
-                    ToolCard(
-                        title = "Sources",
-                        count = uiState.allSources.size,
-                        icon = Icons.Rounded.Source,
-                        onClick = onOpenSources
-                    )
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize().padding(padding),
+                beyondViewportPageCount = 1
+            ) { page ->
+                when (tabs[page]) {
+                    BookTab.DASHBOARD -> DashboardTab(uiState.bookSummary, bookId, viewModel)
+                    BookTab.SLIDES -> SlidesTab(uiState.allCourses, onOpenSlideshow, {}, {})
+                    BookTab.QUIZZES -> QuizzesTab(uiState.quizzes, onOpenQuiz, {})
+                    BookTab.NOTES -> NotesTab(uiState.allNotes, onOpenNote, {}, {})
+                    BookTab.MISTAKES -> MistakesTab(uiState.mistakes, { viewModel.updateQuestionNote(it, "Marked as fixed") }, {}) // Placeholder logic
+                    BookTab.FLASHCARDS -> FlashcardsTab(uiState.flashcardDecks, onOpenFlashcard, {})
+                    BookTab.PROMPTS -> PromptsTab(uiState.allPromptDecks, onOpenPrompt, {}, {})
+                    BookTab.SOURCES -> SourcesTab(uiState.allSources, {}, {})
                 }
             }
         }
@@ -145,7 +110,7 @@ fun BookKnowledgeDashboardScreen(
 }
 
 @Composable
-private fun DashboardSummaryCard(summary: BookKnowledgeSummary?) {
+fun DashboardSummaryCard(summary: BookKnowledgeSummary?) {
     summary ?: return
     val tokens = LocalMksDesignTokens.current
     Card(
@@ -194,12 +159,15 @@ private fun SmallStat(label: String, value: String, color: androidx.compose.ui.g
 }
 
 @Composable
-private fun MagicActionsSection(
+fun MagicActionsSection(
     bookId: Long,
     summary: BookKnowledgeSummary?,
     viewModel: BookToolsViewModel
 ) {
     summary ?: return
+    val uiState by viewModel.uiState.collectAsState()
+    val questions = uiState.questions
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             "Magic Actions",
@@ -218,12 +186,29 @@ private fun MagicActionsSection(
                     icon = Icons.Rounded.AutoFixHigh,
                     onClick = { viewModel.createBlueprintFromMarked(bookId, "Marked Review - ${System.currentTimeMillis() % 10000}") }
                 )
+                MagicActionChip(
+                    label = "Cards from Marked",
+                    icon = Icons.Rounded.ViewCarousel,
+                    onClick = { viewModel.createFlashcardDeckFromMarkedQuestions(bookId, "Marked Cards - ${System.currentTimeMillis() % 10000}") }
+                )
             }
             if (summary.openMistakes > 0) {
                 MagicActionChip(
                     label = "Note from Mistakes",
                     icon = Icons.Rounded.HistoryEdu,
                     onClick = { viewModel.createBlueprintFromMissed(bookId, "Mistakes Summary - ${System.currentTimeMillis() % 10000}") }
+                )
+                MagicActionChip(
+                    label = "Cards from Mistakes",
+                    icon = Icons.Rounded.ViewCarousel,
+                    onClick = { viewModel.createFlashcardDeckFromMissedQuestions(bookId, "Mistakes Cards - ${System.currentTimeMillis() % 10000}") }
+                )
+            }
+            if (questions.isNotEmpty()) {
+                MagicActionChip(
+                    label = stringResource(R.string.generate_from_questions),
+                    icon = Icons.Rounded.Slideshow,
+                    onClick = { viewModel.createSlideshowCourseFromQuestions(bookId, "Study Slides - ${System.currentTimeMillis() % 10000}", questions.map { it.id }) }
                 )
             }
         }

@@ -14,12 +14,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
@@ -30,62 +34,49 @@ import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.NoteAlt
 import androidx.compose.material.icons.rounded.Psychology
-import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.Source
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.RecordVoiceOver
+import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.ahmedyejam.mks.R
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
-import com.ahmedyejam.mks.data.local.entity.BlueprintMode
-import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
-import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
-import com.ahmedyejam.mks.data.local.entity.PromptCardEntity
-import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
-import com.ahmedyejam.mks.data.local.entity.PromptOutputType
-import com.ahmedyejam.mks.data.local.entity.PromptRunEntity
-import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentTypes
+import com.ahmedyejam.mks.data.local.entity.*
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
+
+enum class QuestionComponent(val label: String) {
+    OPTIONS("Options"),
+    EXPLANATION("Explanation"),
+    HINT("Hint"),
+    REFERENCE("Reference"),
+    IMAGE("Image"),
+    CATEGORIES("Categories")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,7 +98,7 @@ fun SlideshowCourseListScreen(
 
     if (showCreate) {
         TitleBodyDialog(
-            title = "Create slideshow course",
+            title = stringResource(R.string.create_study_slides),
             titleLabel = "Course title",
             bodyLabel = "Description",
             confirmLabel = "Create",
@@ -120,7 +111,7 @@ fun SlideshowCourseListScreen(
     }
     editing?.let { course ->
         TitleBodyDialog(
-            title = "Edit slideshow course",
+            title = stringResource(R.string.edit_slide),
             titleValue = course.title,
             bodyValue = course.description.orEmpty(),
             titleLabel = "Course title",
@@ -135,7 +126,7 @@ fun SlideshowCourseListScreen(
     }
     deleting?.let { course ->
         ConfirmDeleteDialog(
-            title = "Delete slideshow?",
+            title = "Delete study slides?",
             body = "Delete '${course.title}' and its slides?",
             onDismiss = { deletingState.value = null },
             onConfirm = { viewModel.deleteSlideshowCourse(course); deletingState.value = null }
@@ -143,13 +134,13 @@ fun SlideshowCourseListScreen(
     }
 
     BookToolListScaffold(
-        title = "Slideshow courses",
+        title = stringResource(R.string.slideshow_courses_title),
         onBack = onBack,
         isLoading = state.isLoading,
         error = state.error,
         empty = state.allCourses.isEmpty(),
-        emptyTitle = "No slideshow courses",
-        emptyBody = "Create a lightweight slideshow course from this book when needed.",
+        emptyTitle = stringResource(R.string.no_study_slides),
+        emptyBody = stringResource(R.string.no_study_slides_body),
         floatingActionButton = { FloatingActionButton(onClick = { showCreateState.value = true }) { Icon(Icons.Rounded.Add, null) } }
     ) { padding ->
         LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -212,12 +203,12 @@ fun ReviewBlueprintListScreen(
     }
 
     BookToolListScaffold(
-        title = "Articles",
+        title = "Articles and short notes",
         onBack = onBack,
         isLoading = state.isLoading,
         error = state.error,
         empty = state.allNotes.isEmpty(),
-        emptyTitle = "No articles",
+        emptyTitle = "No articles or notes",
         emptyBody = "Create a disease, drug, concept, or mistake-review article.",
         floatingActionButton = { FloatingActionButton(onClick = { showCreateState.value = true }) { Icon(Icons.Rounded.Add, null) } }
     ) { padding ->
@@ -360,37 +351,289 @@ fun AiPromptDeckListScreen(
 @Composable
 fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: () -> Unit) {
     val state by viewModel.uiState.collectAsState()
-    var editedBody by remember { mutableStateOf("") }
-    LaunchedEffect(noteId) { viewModel.loadNote(noteId) }
-    LaunchedEffect(state.noteBlueprint?.id) { editedBody = state.noteBlueprint?.body.orEmpty() }
     val note = state.noteBlueprint
+    
+    var isPlayerMode by remember { mutableStateOf(true) }
+    var controlsVisible by remember { mutableStateOf(true) }
+    
+    val view = androidx.compose.ui.platform.LocalView.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val window = (context as? android.app.Activity)?.window
 
-    Scaffold(topBar = { ToolTopBar(note?.title ?: "Article", onBack) }) { padding ->
-        when {
-            state.isLoading -> LoadingPane(Modifier.padding(padding))
-            state.error != null -> MessagePane(Modifier.padding(padding), "Error", state.error ?: "Unknown error")
-            note == null -> MessagePane(Modifier.padding(padding), "Article", "Article not found.")
-            else -> LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    LaunchedEffect(isPlayerMode, controlsVisible) {
+        window?.let {
+            val insetsController = androidx.core.view.WindowCompat.getInsetsController(it, view)
+            if (isPlayerMode && !controlsVisible) {
+                insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                insetsController.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            } else {
+                insetsController.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            }
+        }
+    }
+    
+    DisposableEffect(Unit) {
+        onDispose {
+            window?.let {
+                val insetsController = androidx.core.view.WindowCompat.getInsetsController(it, view)
+                insetsController.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            }
+        }
+    }
+
+    LaunchedEffect(noteId) { viewModel.loadNote(noteId) }
+
+    var editedBody by remember(note?.id) { mutableStateOf(note?.body.orEmpty()) }
+    var isTitlePinned by remember { mutableStateOf(false) }
+
+    val ttsManager = remember { com.ahmedyejam.mks.ui.utils.TtsManager(context) }
+    DisposableEffect(ttsManager) { onDispose { ttsManager.shutdown() } }
+
+    var ttsRate by remember { androidx.compose.runtime.mutableFloatStateOf(1f) }
+    var ttsPitch by remember { androidx.compose.runtime.mutableFloatStateOf(1f) }
+    var isTtsPlaying by remember { mutableStateOf(false) }
+
+    val scrollState = rememberScrollState()
+    var isAutoScrolling by remember { mutableStateOf(false) }
+    var scrollSpeed by remember { androidx.compose.runtime.mutableFloatStateOf(50f) }
+
+    LaunchedEffect(isAutoScrolling, scrollSpeed, scrollState.maxValue) {
+        if (isAutoScrolling && scrollState.value < scrollState.maxValue) {
+            val remainingScroll = scrollState.maxValue - scrollState.value
+            val duration = (remainingScroll / scrollSpeed * 1000).toInt()
+            if (duration > 0) {
+                scrollState.animateScrollTo(scrollState.maxValue, animationSpec = androidx.compose.animation.core.tween(duration, easing = androidx.compose.animation.core.LinearEasing))
+                isAutoScrolling = false
+            }
+        }
+    }
+
+    if (note == null && !state.isLoading) {
+        Scaffold(topBar = { ToolTopBar("Article", onBack) }) { padding ->
+            MessagePane(Modifier.padding(padding), "Article", "Article not found.")
+        }
+        return
+    }
+
+    Scaffold(
+        topBar = {
+            androidx.compose.animation.AnimatedVisibility(visible = controlsVisible || !isPlayerMode, enter = androidx.compose.animation.slideInVertically { -it }, exit = androidx.compose.animation.slideOutVertically { -it }) {
+                ToolTopBar(note?.title ?: "Article", onBack) {
+                    IconButton(onClick = { 
+                        isPlayerMode = !isPlayerMode 
+                        if (!isPlayerMode) controlsVisible = true
+                    }) {
+                        Icon(if (isPlayerMode) Icons.Rounded.Edit else Icons.Rounded.PlayArrow, if (isPlayerMode) "Edit Mode" else "Player Mode")
+                    }
+                }
+            }
+        },
+        bottomBar = {
+            androidx.compose.animation.AnimatedVisibility(visible = isPlayerMode && controlsVisible, enter = androidx.compose.animation.slideInVertically { it }, exit = androidx.compose.animation.slideOutVertically { it }) {
+                BottomAppBar {
+                    IconButton(onClick = { 
+                        if (isTtsPlaying) {
+                            ttsManager.stop()
+                            isTtsPlaying = false
+                        } else {
+                            ttsManager.play(note?.body ?: "", ttsPitch, ttsRate)
+                            isTtsPlaying = true
+                        }
+                    }) {
+                        Icon(if (isTtsPlaying) Icons.Rounded.Stop else Icons.Rounded.RecordVoiceOver, "TTS Play/Stop")
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = { isTitlePinned = !isTitlePinned }) {
+                        Icon(if (isTitlePinned) Icons.Rounded.PushPin else Icons.Outlined.PushPin, "Pin Title")
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = { isAutoScrolling = !isAutoScrolling }) {
+                        Icon(if (isAutoScrolling) Icons.Rounded.Pause else Icons.Rounded.ArrowDownward, "Autoscroll")
+                    }
+                    Spacer(Modifier.weight(1f))
+                    var showSettings by remember { mutableStateOf(false) }
+                    IconButton(onClick = { showSettings = true }) {
+                        Icon(Icons.Rounded.Settings, "Player Settings")
+                    }
+
+                    if (showSettings) {
+                        ModalBottomSheet(onDismissRequest = { showSettings = false }) {
+                            Column(Modifier.padding(16.dp).fillMaxWidth()) {
+                                Text("Player Settings", style = MaterialTheme.typography.titleLarge)
+                                Spacer(Modifier.height(16.dp))
+                                Text("Auto-scroll speed: ${scrollSpeed.toInt()} px/s")
+                                Slider(value = scrollSpeed, onValueChange = { scrollSpeed = it }, valueRange = 10f..200f)
+                                Text("TTS Rate: ${String.format("%.1f", ttsRate)}x")
+                                Slider(value = ttsRate, onValueChange = { ttsRate = it }, valueRange = 0.5f..2.0f)
+                                Text("TTS Pitch: ${String.format("%.1f", ttsPitch)}")
+                                Slider(value = ttsPitch, onValueChange = { ttsPitch = it }, valueRange = 0.5f..2.0f)
+                                Spacer(Modifier.height(32.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ) { padding ->
+        if (state.isLoading) {
+            LoadingPane(Modifier.padding(padding))
+        } else if (isPlayerMode) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null
+                    ) { controlsVisible = !controlsVisible }
+            ) {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    if (isTitlePinned) {
+                        Text(
+                            text = note?.title ?: "",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            modifier = Modifier.padding(16.dp).fillMaxWidth()
+                        )
+                        androidx.compose.material3.Divider()
+                    }
+                    
+                    Column(
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState)
+                            .padding(16.dp)
+                    ) {
+                        if (!isTitlePinned) {
+                            Text(
+                                text = note?.title ?: "",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                            )
+                        }
+                        Text(
+                            text = note?.body ?: "",
+                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = androidx.compose.ui.unit.TextUnit(28f, androidx.compose.ui.unit.TextUnitType.Sp)),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(100.dp))
+                    }
+                }
+            }
+        } else {
+            LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 item {
                     val tokens = LocalMksDesignTokens.current
                     Card(
                         shape = RoundedCornerShape(tokens.cardRadius),
                         elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
                     ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("${note.blueprintMode} - ${note.reviewStatus}", style = MaterialTheme.typography.bodyMedium)
+                        Text("${note?.blueprintMode} - ${note?.reviewStatus}", style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(editedBody, { editedBody = it }, modifier = Modifier.fillMaxWidth(), minLines = 8, label = { Text("Article body") })
                         Spacer(Modifier.height(16.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilledTonalButton(onClick = { viewModel.updateNote(note.copy(body = editedBody)) }) { Text("Save") }
-                            FilledTonalButton(onClick = { viewModel.recordNoteReview(note) }) { Text("Mark reviewed") }
-                            FilledTonalButton(onClick = { viewModel.createFlashcardsFromBlueprint(note.id) }) { Text("To flashcards") }
-                            FilledTonalButton(onClick = { viewModel.appendBlueprintToQuestionNote(note.id) }) { Text("Append to question note") }
+                            if (note != null) {
+                                FilledTonalButton(onClick = { viewModel.updateNote(note.copy(body = editedBody)) }) { Text("Save") }
+                                FilledTonalButton(onClick = { viewModel.recordNoteReview(note) }) { Text("Mark reviewed") }
+                                FilledTonalButton(onClick = { viewModel.createFlashcardsFromBlueprint(note.id) }) { Text("To flashcards") }
+                                FilledTonalButton(onClick = { viewModel.appendBlueprintToQuestionNote(note.id) }) { Text("Append to question note") }
+                            }
                         }
                     } }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun QuestionNoteItem(
+    question: QuestionEntity,
+    visibleComponents: Set<QuestionComponent>,
+    onSaveNote: (String) -> Unit
+) {
+    val tokens = LocalMksDesignTokens.current
+    var noteText by remember(question.id, question.notes) { mutableStateOf(question.notes.orEmpty()) }
+
+    Card(
+        shape = RoundedCornerShape(tokens.cardRadius),
+        elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(question.text, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+
+            if (QuestionComponent.IMAGE in visibleComponents && !question.imagePath.isNullOrBlank()) {
+                AsyncImage(
+                    model = question.imagePath,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp).clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            if (QuestionComponent.OPTIONS in visibleComponents && question.options.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Options:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    question.options.forEachIndexed { index, option ->
+                        val isCorrect = question.correctAnswers.contains(index)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(
+                                if (isCorrect) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = if (isCorrect) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(option, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+
+            if (QuestionComponent.EXPLANATION in visibleComponents && !question.explanation.isNullOrBlank()) {
+                DetailSection("Explanation", question.explanation)
+            }
+            if (QuestionComponent.HINT in visibleComponents && !question.hint.isNullOrBlank()) {
+                DetailSection("Hint", question.hint)
+            }
+            if (QuestionComponent.REFERENCE in visibleComponents && !question.reference.isNullOrBlank()) {
+                DetailSection("Reference", question.reference)
+            }
+            if (QuestionComponent.CATEGORIES in visibleComponents && question.categories.isNotEmpty()) {
+                DetailSection("Categories", question.categories.joinToString(", "))
+            }
+
+            Spacer(Modifier.height(4.dp))
+
+            OutlinedTextField(
+                value = noteText,
+                onValueChange = { noteText = it },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                label = { Text("Question Note") },
+                placeholder = { Text("Add a note...") },
+                trailingIcon = {
+                    if (noteText != question.notes.orEmpty()) {
+                        IconButton(onClick = { onSaveNote(noteText) }) {
+                            Icon(Icons.Rounded.Save, "Save")
+                        }
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun DetailSection(label: String, content: String) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        Text(content, style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -402,6 +645,7 @@ fun BookNotesScreen(bookId: Long, viewModel: BookToolsViewModel, onBack: () -> U
     
     var selectedQuizId by remember { mutableStateOf<Long?>(null) }
     var expanded by remember { mutableStateOf(false) }
+    var visibleComponents by remember { mutableStateOf(setOf<QuestionComponent>()) }
 
     BookToolListScaffold("Question notes", onBack, state.isLoading, state.error, state.questions.none { !it.notes.isNullOrBlank() } && selectedQuizId == null, "No question notes", "Question notes will appear here.") { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
@@ -437,6 +681,28 @@ fun BookNotesScreen(bookId: Long, viewModel: BookToolsViewModel, onBack: () -> U
                 }
             }
 
+            if (selectedQuizId != null) {
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(end = 16.dp)
+                ) {
+                    items(QuestionComponent.entries.toTypedArray()) { component ->
+                        FilterChip(
+                            selected = component in visibleComponents,
+                            onClick = {
+                                visibleComponents = if (component in visibleComponents) {
+                                    visibleComponents - component
+                                } else {
+                                    visibleComponents + component
+                                }
+                            },
+                            label = { Text(component.label) }
+                        )
+                    }
+                }
+            }
+
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (selectedQuizId == null) {
                     items(state.questions.filter { !it.notes.isNullOrBlank() }, key = { "note_${it.id}" }) { question ->
@@ -454,31 +720,11 @@ fun BookNotesScreen(bookId: Long, viewModel: BookToolsViewModel, onBack: () -> U
                 } else {
                     val questions = state.questionsByQuiz[selectedQuizId] ?: emptyList()
                     items(questions, key = { "edit_${it.id}" }) { question ->
-                        val tokens = LocalMksDesignTokens.current
-                        var noteText by remember(question.id, question.notes) { mutableStateOf(question.notes.orEmpty()) }
-                        
-                        Card(
-                            shape = RoundedCornerShape(tokens.cardRadius),
-                            elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
-                        ) {
-                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(question.text, fontWeight = FontWeight.Bold)
-                                OutlinedTextField(
-                                    value = noteText,
-                                    onValueChange = { noteText = it },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    minLines = 2,
-                                    label = { Text("Note") },
-                                    trailingIcon = {
-                                        if (noteText != question.notes.orEmpty()) {
-                                            IconButton(onClick = { viewModel.updateQuestionNote(question.id, noteText) }) {
-                                                Icon(Icons.Rounded.Save, "Save")
-                                            }
-                                        }
-                                    }
-                                )
-                            }
-                        }
+                        QuestionNoteItem(
+                            question = question,
+                            visibleComponents = visibleComponents,
+                            onSaveNote = { note -> viewModel.updateQuestionNote(question.id, note) }
+                        )
                     }
                 }
             }
@@ -497,10 +743,6 @@ fun AiPromptDeckScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val clipboard = LocalClipboardManager.current
-    val showCardDialogState = remember { mutableStateOf(false) }
-    var showCardDialog by showCardDialogState
-    val editingCardState = remember { mutableStateOf<PromptCardEntity?>(null) }
-    var editingCard by editingCardState
     var selectedCardId by remember { mutableStateOf<Long?>(null) }
     var outputText by remember { mutableStateOf("") }
 
@@ -508,109 +750,163 @@ fun AiPromptDeckScreen(
 
     val listState = rememberLazyListState()
 
-    // Use focused IDs if provided
     LaunchedEffect(state.promptCards, focusedCardId) {
         if (focusedCardId != null) {
             selectedCardId = focusedCardId
         }
     }
 
-    LaunchedEffect(state.promptRuns, focusedRunId) {
-        focusedRunId?.let {
-            // Optional: scroll to run history or highlight
+    val handleBack = {
+        if (selectedCardId != null) {
+            selectedCardId = null
+        } else {
+            onBack()
         }
     }
 
     val selectedCard = remember(state.promptCards, selectedCardId) {
-        state.promptCards.firstOrNull { it.id == selectedCardId } ?: state.promptCards.firstOrNull()
+        state.promptCards.firstOrNull { it.id == selectedCardId }
     }
-    val variables = remember(selectedCard?.promptText) { selectedCard?.let { viewModel.extractVariables(it.promptText) }.orEmpty() }
-    val values = remember(selectedCard?.id, variables) {
-        mutableStateMapOf<String, String>().apply { variables.forEach { put(it, "") } }
+
+    var editTitle by remember(selectedCard?.id) { mutableStateOf(selectedCard?.title ?: "") }
+    var editBody by remember(selectedCard?.id) { mutableStateOf(selectedCard?.promptText ?: "") }
+
+    val variables = remember(editBody) { viewModel.extractVariables(editBody) }
+    val values = remember(selectedCard?.id) { mutableStateMapOf<String, String>() }
+    
+    LaunchedEffect(variables) {
+        variables.forEach { if (!values.containsKey(it)) values[it] = "" }
+        val currentKeys = values.keys.toList()
+        currentKeys.forEach { if (it !in variables) values.remove(it) }
     }
-    val renderedPrompt by remember(selectedCard?.promptText, values.toMap()) {
+
+    val renderedPrompt by remember(editBody, values.toMap()) {
         derivedStateOf {
-            var text = selectedCard?.promptText.orEmpty()
-            values.forEach { (key, value) -> text = text.replace("{$key}", value.ifBlank { "{$key}" }) }
+            var text = editBody
+            values.forEach { (key, value) -> text = text.replace(key, value.ifBlank { key }) }
             text
         }
     }
 
-    if (showCardDialog) {
-        PromptCardDialog(
-            onDismiss = { showCardDialogState.value = false },
-            onConfirm = { title, prompt, type ->
-                state.promptDeck?.let { viewModel.createPromptCard(it.id, title, prompt, type) }
-                showCardDialogState.value = false
+    Scaffold(
+        topBar = { ToolTopBar(state.promptDeck?.title ?: "Prompt deck", handleBack) },
+        floatingActionButton = {
+            if (selectedCardId == null) {
+                FloatingActionButton(onClick = {
+                    state.promptDeck?.let { viewModel.createPromptCard(it.id, "New Prompt", "") }
+                }) { Icon(Icons.Rounded.Add, null) }
             }
-        )
-    }
-    editingCard?.let { card ->
-        PromptCardDialog(
-            initialTitle = card.title,
-            initialPrompt = card.promptText,
-            initialType = card.outputType,
-            onDismiss = { editingCardState.value = null },
-            onConfirm = { title, prompt, type ->
-                viewModel.updatePromptCard(card.copy(title = title, promptText = prompt, outputType = type))
-                editingCardState.value = null
-            }
-        )
-    }
-
-    Scaffold(topBar = { ToolTopBar(state.promptDeck?.title ?: "Prompt deck", onBack) }, floatingActionButton = { FloatingActionButton(onClick = { showCardDialogState.value = true }) { Icon(Icons.Rounded.Add, null) } }) { padding ->
+        }
+    ) { padding ->
         when {
             state.isLoading -> LoadingPane(Modifier.padding(padding))
             state.error != null -> MessagePane(Modifier.padding(padding), "Error", state.error ?: "Unknown error")
             state.promptDeck == null -> MessagePane(Modifier.padding(padding), "Prompt deck", "Prompt deck not found.")
-            else -> LazyColumn(
-                modifier = Modifier.padding(padding).fillMaxSize(),
-                state = listState,
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    val tokens = LocalMksDesignTokens.current
-                    Card(
-                        shape = RoundedCornerShape(tokens.cardRadius),
-                        elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
-                    ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(state.promptDeck?.title.orEmpty(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text(state.promptDeck?.description ?: "Prompt cards are reusable templates. Copy the rendered prompt, paste it into any AI tool, then optionally save the output back into MKS.")
-                    } }
-                }
-                item { Text("Prompt cards", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
-                if (state.promptCards.isEmpty()) {
-                    item { MessagePane(Modifier.fillMaxWidth(), "No prompt cards", "Create a card or make a new deck to get the default templates.") }
-                } else {
-                    items(state.promptCards, key = { "card_${it.id}" }) { card ->
-                        val selected = card.id == selectedCard?.id
+            selectedCardId == null -> {
+                // List View
+                LazyColumn(
+                    modifier = Modifier.padding(padding).fillMaxSize(),
+                    state = listState,
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item {
                         val tokens = LocalMksDesignTokens.current
                         Card(
                             shape = RoundedCornerShape(tokens.cardRadius),
-                            elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation),
-                            colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface)
-                        ) {
-                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Column(Modifier.weight(1f)) {
-                                        Text(card.title, fontWeight = FontWeight.Bold)
-                                        Text("${card.outputType} - used ${card.usageCount} time(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
+                        ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(state.promptDeck?.title.orEmpty(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text(state.promptDeck?.description ?: "Prompt templates. Select one to open the live editor.")
+                        } }
+                    }
+                    if (state.promptCards.isEmpty()) {
+                        item { MessagePane(Modifier.fillMaxWidth(), "No prompt cards", "Create a card to start designing your prompts.") }
+                    } else {
+                        items(state.promptCards, key = { "card_${it.id}" }) { card ->
+                            val tokens = LocalMksDesignTokens.current
+                            Card(
+                                modifier = Modifier.clickable { selectedCardId = card.id },
+                                shape = RoundedCornerShape(tokens.cardRadius),
+                                elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
+                            ) {
+                                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text(card.title, fontWeight = FontWeight.Bold)
+                                            Text("Used ${card.usageCount} time(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        IconButton(onClick = { viewModel.deletePromptCard(card) }) { Icon(Icons.Rounded.Delete, "Delete") }
                                     }
-                                    IconButton(onClick = { editingCardState.value = card }) { Icon(Icons.Rounded.Edit, "Edit") }
-                                    IconButton(onClick = { viewModel.deletePromptCard(card) }) { Icon(Icons.Rounded.Delete, "Delete") }
+                                    Text(card.promptText.take(180).ifBlank { "Empty prompt" }, style = MaterialTheme.typography.bodySmall)
                                 }
-                                Text(card.promptText.take(180), style = MaterialTheme.typography.bodySmall)
-                                Button(onClick = { selectedCardId = card.id; outputText = "" }) { Text(if (selected) "Selected" else "Use this card") }
                             }
                         }
                     }
                 }
-                selectedCard?.let { card ->
-                    item { Text("Run prompt", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
-                    items(variables) { variable ->
-                        OutlinedTextField(values[variable].orEmpty(), { values[variable] = it }, modifier = Modifier.fillMaxWidth(), label = { Text(variable) })
+            }
+            selectedCard != null -> {
+                // Editor View
+                LazyColumn(
+                    modifier = Modifier.padding(padding).fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item {
+                        val tokens = LocalMksDesignTokens.current
+                        Card(
+                            shape = RoundedCornerShape(tokens.cardRadius),
+                            elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
+                        ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedTextField(
+                                value = editTitle,
+                                onValueChange = { editTitle = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Prompt Title") },
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = editBody,
+                                onValueChange = { editBody = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Prompt Body (Use {}, [], (), or <> for variables)") },
+                                minLines = 4
+                            )
+                            Button(onClick = {
+                                viewModel.updatePromptCard(selectedCard.copy(title = editTitle, promptText = editBody))
+                            }, modifier = Modifier.align(Alignment.End)) {
+                                Text("Save Prompt Template")
+                            }
+                        } }
                     }
+
+                    if (variables.isNotEmpty()) {
+                        item { Text("Variables", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+                        items(variables) { variable ->
+                            OutlinedTextField(
+                                value = values[variable].orEmpty(),
+                                onValueChange = { values[variable] = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text(variable) }
+                            )
+                        }
+                    }
+
+                    item {
+                        val tokens = LocalMksDesignTokens.current
+                        Card(
+                            shape = RoundedCornerShape(tokens.cardRadius),
+                            elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("Live Rendered Prompt", fontWeight = FontWeight.Bold)
+                                IconButton(onClick = { clipboard.setText(AnnotatedString(renderedPrompt)) }) { Icon(Icons.Rounded.ContentCopy, "Copy") }
+                            }
+                            Text(renderedPrompt)
+                        } }
+                    }
+
                     item {
                         val tokens = LocalMksDesignTokens.current
                         Card(
@@ -618,25 +914,35 @@ fun AiPromptDeckScreen(
                             elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
                         ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text("Rendered prompt", fontWeight = FontWeight.Bold)
-                                IconButton(onClick = { clipboard.setText(AnnotatedString(renderedPrompt)); viewModel.recordPromptCardRun(card, values.toMap(), renderedPrompt, null) }) { Icon(Icons.Rounded.ContentCopy, "Copy") }
+                                Text("AI Output Review", fontWeight = FontWeight.Bold)
+                                FilledTonalButton(onClick = { /* TODO: Ollama integration */ }, enabled = false) {
+                                    Icon(Icons.Rounded.SmartToy, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Run with Ollama (Soon)")
+                                }
                             }
-                            Text(renderedPrompt)
-                            OutlinedTextField(outputText, { outputText = it }, modifier = Modifier.fillMaxWidth(), minLines = 5, label = { Text("Optional AI output to save") })
+                            OutlinedTextField(
+                                value = outputText,
+                                onValueChange = { outputText = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 5,
+                                label = { Text("AI generated output") }
+                            )
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilledTonalButton(onClick = { viewModel.recordPromptCardRun(card, values.toMap(), renderedPrompt, outputText.takeIf { it.isNotBlank() }) }) { Text("Save run") }
-                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsNote(card, outputText, "${card.title} note") }, enabled = outputText.isNotBlank()) { Text("To note") }
+                                FilledTonalButton(onClick = { viewModel.recordPromptCardRun(selectedCard, values.toMap(), renderedPrompt, outputText.takeIf { it.isNotBlank() }) }) { Text("Save run") }
+                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsNote(selectedCard, outputText, "$editTitle note") }, enabled = outputText.isNotBlank()) { Text("To note") }
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsBlueprint(card, outputText, "${card.title} article") }, enabled = outputText.isNotBlank()) { Text("To article") }
-                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsFlashcards(card, outputText, "${card.title} flashcards") }, enabled = outputText.isNotBlank()) { Text("To flashcards") }
+                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsBlueprint(selectedCard, outputText, "$editTitle article") }, enabled = outputText.isNotBlank()) { Text("To article") }
+                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsFlashcards(selectedCard, outputText, "$editTitle flashcards") }, enabled = outputText.isNotBlank()) { Text("To flashcards") }
                             }
                         } }
                     }
-                }
-                if (state.promptRuns.isNotEmpty()) {
-                    item { Text("Run history", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
-                    items(state.promptRuns.take(10), key = { "run_${it.id}" }) { run -> PromptRunItem(run) }
+                    
+                    if (state.promptRuns.filter { it.promptCardId == selectedCard.id }.isNotEmpty()) {
+                        item { Text("Run history", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+                        items(state.promptRuns.filter { it.promptCardId == selectedCard.id }.take(10), key = { "run_${it.id}" }) { run -> PromptRunItem(run) }
+                    }
                 }
             }
         }
@@ -645,7 +951,7 @@ fun AiPromptDeckScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ToolTopBar(title: String, onBack: () -> Unit) {
+private fun ToolTopBar(title: String, onBack: () -> Unit, actions: @Composable RowScope.() -> Unit = {}) {
     TopAppBar(
         title = {
             Text(
@@ -658,9 +964,10 @@ private fun ToolTopBar(title: String, onBack: () -> Unit) {
         },
         navigationIcon = {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = null)
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
             }
         },
+        actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
@@ -716,7 +1023,7 @@ private fun BookToolListScaffold(
 }
 
 @Composable
-private fun BookToolListItem(
+fun BookToolListItem(
     title: String,
     subtitle: String,
     icon: ImageVector,

@@ -241,7 +241,13 @@ class QuizQuestionsViewModel(private val repository: MksRepository) : ViewModel(
 
     fun toggleMarked(question: QuestionEntity) {
         viewModelScope.launch {
-            repository.updateQuestion(question.copy(isMarked = !question.isMarked))
+            repository.updateQuestionMark(question.id, !question.isMarked)
+        }
+    }
+
+    fun toggleDropped(question: QuestionEntity) {
+        viewModelScope.launch {
+            repository.updateQuestionDrop(question.id, !question.isDropped)
         }
     }
 

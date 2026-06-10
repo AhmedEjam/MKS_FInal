@@ -44,6 +44,9 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE id = :id AND deletedAt IS NULL")
     suspend fun getBookById(id: Long): BookEntity?
 
+    @Query("SELECT * FROM books WHERE id = :id LIMIT 1")
+    suspend fun getBookByIdIncludingDeleted(id: Long): BookEntity?
+
     @Query("SELECT * FROM books WHERE externalId = :externalId AND deletedAt IS NULL LIMIT 1")
     suspend fun getBookByExternalId(externalId: String): BookEntity?
 
@@ -76,6 +79,15 @@ interface BookDao {
 
     @Query("UPDATE books SET deletedAt = NULL, updatedAt = :updatedAt WHERE id = :bookId")
     suspend fun restoreBookById(bookId: Long, updatedAt: Long)
+
+    @Query("UPDATE books SET deletedAt = :deletedAt, updatedAt = :deletedAt WHERE workspaceId = :workspaceId AND deletedAt IS NULL")
+    suspend fun softDeleteBooksByWorkspaceId(workspaceId: Long, deletedAt: Long)
+
+    @Query("UPDATE books SET deletedAt = NULL, updatedAt = :updatedAt WHERE workspaceId = :workspaceId AND deletedAt = :deletedAtFilter")
+    suspend fun restoreBooksByWorkspaceId(workspaceId: Long, updatedAt: Long, deletedAtFilter: Long)
+
+    @Query("SELECT * FROM books WHERE workspaceId = :workspaceId AND deletedAt IS NOT NULL")
+    fun getDeletedBooksByWorkspaceFlow(workspaceId: Long): Flow<List<BookEntity>>
 
     @Delete
     suspend fun hardDeleteBook(book: BookEntity)
