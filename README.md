@@ -1,4 +1,4 @@
-# 📚 MKS - Mobile Knowledge System
+# 📚 MKS - My Knowledge Space
 
 **MKS** is an advanced Android quiz and knowledge-bank application that imports educational content from multiple file formats (XLSX, CSV, JSON, HTML, etc.) and presents interactive learning experiences through quizzes, flashcards, slideshows, notes, and AI prompt decks.
 

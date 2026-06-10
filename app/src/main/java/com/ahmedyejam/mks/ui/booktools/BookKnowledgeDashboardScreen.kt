@@ -1,27 +1,62 @@
 package com.ahmedyejam.mks.ui.booktools
 
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.Assessment
+import androidx.compose.material.icons.rounded.AutoFixHigh
+import androidx.compose.material.icons.rounded.HistoryEdu
+import androidx.compose.material.icons.rounded.Slideshow
+import androidx.compose.material.icons.rounded.ViewCarousel
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.runtime.*
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ahmedyejam.mks.R
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 import kotlinx.coroutines.launch
-import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,8 +73,8 @@ fun BookKnowledgeDashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
-    
-    val tabs = BookTab.entries.toTypedArray()
+
+    val tabs = remember { BookTab.entries.toTypedArray() }
     val pagerState = rememberPagerState(initialPage = 2) { tabs.size }
 
     LaunchedEffect(bookId) {
@@ -48,50 +83,60 @@ fun BookKnowledgeDashboardScreen(
 
     Scaffold(
         topBar = {
-            Column {
-                TopAppBar(
-                    title = { Text(uiState.book?.title ?: "Book") },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 3.dp,
+                shadowElevation = 3.dp
+            ) {
+                Column {
+                    TopAppBar(
+                        title = { Text(uiState.book?.title ?: "Book") },
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                            }
                         }
-                    }
-                )
-                ScrollableTabRow(
-                    selectedTabIndex = pagerState.currentPage,
-                    edgePadding = 16.dp,
-                    divider = {},
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    indicator = { tabPositions ->
-                        if (pagerState.currentPage < tabPositions.size) {
-                            TabRowDefaults.SecondaryIndicator(
-                                Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                                color = MaterialTheme.colorScheme.primary
+                    )
+                    ScrollableTabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        edgePadding = 16.dp,
+                        divider = {},
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                        indicator = { tabPositions ->
+                            if (pagerState.currentPage < tabPositions.size) {
+                                TabRowDefaults.SecondaryIndicator(
+                                    Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    ) {
+                        tabs.forEachIndexed { index, tab ->
+                            Tab(
+                                selected = pagerState.currentPage == index,
+                                onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                                text = { Text(tab.title) },
+                                icon = { Icon(tab.icon, null, Modifier.size(20.dp)) }
                             )
                         }
-                    }
-                ) {
-                    tabs.forEachIndexed { index, tab ->
-                        Tab(
-                            selected = pagerState.currentPage == index,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                            text = { Text(tab.title) },
-                            icon = { Icon(tab.icon, null, Modifier.size(20.dp)) }
-                        )
                     }
                 }
             }
         }
     ) { padding ->
         if (uiState.isLoading) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+            Box(Modifier
+                .fillMaxSize()
+                .padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
                 beyondViewportPageCount = 1
             ) { page ->
                 when (tabs[page]) {
@@ -135,7 +180,9 @@ fun DashboardSummaryCard(summary: BookKnowledgeSummary?) {
                 }
                 LinearProgressIndicator(
                     progress = { progress },
-                    modifier = Modifier.fillMaxWidth().height(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp),
                     strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
                 )
             }
@@ -177,7 +224,9 @@ fun MagicActionsSection(
         )
         
         Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (summary.markedQuestions > 0) {
@@ -244,13 +293,17 @@ private fun ToolCard(
     val tokens = LocalMksDesignTokens.current
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(120.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp),
         shape = RoundedCornerShape(tokens.cardRadius),
         elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
     ) {
         Column(
-            Modifier.fillMaxSize().padding(16.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
