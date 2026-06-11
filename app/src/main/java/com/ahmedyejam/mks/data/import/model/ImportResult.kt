@@ -11,8 +11,9 @@ enum class ImportFormat {
 }
 
 enum class MergeStrategy {
-    MERGE_ONLY, // Only add new, ignore if exists by externalId
-    MERGE_AND_UPDATE // Add new and update existing by externalId
+    SKIP_EXISTING, // Only add new, ignore if exists by externalId
+    OVERWRITE_EXISTING, // Add new and update existing by externalId
+    DUPLICATE // Always add as new, ignoring externalId checks
 }
 
 data class ImportResult(

@@ -188,6 +188,23 @@ class ImportLibraryManager(
                 else quizzesToCreate.add(quiz.title)
             }
 
+            val questionsToCreate = mutableListOf<String>()
+            val questionsToUpdate = mutableListOf<String>()
+            normalized.quizzes.forEach { quizDto ->
+                val existingQuiz = quizDao.getQuizByExternalId(quizDto.id)
+                if (existingQuiz == null) {
+                    questionsToCreate.addAll(quizDto.questions.map { it.stem.take(50) })
+                } else {
+                    quizDto.questions.forEach { questionDto ->
+                        if (questionDao.getQuestionByExternalId(existingQuiz.id, questionDto.id) != null) {
+                            questionsToUpdate.add(questionDto.stem.take(50))
+                        } else {
+                            questionsToCreate.add(questionDto.stem.take(50))
+                        }
+                    }
+                }
+            }
+
             val searchDirs = mutableListOf<File>()
             zipResult?.libraryDir?.let { searchDirs.add(it) }
             zipResult?.rootDir?.let { if (it != zipResult.libraryDir) searchDirs.add(it) }
@@ -215,6 +232,8 @@ class ImportLibraryManager(
                 booksToUpdate = booksToUpdate,
                 quizzesToCreate = quizzesToCreate,
                 quizzesToUpdate = quizzesToUpdate,
+                questionsToCreate = questionsToCreate,
+                questionsToUpdate = questionsToUpdate,
                 totalQuestions = normalized.quizzes.sumOf { it.questions.size },
                 totalSessions = normalized.sessions?.size ?: 0,
                 totalCategories = normalized.categories.size,
@@ -230,7 +249,7 @@ class ImportLibraryManager(
 
     suspend fun import(
         uri: Uri,
-        strategy: MergeStrategy = MergeStrategy.MERGE_ONLY,
+        strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING,
         targetBookId: Long? = null,
         targetQuizId: Long? = null,
         allowInsecureRemoteImages: Boolean = false,
@@ -328,7 +347,7 @@ class ImportLibraryManager(
             bundle = bundle,
             assetsDir = null,
             format = ImportFormat.TEXT,
-            strategy = MergeStrategy.MERGE_ONLY,
+            strategy = MergeStrategy.SKIP_EXISTING,
             targetBookId = targetBookId,
             targetQuizId = targetQuizId,
             startTime = startTime,
@@ -422,7 +441,7 @@ class ImportLibraryManager(
         bundle: LibraryBundleDto,
         assetsDir: File?,
         format: ImportFormat,
-        strategy: MergeStrategy = MergeStrategy.MERGE_ONLY,
+        strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING,
         targetBookId: Long? = null,
         targetQuizId: Long? = null,
         startTime: Long,
@@ -509,7 +528,7 @@ class ImportLibraryManager(
                         ?: defaultWorkspaceId
                     val existingBook = bookDao.getBookByExternalIdInWorkspace(bookDto.id, targetWorkspaceId)
                     
-                    if (existingBook != null && strategy == MergeStrategy.MERGE_ONLY) {
+                    if (existingBook != null && strategy == MergeStrategy.SKIP_EXISTING) {
                         bookIdMap[bookDto.id] = existingBook.id
                         updateProgress("Skipping existing book: ${bookDto.title}")
                         return@forEach
@@ -588,7 +607,7 @@ class ImportLibraryManager(
                     val existingQuiz = quizDao.getQuizByExternalId(quizDto.id)
                     var quizCoverPath: String? = null
                     
-                    val quizId = targetQuizId ?: if (existingQuiz != null && strategy == MergeStrategy.MERGE_ONLY) {
+                    val quizId = targetQuizId ?: if (existingQuiz != null && strategy == MergeStrategy.SKIP_EXISTING) {
                         quizIdMap[quizDto.id] = existingQuiz.id
                         updateProgress("Skipping existing quiz: ${quizDto.title}")
                         return@forEach

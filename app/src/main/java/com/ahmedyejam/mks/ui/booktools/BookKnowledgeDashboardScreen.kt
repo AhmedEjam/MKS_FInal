@@ -223,14 +223,15 @@ fun BookKnowledgeDashboardScreen(
             quizzes = uiState.quizzes,
             categories = uiState.questions.flatMap { it.categories }.distinct(),
             onDismiss = { showCreateQuiz = false },
-            onConfirm = { title, description, coverImage, sourceQuizIds, sourceCategories ->
+            onConfirm = { title, description, coverImage, sourceQuizIds, sourceCategories, filters ->
                 viewModel.createNewQuiz(
                     bookId,
                     title,
                     description,
                     coverImage,
                     sourceQuizIds,
-                    sourceCategories
+                    sourceCategories,
+                    filters
                 )
                 showCreateQuiz = false
             }

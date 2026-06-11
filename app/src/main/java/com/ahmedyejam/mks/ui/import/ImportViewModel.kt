@@ -38,7 +38,7 @@ class ImportViewModel(
 
     fun importLibrary(
         uri: Uri,
-        strategy: MergeStrategy = MergeStrategy.MERGE_ONLY,
+        strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING,
         targetBookId: Long? = null,
         targetQuizId: Long? = null,
         allowInsecureRemoteImages: Boolean = false

@@ -1,6 +1,15 @@
 <resources>
     <string name="app_name">MKS</string>
     <string name="import_review_title">مراجعة الاستيراد</string>
+    <string name="import_summary">ملخص الاستيراد</string>
+    <string name="books_label">الكتب</string>
+    <string name="quizzes_label">الاختبارات</string>
+    <string name="questions_label">الأسئلة</string>
+    <string name="merge_strategy_label">استراتيجية الدمج</string>
+    <string name="strategy_skip">تخطي الموجود (بواسطة المعرف الخارجي)</string>
+    <string name="strategy_overwrite">استبدال الموجود (بواسطة المعرف الخارجي)</string>
+    <string name="strategy_duplicate">إنشاء جديد دائماً (تكرار)</string>
+    <string name="allow_insecure_images">السماح بروابط الصور غير الآمنة (HTTP)</string>
     <string name="import_review_summary">الملخص:</string>
     <string name="import_review_questions">الأسئلة:</string>
     <string name="import_review_sessions">الجلسات:</string>

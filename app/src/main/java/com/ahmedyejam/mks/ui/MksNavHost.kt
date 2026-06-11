@@ -219,7 +219,7 @@ fun MksNavHost(
             val viewModel: BookToolsViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return BookToolsViewModel(appModule.repository) as T
+                        return BookToolsViewModel(appModule.repository, appModule.ollamaRepository, appModule.dataStoreManager) as T
                     }
                 },
             )
@@ -247,7 +247,7 @@ fun MksNavHost(
             val viewModel: BookToolsViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return BookToolsViewModel(appModule.repository) as T
+                        return BookToolsViewModel(appModule.repository, appModule.ollamaRepository, appModule.dataStoreManager) as T
                     }
                 },
             )
@@ -270,7 +270,7 @@ fun MksNavHost(
             val viewModel: BookToolsViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return BookToolsViewModel(appModule.repository) as T
+                        return BookToolsViewModel(appModule.repository, appModule.ollamaRepository, appModule.dataStoreManager) as T
                     }
                 },
             )
@@ -299,7 +299,7 @@ fun MksNavHost(
             val viewModel: BookToolsViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return BookToolsViewModel(appModule.repository) as T
+                        return BookToolsViewModel(appModule.repository, appModule.ollamaRepository, appModule.dataStoreManager) as T
                     }
                 },
             )
@@ -322,7 +322,7 @@ fun MksNavHost(
             val viewModel: BookToolsViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return BookToolsViewModel(appModule.repository) as T
+                        return BookToolsViewModel(appModule.repository, appModule.ollamaRepository, appModule.dataStoreManager) as T
                     }
                 },
             )
@@ -366,7 +366,7 @@ fun MksNavHost(
             val viewModel: BookToolsViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return BookToolsViewModel(appModule.repository) as T
+                        return BookToolsViewModel(appModule.repository, appModule.ollamaRepository, appModule.dataStoreManager) as T
                     }
                 },
             )
@@ -388,7 +388,7 @@ fun MksNavHost(
             val viewModel: BookToolsViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return BookToolsViewModel(appModule.repository) as T
+                        return BookToolsViewModel(appModule.repository, appModule.ollamaRepository, appModule.dataStoreManager) as T
                     }
                 },
             )
@@ -419,7 +419,7 @@ fun MksNavHost(
             val viewModel: BookToolsViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return BookToolsViewModel(appModule.repository) as T
+                        return BookToolsViewModel(appModule.repository, appModule.ollamaRepository, appModule.dataStoreManager) as T
                     }
                 },
             )

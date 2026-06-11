@@ -487,8 +487,8 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
         topBar = {
             AnimatedVisibility(visible = controlsVisible || !isPlayerMode, enter = androidx.compose.animation.slideInVertically { -it }, exit = androidx.compose.animation.slideOutVertically { -it }) {
                 ToolTopBar(note?.title ?: "Article", onBack) {
-                    IconButton(onClick = { 
-                        isPlayerMode = !isPlayerMode 
+                    IconButton(onClick = {
+                        isPlayerMode = !isPlayerMode
                         if (!isPlayerMode) controlsVisible = true
                     }) {
                         Icon(if (isPlayerMode) Icons.Rounded.Edit else Icons.Rounded.PlayArrow, if (isPlayerMode) "Edit Mode" else "Player Mode")
@@ -499,7 +499,7 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
         bottomBar = {
             AnimatedVisibility(visible = isPlayerMode && controlsVisible, enter = androidx.compose.animation.slideInVertically { it }, exit = androidx.compose.animation.slideOutVertically { it }) {
                 BottomAppBar {
-                    IconButton(onClick = { 
+                    IconButton(onClick = {
                         if (isTtsPlaying) {
                             ttsManager.stop()
                             isTtsPlaying = false
@@ -976,7 +976,7 @@ fun AiPromptDeckScreen(
                                 value = editBody,
                                 onValueChange = { editBody = it },
                                 modifier = Modifier.fillMaxWidth(),
-                                label = { Text("Prompt Body (Use {}, [], (), or <> for variables)") },
+                                label = { Text("Prompt Body (Use {}, [], or () for variables)") },
                                 minLines = 4
                             )
                             Button(onClick = {
@@ -1022,10 +1022,22 @@ fun AiPromptDeckScreen(
                         ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text("AI Output Review", fontWeight = FontWeight.Bold)
-                                FilledTonalButton(onClick = { /* TODO: Ollama integration */ }, enabled = false) {
-                                    Icon(Icons.Rounded.SmartToy, null, modifier = Modifier.size(16.dp))
+                                FilledTonalButton(
+                                    onClick = { 
+                                        outputText = ""
+                                        viewModel.generateWithOllamaStream(renderedPrompt) { chunk ->
+                                            outputText = chunk
+                                        }
+                                    }, 
+                                    enabled = !state.isGenerating && renderedPrompt.isNotBlank()
+                                ) {
+                                    if (state.isGenerating) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        Icon(Icons.Rounded.SmartToy, null, modifier = Modifier.size(16.dp))
+                                    }
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Run with Ollama (Soon)")
+                                    Text(if (state.isGenerating) "Generating..." else "Run with Ollama")
                                 }
                             }
                             OutlinedTextField(
@@ -1042,6 +1054,7 @@ fun AiPromptDeckScreen(
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilledTonalButton(onClick = { viewModel.savePromptOutputAsBlueprint(selectedCard, outputText, "$editTitle article") }, enabled = outputText.isNotBlank()) { Text("To article") }
                                 FilledTonalButton(onClick = { viewModel.savePromptOutputAsFlashcards(selectedCard, outputText, "$editTitle flashcards") }, enabled = outputText.isNotBlank()) { Text("To flashcards") }
+                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsQuiz(selectedCard, outputText, "$editTitle quiz") }, enabled = outputText.isNotBlank()) { Text("To quiz") }
                             }
                         } }
                     }

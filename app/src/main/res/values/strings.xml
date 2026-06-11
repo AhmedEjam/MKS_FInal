@@ -1,6 +1,15 @@
 <resources>
     <string name="app_name">MKS</string>
     <string name="import_review_title">Import Review</string>
+    <string name="import_summary">Import Summary</string>
+    <string name="books_label">Books</string>
+    <string name="quizzes_label">Quizzes</string>
+    <string name="questions_label">Questions</string>
+    <string name="merge_strategy_label">Merge Strategy</string>
+    <string name="strategy_skip">Skip existing (by external ID)</string>
+    <string name="strategy_overwrite">Overwrite existing (by external ID)</string>
+    <string name="strategy_duplicate">Always create new (duplicates)</string>
+    <string name="allow_insecure_images">Allow insecure HTTP image URLs</string>
     <string name="import_review_summary">Summary:</string>
     <string name="import_review_questions">Questions:</string>
     <string name="import_review_sessions">Sessions:</string>

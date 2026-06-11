@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -51,6 +53,12 @@ import com.ahmedyejam.mks.data.import.model.ImportResult
 import com.ahmedyejam.mks.data.import.model.MergeStrategy
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 
+data class QuizCreationFilters(
+    val mistakesOnly: Boolean = false,
+    val markedOnly: Boolean = false,
+    val unansweredOnly: Boolean = false
+)
+
 
 @Composable
 fun DeleteConfirmDialog(
@@ -83,11 +91,10 @@ fun DeleteConfirmDialog(
 fun ImportReviewDialog(
     preview: ImportPreviewDto,
     onDismiss: () -> Unit,
-    onConfirm: (MergeStrategy, Boolean) -> Unit
+    onConfirm: (strategy: MergeStrategy, allowInsecureHttpImages: Boolean) -> Unit
 ) {
-    var strategy by remember { mutableStateOf(MergeStrategy.MERGE_ONLY) }
+    var strategy by remember { mutableStateOf(MergeStrategy.SKIP_EXISTING) }
     var allowInsecureHttpImages by remember { mutableStateOf(false) }
-    val hasPlainHttpImageWarning = preview.warnings.any { it.message.contains("plain HTTP", ignoreCase = true) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -97,152 +104,74 @@ fun ImportReviewDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Summary section
                 Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text("Stats", style = MaterialTheme.typography.titleSmall)
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(stringResource(R.string.books_header) + ":")
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(stringResource(R.string.import_summary), style = MaterialTheme.typography.titleSmall)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(stringResource(R.string.books_label))
                             Text("${preview.booksToCreate.size + preview.booksToUpdate.size}")
                         }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(stringResource(R.string.quizzes_title) + ":")
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(stringResource(R.string.quizzes_label))
                             Text("${preview.quizzesToCreate.size + preview.quizzesToUpdate.size}")
                         }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(stringResource(R.string.import_review_questions))
-                            Text("${preview.totalQuestions}")
-                        }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(stringResource(R.string.import_review_categories))
-                            Text("${preview.totalCategories}")
-                        }
-                        if (preview.totalSessions > 0) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(stringResource(R.string.import_review_sessions))
-                                Text("${preview.totalSessions}")
-                            }
-                        }
-                        if (preview.hasAssets) {
-                            Text("• " + stringResource(R.string.import_review_assets), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(stringResource(R.string.questions_label))
+                            Text("${preview.questionsToCreate.size + preview.questionsToUpdate.size}")
                         }
                     }
                 }
 
-                Text("Merge Options", style = MaterialTheme.typography.titleMedium)
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = strategy == MergeStrategy.MERGE_ONLY,
-                            onClick = { strategy = MergeStrategy.MERGE_ONLY }
-                        )
-                        Column(Modifier.clickable { strategy = MergeStrategy.MERGE_ONLY }) {
-                            Text("Merge Only", style = MaterialTheme.typography.bodyMedium)
-                            Text("Ignore existing records, only add new ones.", style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = strategy == MergeStrategy.MERGE_AND_UPDATE,
-                            onClick = { strategy = MergeStrategy.MERGE_AND_UPDATE }
-                        )
-                        Column(Modifier.clickable { strategy = MergeStrategy.MERGE_AND_UPDATE }) {
-                            Text("Merge & Update", style = MaterialTheme.typography.bodyMedium)
-                            Text("Update existing records and add new ones.", style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
-
-
-                if (preview.skippedRecordsCount > 0) {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                    ) {
-                        Text(
-                            text = "${preview.skippedRecordsCount} invalid question(s) will be skipped. Review the warnings below for line/row and reason details.",
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                }
-
-                if (hasPlainHttpImageWarning) {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
-                    ) {
+                // Strategy selection
+                Text(stringResource(R.string.merge_strategy_label), style = MaterialTheme.typography.titleSmall)
+                Column {
+                    MergeStrategy.entries.forEach { entry ->
                         Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { allowInsecureHttpImages = !allowInsecureHttpImages }
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                .clickable { strategy = entry }
+                                .padding(vertical = 4.dp)
                         ) {
-                            Checkbox(
-                                checked = allowInsecureHttpImages,
-                                onCheckedChange = { allowInsecureHttpImages = it }
+                            RadioButton(selected = strategy == entry, onClick = { strategy = entry })
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                when (entry) {
+                                    MergeStrategy.SKIP_EXISTING -> stringResource(R.string.strategy_skip)
+                                    MergeStrategy.OVERWRITE_EXISTING -> stringResource(R.string.strategy_overwrite)
+                                    MergeStrategy.DUPLICATE -> stringResource(R.string.strategy_duplicate)
+                                    else -> entry.name
+                                },
+                                style = MaterialTheme.typography.bodyMedium
                             )
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text("Allow plain HTTP image downloads", style = MaterialTheme.typography.bodyMedium)
-                                Text(
-                                    "Only enable this for trusted imports. Plain HTTP images can be observed or modified by the network.",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer
-                                )
-                            }
-                        }
-                    }
-                }
-                if (preview.errors.isNotEmpty()) {
-                    Text("Errors", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.error)
-                    preview.errors.forEach { 
-                        Text("• ${it.message}", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall) 
-                    }
-                }
-                
-                if (preview.warnings.isNotEmpty()) {
-                    Text("Warnings", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.tertiary)
-                    preview.warnings.forEach {
-                        Text("• ${it.message}", color = MaterialTheme.colorScheme.tertiary, style = MaterialTheme.typography.labelSmall)
-                        it.details?.takeIf { details -> details.isNotBlank() }?.let { details ->
-                            Text("  $details", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
 
-                if (preview.booksToCreate.isNotEmpty() || preview.booksToUpdate.isNotEmpty()) {
-                    Text(stringResource(R.string.books_header) + " Detail", style = MaterialTheme.typography.titleMedium)
-                    preview.booksToCreate.forEach { 
-                        Text("+ $it", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall) 
-                    }
-                    preview.booksToUpdate.forEach { 
-                        Text("↻ $it", color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.bodySmall) 
-                    }
-                }
-
-                if (preview.quizzesToCreate.isNotEmpty() || preview.quizzesToUpdate.isNotEmpty()) {
-                    Text(stringResource(R.string.quizzes_title) + " Detail", style = MaterialTheme.typography.titleMedium)
-                    preview.quizzesToCreate.forEach { 
-                        Text("+ $it", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall) 
-                    }
-                    preview.quizzesToUpdate.forEach { 
-                        Text("↻ $it", color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.bodySmall) 
-                    }
+                // Security setting
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { allowInsecureHttpImages = !allowInsecureHttpImages }
+                        .padding(vertical = 4.dp)
+                ) {
+                    Checkbox(checked = allowInsecureHttpImages, onCheckedChange = { allowInsecureHttpImages = it })
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.allow_insecure_images), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         },
         confirmButton = {
             Button(onClick = { onConfirm(strategy, allowInsecureHttpImages) }) {
-                Text(stringResource(R.string.import_confirm))
+                Text(stringResource(R.string.import_label))
             }
         },
         dismissButton = {
@@ -317,7 +246,7 @@ fun CreateQuizDialog(
     quizzes: List<QuizEntity>,
     categories: List<String>,
     onDismiss: () -> Unit,
-    onConfirm: (title: String, description: String, coverImage: String?, sourceQuizIds: List<Long>, sourceCategories: List<String>) -> Unit
+    onConfirm: (title: String, description: String, coverImage: String?, sourceQuizIds: List<Long>, sourceCategories: List<String>, filters: QuizCreationFilters) -> Unit
 ) {
     var titleText by remember { mutableStateOf("") }
     var descriptionText by remember { mutableStateOf("") }
@@ -327,6 +256,10 @@ fun CreateQuizDialog(
     var selectedQuizIds by remember { mutableStateOf(setOf<Long>()) }
     var selectedCategories by remember { mutableStateOf(setOf<String>()) }
     
+    var filterMistakesOnly by remember { mutableStateOf(false) }
+    var filterMarkedOnly by remember { mutableStateOf(false) }
+    var filterUnansweredOnly by remember { mutableStateOf(false) }
+
     val allQuizzesSelected = quizzes.isNotEmpty() && selectedQuizIds.size == quizzes.size
     val allCategoriesSelected = categories.isNotEmpty() && selectedCategories.size == categories.size
 
@@ -399,6 +332,22 @@ fun CreateQuizDialog(
                 }
 
                 if (isFromExisting) {
+                    Text("Filters", style = MaterialTheme.typography.titleSmall)
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = filterMistakesOnly, onCheckedChange = { filterMistakesOnly = it })
+                            Text("Mistaken questions only", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = filterMarkedOnly, onCheckedChange = { filterMarkedOnly = it })
+                            Text("Marked questions only", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = filterUnansweredOnly, onCheckedChange = { filterUnansweredOnly = it })
+                            Text("Unanswered questions only", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+
                     if (quizzes.isNotEmpty()) {
                         Text("Source Quizzes", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))
                         Card(modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp)) {
@@ -473,7 +422,12 @@ fun CreateQuizDialog(
                         descriptionText, 
                         coverImage, 
                         if (isFromExisting) selectedQuizIds.toList() else emptyList(),
-                        if (isFromExisting) selectedCategories.toList() else emptyList()
+                        if (isFromExisting) selectedCategories.toList() else emptyList(),
+                        QuizCreationFilters(
+                            mistakesOnly = filterMistakesOnly,
+                            markedOnly = filterMarkedOnly,
+                            unansweredOnly = filterUnansweredOnly
+                        )
                     )
                 },
                 enabled = titleText.isNotBlank() && (!isFromExisting || (selectedQuizIds.isNotEmpty() || selectedCategories.isNotEmpty()))

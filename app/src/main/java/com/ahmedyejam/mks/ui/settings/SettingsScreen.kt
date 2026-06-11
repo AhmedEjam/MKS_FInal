@@ -30,7 +30,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -45,6 +48,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -229,26 +234,49 @@ fun SettingsScreen(
                 }
             ) {
                 Text(stringResource(R.string.theme_label), style = MaterialTheme.typography.labelLarge)
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                
+                var themeExpanded by remember { mutableStateOf(false) }
+                val currentThemeOption = themeOptions.find { it.key == currentThemeMode } ?: themeOptions.last()
+
+                ExposedDropdownMenuBox(
+                    expanded = themeExpanded,
+                    onExpandedChange = { themeExpanded = it },
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    themeOptions.forEach { option ->
-                        FilterChip(
-                            selected = currentThemeMode == option.key,
-                            onClick = { scope.launch { dataStoreManager.setThemeMode(option.key) } },
-                            label = {
-                                Column {
-                                    Text(stringResource(option.labelRes))
-                                    Text(
-                                        text = stringResource(option.descriptionRes),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        )
+                    OutlinedTextField(
+                        value = stringResource(currentThemeOption.labelRes),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.theme_label)) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = themeExpanded) },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                        modifier = Modifier
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = themeExpanded,
+                        onDismissRequest = { themeExpanded = false }
+                    ) {
+                        themeOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(stringResource(option.labelRes))
+                                        Text(
+                                            text = stringResource(option.descriptionRes),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    scope.launch { dataStoreManager.setThemeMode(option.key) }
+                                    themeExpanded = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
+                        }
                     }
                 }
 
@@ -373,6 +401,46 @@ fun SettingsScreen(
                 }
             }
 
+            val ollamaBaseUrl by dataStoreManager.ollamaBaseUrl.collectAsState(initial = "http://10.0.2.2:11434")
+            val ollamaModelName by dataStoreManager.ollamaModelName.collectAsState(initial = "llama3")
+            var editOllamaBaseUrl by remember(ollamaBaseUrl) { mutableStateOf(ollamaBaseUrl) }
+            var editOllamaModelName by remember(ollamaModelName) { mutableStateOf(ollamaModelName) }
+
+            SettingsGroup(title = "AI Integrations") {
+                Text(
+                    "Configure local LLM settings for the AI Prompt Deck. Ollama is recommended. For Android Emulators, use http://10.0.2.2:11434.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                OutlinedTextField(
+                    value = editOllamaBaseUrl,
+                    onValueChange = { editOllamaBaseUrl = it },
+                    label = { Text("Ollama Base URL") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = editOllamaModelName,
+                    onValueChange = { editOllamaModelName = it },
+                    label = { Text("Ollama Model Name (e.g. llama3)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Button(
+                    onClick = {
+                        scope.launch {
+                            dataStoreManager.setOllamaBaseUrl(editOllamaBaseUrl)
+                            dataStoreManager.setOllamaModelName(editOllamaModelName)
+                            snackbarHostState.showSnackbar("AI settings saved")
+                        }
+                    },
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Save Settings")
+                }
+            }
+
             SettingsGroup(title = stringResource(R.string.danger_zone_group), titleColor = MaterialTheme.colorScheme.error) {
                 OutlinedButton(
                     onClick = { showClearCategoriesDialog = true },
@@ -494,7 +562,10 @@ fun SettingsGroup(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(tokens.cardRadius),
-            elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
+            elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            )
         ) {
             Column(
                 modifier = Modifier

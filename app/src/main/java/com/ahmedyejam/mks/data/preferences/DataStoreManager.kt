@@ -45,6 +45,9 @@ class DataStoreManager(private val context: Context) {
         private val LANGUAGE = stringPreferencesKey("language")
         private val SHOW_WELCOME_ON_STARTUP = booleanPreferencesKey("show_welcome_on_startup")
         private val CURRENT_WORKSPACE_ID = longPreferencesKey("current_workspace_id")
+        
+        private val OLLAMA_BASE_URL = stringPreferencesKey("ollama_base_url")
+        private val OLLAMA_MODEL_NAME = stringPreferencesKey("ollama_model_name")
     }
 
     val themeMode: Flow<String> = context.dataStore.data.map { preferences ->
@@ -161,6 +164,14 @@ class DataStoreManager(private val context: Context) {
         preferences[CURRENT_WORKSPACE_ID]?.takeIf { it > 0L }
     }.distinctUntilChanged()
 
+    val ollamaBaseUrl: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[OLLAMA_BASE_URL] ?: "http://10.0.2.2:11434"
+    }.distinctUntilChanged()
+
+    val ollamaModelName: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[OLLAMA_MODEL_NAME] ?: "llama3"
+    }.distinctUntilChanged()
+
     suspend fun setLibrarySortOption(option: String) {
         context.dataStore.edit { preferences -> preferences[LIBRARY_SORT_OPTION] = SettingsSanitizer.sortOption(option) }
     }
@@ -268,6 +279,18 @@ class DataStoreManager(private val context: Context) {
             } else {
                 preferences.remove(CURRENT_WORKSPACE_ID)
             }
+        }
+    }
+
+    suspend fun setOllamaBaseUrl(url: String) {
+        context.dataStore.edit { preferences ->
+            preferences[OLLAMA_BASE_URL] = url
+        }
+    }
+
+    suspend fun setOllamaModelName(model: String) {
+        context.dataStore.edit { preferences ->
+            preferences[OLLAMA_MODEL_NAME] = model
         }
     }
 

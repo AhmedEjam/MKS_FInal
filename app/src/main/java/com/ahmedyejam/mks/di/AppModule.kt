@@ -1345,6 +1345,10 @@ class AppModule(val context: Context) {
         DataStoreManager(context)
     }
 
+    val ollamaRepository: com.ahmedyejam.mks.data.repository.OllamaRepository by lazy {
+        com.ahmedyejam.mks.data.repository.OllamaRepository()
+    }
+
     val focusManager: FocusManager by lazy {
         FocusManager(context)
     }

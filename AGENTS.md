@@ -368,6 +368,60 @@ override fun newImageLoader(): ImageLoader {
 
 **MksRepository.insertQuestion()** auto-downloads HTTPS URLs to local paths before storing.
 
+## User Interface (UI) Detailed Reference
+
+### MKS Library Screen (Main Hub)
+- **Top Bar**: Displays "MKS Library" with quick access to Contact, Settings, and a search/sort menu.
+- **Categories Section**: Horizontal scroll showing question categories with "View all" access. "View all" opens a dialog with a grid of category chips and their question counts.
+- **Books Section**: Toggleable between List and Grid views.
+- **Book Cards**: Display book title, description, and total question count.
+- **Book Context Menu**: Triggered by the "More" (three dots) icon on a book card. Offers actions: Knowledge Dashboard, Show Info & Stats (toggle), Pin to top, Edit, Export, Import, and Delete.
+- **Floating Action Button (FAB)**: Hub for importing files or creating new books manually.
+
+### Book Knowledge Dashboard
+Accessed by selecting a book from the library. Uses a `HorizontalPager` with 8 scrollable tabs:
+1. **Dashboard**: Summary overview with "Study Progress" card (Completion %, Due, Weak, Marked, Mistakes stats) and "Magic Actions" (dynamic chips like "Draft Note from Marked", "Generate Slides from Questions" based on available data).
+2. **Prompts**: Management for AI prompt decks.
+3. **Mistakes**: Log of quiz mistakes using `MistakeCard` (Toggle Fixed, Delete, Snooze).
+4. **Slides**: Slideshow courses management.
+5. **Quizzes**: List of quizzes specifically for this book.
+6. **Cards**: Flashcard decks management.
+7. **Articles & short notes**: Note blueprints management.
+8. **Sources**: Reference documents (PDFs, URLs, Textbooks).
+
+**Contextual FAB**: The FAB action changes dynamically based on the active tab (e.g., "Create Slides", "Create Prompts").
+
+### Article & Note Player (ReviewBlueprintScreen)
+Specialized immersive reader for knowledge bank articles:
+- **Dual Modes**: Seamless toggle between Player (Reader) and Edit modes.
+- **Immersive UI**: Hides system bars in reader mode for focused study; toggleable via screen tap.
+- **Pinned Title**: Option to keep the article title visible while scrolling.
+- **Autoscroll**: Hands-free reading with adjustable speed (10 px/s to 200 px/s).
+- **Text-to-Speech (TTS)**: Integrated narration with adjustable Pitch and Rate (0.5x to 2.0x).
+- **Integration**: Actions to convert notes to flashcards or append to question-specific notes.
+
+### AI Prompt Deck Editor
+Advanced interface for designing and testing AI prompts:
+- **Variable Extraction**: Automatically detects variables in prompt templates using `{}`, `[]`, or `()` syntax.
+- **Live Rendering**: Real-time preview of the prompt with variable substitution and a one-tap copy button.
+- **Output Routing**: AI-generated output can be saved directly as a New Note, Article, Flashcard Deck, or Quiz.
+- **Run History**: Tracks past executions of prompts within the deck.
+
+### Question Notes & Components
+Unified view for managing notes linked to specific quiz questions:
+- **Component Filtering**: Toggle visibility of question elements like Options, Explanation, Hint, Reference, Images, and Categories.
+- **Direct Editing**: Inline editing and saving of notes for individual questions.
+- **Quiz Selection**: Filter notes by specific quizzes within the book or view all existing notes.
+
+### Settings Screen
+Organized into logical functional groups:
+- **Library & Backup**: Full library export, Advanced import/export preview, Global search, and Review dashboard.
+- **Appearance**: Theme selection (Dawn, etc.), Font Scale (0.8x-1.5x), and UI Density adjustment.
+- **Language**: One-tap toggle between English and Arabic (RTL support).
+- **Global Configuration**: Toggle welcome screen, Focus Mode (Do Not Disturb), "Skip Answered Questions", and "Double Tap to Submit".
+- **AI Integrations**: Local LLM configuration (Ollama Base URL and Model Name).
+- **Danger Zone**: "Clear Categories" (metadata only) and "Reset Database" (wipe & re-seed).
+
 ## Navigation & Routing
 
 ### Route Structure

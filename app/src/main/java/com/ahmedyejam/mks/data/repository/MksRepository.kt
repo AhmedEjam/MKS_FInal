@@ -53,6 +53,7 @@ import com.ahmedyejam.mks.data.local.entity.PromptRunEntity
 import com.ahmedyejam.mks.data.local.entity.QuestionAssetEntity
 import com.ahmedyejam.mks.data.local.entity.QuestionAssetType
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionType
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
@@ -1561,7 +1562,7 @@ class MksRepository(
 
     suspend fun importFromUri(
         uri: Uri,
-        strategy: MergeStrategy = MergeStrategy.MERGE_ONLY,
+        strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING,
         targetBookId: Long? = null,
         targetQuizId: Long? = null,
         allowInsecureRemoteImages: Boolean = false,
@@ -2529,6 +2530,92 @@ class MksRepository(
         )
         promptCardId?.let { recordPromptRun(it, "{}", "", outputText, "NOTE", noteId) }
         return noteId
+    }
+
+    suspend fun convertPromptOutputToQuiz(bookId: Long, title: String, outputText: String, promptCardId: Long? = null): Long {
+        val quizId = insertQuiz(
+            QuizEntity(
+                externalId = java.util.UUID.randomUUID().toString(),
+                bookId = bookId,
+                title = title.ifBlank { "Prompt quiz" },
+                description = "Generated from prompt output.",
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+        )
+        val questions = parsePromptOutputQuestions(quizId, outputText)
+        if (questions.isNotEmpty()) {
+            insertQuestions(questions)
+        } else {
+            // Fallback: single descriptive question if no structure detected
+            insertQuestion(
+                QuestionEntity(
+                    externalId = java.util.UUID.randomUUID().toString(),
+                    quizId = quizId,
+                    text = title.ifBlank { "Prompt output" },
+                    type = QuestionType.SINGLE_CHOICE,
+                    options = listOf("Review output"),
+                    correctAnswers = listOf(0),
+                    explanation = outputText,
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis()
+                )
+            )
+        }
+        promptCardId?.let { recordPromptRun(it, "{}", "", outputText, "QUIZ", quizId) }
+        return quizId
+    }
+
+    private fun parsePromptOutputQuestions(quizId: Long, outputText: String): List<QuestionEntity> {
+        // Simple parser looking for "Question:", "Options:", "Answer:" pattern blocks
+        val blocks = outputText.split(Regex("\\n\\s*\\n"))
+        return blocks.mapIndexedNotNull { index, raw ->
+            val lines = raw.lines().map { it.trim() }.filter { it.isNotBlank() }
+            val qText = lines.firstOrNull { it.startsWith("Question", ignoreCase = true) }
+                ?.substringAfter(':', "")?.trim() ?: return@mapIndexedNotNull null
+            
+            val options = lines.filter { it.startsWith("Option", ignoreCase = true) || it.matches(Regex("^[A-D][).].*")) }
+                .map { line ->
+                    if (line.startsWith("Option", ignoreCase = true)) {
+                        line.substringAfter(':').trim()
+                    } else {
+                        line.substring(2).trim()
+                    }
+                }
+            
+            val ansText = lines.firstOrNull { it.startsWith("Answer", ignoreCase = true) }
+                ?.substringAfter(':', "")?.trim()
+            
+            val correctIndices = mutableListOf<Int>()
+            if (!ansText.isNullOrBlank()) {
+                // Try letter match
+                val letterMatch = Regex("([A-D])").findAll(ansText.uppercase())
+                letterMatch.forEach { match ->
+                    val idx = match.value[0] - 'A'
+                    if (idx in options.indices) correctIndices.add(idx)
+                }
+                // Try text match if no letters matched
+                if (correctIndices.isEmpty()) {
+                    val matchIdx = options.indexOfFirst { it.equals(ansText, ignoreCase = true) }
+                    if (matchIdx != -1) correctIndices.add(matchIdx)
+                }
+            }
+            
+            val explanation = lines.firstOrNull { it.startsWith("Explanation", ignoreCase = true) }
+                ?.substringAfter(':', "")?.trim()
+
+            QuestionEntity(
+                externalId = java.util.UUID.randomUUID().toString(),
+                quizId = quizId,
+                text = qText,
+                type = if (correctIndices.size > 1) QuestionType.MULTIPLE_CHOICE else QuestionType.SINGLE_CHOICE,
+                options = options.ifEmpty { listOf("Option A", "Option B") },
+                correctAnswers = correctIndices.ifEmpty { listOf(0) },
+                explanation = explanation,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+        }
     }
 
     suspend fun convertPromptOutputToBlueprint(bookId: Long, title: String, outputText: String, promptCardId: Long? = null): Long {

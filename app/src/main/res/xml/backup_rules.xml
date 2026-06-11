@@ -5,9 +5,6 @@
     <exclude domain="database" path="mks_database-shm"/>
     <exclude domain="database" path="mks_database-wal"/>
     <exclude domain="file" path="datastore/"/>
-    <include domain="file" path="images/"/>
-
-    <exclude domain="cache" path="."/>
     <exclude domain="file" path="exports/"/>
     <exclude domain="file" path="import/"/>
     <exclude domain="file" path="tmp/"/>

@@ -48,3 +48,6 @@ app/src/main/java/**/.artifacts/
 # Keep Room schemas under version control.
 !app/schemas/
 !app/schemas/**
+
+.gradle_home/
+.gradle_tmp/

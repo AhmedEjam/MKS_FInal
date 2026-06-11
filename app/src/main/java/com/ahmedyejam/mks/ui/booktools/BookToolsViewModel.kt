@@ -18,8 +18,11 @@ import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentTypes
+import com.ahmedyejam.mks.ui.library.components.QuizCreationFilters
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
 import com.ahmedyejam.mks.data.repository.MksRepository
+import com.ahmedyejam.mks.data.repository.OllamaRepository
+import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.data.repository.SortOption
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -64,11 +67,14 @@ data class BookToolsUiState(
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val error: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val isGenerating: Boolean = false
 )
 
 class BookToolsViewModel(
-    private val repository: MksRepository
+    private val repository: MksRepository,
+    private val ollamaRepository: OllamaRepository,
+    private val dataStoreManager: DataStoreManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BookToolsUiState())
@@ -285,33 +291,33 @@ class BookToolsViewModel(
         val questions = _uiState.value.questions.filter { it.attempts > 0 && (it.correctCount < it.attempts || it.lastAttemptResult == false) }
         generateArticlesFromQuestions(questions.map { it.id }, config)
     }
-    
+
     fun generateArticlesFromQuiz(quizId: Long, config: com.ahmedyejam.mks.data.model.ArticleGenerationConfig = com.ahmedyejam.mks.data.model.ArticleGenerationConfig.DEFAULT) {
         val questions = _uiState.value.questionsByQuiz[quizId] ?: return
         generateArticlesFromQuestions(questions.map { it.id }, config)
     }
-    
+
     fun generateArticlesFromCategory(categoryId: Long, config: com.ahmedyejam.mks.data.model.ArticleGenerationConfig = com.ahmedyejam.mks.data.model.ArticleGenerationConfig.DEFAULT) {
         val questions = _uiState.value.questions.filter { categoryId.toString() in it.categories }
         generateArticlesFromQuestions(questions.map { it.id }, config)
     }
-    
+
     fun importArticlesFromText(text: String, mode: com.ahmedyejam.mks.data.import.parser.TextArticleParseMode = com.ahmedyejam.mks.data.import.parser.TextArticleParseMode.BASIC) {
         val bookId = _uiState.value.book?.id ?: return
         viewModelScope.launch {
             try {
                 val parser = com.ahmedyejam.mks.data.import.parser.TextArticleParser()
                 val parsedNotes = parser.parse(text, bookId, mode)
-                
+
                 if (parsedNotes.isEmpty()) {
                     _uiState.value = _uiState.value.copy(error = "No valid articles found in text")
                     return@launch
                 }
-                
+
                 parsedNotes.forEach { note ->
                     repository.insertNoteBlueprint(note)
                 }
-                
+
                 _uiState.value = _uiState.value.copy(
                     allNotes = repository.getNoteBlueprintsByBookId(bookId).first(),
                     successMessage = "Imported ${parsedNotes.size} Articles"
@@ -593,6 +599,31 @@ class BookToolsViewModel(
         }
     }
 
+    fun generateWithOllamaStream(prompt: String, onUpdate: (String) -> Unit) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isGenerating = true, error = null)
+            try {
+                val baseUrl = dataStoreManager.ollamaBaseUrl.first()
+                val model = dataStoreManager.ollamaModelName.first()
+                
+                val systemPrompt = "You are an expert educational AI assistant inside the MKS knowledge-bank app. Generate high-quality, structured output exactly as requested by the user's prompt. Do NOT include conversational filler, greetings, or explanations unless explicitly requested."
+                
+                var accumulatedResponse = ""
+                ollamaRepository.generateCompletionStream(baseUrl, model, prompt, systemPrompt)
+                    .collect { chunk ->
+                        accumulatedResponse += chunk
+                        onUpdate(accumulatedResponse)
+                    }
+                _uiState.value = _uiState.value.copy(isGenerating = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isGenerating = false, 
+                    error = "Ollama connection failed: ${e.message}. Ensure Ollama is running and accessible."
+                )
+            }
+        }
+    }
+
     fun savePromptOutputAsNote(card: PromptCardEntity, outputText: String, title: String) {
         val bookId = _uiState.value.promptDeck?.bookId ?: return
         viewModelScope.launch {
@@ -641,8 +672,24 @@ class BookToolsViewModel(
         }
     }
 
+    fun savePromptOutputAsQuiz(card: PromptCardEntity, outputText: String, title: String) {
+        val bookId = _uiState.value.promptDeck?.bookId ?: return
+        viewModelScope.launch {
+            try {
+                val id = repository.convertPromptOutputToQuiz(bookId, title, outputText, card.id)
+                _uiState.value = _uiState.value.copy(
+                    quizzes = repository.getQuizzesByBookId(bookId, SortOption.TITLE).first(),
+                    promptRuns = repository.getPromptRunsByDeckIdNow(card.deckId),
+                    successMessage = "Prompt output saved as quiz #$id"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to save quiz: ${e.message}")
+            }
+        }
+    }
+
     fun extractVariables(text: String): List<String> =
-        Regex("""\{[^}]+\}|\[[^\]]+\]|\([^)]+\)|<[^>]+>""").findAll(text).map { it.value }.distinct().toList()
+        Regex("""\{[^}]+\}|\[[^\]]+\]|\([^)]+\)""").findAll(text).map { it.value }.distinct().toList()
 
     fun createFlashcardDeckFromMarkedQuestions(bookId: Long, title: String) {
         viewModelScope.launch {
@@ -770,7 +817,8 @@ class BookToolsViewModel(
         description: String,
         coverImage: String?,
         sourceQuizIds: List<Long>,
-        sourceCategories: List<String>
+        sourceCategories: List<String>,
+        filters: QuizCreationFilters = QuizCreationFilters()
     ) {
         viewModelScope.launch {
             try {
@@ -788,8 +836,6 @@ class BookToolsViewModel(
 
                 // Duplicate questions if sources provided
                 if (sourceQuizIds.isNotEmpty() || sourceCategories.isNotEmpty()) {
-                    val bookQuizzes =
-                        repository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
                     val allQuestions = mutableListOf<QuestionEntity>()
 
                     if (sourceQuizIds.isNotEmpty()) {
@@ -797,20 +843,32 @@ class BookToolsViewModel(
                             allQuestions.addAll(repository.getQuestionsByQuizId(qId).first())
                         }
                     } else if (sourceCategories.isNotEmpty()) {
+                        val bookQuizzes = repository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
                         for (quiz in bookQuizzes) {
                             allQuestions.addAll(repository.getQuestionsByQuizId(quiz.id).first())
                         }
                     }
 
-                    val filteredQuestions = if (sourceCategories.isNotEmpty()) {
+                    var filteredQuestions = if (sourceCategories.isNotEmpty()) {
                         allQuestions.filter { q ->
                             q.categories.any { it in sourceCategories }
                         }
                     } else {
                         allQuestions
                     }
+                    
+                    // Apply extra filters
+                    if (filters.mistakesOnly) {
+                        filteredQuestions = filteredQuestions.filter { (it.attempts > 0 && it.correctCount < it.attempts) || (it.lastAttemptResult == false) }
+                    }
+                    if (filters.markedOnly) {
+                        filteredQuestions = filteredQuestions.filter { it.isMarked }
+                    }
+                    if (filters.unansweredOnly) {
+                        filteredQuestions = filteredQuestions.filter { it.attempts == 0 }
+                    }
 
-                    val duplicatedQuestions = filteredQuestions.map { q ->
+                    val duplicatedQuestions = filteredQuestions.distinctBy { it.id }.map { q ->
                         q.copy(
                             id = 0,
                             externalId = java.util.UUID.randomUUID().toString(),

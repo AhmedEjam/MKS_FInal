@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.ui.tooling.preview.Preview
 import com.ahmedyejam.mks.ui.theme.MKSTheme
 import com.ahmedyejam.mks.R
@@ -86,8 +87,19 @@ fun LibraryBanner(
     val tokens = LocalMksDesignTokens.current
     val bannerShape = RoundedCornerShape(if (tokens.isPlain) tokens.cardRadius else 30.dp)
     
-    val pagerState = rememberPagerState(pageCount = { 1000 })
+    val pagerState = rememberPagerState(initialPage = 501, pageCount = { 1000 })
     val currentRealPage = remember { derivedStateOf { pagerState.currentPage % 2 } }
+
+    val isDragged by pagerState.interactionSource.collectIsDraggedAsState()
+
+    LaunchedEffect(isDragged) {
+        if (!isDragged) {
+            while (true) {
+                kotlinx.coroutines.delay(4000)
+                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+            }
+        }
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -366,8 +378,6 @@ fun CategoryPreviewCard(
                     text = category.name,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                     color = colors.onSurface
                 )
                 Text(
@@ -549,26 +559,30 @@ private fun BookVisual(
                 clipToBounds = true
             )
         } else {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
-                drawCircle(colors.primary.copy(alpha = 0.18f), radius = w * 0.32f, center = Offset(w * 0.64f, h * 0.28f))
-                val hills = Path().apply {
-                    moveTo(0f, h * 0.66f)
-                    cubicTo(w * 0.22f, h * 0.48f, w * 0.42f, h * 0.72f, w * 0.60f, h * 0.54f)
-                    cubicTo(w * 0.74f, h * 0.40f, w * 0.88f, h * 0.72f, w, h * 0.58f)
-                    lineTo(w, h)
-                    lineTo(0f, h)
-                    close()
-                }
-                drawPath(hills, colors.onSurface.copy(alpha = 0.10f))
+            val brush = if (tokens.useGradients) {
+                Brush.linearGradient(
+                    listOf(
+                        colors.primaryContainer.copy(alpha = 0.40f),
+                        colors.secondaryContainer.copy(alpha = 0.30f),
+                        colors.tertiaryContainer.copy(alpha = 0.20f)
+                    )
+                )
+            } else {
+                Brush.linearGradient(listOf(colors.primaryContainer.copy(alpha = 0.15f), colors.primaryContainer.copy(alpha = 0.15f)))
             }
-            Icon(
-                imageVector = Icons.Rounded.MenuBook,
-                contentDescription = null,
-                tint = colors.primary,
-                modifier = Modifier.size(34.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(brush),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.MenuBook,
+                    contentDescription = null,
+                    tint = colors.primary.copy(alpha = 0.6f),
+                    modifier = Modifier.size(42.dp)
+                )
+            }
         }
         if (isPinned) {
             Surface(

@@ -8,6 +8,8 @@ data class ImportPreviewDto(
     val booksToUpdate: List<String>,
     val quizzesToCreate: List<String>,
     val quizzesToUpdate: List<String>,
+    val questionsToCreate: List<String>,
+    val questionsToUpdate: List<String>,
     val totalQuestions: Int,
     val totalSessions: Int,
     val totalCategories: Int,
