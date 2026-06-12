@@ -615,6 +615,11 @@ class BookToolsViewModel(
                         onUpdate(accumulatedResponse)
                     }
                 _uiState.value = _uiState.value.copy(isGenerating = false)
+            } catch (e: com.ahmedyejam.mks.data.repository.OllamaApiException) {
+                _uiState.value = _uiState.value.copy(
+                    isGenerating = false, 
+                    error = "Ollama Error: ${e.message}"
+                )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isGenerating = false, 
