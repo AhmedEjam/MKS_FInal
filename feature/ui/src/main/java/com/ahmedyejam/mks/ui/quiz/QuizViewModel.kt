@@ -1399,4 +1399,26 @@ class QuizViewModel @Inject constructor(
         autoAdvanceJob?.cancel()
         focusManager.disableFocusMode()
     }
+
+    fun getAskAiPromptDeckId(onResult: (Long) -> Unit) {
+        viewModelScope.launch {
+            val quizId = uiState.value.quizId
+            if (quizId == 0L) return@launch
+            val bookId = repository.getQuizById(quizId)?.bookId ?: return@launch
+            val decks = repository.getPromptDecksByBookId(bookId).firstOrNull() ?: emptyList()
+            val existingDeck = decks.find { it.title.equals("Ask AI", ignoreCase = true) || it.title.equals("Explain & Teach", ignoreCase = true) }
+            
+            if (existingDeck != null) {
+                onResult(existingDeck.id)
+            } else {
+                val newDeckId = repository.createDefaultPromptDeck(
+                    bookId = bookId,
+                    title = "Ask AI",
+                    description = "AI Agent configured to explain concepts and answer questions.",
+                    seedDefaultCards = true
+                )
+                onResult(newDeckId)
+            }
+        }
+    }
 }

@@ -168,6 +168,7 @@ enum class QuizSheetValue {
 fun QuizPlayerScreen(
     viewModel: QuizViewModel,
     onQuizFinished: (Long, Int, Int) -> Unit,
+    onAskAiClick: (Long) -> Unit = {},
     onBack: () -> Unit,
     onViewCategoryQuestions: (String) -> Unit = {},
 ) {
@@ -295,6 +296,7 @@ fun QuizPlayerScreen(
                     isAnswered = state.isAnswered,
                     score = state.score,
                     currentStreak = state.currentStreak,
+                    onAskAiClick = { currentQuestion?.id?.let(onAskAiClick) },
                     onBack = onBack,
                 )
             }
@@ -817,6 +819,7 @@ fun QuizTopBar(
     isAnswered: Boolean,
     score: Int,
     currentStreak: Int,
+    onAskAiClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
     val timerState by timerStateFlow.collectAsStateWithLifecycle()
@@ -839,6 +842,13 @@ fun QuizTopBar(
                             modifier = Modifier
                                 .size(18.dp)
                                 .padding(end = 4.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onAskAiClick) {
+                        Icon(
+                            Icons.Rounded.Lightbulb,
+                            contentDescription = "Ask AI",
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }

@@ -562,10 +562,15 @@ class BookToolsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(isLoading = false, error = "Prompt deck not found")
                 return@launch
             }
+            val bundle = repository.getBookStudyBundle(deck.bookId)
             _uiState.value = _uiState.value.copy(
                 promptDeck = deck,
                 promptCards = repository.getPromptCardsByDeckIdNow(deckId),
                 promptRuns = repository.getPromptRunsByDeckIdNow(deckId),
+                book = bundle?.book,
+                questions = bundle?.questions ?: emptyList(),
+                allNotes = bundle?.noteBlueprints ?: emptyList(),
+                allSources = bundle?.sourceDocuments ?: emptyList(),
                 isLoading = false
             )
         }

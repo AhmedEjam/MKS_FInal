@@ -334,11 +334,12 @@ fun MksNavHost(
         }
 
         composable(
-            route = "prompt_deck/{promptId}?cardId={cardId}&runId={runId}",
+            route = "prompt_deck/{promptId}?cardId={cardId}&runId={runId}&questionId={questionId}",
             arguments = listOf(
                 navArgument("promptId") { type = NavType.LongType },
                 navArgument("cardId") { type = NavType.LongType; defaultValue = -1L },
                 navArgument("runId") { type = NavType.LongType; defaultValue = -1L },
+                navArgument("questionId") { type = NavType.LongType; defaultValue = -1L },
             ),
         ) { backStackEntry ->
             val promptId = backStackEntry.requirePositiveLongArg("promptId")
@@ -350,12 +351,15 @@ fun MksNavHost(
             val cardId = if (cardIdInput == -1L) null else cardIdInput
             val runIdInput = backStackEntry.arguments?.getLong("runId") ?: -1L
             val runId = if (runIdInput == -1L) null else runIdInput
+            val questionIdInput = backStackEntry.arguments?.getLong("questionId") ?: -1L
+            val questionId = if (questionIdInput == -1L) null else questionIdInput
 
             val viewModel: BookToolsViewModel = hiltViewModel()
             AiPromptDeckScreen(
                 promptId = promptId,
                 focusedCardId = cardId,
                 focusedRunId = runId,
+                seededQuestionId = questionId,
                 viewModel = viewModel,
             ) { navController.popBackStack() }
         }
@@ -453,6 +457,11 @@ fun MksNavHost(
                         popUpTo("library") { inclusive = false }
                     }
                 },
+                onAskAiClick = { questionId ->
+                    quizViewModel.getAskAiPromptDeckId { promptId ->
+                        navController.navigate("prompt_deck/$promptId?questionId=$questionId")
+                    }
+                },
                 onBack = { navController.popBackStack() },
             ) { category ->
                 navController.navigate("category/${Uri.encode(category)}")
@@ -547,6 +556,11 @@ fun MksNavHost(
                         navController.navigate("library") {
                             popUpTo("library") { inclusive = true }
                         }
+                    }
+                },
+                onAskAiClick = { questionId ->
+                    quizViewModel.getAskAiPromptDeckId { promptId ->
+                        navController.navigate("prompt_deck/$promptId?questionId=$questionId")
                     }
                 },
                 onBack = { navController.popBackStack() },

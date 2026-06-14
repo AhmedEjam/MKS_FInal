@@ -861,6 +861,7 @@ fun AiPromptDeckScreen(
     promptId: Long,
     focusedCardId: Long? = null,
     @Suppress("UNUSED_PARAMETER") focusedRunId: Long? = null,
+    seededQuestionId: Long? = null,
     viewModel: BookToolsViewModel,
     onBack: () -> Unit
 ) {
@@ -874,9 +875,14 @@ fun AiPromptDeckScreen(
 
     val listState = rememberLazyListState()
 
-    LaunchedEffect(state.promptCards, focusedCardId) {
+    LaunchedEffect(state.promptCards, focusedCardId, seededQuestionId) {
         if (focusedCardId != null) {
             selectedCardId = focusedCardId
+        } else if (seededQuestionId != null && state.promptCards.isNotEmpty() && selectedCardId == null) {
+            val explainCard = state.promptCards.find { it.title.contains("Explain", ignoreCase = true) || it.title.contains("Ask AI", ignoreCase = true) }
+            if (explainCard != null) {
+                selectedCardId = explainCard.id
+            }
         }
     }
 
@@ -904,6 +910,29 @@ fun AiPromptDeckScreen(
         variables.forEach { if (!values.containsKey(it)) values[it] = "" }
         val currentKeys = values.keys.toList()
         currentKeys.forEach { if (it !in variables) values.remove(it) }
+    }
+
+    LaunchedEffect(selectedCardId, seededQuestionId, variables, state.questions) {
+        if (selectedCardId != null && seededQuestionId != null && variables.isNotEmpty() && state.questions.isNotEmpty()) {
+            val q = state.questions.find { it.id == seededQuestionId }
+            if (q != null) {
+                val qText = buildString {
+                    appendLine("Question: ${q.text}")
+                    if (q.options.isNotEmpty()) {
+                        appendLine("Options:")
+                        q.options.forEach { appendLine("- $it") }
+                    }
+                    if (!q.explanation.isNullOrBlank()) {
+                        appendLine("Explanation: ${q.explanation}")
+                    }
+                }
+                
+                val varName = variables.firstOrNull { it.contains("question", ignoreCase = true) || it.contains("content", ignoreCase = true) || it.contains("text", ignoreCase = true) }
+                if (varName != null && values[varName].isNullOrBlank()) {
+                    values[varName] = qText
+                }
+            }
+        }
     }
 
     val renderedPrompt by remember(editBody, values.toMap()) {
@@ -1460,6 +1489,8 @@ fun EntitySelectorDialog(
     } }
     var quizExpanded by remember { mutableStateOf(false) }
 
+    val selectedItems = remember { mutableStateMapOf<String, com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity?>() }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Select Data to Inject") },
@@ -1484,12 +1515,20 @@ fun EntitySelectorDialog(
                                 item { Text("No notes available.") }
                             } else {
                                 items(state.allNotes) { note ->
-                                    Card(modifier = Modifier.fillMaxWidth().clickable {
-                                        onEntitySelected("Title: ${note.title}\n\n${note.body}", null)
-                                    }) {
-                                        Column(Modifier.padding(12.dp)) {
-                                            Text(note.title, fontWeight = FontWeight.Bold)
-                                            Text(note.body.take(100), style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                                    val previewText = "Title: ${note.title}\n\n${note.body}"
+                                    val isSelected = selectedItems.containsKey(previewText)
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            if (isSelected) selectedItems.remove(previewText) else selectedItems[previewText] = null
+                                        },
+                                        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                                    ) {
+                                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[previewText] = null else selectedItems.remove(previewText) })
+                                            Column {
+                                                Text(note.title, fontWeight = FontWeight.Bold)
+                                                Text(note.body.take(100), style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                                            }
                                         }
                                     }
                                 }
@@ -1500,12 +1539,20 @@ fun EntitySelectorDialog(
                                 item { Text("No sources available.") }
                             } else {
                                 items(state.allSources) { source ->
-                                    Card(modifier = Modifier.fillMaxWidth().clickable {
-                                        onEntitySelected("Title: ${source.title}\nType: ${source.sourceType}\nDetails:\n${source.description.orEmpty()}", source)
-                                    }) {
-                                        Column(Modifier.padding(12.dp)) {
-                                            Text(source.title, fontWeight = FontWeight.Bold)
-                                            Text(source.description.orEmpty().take(100), style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                                    val previewText = "Title: ${source.title}\nType: ${source.sourceType}\nDetails:\n${source.description.orEmpty()}"
+                                    val isSelected = selectedItems.containsKey(previewText)
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            if (isSelected) selectedItems.remove(previewText) else selectedItems[previewText] = source
+                                        },
+                                        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                                    ) {
+                                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[previewText] = source else selectedItems.remove(previewText) })
+                                            Column {
+                                                Text(source.title, fontWeight = FontWeight.Bold)
+                                                Text(source.description.orEmpty().take(100), style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                                            }
                                         }
                                     }
                                 }
@@ -1584,11 +1631,18 @@ fun EntitySelectorDialog(
                                     val previewText = builder.toString().trim()
                                     
                                     if (previewText.isNotBlank()) {
-                                        Card(modifier = Modifier.fillMaxWidth().clickable {
-                                            onEntitySelected(previewText, null)
-                                        }) {
-                                            Column(Modifier.padding(12.dp)) {
-                                                Text(previewText.take(150), maxLines = 4, style = MaterialTheme.typography.bodySmall)
+                                        val isSelected = selectedItems.containsKey(previewText)
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth().clickable {
+                                                if (isSelected) selectedItems.remove(previewText) else selectedItems[previewText] = null
+                                            },
+                                            colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                                        ) {
+                                            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[previewText] = null else selectedItems.remove(previewText) })
+                                                Column {
+                                                    Text(previewText.take(150), maxLines = 4, style = MaterialTheme.typography.bodySmall)
+                                                }
                                             }
                                         }
                                     }
@@ -1599,6 +1653,18 @@ fun EntitySelectorDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+        confirmButton = {
+            Button(
+                onClick = { 
+                    val joined = selectedItems.keys.joinToString("\n\n---\n\n")
+                    val source = selectedItems.values.firstOrNull { it != null }
+                    onEntitySelected(joined, source) 
+                },
+                enabled = selectedItems.isNotEmpty()
+            ) {
+                Text("Inject Selected (${selectedItems.size})")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
