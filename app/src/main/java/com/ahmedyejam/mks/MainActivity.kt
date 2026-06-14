@@ -23,6 +23,9 @@ import com.ahmedyejam.mks.ui.theme.MKSTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+import dagger.hilt.android.AndroidEntryPoint
+
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private val _sharedUris = MutableStateFlow<List<Uri>?>(null)
     val sharedUris = _sharedUris.asStateFlow()

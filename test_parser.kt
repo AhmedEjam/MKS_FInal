@@ -1,5 +1,5 @@
-import com.ahmedyejam.mks.data.import.parser.TextFlashcardParser
-import com.ahmedyejam.mks.data.import.parser.TextParseMode
+import com.ahmedyejam.mks.data.importer.parser.TextFlashcardParser
+import com.ahmedyejam.mks.data.importer.parser.TextParseMode
 
 fun main() {
     val parser = TextFlashcardParser()

@@ -56,7 +56,7 @@ The project includes both unit tests and instrumented tests.
 The following example demonstrates how to test the `SpreadsheetHeaderMapper` logic, which is critical for the import pipeline.
 
 ```kotlin
-package com.ahmedyejam.mks.data.import.parser
+package com.ahmedyejam.mks.data.importer.parser
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

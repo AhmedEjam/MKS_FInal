@@ -21,8 +21,8 @@
 #-renamesourcefileattribute SourceFile
 # Kotlin serialization / import DTOs used for portable bundle parsing.
 -keepattributes RuntimeVisibleAnnotations,RuntimeInvisibleAnnotations,Signature,InnerClasses,EnclosingMethod
--keep class com.ahmedyejam.mks.data.import.dto.** { *; }
--keepclassmembers class com.ahmedyejam.mks.data.import.dto.** { *; }
+-keep class com.ahmedyejam.mks.data.importer.dto.** { *; }
+-keepclassmembers class com.ahmedyejam.mks.data.importer.dto.** { *; }
 
 # Room and Moshi publish consumer rules, but keep generated adapter metadata stable.
 -keep class **JsonAdapter { *; }

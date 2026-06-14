@@ -6,7 +6,9 @@ import coil.ImageLoaderFactory
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import com.ahmedyejam.mks.di.AppModule
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class MksApplication : Application(), ImageLoaderFactory {
     
     lateinit var appModule: AppModule

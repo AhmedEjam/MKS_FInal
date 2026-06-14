@@ -25,3 +25,9 @@ dependencyResolutionManagement {
 rootProject.name = "MKS"
 include(":app")
  
+include(":core:model")
+include(":core:database")
+include(":core:data")
+include(":core:network")
+include(":core:ui")
+include(":feature:ui")
