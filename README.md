@@ -2,10 +2,10 @@
 
 **MKS** is an advanced Android quiz and knowledge-bank application that imports educational content from multiple file formats (XLSX, CSV, JSON, HTML, etc.) and presents interactive learning experiences through quizzes, flashcards, slideshows, notes, and AI prompt decks.
 
-**Repository**: `AhmedEjam/MKS_Android_Final`  
+**Repository**: `AhmedEjam/MKS_FInal`  
 **Language**: Kotlin 99.5%  
 **Framework**: Jetpack Compose + Material3  
-**Database**: Room v26 (25 migration steps)
+**Database**: Room v28 (27 migration steps)
 
 ---
 
@@ -30,8 +30,8 @@ This README provides a comprehensive index to help AI agents (Gemini Pro, Claude
 ```
 ✅ Language:           Kotlin
 ✅ UI Framework:       Jetpack Compose (Material3)
-✅ Dependency Inject:  Manual AppModule (not Hilt)
-✅ Database:           Room v26 (25 migrations)
+✅ Dependency Inject:  Dagger Hilt (with legacy AppModule)
+✅ Database:           Room v28 (27 migrations)
 ✅ Image Loading:      Coil (25% RAM cache)
 ✅ Preferences:        DataStore
 ✅ Localization:       English + Arabic (RTL)
@@ -40,19 +40,15 @@ This README provides a comprehensive index to help AI agents (Gemini Pro, Claude
 
 ### **Dependency Injection Container**
 
-All dependencies managed via `AppModule` (manual DI, no Hilt):
+ViewModels and dependencies are managed and injected via **Dagger Hilt**. The legacy `AppModule` is retained only for early startup settings (language/theme) in MainActivity.
 
 ```kotlin
-// Access in ViewModels & Composables:
-appModule.database           // MksDatabase (Room v26)
-appModule.repository         // MksRepository (data access)
-appModule.fileManager        // FileManager (I/O)
-appModule.importManager      // ImportLibraryManager (multi-format)
-appModule.exportManager      // ExportManager (ZIP export)
-appModule.dataStoreManager   // DataStoreManager (preferences)
-appModule.focusManager       // FocusManager (adaptive training)
-appModule.globalSearchRepository  // Cross-entity search
-appModule.reviewRepository   // Unified review queue
+// ViewModels obtain dependencies via constructor injection:
+@HiltViewModel
+class LibraryViewModel @Inject constructor(
+    private val repository: MksRepository,
+    // ...
+) : ViewModel()
 ```
 
 ---
@@ -71,8 +67,8 @@ mks/
 │
 ├── data/
 │   ├── local/
-│   │   ├── MksDatabase.kt            Room v26, 24 entities, 24 DAOs
-│   │   ├── MksMigrations.kt          25 migration steps (1→26)
+│   │   ├── MksDatabase.kt            Room v28, 27 entities, 27 DAOs
+│   │   ├── MksMigrations.kt          27 migration steps (1→28)
 │   │   ├── Converters.kt             Type converters
 │   │   ├── FileManager.kt            I/O, HTTP, image management
 │   │   ├── entity/                   24 entity classes (see below)
@@ -212,9 +208,9 @@ mks/
 
 ---
 
-## 🗄️ Database Schema (Room v26)
+## 🗄️ Database Schema (Room v28)
 
-**24 Entity Classes, 24 DAO Interfaces**
+**27 Entity Classes, 27 DAO Interfaces**
 
 ### **Workspace Entities**
 - `WorkspaceEntity` - Multi-workspace support
@@ -237,17 +233,20 @@ mks/
 - `SlideshowCourseEntity` - Course metadata
 - `CourseSlideEntity` - Individual slides
 - `NoteBlueprintEntity` - Note templates
+- `NoteCollectionEntity` - Collection of note blueprints
 - `PromptDeckEntity` - AI prompt collections
 - `PromptCardEntity` - Individual prompts
 - `PromptRunEntity` - Execution history
 - `KnowledgeStudySessionEntity` - Non-quiz progress
+- `StudySessionEntity` - Non-quiz study session progress
 
 ### **Additional**
 - `AssetReferenceEntity` - Asset ownership index
 - `MistakeLogEntryEntity` - Mistake tracking
 - `AnnotationEntity` - Highlights & notes
+- `SourceDocumentAssetEntity` - Assets linked to source documents
 
-**Migrations**: 25 incremental steps (v1→v26) in `MksMigrations.kt`
+**Migrations**: 27 incremental steps (v1→v28) in `MksMigrations.kt`
 
 ---
 
@@ -386,21 +385,25 @@ Books are containers that hold multiple learning formats:
 
 ## 🔍 Key Development Patterns
 
-### **Manual DI Pattern (AppModule)**
+### **Dagger Hilt DI Pattern**
 ```kotlin
+@HiltAndroidApp
 class MksApplication : Application() {
-    lateinit var appModule: AppModule
+    lateinit var appModule: AppModule // Legacy container for startup settings
     override fun onCreate() {
-        appModule = AppModule(this)  // Initialize once
+        super.onCreate()
+        appModule = AppModule(this)
     }
 }
 
-// Access in ViewModels:
-val viewModel = viewModel(factory = object : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return QuizViewModel(appModule.repository) as T
-    }
-})
+// ViewModels inject dependencies directly:
+@HiltViewModel
+class QuizViewModel @Inject constructor(
+    private val repository: MksRepository
+) : ViewModel()
+
+// Instantiation in NavHost:
+val viewModel: QuizViewModel = hiltViewModel()
 ```
 
 ### **StateFlow in UI**
@@ -531,7 +534,7 @@ The import pipeline recognizes both English and Arabic field names:
 | Aspect | Details |
 |--------|---------|
 | **Memory** | 25% RAM for image cache (Coil) |
-| **Database** | Room v26, 25 incremental migrations |
+| **Database** | Room v28, 27 incremental migrations |
 | **UI** | Jetpack Compose with lazy loading |
 | **Images** | Coil disk + memory cache (crossfade) |
 | **Lists** | LazyVerticalGrid with stable keys |
@@ -576,10 +579,10 @@ The import pipeline recognizes both English and Arabic field names:
 ## 📝 Code Statistics
 
 - **Total Lines**: ~1000 Compose screens, 2600+ repository lines
-- **Entities**: 24 Room entities
-- **DAOs**: 24 data access objects
+- **Entities**: 27 Room entities
+- **DAOs**: 27 data access objects
 - **Routes**: 22+ navigation routes
-- **Migrations**: 25 database versions
+- **Migrations**: 27 database versions
 - **Themes**: 7 variants + design tokens
 
 ---
@@ -605,14 +608,14 @@ The import pipeline recognizes both English and Arabic field names:
 
 ## 📞 Contact & Support
 
-- **Repository**: https://github.com/AhmedEjam/MKS_Android_Final
+- **Repository**: https://github.com/AhmedEjam/MKS_FInal
 - **Owner**: AhmedEjam
 - **License**: (See LICENSE file if present)
 
 ---
 
 **Last Updated**: June 9, 2026  
-**Database Version**: Room v26 (25 migrations)  
+**Database Version**: Room v28 (27 migrations)  
 **Kotlin**: 99.5% of codebase
 
 ---

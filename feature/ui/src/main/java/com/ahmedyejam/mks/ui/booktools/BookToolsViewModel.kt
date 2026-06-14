@@ -644,6 +644,48 @@ class BookToolsViewModel @Inject constructor(
         }
     }
 
+    fun createTemplatePromptCard(deckId: Long, templateType: String) {
+        viewModelScope.launch {
+            try {
+                val title = when (templateType) {
+                    "QUIZ" -> "Quiz generator"
+                    "FLASHCARDS" -> "Flashcard generator"
+                    "BLUEPRINT" -> "Blueprint maker"
+                    else -> "Template Prompt"
+                }
+                val promptText = when (templateType) {
+                    "QUIZ" -> "<system_role>You are an expert test creator and medical educator.</system_role>\n<instructions>Analyze the provided material and generate 3 to 5 high-quality, challenging multiple-choice questions.\nEnsure that:\n1. The stem is clinically relevant or focuses on key conceptual understanding.\n2. There are 4-5 plausible options.\n3. The correct answer is unambiguously correct.\n4. A detailed rationale/explanation is provided for why the correct answer is right and why the distractors are wrong.\nOutput strictly in JSON format as an array of objects with keys: \"question\", \"options\" (array of strings), \"answer\" (string), \"explanation\" (string).</instructions>\n<material>\n{material}\n</material>"
+                    "FLASHCARDS" -> "<system_role>You are an expert learning designer.</system_role>\n<instructions>Convert the core concepts from the provided material into concise, high-yield spaced-repetition flashcards.\nFollow these rules:\n1. Make the front of the card a clear, unambiguous question or cloze deletion.\n2. Keep the back of the card concise and to the point.\n3. Provide an optional brief hint to aid recall.\nOutput strictly in JSON format as an array of objects with keys: \"front\", \"back\", \"hint\".</instructions>\n<material>\n{material}\n</material>"
+                    "BLUEPRINT" -> "<system_role>You are an expert technical writer and educator.</system_role>\n<instructions>Synthesize the provided material into a highly structured, comprehensive, yet easy-to-digest study blueprint.\nFormat the output in Markdown with the following sections:\n- **Core Summary**: A brief 2-3 sentence overview.\n- **Key Concepts**: Bulleted list of the most important takeaways.\n- **Detailed Breakdown**: A structured analysis with subheadings.\n- **Common Pitfalls / Mistakes to Avoid**: What students usually get wrong about this.\n- **Review Cues**: Short questions to test memory.</instructions>\n<material>\n{material}\n</material>"
+                    else -> ""
+                }
+                val outputType = when (templateType) {
+                    "QUIZ" -> PromptOutputType.QUIZ
+                    "FLASHCARDS" -> PromptOutputType.FLASHCARDS
+                    "BLUEPRINT" -> PromptOutputType.BLUEPRINT
+                    else -> PromptOutputType.OTHER
+                }
+                val variablesJson = extractVariables(promptText).joinToString(prefix = "[", postfix = "]") { "\"${it.escapeJsonValue()}\"" }
+                val id = repository.insertPromptCard(
+                    PromptCardEntity(
+                        deckId = deckId,
+                        title = title,
+                        promptText = promptText,
+                        variablesJson = variablesJson,
+                        outputType = outputType,
+                        sortOrder = _uiState.value.promptCards.size
+                    )
+                )
+                _uiState.value = _uiState.value.copy(
+                    promptCards = repository.getPromptCardsByDeckIdNow(deckId),
+                    successMessage = "Template prompt card created"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to create template card: ${e.message}")
+            }
+        }
+    }
+
     fun updatePromptCard(card: PromptCardEntity) {
         viewModelScope.launch {
             try {

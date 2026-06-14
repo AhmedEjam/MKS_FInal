@@ -6,8 +6,8 @@
 
 - **Language:** Kotlin
 - **UI Framework:** Jetpack Compose (single-activity)
-- **DI:** Manual `AppModule` (not Hilt)
-- **Database:** Room v26 (25 migration steps, v1→v26)
+- **DI:** Dagger Hilt (with legacy `AppModule` for startup settings)
+- **Database:** Room v28 (27 migration steps, v1→v28)
 - **File Import:** Multi-format (XLSX, CSV/TSV, JSON, HTML, TEXT, ZIP)
 - **Images:** Coil (memory + disk cache), embedded XLSX images, HTTP downloads
 - **Preferences:** DataStore
@@ -16,27 +16,30 @@
 
 ## Architecture Fundamentals
 
-### Manual Dependency Injection Pattern
+### Dependency Injection Pattern (Dagger Hilt + Legacy AppModule)
 
-MKS uses a custom `AppModule` container instead of Hilt. This is initialized once in `MksApplication`:
+MKS uses **Dagger Hilt** for dependency injection. The application class is annotated with `@HiltAndroidApp`:
 
 ```kotlin
+@HiltAndroidApp
 class MksApplication : Application(), ImageLoaderFactory {
-    lateinit var appModule: AppModule
+    lateinit var appModule: AppModule // Legacy container for startup settings
+
     override fun onCreate() {
+        super.onCreate()
         appModule = AppModule(this)
     }
 }
 ```
 
-**Key insight:** Access dependencies via `appModule` throughout the codebase. All ViewModels receive `appModule.dependency` through manual `ViewModelProvider.Factory` (see Navigation section).
+**Key insight:** ViewModels and entry points are fully managed by Hilt. They are annotated with `@HiltViewModel` and inject dependencies via constructor injection (e.g., `@Inject constructor(private val repository: MksRepository)`). In Compose screens, ViewModels are resolved using `hiltViewModel()` instead of manual factories. A legacy `AppModule` is retained to load preferences (language, theme) in `MainActivity` before the Compose context starts.
 
-### Dependency Injection Container
+### Dependency Injection Container (Hilt & Legacy AppModule)
 
-`AppModule` provides lazy-initialized singletons (evaluated once, on first access):
+Hilt manages and provides dependencies like `MksRepository`, `FileManager`, etc., via `@Inject`. For legacy compatibility, the `AppModule` still exposes lazy-initialized singletons:
 
 ```
-database              → MksDatabase (Room v26 with 25 migration steps)
+database              → MksDatabase (Room v28 with 27 migration steps)
 fileManager           → FileManager (image I/O, HTTP downloads)
 repository            → MksRepository (single source of truth)
 exportManager         → ExportManager (quiz/book/knowledge-bank ZIP export)
@@ -50,9 +53,9 @@ applicationScope      → CoroutineScope(Dispatchers.Default)
 
 ## Database & Entities
 
-### Schema (Room v26)
+### Schema (Room v28)
 
-The active schema is defined in `app/src/main/java/com/ahmedyejam/mks/data/local/MksDatabase.kt` and exported through Room/KSP when the Android build runs.
+The active schema is defined in `core/database/src/main/java/com/ahmedyejam/mks/data/local/MksDatabase.kt` and exported through Room/KSP when the Android build runs.
 
 **Workspace entities:**
 - `WorkspaceEntity`: multi-workspace support with defaults, soft deletes.
@@ -73,15 +76,18 @@ The active schema is defined in `app/src/main/java/com/ahmedyejam/mks/data/local
 - `SlideshowCourseEntity`: slideshow course metadata, progress, pin/system flags, derivation flags, optional source quiz, and timestamps.
 - `CourseSlideEntity`: slide body, notes, image, order, completion state, optional source question, and sync config.
 - `NoteBlueprintEntity`: note/blueprint body, summary, bullet points, tags, review counters, optional source question, and timestamps.
+- `NoteCollectionEntity`: collection grouping of note blueprints.
 - `PromptDeckEntity`: deck metadata for AI prompts, tags, and timestamps.
 - `PromptCardEntity`: individual prompt within a deck, stem, variables, output type, and timestamps.
 - `PromptRunEntity`: history of prompt execution with variables and output.
 - `KnowledgeStudySessionEntity`: generic progress tracker for non-quiz study surfaces.
+- `StudySessionEntity`: non-quiz study session progress.
 
 **Assets & Reference entities:**
 - `AssetReferenceEntity`: normalized local asset ownership index.
 - `QuestionAssetEntity`: generic assets linked to questions (images, docs, files).
 - `SourceDocumentEntity`: source materials linked to books for reference.
+- `SourceDocumentAssetEntity`: assets associated with source reference documents.
 
 **Additional Study entities:**
 - `MistakeLogEntryEntity`: tracks mistakes across quizzes with user explanations.
@@ -89,13 +95,15 @@ The active schema is defined in `app/src/main/java/com/ahmedyejam/mks/data/local
 
 ### Migrations
 
-Currently at v26 (25 migration steps total: 1→2, 2→3, ..., 25→26).
-Active schema source of truth: `app/src/main/java/com/ahmedyejam/mks/data/local/MksDatabase.kt`.
+Currently at v28 (27 migration steps total: 1→2, 2→3, ..., 27→28).
+Active schema source of truth: `core/database/src/main/java/com/ahmedyejam/mks/data/local/MksDatabase.kt`.
 All migrations are centralized in `com.ahmedyejam.mks.data.local.MksMigrations`.
 
 Migration regression coverage now includes:
 - `Migration15To16Test`: verifies the v15→v16 knowledge-bank tables/columns/indexes and guards against duplicate `slideshow_courses.isPinned` columns.
 - `Migration16To17Test`: verifies the v16→v17 category/asset tables and indexes.
+- `Migration26To27`: verifies addition of tags, Spaced Repetition tracking fields, note collections, and study sessions tables.
+- `Migration27To28`: verifies creation of the `source_document_assets` table.
 
 Pattern for adding columns to existing tables:
 
@@ -454,8 +462,7 @@ library                                 # LibraryScreen (start after welcome)
 ```
 
 **Knowledge Bank Screens:**
-- All routed through unified `BookToolsViewModel` or dedicated ViewModels
-- All use manual DI pattern like other screens
+- Routed through `BookToolsViewModel` or dedicated ViewModels using Hilt DI
 - Integrated into `MksNavHost.kt` with appropriate route parameters
 
 **Utility Screens:**
@@ -463,23 +470,16 @@ library                                 # LibraryScreen (start after welcome)
 - `review_dashboard` — unified review queue via `ReviewDashboardViewModel`
 - `data_tools` — bulk import/export via `DataToolsViewModel`
 
-### ViewModelFactory Pattern (Manual DI)
+### Hilt Dependency Injection in Navigation
 
-All viewmodels created with custom factories (no Hilt):
+All ViewModels are instantiated using Hilt's `hiltViewModel()` inside `MksNavHost.kt` rather than custom factories:
 
 ```kotlin
-val viewModel: CompilerViewModel = viewModel(
-    factory = object : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return CompilerViewModel(appModule.context, appModule.repository) as T
-        }
-    }
-)
+val viewModel: CompilerViewModel = hiltViewModel()
 ```
 
 **Pattern used in:**
 - `MksNavHost.kt` for all screen routes
-- Each Composable receives dependencies from `appModule`
 
 ### Data Loading in Effects
 
@@ -680,8 +680,8 @@ app/src/main/
 │  │  │  │  ├─ XlsxImageResolver.kt
 │  │  │  │  └─ XlsxLibraryCompiler.kt
 │  │  │  └─ validation/ImportValidator.kt
-│  │  │  ├─ MksDatabase.kt            # Room v26
-│  │  │  ├─ MksMigrations.kt          # 25 migration steps (1→26)
+│  │  │  ├─ MksDatabase.kt            # Room v28
+│  │  │  ├─ MksMigrations.kt          # 27 migration steps (1→28)
 │  │  │  ├─ Converters.kt             # TypeConverters
 │  │  │  ├─ entity/                   # 24 entity classes
 │  │  │  │  ├─ {Book,Quiz,Question,Session,Category}Entity.kt
@@ -777,12 +777,12 @@ app/src/main/
 
 ## Architecture Decisions
 
-### Why Manual DI Instead of Hilt?
+### Why Dagger Hilt Instead of Manual DI?
 
-- **Simpler scope management** for single-activity app
-- **Explicit dependency visibility** (no annotation magic)
-- **Easier debugging** during development
-- **Legacy compatibility** if converting other projects
+- **Standardized scope management** using Android Jetpack integration.
+- **Automatic ViewModel lifecycle injection** via `@HiltViewModel` and `hiltViewModel()`.
+- **Improved scalability and boilerplate reduction** across modular architecture.
+- **Legacy AppModule compatibility** retained specifically for low-level application and main activity startup preferences.
 
 ### Why Multi-Stage Parsing?
 
