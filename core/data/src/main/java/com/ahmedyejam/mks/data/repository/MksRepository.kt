@@ -433,6 +433,10 @@ class MksRepository constructor(
         mistakeLogDao.snooze(mistakeId, reviewAt, System.currentTimeMillis())
     }
 
+    suspend fun updateMistake(entry: MistakeLogEntryEntity) {
+        mistakeLogDao.updateMistake(entry.copy(updatedAt = System.currentTimeMillis()))
+    }
+
     suspend fun deleteMistake(entry: MistakeLogEntryEntity) {
         mistakeLogDao.softDeleteMistakeById(entry.id, System.currentTimeMillis())
     }

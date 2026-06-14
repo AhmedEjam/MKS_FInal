@@ -148,6 +148,22 @@ class BookToolsViewModel @Inject constructor(
         }
     }
 
+    fun toggleMistakeFixed(mistakeId: Long) {
+        viewModelScope.launch {
+            val mistake = _uiState.value.mistakes.find { it.id == mistakeId } ?: return@launch
+            try {
+                val updatedMistake = mistake.copy(isFixed = !mistake.isFixed)
+                repository.updateMistake(updatedMistake)
+                _uiState.value = _uiState.value.copy(
+                    mistakes = _uiState.value.mistakes.map { if (it.id == mistakeId) updatedMistake else it },
+                    successMessage = if (updatedMistake.isFixed) "Mistake marked as fixed" else "Mistake unmarked"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to update mistake: ${e.message}")
+            }
+        }
+    }
+
     fun deleteMistake(mistake: MistakeLogEntryEntity) {
         viewModelScope.launch {
             runCatching { repository.deleteMistake(mistake) }

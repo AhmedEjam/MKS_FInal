@@ -203,7 +203,7 @@ fun BookKnowledgeDashboardScreen(
 
                     BookTab.MISTAKES -> MistakesTab(
                         uiState.mistakes,
-                        { viewModel.updateQuestionNote(it, "Marked as fixed") },
+                        { viewModel.toggleMistakeFixed(it) },
                         { itemToSnooze = it },
                         { viewModel.deleteMistake(it) })
 
