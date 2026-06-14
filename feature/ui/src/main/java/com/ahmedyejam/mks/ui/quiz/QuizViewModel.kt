@@ -1410,17 +1410,19 @@ class QuizViewModel @Inject constructor(
         viewModelScope.launch {
             val quizId = uiState.value.quizId
             if (quizId == 0L) return@launch
-            val bookId = quizRepository.getQuizById(quizId)?.bookId ?: return@launch
+            val quiz = quizRepository.getQuizById(quizId)
+            val bookId = quiz?.bookId ?: return@launch
+            val expectedDeckTitle = "Explanations of - ${quiz.title}"
             val decks = knowledgeRepository.getPromptDecksByBookId(bookId).firstOrNull() ?: emptyList()
-            val existingDeck = decks.find { it.title.equals("Ask AI", ignoreCase = true) || it.title.equals("Explain & Teach", ignoreCase = true) }
+            val existingDeck = decks.find { it.title.equals(expectedDeckTitle, ignoreCase = true) }
             
             if (existingDeck != null) {
                 onResult(existingDeck.id)
             } else {
-                val newDeckId = knowledgeRepository.createDefaultPromptDeck(
+                val newDeckId = knowledgeRepository.createExplainPromptDeck(
                     bookId = bookId,
-                    title = "Ask AI",
-                    description = "AI Agent configured to explain concepts and answer questions.",
+                    title = expectedDeckTitle,
+                    description = "AI Agent configured to explain concepts and answer questions for ${quiz.title}.",
                     seedDefaultCards = true
                 )
                 onResult(newDeckId)

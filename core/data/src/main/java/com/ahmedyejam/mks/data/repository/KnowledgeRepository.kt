@@ -645,6 +645,21 @@ class KnowledgeRepository @Inject constructor(
         )
     }
 
+    suspend fun createExplainPromptDeck(bookId: Long, title: String, description: String? = null, seedDefaultCards: Boolean = false): Long {
+        val deckId = insertPromptDeck(
+            PromptDeckEntity(
+                bookId = bookId,
+                title = title.ifBlank { "Explain & Teach" },
+                description = description
+            ),
+            seedDefaultCards = false
+        )
+        if (seedDefaultCards) {
+            seedExplainPromptCard(deckId)
+        }
+        return deckId
+    }
+
     suspend fun createFlashcardDeckFromBlueprint(noteId: Long): Long {
         val note = noteBlueprintDao.getNoteById(noteId) ?: throw IllegalArgumentException("Blueprint not found.")
         val deckId = insertFlashcardDeck(
@@ -1432,6 +1447,21 @@ class KnowledgeRepository @Inject constructor(
             )
         )
         promptCardDao.insertCards(cards)
+    }
+
+    private suspend fun seedExplainPromptCard(deckId: Long) {
+        val now = System.currentTimeMillis()
+        val explainCard = PromptCardEntity(
+            deckId = deckId,
+            title = "Explain & Teach",
+            promptText = "<system_role>You are an expert tutor in {relevant_speciality}.</system_role>\n<instructions>Please explain the following question part: {part_to_explain}.\n\nHere is the full question context:\n{question}</instructions>",
+            variablesJson = "[\"relevant_speciality\", \"part_to_explain\", \"question\"]",
+            outputType = PromptOutputType.NOTE,
+            sortOrder = 0,
+            createdAt = now,
+            updatedAt = now
+        )
+        promptCardDao.insertCard(explainCard)
     }
 
     suspend fun updateCourseSlide(slide: CourseSlideEntity) {

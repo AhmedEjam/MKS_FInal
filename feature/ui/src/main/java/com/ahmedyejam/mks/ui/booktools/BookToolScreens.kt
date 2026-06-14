@@ -931,6 +931,11 @@ fun AiPromptDeckScreen(
                 if (varName != null && values[varName].isNullOrBlank()) {
                     values[varName] = qText
                 }
+                
+                val partName = variables.firstOrNull { it.contains("part_to_explain", ignoreCase = true) || it.contains("part", ignoreCase = true) }
+                if (partName != null && values[partName].isNullOrBlank()) {
+                    values[partName] = "the entire question, options, and explanation"
+                }
             }
         }
     }
@@ -1499,7 +1504,7 @@ fun EntitySelectorDialog(
     } }
     var quizExpanded by remember { mutableStateOf(false) }
 
-    val selectedItems = remember { mutableStateMapOf<String, com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity?>() }
+    val selectedItems = remember { mutableStateMapOf<String, Pair<String, com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity?>>() }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1526,15 +1531,16 @@ fun EntitySelectorDialog(
                             } else {
                                 items(state.allNotes) { note ->
                                     val previewText = "Title: ${note.title}\n\n${note.body}"
-                                    val isSelected = selectedItems.containsKey(previewText)
+                                    val itemId = "Note_${note.id}"
+                                    val isSelected = selectedItems.containsKey(itemId)
                                     Card(
                                         modifier = Modifier.fillMaxWidth().clickable {
-                                            if (isSelected) selectedItems.remove(previewText) else selectedItems[previewText] = null
+                                            if (isSelected) selectedItems.remove(itemId) else selectedItems[itemId] = previewText to null
                                         },
                                         colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                                     ) {
                                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[previewText] = null else selectedItems.remove(previewText) })
+                                            androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[itemId] = previewText to null else selectedItems.remove(itemId) })
                                             Column {
                                                 Text(note.title, fontWeight = FontWeight.Bold)
                                                 Text(note.body.take(100), style = MaterialTheme.typography.bodySmall, maxLines = 2)
@@ -1550,15 +1556,16 @@ fun EntitySelectorDialog(
                             } else {
                                 items(state.allSources) { source ->
                                     val previewText = "Title: ${source.title}\nType: ${source.sourceType}\nDetails:\n${source.description.orEmpty()}"
-                                    val isSelected = selectedItems.containsKey(previewText)
+                                    val itemId = "Source_${source.id}"
+                                    val isSelected = selectedItems.containsKey(itemId)
                                     Card(
                                         modifier = Modifier.fillMaxWidth().clickable {
-                                            if (isSelected) selectedItems.remove(previewText) else selectedItems[previewText] = source
+                                            if (isSelected) selectedItems.remove(itemId) else selectedItems[itemId] = previewText to source
                                         },
                                         colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                                     ) {
                                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                            androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[previewText] = source else selectedItems.remove(previewText) })
+                                            androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[itemId] = previewText to source else selectedItems.remove(itemId) })
                                             Column {
                                                 Text(source.title, fontWeight = FontWeight.Bold)
                                                 Text(source.description.orEmpty().take(100), style = MaterialTheme.typography.bodySmall, maxLines = 2)
@@ -1641,15 +1648,16 @@ fun EntitySelectorDialog(
                                     val previewText = builder.toString().trim()
                                     
                                     if (previewText.isNotBlank()) {
-                                        val isSelected = selectedItems.containsKey(previewText)
+                                        val itemId = "Question_${question.id}"
+                                        val isSelected = selectedItems.containsKey(itemId)
                                         Card(
                                             modifier = Modifier.fillMaxWidth().clickable {
-                                                if (isSelected) selectedItems.remove(previewText) else selectedItems[previewText] = null
+                                                if (isSelected) selectedItems.remove(itemId) else selectedItems[itemId] = previewText to null
                                             },
                                             colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                                         ) {
                                             Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[previewText] = null else selectedItems.remove(previewText) })
+                                                androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[itemId] = previewText to null else selectedItems.remove(itemId) })
                                                 Column {
                                                     Text(previewText.take(150), maxLines = 4, style = MaterialTheme.typography.bodySmall)
                                                 }
@@ -1666,8 +1674,8 @@ fun EntitySelectorDialog(
         confirmButton = {
             Button(
                 onClick = { 
-                    val joined = selectedItems.keys.joinToString("\n\n---\n\n")
-                    val source = selectedItems.values.firstOrNull { it != null }
+                    val joined = selectedItems.values.joinToString("\n\n---\n\n") { it.first }
+                    val source = selectedItems.values.mapNotNull { it.second }.firstOrNull()
                     onEntitySelected(joined, source) 
                 },
                 enabled = selectedItems.isNotEmpty()
