@@ -32,7 +32,7 @@ import com.ahmedyejam.mks.ui.booktools.BookToolsViewModel
 import com.ahmedyejam.mks.ui.booktools.ReviewBlueprintListScreen
 import com.ahmedyejam.mks.ui.booktools.ReviewBlueprintScreen
 import com.ahmedyejam.mks.ui.booktools.SlideshowCourseListScreen
-import com.ahmedyejam.mks.ui.booktools.SourceDocumentListScreen
+
 import com.ahmedyejam.mks.ui.category.CategoryQuestionsScreen
 import com.ahmedyejam.mks.ui.category.CategoryQuestionsViewModel
 import com.ahmedyejam.mks.ui.common.InvalidRouteScreen
@@ -203,7 +203,7 @@ fun MksNavHost(
                 onOpenSlideshow = { navController.navigate(MksRoutes.slideshow(it)) },
                 onOpenNote = { navController.navigate(MksRoutes.blueprint(it)) },
                 onOpenPrompt = { navController.navigate(MksRoutes.promptDeck(it)) },
-                onOpenSource = { navController.navigate(MksRoutes.bookSources(bookId, it)) }
+
             )
         }
         composable(
@@ -241,27 +241,6 @@ fun MksNavHost(
         }
 
 
-        composable(
-            route = "book_sources/{bookId}?sourceId={sourceId}",
-            arguments = listOf(
-                navArgument("bookId") { type = NavType.LongType },
-                navArgument("sourceId") { type = NavType.LongType; defaultValue = -1L },
-            ),
-        ) { backStackEntry ->
-            val bookId = backStackEntry.requirePositiveLongArg("bookId")
-            if (bookId == null) {
-                InvalidRouteScreen { navController.popBackStack() }
-                return@composable
-            }
-            val sourceIdInput = backStackEntry.arguments?.getLong("sourceId") ?: -1L
-            val sourceId = if (sourceIdInput == -1L) null else sourceIdInput
-            val viewModel: BookToolsViewModel = hiltViewModel()
-            SourceDocumentListScreen(
-                bookId = bookId,
-                focusedSourceId = sourceId,
-                viewModel = viewModel,
-            ) { navController.popBackStack() }
-        }
 
         composable(
             route = "book_prompts/{bookId}",

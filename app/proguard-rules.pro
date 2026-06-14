@@ -32,3 +32,8 @@
 -dontwarn org.apache.xmlbeans.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.apache.commons.compress.**
+
+# Fix for missing classes in log4j, findbugs, and poi
+-dontwarn aQute.bnd.annotation.**
+-dontwarn edu.umd.cs.findbugs.annotations.**
+-dontwarn java.awt.**

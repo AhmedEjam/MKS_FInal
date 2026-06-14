@@ -54,6 +54,7 @@ import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.Source
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -277,90 +278,7 @@ fun ReviewBlueprintListScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SourceDocumentListScreen(
-    bookId: Long,
-    focusedSourceId: Long? = null,
-    viewModel: BookToolsViewModel,
-    onBack: () -> Unit
-) {
-    val state by viewModel.uiState.collectAsState()
-    val showCreateState = remember { mutableStateOf(false) }
-    var showCreate by showCreateState
-    val editingState = remember { mutableStateOf<SourceDocumentEntity?>(null) }
-    var editing by editingState
-    val deletingState = remember { mutableStateOf<SourceDocumentEntity?>(null) }
-    var deleting by deletingState
-    val focusedSourceState = remember { mutableStateOf<SourceDocumentEntity?>(null) }
-    var focusedSource by focusedSourceState
 
-    LaunchedEffect(bookId) { viewModel.loadBook(bookId) }
-
-    LaunchedEffect(focusedSource?.id) {
-        focusedSource?.id?.let { viewModel.loadSourceAssets(it) }
-    }
-
-    val listState = rememberLazyListState()
-    LaunchedEffect(state.allSources, focusedSourceId) {
-        focusedSourceId?.let { id ->
-            val index = state.allSources.indexOfFirst { it.id == id }
-            if (index >= 0) listState.animateScrollToItem(index + 1)
-        }
-    }
-
-    if (showCreate) {
-        SourceDocumentDialog("Create source", "Create", onDismiss = { showCreateState.value = false }) { title, type, details ->
-            viewModel.createSource(bookId, title, type, details)
-            showCreateState.value = false
-        }
-    }
-    editing?.let { source ->
-        SourceDocumentDialog("Edit source", "Save", source.title, source.sourceType, source.description.orEmpty(), { editingState.value = null }) { title, type, details ->
-            viewModel.updateSource(source.copy(title = title, sourceType = type, description = details.takeIf { it.isNotBlank() }))
-            editingState.value = null
-        }
-    }
-    deleting?.let { source ->
-        ConfirmDeleteDialog("Delete source?", "Delete '${source.title}'? Citation assets may keep unresolved references.", { deletingState.value = null }, { viewModel.deleteSource(source); deletingState.value = null })
-    }
-
-    focusedSource?.let { source ->
-        SourceDocumentAssetsDialog(
-            sourceDocument = source,
-            assets = state.sourceAssets,
-            onDismiss = { focusedSourceState.value = null },
-            onAddAsset = { viewModel.addSourceAsset(it) },
-            onUpdateAsset = { viewModel.updateSourceAsset(it) },
-            onDeleteAsset = { viewModel.deleteSourceAsset(it) }
-        )
-    }
-
-    BookToolListScaffold(
-        title = "Sources",
-        onBack = onBack,
-        isLoading = state.isLoading,
-        error = state.error,
-        empty = state.allSources.isEmpty(),
-        emptyTitle = "No sources",
-        emptyBody = "Add book-specific textbooks, PDFs, lectures, websites, or guidelines.",
-        floatingActionButton = { FloatingActionButton(onClick = { showCreateState.value = true }) { Icon(Icons.Rounded.Add, null) } }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize(),
-            state = listState,
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item { BookSummaryStrip(state.bookSummary) }
-            items(state.allSources, key = { it.id }) { source ->
-                BookToolListItem(source.title, "${source.sourceType} - ${source.description.orEmpty()}", Icons.Rounded.Source, { focusedSourceState.value = source }, { editingState.value = source }, { deletingState.value = source })
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -912,29 +830,71 @@ fun AiPromptDeckScreen(
         currentKeys.forEach { if (it !in variables) values.remove(it) }
     }
 
-    LaunchedEffect(selectedCardId, seededQuestionId, variables, state.questions) {
+    var includeStem by remember(seededQuestionId) { mutableStateOf(true) }
+    var includeOptions by remember(seededQuestionId) { mutableStateOf(true) }
+    var includeExplanation by remember(seededQuestionId) { mutableStateOf(true) }
+    var includeHint by remember(seededQuestionId) { mutableStateOf(true) }
+    var includeAttachedFiles by remember(seededQuestionId) { mutableStateOf(true) }
+    
+    var lastGeneratedQText by remember { mutableStateOf<String?>(null) }
+    var lastGeneratedPartName by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(selectedCardId, seededQuestionId, variables, state.questions, state.questionAssetsByQuestion, includeStem, includeOptions, includeExplanation, includeHint, includeAttachedFiles) {
         if (selectedCardId != null && seededQuestionId != null && variables.isNotEmpty() && state.questions.isNotEmpty()) {
             val q = state.questions.find { it.id == seededQuestionId }
             if (q != null) {
+                val assets = state.questionAssetsByQuestion[seededQuestionId].orEmpty()
                 val qText = buildString {
-                    appendLine("Question: ${q.text}")
-                    if (q.options.isNotEmpty()) {
+                    if (includeStem) appendLine("Question: ${q.text}")
+                    if (includeOptions && q.options.isNotEmpty()) {
                         appendLine("Options:")
                         q.options.forEach { appendLine("- $it") }
                     }
-                    if (!q.explanation.isNullOrBlank()) {
+                    if (includeExplanation && !q.explanation.isNullOrBlank()) {
                         appendLine("Explanation: ${q.explanation}")
+                    }
+                    if (includeHint && !q.hint.isNullOrBlank()) {
+                        appendLine("Hint: ${q.hint}")
+                    }
+                    if (includeAttachedFiles && assets.isNotEmpty()) {
+                        val textAssets = assets.filter { !it.textContent.isNullOrBlank() || !it.description.isNullOrBlank() }
+                        if (textAssets.isNotEmpty()) {
+                            appendLine("Attached Text/Notes:")
+                            textAssets.forEach {
+                                appendLine("--- ${it.title} ---")
+                                if (!it.description.isNullOrBlank()) appendLine(it.description)
+                                if (!it.textContent.isNullOrBlank()) appendLine(it.textContent)
+                            }
+                        }
                     }
                 }
                 
+                val partNameText = buildList {
+                    if (includeStem) add("the question stem")
+                    if (includeOptions) add("the options")
+                    if (includeExplanation) add("the explanation")
+                    if (includeHint) add("the hint")
+                    if (includeAttachedFiles && assets.isNotEmpty()) add("attached files")
+                }.joinToString(", ")
+                
                 val varName = variables.firstOrNull { it.contains("question", ignoreCase = true) || it.contains("content", ignoreCase = true) || it.contains("text", ignoreCase = true) }
-                if (varName != null && values[varName].isNullOrBlank()) {
+                if (varName != null && (values[varName].isNullOrBlank() || values[varName] == lastGeneratedQText)) {
                     values[varName] = qText
+                    lastGeneratedQText = qText
+                    if (includeAttachedFiles) {
+                        val imageAssets = assets.filter { it.assetType == "image" || it.mimeType?.startsWith("image/") == true }.mapNotNull { it.localPath }
+                        if (imageAssets.isNotEmpty()) {
+                            imageValues[varName] = imageAssets
+                        }
+                    } else {
+                        imageValues.remove(varName)
+                    }
                 }
                 
                 val partName = variables.firstOrNull { it.contains("part_to_explain", ignoreCase = true) || it.contains("part", ignoreCase = true) }
-                if (partName != null && values[partName].isNullOrBlank()) {
-                    values[partName] = "the entire question, options, and explanation"
+                if (partName != null && (values[partName].isNullOrBlank() || values[partName] == lastGeneratedPartName)) {
+                    values[partName] = partNameText
+                    lastGeneratedPartName = partNameText
                 }
             }
         }
@@ -1085,6 +1045,32 @@ fun AiPromptDeckScreen(
                         } }
                     }
 
+                    if (seededQuestionId != null && state.questions.any { it.id == seededQuestionId }) {
+                        item {
+                            val tokens = LocalMksDesignTokens.current
+                            Card(
+                                shape = RoundedCornerShape(tokens.cardRadius),
+                                elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                            ) {
+                                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("Configure Question Context", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                    Text("Select which parts of the question to inject into the prompt:", style = MaterialTheme.typography.bodySmall)
+                                    LazyRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        item { FilterChip(selected = includeStem, onClick = { includeStem = !includeStem }, label = { Text("Stem") }) }
+                                        item { FilterChip(selected = includeOptions, onClick = { includeOptions = !includeOptions }, label = { Text("Options") }) }
+                                        item { FilterChip(selected = includeExplanation, onClick = { includeExplanation = !includeExplanation }, label = { Text("Explanation") }) }
+                                        item { FilterChip(selected = includeHint, onClick = { includeHint = !includeHint }, label = { Text("Hint") }) }
+                                        item { FilterChip(selected = includeAttachedFiles, onClick = { includeAttachedFiles = !includeAttachedFiles }, label = { Text("Attached Files") }) }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (variables.isNotEmpty()) {
                         item { Text("Variables", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
                         items(variables) { variable ->
@@ -1208,8 +1194,15 @@ fun AiPromptDeckScreen(
                 values[variableName] = injectedData
                 if (sourceEntity != null) {
                     viewModel.getImagesForSource(sourceEntity.id) { imgs ->
-                        if (imgs.isNotEmpty()) {
-                            imageValues[variableName] = imgs
+                        val combined = imgs.toMutableList()
+                        val path = sourceEntity.localPath ?: sourceEntity.externalUrl
+                        if (path != null && (path.endsWith(".png", true) || path.endsWith(".jpg", true) || path.endsWith(".jpeg", true))) {
+                            if (!combined.contains(path)) combined.add(path)
+                        }
+                        if (combined.isNotEmpty()) {
+                            imageValues[variableName] = combined
+                        } else {
+                            imageValues.remove(variableName)
                         }
                     }
                 } else {
@@ -1426,12 +1419,32 @@ fun SourceDocumentDialog(
     initialTitle: String = "",
     initialType: String = SourceDocumentTypes.OTHER,
     initialDetails: String = "",
+    initialUrl: String = "",
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String) -> Unit
+    onConfirm: (String, String, String, String) -> Unit
 ) {
     var sourceTitle by remember { mutableStateOf(initialTitle) }
     var sourceType by remember { mutableStateOf(initialType) }
     var details by remember { mutableStateOf(initialDetails) }
+    var url by remember { mutableStateOf(initialUrl) }
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {
+                // Ignore if it's a URI that doesn't support persistable permissions
+            }
+            url = it.toString()
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
@@ -1439,14 +1452,26 @@ fun SourceDocumentDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(sourceTitle, { sourceTitle = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(sourceType, { sourceType = it }, label = { Text("Type") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text("URL or Path") },
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        IconButton(onClick = { launcher.launch(arrayOf("*/*")) }) {
+                            Icon(Icons.Rounded.Folder, contentDescription = "Browse local files")
+                        }
+                    }
+                )
                 OutlinedTextField(details, { details = it }, label = { Text("Details") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
             }
         },
-        confirmButton = { Button(onClick = { onConfirm(sourceTitle, sourceType, details) }, enabled = sourceTitle.isNotBlank()) { Text(confirmLabel) } },
+        confirmButton = { Button(onClick = { onConfirm(sourceTitle, sourceType, details, url) }, enabled = sourceTitle.isNotBlank()) { Text(confirmLabel) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("unused")
 @Composable
 private fun PromptCardDialog(
@@ -1464,6 +1489,60 @@ private fun PromptCardDialog(
         title = { Text("Prompt card") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (initialTitle.isBlank() && initialPrompt.isBlank()) {
+                    Text("Templates:", style = MaterialTheme.typography.labelMedium)
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item {
+                            AssistChip(onClick = {
+                                title = "Explain & Teach"
+                                prompt = "<system_role>You are an expert tutor in {relevant_speciality}.</system_role>\n<instructions>Please explain the following question part: {part_to_explain}.\n\nHere is the full question context:\n{question}</instructions>"
+                                type = PromptOutputType.NOTE
+                            }, label = { Text("Explain") })
+                        }
+                        item {
+                            AssistChip(onClick = {
+                                title = "Quiz generator"
+                                prompt = "<system_role>You are an expert test creator.</system_role>\n<instructions>Generate multiple-choice questions from this material.\nOutput JSON array with keys: \"question\", \"options\", \"answer\", \"explanation\".</instructions>\n<material>\n{material}\n</material>"
+                                type = PromptOutputType.QUIZ
+                            }, label = { Text("Quiz") })
+                        }
+                        item {
+                            AssistChip(onClick = {
+                                title = "Flashcard generator"
+                                prompt = "<system_role>You are an expert learning designer.</system_role>\n<instructions>Create high-yield flashcards.\nOutput JSON array with keys: \"front\", \"back\", \"hint\".</instructions>\n<material>\n{material}\n</material>"
+                                type = PromptOutputType.FLASHCARDS
+                            }, label = { Text("Flashcard") })
+                        }
+                        item {
+                            AssistChip(onClick = {
+                                title = "Summarize"
+                                prompt = "<system_role>You are an expert summarizer.</system_role>\n<instructions>Provide a concise summary of the following material. Highlight the key takeaways and main concepts.</instructions>\n<material>\n{material}\n</material>"
+                                type = PromptOutputType.NOTE
+                            }, label = { Text("Summarize") })
+                        }
+                        item {
+                            AssistChip(onClick = {
+                                title = "Mnemonics Generator"
+                                prompt = "<system_role>You are an expert memory coach and educator.</system_role>\n<instructions>Create catchy, easy-to-remember mnemonics (like acronyms or rhymes) to help memorize the key facts from this material.</instructions>\n<material>\n{material}\n</material>"
+                                type = PromptOutputType.NOTE
+                            }, label = { Text("Mnemonics") })
+                        }
+                        item {
+                            AssistChip(onClick = {
+                                title = "Simplify (ELI5)"
+                                prompt = "<system_role>You are an expert teacher who excels at explaining complex topics simply.</system_role>\n<instructions>Explain the core concepts of the provided material as if you were speaking to a 5-year-old. Use simple analogies and avoid jargon.</instructions>\n<material>\n{material}\n</material>"
+                                type = PromptOutputType.NOTE
+                            }, label = { Text("Simplify") })
+                        }
+                        item {
+                            AssistChip(onClick = {
+                                title = "Study Schedule"
+                                prompt = "<system_role>You are a highly organized academic advisor.</system_role>\n<instructions>Based on the following material, create a structured, step-by-step study schedule. Break down the topics into manageable daily or weekly tasks.</instructions>\n<material>\n{material}\n</material>"
+                                type = PromptOutputType.NOTE
+                            }, label = { Text("Study Plan") })
+                        }
+                    }
+                }
                 OutlinedTextField(title, { title = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(prompt, { prompt = it }, label = { Text("Prompt text, use {variables}") }, modifier = Modifier.fillMaxWidth(), minLines = 5)
                 OutlinedTextField(type, { type = it }, label = { Text("Output type") }, modifier = Modifier.fillMaxWidth())
@@ -1555,7 +1634,11 @@ fun EntitySelectorDialog(
                                 item { Text("No sources available.") }
                             } else {
                                 items(state.allSources) { source ->
-                                    val previewText = "Title: ${source.title}\nType: ${source.sourceType}\nDetails:\n${source.description.orEmpty()}"
+                                    val previewText = buildString {
+                                        append("Title: ${source.title}\nType: ${source.sourceType}\nDetails:\n${source.description.orEmpty()}")
+                                        if (!source.localPath.isNullOrBlank()) append("\nAttached File: ${source.localPath}")
+                                        if (!source.externalUrl.isNullOrBlank()) append("\nAttached URL: ${source.externalUrl}")
+                                    }
                                     val itemId = "Source_${source.id}"
                                     val isSelected = selectedItems.containsKey(itemId)
                                     Card(

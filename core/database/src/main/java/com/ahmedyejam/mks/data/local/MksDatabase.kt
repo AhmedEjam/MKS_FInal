@@ -40,13 +40,12 @@ import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentAssetEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
 import com.ahmedyejam.mks.data.local.entity.StudySessionEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
 
-const val MKS_DATABASE_VERSION = 28
+const val MKS_DATABASE_VERSION = 29
 
 @Database(
     entities = [
@@ -72,7 +71,6 @@ const val MKS_DATABASE_VERSION = 28
         AssetReferenceEntity::class,
         QuestionAssetEntity::class,
         SourceDocumentEntity::class,
-        SourceDocumentAssetEntity::class,
         MistakeLogEntryEntity::class,
         AnnotationEntity::class,
         NoteCollectionEntity::class,
@@ -104,7 +102,6 @@ abstract class MksDatabase : RoomDatabase() {
     abstract fun assetReferenceDao(): AssetReferenceDao
     abstract fun questionAssetDao(): QuestionAssetDao
     abstract fun sourceDocumentDao(): SourceDocumentDao
-    abstract fun sourceDocumentAssetDao(): com.ahmedyejam.mks.data.local.dao.SourceDocumentAssetDao
     abstract fun mistakeLogDao(): MistakeLogDao
     abstract fun globalSearchDao(): GlobalSearchDao
     abstract fun annotationDao(): AnnotationDao
@@ -118,6 +115,7 @@ abstract class MksDatabase : RoomDatabase() {
         val MIGRATION_16_17 = MksMigrations.MIGRATION_16_17
         val MIGRATION_26_27 = MksMigrations.MIGRATION_26_27
         val MIGRATION_27_28 = MksMigrations.MIGRATION_27_28
+        val MIGRATION_28_29 = MksMigrations.MIGRATION_28_29
 
         fun addColumnIfMissing(
             db: androidx.sqlite.db.SupportSQLiteDatabase,

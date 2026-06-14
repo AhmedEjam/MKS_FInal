@@ -376,7 +376,8 @@ fun QuizPlayerScreen(
                 QuizSheetContent(
                     state = state,
                     viewModel = viewModel,
-                    onDropQuestion = { showDropQuestionDialogState.value = true }
+                    onDropQuestion = { showDropQuestionDialogState.value = true },
+                    onAskAiClick = onAskAiClick
                 )
             }
         }
@@ -945,7 +946,8 @@ fun QuizTopBar(
 fun QuizSheetContent(
     state: QuizState,
     viewModel: QuizViewModel,
-    onDropQuestion: () -> Unit
+    onDropQuestion: () -> Unit,
+    onAskAiClick: (Long) -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
     val currentQuestion = remember(state.questions, state.currentIndex) {
@@ -1037,6 +1039,16 @@ fun QuizSheetContent(
                     label = stringResource(R.string.categories_toggle),
                     checked = state.showCategorization,
                     onCheckedChange = { viewModel.toggleCategorization() }
+                )
+                ControlToggle(
+                    modifier = toggleModifier,
+                    icon = Icons.Rounded.Lightbulb,
+                    label = "Explain",
+                    checked = false,
+                    onCheckedChange = {
+                        val qId = currentQuestion?.id ?: return@ControlToggle
+                        onAskAiClick(qId)
+                    }
                 )
                 ControlToggle(
                     modifier = toggleModifier,

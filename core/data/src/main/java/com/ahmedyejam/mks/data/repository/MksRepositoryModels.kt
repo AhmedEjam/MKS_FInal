@@ -79,7 +79,8 @@ data class BookStudyBundle(
     val prompts: List<PromptEntity> = emptyList(),
     val promptDecks: List<PromptDeckEntity> = emptyList(),
     val sourceDocuments: List<SourceDocumentEntity> = emptyList(),
-    val mistakes: List<MistakeLogEntryEntity> = emptyList()
+    val mistakes: List<MistakeLogEntryEntity> = emptyList(),
+    val questionAssets: List<QuestionAssetEntity> = emptyList()
 ) {
     val questions: List<QuestionEntity>
         get() = quizzes.flatMap { quiz -> questionsByQuiz[quiz.id].orEmpty() }

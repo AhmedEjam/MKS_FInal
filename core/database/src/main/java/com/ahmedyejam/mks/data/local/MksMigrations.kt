@@ -984,6 +984,17 @@ object MksMigrations {
         }
     }
 
+    val MIGRATION_28_29 = object : Migration(28, 29) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Drop source document assets table
+            db.execSQL("DROP TABLE IF EXISTS `source_document_assets`")
+            
+            // Add unique index constraints on externalId for books and quizzes
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_books_externalId` ON `books` (`externalId`)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_quizzes_externalId` ON `quizzes` (`externalId`)")
+        }
+    }
+
     val ALL = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -1011,6 +1022,7 @@ object MksMigrations {
         MIGRATION_24_25,
         MIGRATION_25_26,
         MIGRATION_26_27,
-        MIGRATION_27_28
+        MIGRATION_27_28,
+        MIGRATION_28_29
     )
 }

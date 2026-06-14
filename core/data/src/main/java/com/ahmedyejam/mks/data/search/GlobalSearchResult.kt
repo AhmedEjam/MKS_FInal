@@ -26,7 +26,7 @@ fun GlobalSearchResultRow.toResult(): GlobalSearchResult {
         GlobalSearchResultType.HINT,
         GlobalSearchResultType.NOTE -> quizId?.let { MksRoutes.quizQuestions(it) }
         GlobalSearchResultType.ASSET -> quizId?.let { MksRoutes.quizQuestions(it) }
-        GlobalSearchResultType.SOURCE -> bookId?.let { MksRoutes.bookSources(it, id.toLongOrNull()) }
+        GlobalSearchResultType.SOURCE -> bookId?.let { MksRoutes.bookDashboard(it) }
         GlobalSearchResultType.FLASHCARD -> parentId?.let { MksRoutes.flashcards(it, id.toLongOrNull()) }
         GlobalSearchResultType.BLUEPRINT -> id.toLongOrNull()?.let { MksRoutes.blueprint(it) }
         GlobalSearchResultType.SLIDE -> parentId?.let { MksRoutes.slideshow(it, id.toLongOrNull()) }

@@ -57,7 +57,6 @@ import com.ahmedyejam.mks.data.local.entity.QuestionType
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentAssetEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
@@ -111,7 +110,6 @@ class QuizRepository @Inject constructor(
     private val assetReferenceDao: AssetReferenceDao,
     private val questionAssetDao: QuestionAssetDao,
     private val sourceDocumentDao: SourceDocumentDao,
-    private val sourceDocumentAssetDao: com.ahmedyejam.mks.data.local.dao.SourceDocumentAssetDao,
     private val promptDeckDao: PromptDeckDao,
     private val promptCardDao: PromptCardDao,
     private val promptRunDao: PromptRunDao,

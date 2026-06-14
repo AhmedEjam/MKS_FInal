@@ -57,7 +57,6 @@ import com.ahmedyejam.mks.data.local.entity.QuestionType
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentAssetEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
@@ -111,7 +110,6 @@ class KnowledgeRepository @Inject constructor(
     private val assetReferenceDao: AssetReferenceDao,
     private val questionAssetDao: QuestionAssetDao,
     private val sourceDocumentDao: SourceDocumentDao,
-    private val sourceDocumentAssetDao: com.ahmedyejam.mks.data.local.dao.SourceDocumentAssetDao,
     private val promptDeckDao: PromptDeckDao,
     private val promptCardDao: PromptCardDao,
     private val promptRunDao: PromptRunDao,
@@ -1415,13 +1413,14 @@ class KnowledgeRepository @Inject constructor(
     private suspend fun seedDefaultPromptCards(deckId: Long) {
         val now = System.currentTimeMillis()
         val cards = listOf(
+            getExplainPromptCardEntity(deckId, now, 0),
             PromptCardEntity(
                 deckId = deckId,
                 title = "Quiz generator",
                 promptText = "<system_role>You are an expert test creator and medical educator.</system_role>\n<instructions>Analyze the provided material and generate 3 to 5 high-quality, challenging multiple-choice questions.\nEnsure that:\n1. The stem is clinically relevant or focuses on key conceptual understanding.\n2. There are 4-5 plausible options.\n3. The correct answer is unambiguously correct.\n4. A detailed rationale/explanation is provided for why the correct answer is right and why the distractors are wrong.\nOutput strictly in JSON format as an array of objects with keys: \"question\", \"options\" (array of strings), \"answer\" (string), \"explanation\" (string).</instructions>\n<material>\n{material}\n</material>",
                 variablesJson = "[\"material\"]",
                 outputType = PromptOutputType.QUIZ,
-                sortOrder = 0,
+                sortOrder = 1,
                 createdAt = now,
                 updatedAt = now
             ),
@@ -1431,7 +1430,7 @@ class KnowledgeRepository @Inject constructor(
                 promptText = "<system_role>You are an expert learning designer.</system_role>\n<instructions>Convert the core concepts from the provided material into concise, high-yield spaced-repetition flashcards.\nFollow these rules:\n1. Make the front of the card a clear, unambiguous question or cloze deletion.\n2. Keep the back of the card concise and to the point.\n3. Provide an optional brief hint to aid recall.\nOutput strictly in JSON format as an array of objects with keys: \"front\", \"back\", \"hint\".</instructions>\n<material>\n{material}\n</material>",
                 variablesJson = "[\"material\"]",
                 outputType = PromptOutputType.FLASHCARDS,
-                sortOrder = 1,
+                sortOrder = 2,
                 createdAt = now,
                 updatedAt = now
             ),
@@ -1441,7 +1440,7 @@ class KnowledgeRepository @Inject constructor(
                 promptText = "<system_role>You are an expert technical writer and educator.</system_role>\n<instructions>Synthesize the provided material into a highly structured, comprehensive, yet easy-to-digest study blueprint.\nFormat the output in Markdown with the following sections:\n- **Core Summary**: A brief 2-3 sentence overview.\n- **Key Concepts**: Bulleted list of the most important takeaways.\n- **Detailed Breakdown**: A structured analysis with subheadings.\n- **Common Pitfalls / Mistakes to Avoid**: What students usually get wrong about this.\n- **Review Cues**: Short questions to test memory.</instructions>\n<material>\n{material}\n</material>",
                 variablesJson = "[\"material\"]",
                 outputType = PromptOutputType.BLUEPRINT,
-                sortOrder = 2,
+                sortOrder = 3,
                 createdAt = now,
                 updatedAt = now
             )
@@ -1451,17 +1450,21 @@ class KnowledgeRepository @Inject constructor(
 
     private suspend fun seedExplainPromptCard(deckId: Long) {
         val now = System.currentTimeMillis()
-        val explainCard = PromptCardEntity(
+        val explainCard = getExplainPromptCardEntity(deckId, now, 0)
+        promptCardDao.insertCard(explainCard)
+    }
+
+    private fun getExplainPromptCardEntity(deckId: Long, now: Long, sortOrder: Int): PromptCardEntity {
+        return PromptCardEntity(
             deckId = deckId,
             title = "Explain & Teach",
             promptText = "<system_role>You are an expert tutor in {relevant_speciality}.</system_role>\n<instructions>Please explain the following question part: {part_to_explain}.\n\nHere is the full question context:\n{question}</instructions>",
             variablesJson = "[\"relevant_speciality\", \"part_to_explain\", \"question\"]",
             outputType = PromptOutputType.NOTE,
-            sortOrder = 0,
+            sortOrder = sortOrder,
             createdAt = now,
             updatedAt = now
         )
-        promptCardDao.insertCard(explainCard)
     }
 
     suspend fun updateCourseSlide(slide: CourseSlideEntity) {

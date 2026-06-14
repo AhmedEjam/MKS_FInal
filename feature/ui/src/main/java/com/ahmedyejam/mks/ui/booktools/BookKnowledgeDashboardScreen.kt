@@ -79,8 +79,7 @@ fun BookKnowledgeDashboardScreen(
     onOpenFlashcard: (Long) -> Unit,
     onOpenSlideshow: (Long) -> Unit,
     onOpenNote: (Long) -> Unit,
-    onOpenPrompt: (Long) -> Unit,
-    @Suppress("UNUSED_PARAMETER") onOpenSource: (Long) -> Unit
+    onOpenPrompt: (Long) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
@@ -220,7 +219,6 @@ fun BookKnowledgeDashboardScreen(
 
                     BookTab.SOURCES -> SourcesTab(
                         uiState.allSources,
-                        onOpenSource,
                         { editingSource = it },
                         { viewModel.deleteSource(it) })
                 }
@@ -318,11 +316,10 @@ fun BookKnowledgeDashboardScreen(
             title = "Create source",
             confirmLabel = "Create",
             onDismiss = { showCreateSource = false },
-            onConfirm = { title, type, details ->
-                viewModel.createSource(bookId, title, type, details)
-                showCreateSource = false
-            }
-        )
+        ) { title, type, details, url ->
+            viewModel.createSource(bookId, title, type, details, url)
+            showCreateSource = false
+        }
     }
 
     if (itemToSnooze != null) {
@@ -383,18 +380,24 @@ fun BookKnowledgeDashboardScreen(
     }
 
     editingSource?.let { source ->
-        EntityEditDialog(
+        SourceDocumentDialog(
             title = stringResource(R.string.edit),
-            initialName = source.title,
-            initialDescription = source.externalUrl ?: "",
-            titleLabel = "Source Name",
-            descriptionLabel = "URL or short note",
+            confirmLabel = "Save",
+            initialTitle = source.title,
+            initialType = source.sourceType,
+            initialDetails = source.description.orEmpty(),
+            initialUrl = source.externalUrl ?: source.localPath ?: "",
             onDismiss = { editingSource = null },
-            onSave = { title, body, _ ->
-                viewModel.updateSource(source.copy(title = title, externalUrl = body.takeIf { it.isNotBlank() }))
-                editingSource = null
-            }
-        )
+        ) { title, type, details, url ->
+            viewModel.updateSource(source.copy(
+                title = title, 
+                sourceType = type, 
+                description = details.takeIf { it.isNotBlank() },
+                externalUrl = url.takeIf { it.isNotBlank() && (it.startsWith("http") || it.startsWith("content://")) },
+                localPath = url.takeIf { it.isNotBlank() && !(it.startsWith("http") || it.startsWith("content://")) }
+            ))
+            editingSource = null
+        }
     }
 }
 

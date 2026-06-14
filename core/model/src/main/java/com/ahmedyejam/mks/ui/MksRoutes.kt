@@ -42,9 +42,7 @@ object MksRoutes {
     fun bookDashboard(bookId: Long) = "book_dashboard/$bookId"
     fun bookSlideshows(bookId: Long) = "book_slideshows/$bookId"
     fun bookBlueprints(bookId: Long) = "book_blueprints/$bookId"
-    fun bookSources(bookId: Long, sourceId: Long? = null): String {
-        return if (sourceId != null) "book_sources/$bookId?sourceId=$sourceId" else "book_sources/$bookId"
-    }
+
     fun bookNotes(bookId: Long) = "book_notes/$bookId"
     fun bookPrompts(bookId: Long) = "book_prompts/$bookId"
     fun promptDeck(promptId: Long, cardId: Long? = null, runId: Long? = null): String {

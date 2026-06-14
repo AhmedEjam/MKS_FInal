@@ -225,12 +225,6 @@ object HiltDataModule {
 
     @Provides
     @Singleton
-    fun provideSourceDocumentAssetDao(appModule: AppModule): SourceDocumentAssetDao {
-        return appModule.database.sourceDocumentAssetDao()
-    }
-
-    @Provides
-    @Singleton
     fun provideGlobalSearchDao(appModule: AppModule): GlobalSearchDao {
         return appModule.database.globalSearchDao()
     }

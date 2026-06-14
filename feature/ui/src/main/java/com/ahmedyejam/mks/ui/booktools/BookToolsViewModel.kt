@@ -24,10 +24,10 @@ import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
 import com.ahmedyejam.mks.data.local.entity.PromptOutputType
 import com.ahmedyejam.mks.data.local.entity.PromptRunEntity
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionAssetEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentAssetEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentTypes
 import com.ahmedyejam.mks.ui.library.components.QuizCreationFilters
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
@@ -61,11 +61,11 @@ data class BookToolsUiState(
     val quizzes: List<QuizEntity> = emptyList(),
     val questions: List<QuestionEntity> = emptyList(),
     val questionsByQuiz: Map<Long, List<QuestionEntity>> = emptyMap(),
+    val questionAssetsByQuestion: Map<Long, List<QuestionAssetEntity>> = emptyMap(),
     val flashcardDecks: List<FlashcardDeckEntity> = emptyList(),
     val allCourses: List<SlideshowCourseEntity> = emptyList(),
     val allNotes: List<NoteBlueprintEntity> = emptyList(),
     val allSources: List<SourceDocumentEntity> = emptyList(),
-    val sourceAssets: List<SourceDocumentAssetEntity> = emptyList(),
     val allPromptDecks: List<PromptDeckEntity> = emptyList(),
     val noteBlueprint: NoteBlueprintEntity? = null,
     val promptDeck: PromptDeckEntity? = null,
@@ -113,6 +113,7 @@ class BookToolsViewModel @Inject constructor(
                     questionsByQuiz = bundle.questionsByQuiz.mapValues { (_, questions) ->
                         questions.map { it.copy(imagePath = assetRepository.resolveImagePath(it.imagePath)) }
                     },
+                    questionAssetsByQuestion = bundle.questionAssets.groupBy { it.questionId },
                     flashcardDecks = bundle.flashcardDecks.map { it.copy(coverImage = assetRepository.resolveImagePath(it.coverImage)) },
                     allCourses = bundle.slideshowCourses.map { it.copy(coverImage = assetRepository.resolveImagePath(it.coverImage)) },
                     allNotes = bundle.noteBlueprints,
@@ -262,14 +263,16 @@ class BookToolsViewModel @Inject constructor(
         }
     }
 
-    fun createSource(bookId: Long, title: String, type: String, details: String = "") {
+    fun createSource(bookId: Long, title: String, type: String, details: String = "", url: String = "") {
         viewModelScope.launch {
             try {
                 val source = SourceDocumentEntity(
                     bookId = bookId,
                     title = title.trim().ifBlank { "Untitled source" },
                     sourceType = type.ifBlank { SourceDocumentTypes.OTHER },
-                    description = details.takeIf { it.isNotBlank() }
+                    description = details.takeIf { it.isNotBlank() },
+                    externalUrl = url.takeIf { it.isNotBlank() && (it.startsWith("http") || it.startsWith("content://")) },
+                    localPath = url.takeIf { it.isNotBlank() && !(it.startsWith("http") || it.startsWith("content://")) }
                 )
                 val id = assetRepository.insertSourceDocument(source)
                 val saved = assetRepository.getSourceDocumentById(id) ?: source.copy(id = id)
@@ -312,60 +315,8 @@ class BookToolsViewModel @Inject constructor(
         }
     }
 
-    fun loadSourceAssets(sourceId: Long) {
-        viewModelScope.launch {
-            try {
-                val assets = assetRepository.getAssetsBySourceIdNow(sourceId)
-                _uiState.value = _uiState.value.copy(sourceAssets = assets)
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Failed to load source assets: ${e.message}")
-            }
-        }
-    }
 
-    fun addSourceAsset(asset: SourceDocumentAssetEntity) {
-        viewModelScope.launch {
-            try {
-                val id = assetRepository.insertSourceAsset(asset)
-                val saved = assetRepository.getSourceAssetById(id) ?: asset.copy(id = id)
-                _uiState.value = _uiState.value.copy(
-                    sourceAssets = (_uiState.value.sourceAssets.filter { it.id != id } + saved).sortedBy { it.sortOrder },
-                    successMessage = "Attachment added"
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Failed to add attachment: ${e.message}")
-            }
-        }
-    }
 
-    fun updateSourceAsset(asset: SourceDocumentAssetEntity) {
-        viewModelScope.launch {
-            try {
-                assetRepository.updateSourceAsset(asset)
-                val updated = assetRepository.getSourceAssetById(asset.id) ?: asset
-                _uiState.value = _uiState.value.copy(
-                    sourceAssets = _uiState.value.sourceAssets.map { if (it.id == asset.id) updated else it }.sortedBy { it.sortOrder },
-                    successMessage = "Attachment updated"
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Failed to update attachment: ${e.message}")
-            }
-        }
-    }
-
-    fun deleteSourceAsset(asset: SourceDocumentAssetEntity) {
-        viewModelScope.launch {
-            try {
-                assetRepository.permanentlyDeleteSourceAsset(asset)
-                _uiState.value = _uiState.value.copy(
-                    sourceAssets = _uiState.value.sourceAssets.filter { it.id != asset.id },
-                    successMessage = "Attachment deleted"
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = "Failed to delete attachment: ${e.message}")
-            }
-        }
-    }
 
     fun generateArticlesFromQuestions(questionIds: List<Long>, config: com.ahmedyejam.mks.data.model.ArticleGenerationConfig) {
         val bookId = _uiState.value.book?.id ?: return
@@ -579,6 +530,7 @@ class BookToolsViewModel @Inject constructor(
                 questions = bundle?.questions ?: emptyList(),
                 allNotes = bundle?.noteBlueprints ?: emptyList(),
                 allSources = bundle?.sourceDocuments ?: emptyList(),
+                quizzes = bundle?.quizzes ?: emptyList(),
                 isLoading = false
             )
         }
@@ -1104,20 +1056,6 @@ class BookToolsViewModel @Inject constructor(
     }
 
     fun getImagesForSource(sourceId: Long, onResult: (List<String>) -> Unit) {
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val assets = assetRepository.getAssetsBySourceIdNow(sourceId)
-            val base64Images = assets.filter { it.assetType == com.ahmedyejam.mks.data.local.entity.SourceAssetType.IMAGE }
-                .mapNotNull { asset -> 
-                    try {
-                        fileManager.getBase64Image(asset.localPath).takeIf { it.isNotBlank() }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        null
-                    }
-                }
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                onResult(base64Images)
-            }
-        }
+        onResult(emptyList())
     }
 }

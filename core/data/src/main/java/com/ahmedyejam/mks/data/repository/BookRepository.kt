@@ -57,7 +57,6 @@ import com.ahmedyejam.mks.data.local.entity.QuestionType
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentAssetEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
@@ -111,7 +110,6 @@ class BookRepository @Inject constructor(
     private val assetReferenceDao: AssetReferenceDao,
     private val questionAssetDao: QuestionAssetDao,
     private val sourceDocumentDao: SourceDocumentDao,
-    private val sourceDocumentAssetDao: com.ahmedyejam.mks.data.local.dao.SourceDocumentAssetDao,
     private val promptDeckDao: PromptDeckDao,
     private val promptCardDao: PromptCardDao,
     private val promptRunDao: PromptRunDao,
@@ -238,6 +236,7 @@ class BookRepository @Inject constructor(
         val promptDecks = promptDeckDao.getDecksByBookId(bookId).first()
         val sourceDocuments = sourceDocumentDao.getSourcesByBookId(bookId).first()
         val mistakes = mistakeLogDao.getMistakesByBookId(bookId).first()
+        val questionAssets = questionAssetDao.getAssetsByBookId(bookId).first()
 
         return BookStudyBundle(
             book = book,
@@ -249,7 +248,8 @@ class BookRepository @Inject constructor(
             prompts = prompts,
             promptDecks = promptDecks,
             sourceDocuments = sourceDocuments,
-            mistakes = mistakes
+            mistakes = mistakes,
+            questionAssets = questionAssets
         )
     }
 

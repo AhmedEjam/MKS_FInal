@@ -57,7 +57,7 @@ import com.ahmedyejam.mks.data.local.entity.QuestionType
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentAssetEntity
+
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
@@ -111,7 +111,7 @@ class AssetRepository @Inject constructor(
     private val assetReferenceDao: AssetReferenceDao,
     private val questionAssetDao: QuestionAssetDao,
     private val sourceDocumentDao: SourceDocumentDao,
-    private val sourceDocumentAssetDao: com.ahmedyejam.mks.data.local.dao.SourceDocumentAssetDao,
+
     private val promptDeckDao: PromptDeckDao,
     private val promptCardDao: PromptCardDao,
     private val promptRunDao: PromptRunDao,
@@ -240,9 +240,6 @@ class AssetRepository @Inject constructor(
         }
         sourceDocumentDao.getSourcesByBookIdNow(book.id).forEach { source ->
             releaseOwnerAssets("source_document", source.id)
-            sourceDocumentAssetDao.getAssetsBySourceIdIncludingDeleted(source.id).forEach { asset ->
-                releaseOwnerAssets("source_document_asset", asset.id)
-            }
         }
     }
 
@@ -287,9 +284,6 @@ class AssetRepository @Inject constructor(
         }
         sourceDocumentDao.getAllSourcesIncludingDeleted().forEach { source ->
             replaceOwnerAssetReferences("source_document", source.id, listOf(source.localPath))
-            sourceDocumentAssetDao.getAssetsBySourceIdIncludingDeleted(source.id).forEach { asset ->
-                replaceOwnerAssetReferences("source_document_asset", asset.id, listOf(asset.localPath))
-            }
         }
     }
 
@@ -337,10 +331,6 @@ class AssetRepository @Inject constructor(
         sourceDocumentDao.softDeleteSourceById(source.id, now)
     }
 
-    suspend fun getAssetsBySourceIdNow(sourceId: Long): List<SourceDocumentAssetEntity> {
-        return sourceDocumentAssetDao.getAssetsBySourceIdNow(sourceId)
-    }
-
     suspend fun getQuestionAssetsNow(questionId: Long): List<QuestionAssetEntity> =
         questionAssetDao.getAssetsByQuestionIdNow(questionId)
 
@@ -348,10 +338,6 @@ class AssetRepository @Inject constructor(
 
     fun getQuestionIdsWithAssetsForQuizFlow(quizId: Long): Flow<List<Long>> =
         questionAssetDao.getQuestionIdsWithAssetsForQuizFlow(quizId)
-
-    suspend fun getSourceAssetById(id: Long): SourceDocumentAssetEntity? {
-        return sourceDocumentAssetDao.getAssetById(id)
-    }
 
     suspend fun getSourceDocumentById(id: Long): SourceDocumentEntity? = sourceDocumentDao.getSourceById(id)
 
@@ -372,10 +358,6 @@ class AssetRepository @Inject constructor(
         }
         replaceOwnerAssetReferences("question_asset", id, listOf(prepared.localPath))
         return id
-    }
-
-    suspend fun insertSourceAsset(asset: SourceDocumentAssetEntity): Long {
-        return sourceDocumentAssetDao.insertAsset(asset)
     }
 
     suspend fun insertSourceDocument(source: SourceDocumentEntity): Long {
@@ -403,24 +385,11 @@ class AssetRepository @Inject constructor(
         questionAssetDao.hardDeleteAsset(asset)
     }
 
-    suspend fun permanentlyDeleteSourceAsset(asset: SourceDocumentAssetEntity) {
-        permanentlyDeleteSourceDocumentAsset(asset)
-    }
-
     suspend fun permanentlyDeleteSourceDocument(source: SourceDocumentEntity) {
         permanentlyDeleteOwnerAnnotations(AnnotationOwnerType.SOURCE, source.id)
         questionAssetDao.clearSourceReference(source.id, System.currentTimeMillis())
-        sourceDocumentAssetDao.getAssetsBySourceIdIncludingDeleted(source.id).forEach { asset ->
-            permanentlyDeleteSourceDocumentAsset(asset)
-        }
         releaseOwnerAssets("source_document", source.id)
         sourceDocumentDao.hardDeleteSource(source)
-    }
-
-    suspend fun permanentlyDeleteSourceDocumentAsset(asset: SourceDocumentAssetEntity) {
-        permanentlyDeleteOwnerAnnotations(AnnotationOwnerType.ASSET, asset.id)
-        releaseOwnerAssets("source_asset", asset.id)
-        sourceDocumentAssetDao.hardDeleteAsset(asset)
     }
 
     private fun prepareQuestionAsset(asset: QuestionAssetEntity): QuestionAssetEntity {
@@ -582,10 +551,6 @@ class AssetRepository @Inject constructor(
             old?.localPath?.let { releaseAssetReference("question_asset", old.id, it) }
         }
         replaceOwnerAssetReferences("question_asset", prepared.id, listOf(prepared.localPath))
-    }
-
-    suspend fun updateSourceAsset(asset: SourceDocumentAssetEntity) {
-        sourceDocumentAssetDao.updateAsset(asset)
     }
 
     suspend fun updateSourceDocument(source: SourceDocumentEntity) {

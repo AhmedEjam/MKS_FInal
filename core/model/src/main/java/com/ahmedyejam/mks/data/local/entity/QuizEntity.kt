@@ -19,7 +19,8 @@ import com.squareup.moshi.JsonClass
     ],
     indices = [
         Index("bookId"),
-        Index("deletedAt")
+        Index("deletedAt"),
+        Index(value = ["externalId"], unique = true)
     ]
 )
 @JsonClass(generateAdapter = true)

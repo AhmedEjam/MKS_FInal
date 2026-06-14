@@ -249,10 +249,10 @@ fun PromptsTab(
 @Composable
 fun SourcesTab(
     sources: List<SourceDocumentEntity>,
-    onOpenSource: (Long) -> Unit,
     onEdit: (SourceDocumentEntity) -> Unit,
     onDelete: (SourceDocumentEntity) -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     if (sources.isEmpty()) {
         EmptyTabContent("No sources added", "Textbooks and guideline documents.", Icons.Rounded.Source)
     } else {
@@ -266,7 +266,21 @@ fun SourcesTab(
                     title = source.title,
                     subtitle = "${source.sourceType} - ${source.description.orEmpty()}",
                     icon = Icons.Rounded.Source,
-                    onClick = { onOpenSource(source.id) },
+                    onClick = { 
+                        try {
+                            val uriStr = source.externalUrl?.takeIf { it.isNotBlank() } ?: source.localPath?.takeIf { it.isNotBlank() }
+                            if (uriStr != null) {
+                                val uri = if (uriStr.startsWith("http") || uriStr.startsWith("content://")) android.net.Uri.parse(uriStr) else android.net.Uri.fromFile(java.io.File(uriStr))
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                                intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                context.startActivity(intent)
+                            } else {
+                                android.widget.Toast.makeText(context, "No URL or local path available", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(context, "Could not open source: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     onEdit = { onEdit(source) },
                     onDelete = { onDelete(source) }
                 )

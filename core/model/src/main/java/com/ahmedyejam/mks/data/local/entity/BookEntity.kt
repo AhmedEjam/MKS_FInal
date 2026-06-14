@@ -16,7 +16,8 @@ import com.squareup.moshi.JsonClass
     ],
     indices = [
         androidx.room.Index("workspaceId"),
-        androidx.room.Index("deletedAt")
+        androidx.room.Index("deletedAt"),
+        androidx.room.Index(value = ["externalId"], unique = true)
     ]
 )
 @JsonClass(generateAdapter = true)
