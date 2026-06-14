@@ -1,35 +1,57 @@
 package com.ahmedyejam.mks.ui
 
-import kotlinx.serialization.Serializable
+import android.net.Uri
 
-@Serializable data object WelcomeRoute
-@Serializable data object LibraryRoute
-@Serializable data object GlobalSearchRoute
-@Serializable data class ReviewDashboardRoute(val mistakeId: Long? = null)
-@Serializable data object DataToolsRoute
-@Serializable data object SettingsRoute
+object MksRoutes {
+    const val WELCOME = "welcome"
+    const val LIBRARY = "library"
+    const val GLOBAL_SEARCH = "global_search"
+    const val REVIEW_DASHBOARD = "review_dashboard"
+    const val DATA_TOOLS = "data_tools"
+    const val SETTINGS = "settings"
 
-// Quiz & Sessions
-@Serializable data class QuizQuestionsRoute(val quizId: Long, val questionId: Long? = null)
-@Serializable data class SessionsRoute(val quizId: Long)
-@Serializable data class QuizRoute(val quizId: Long, val sessionId: Long? = null)
-@Serializable data class SummaryRoute(val sessionId: Long)
-@Serializable data class ScannerRoute(val quizId: Long)
+    fun reviewDashboard(mistakeId: Long? = null): String {
+        return if (mistakeId != null) "review_dashboard?mistakeId=$mistakeId" else "review_dashboard"
+    }
 
-// Categories
-@Serializable data class CategoryRoute(val category: String)
-@Serializable data class AdaptiveRoute(val type: String, val id: String)
+    // Quiz & Sessions
+    fun quizQuestions(quizId: Long, questionId: Long? = null): String {
+        return if (questionId != null) "quiz_questions/$quizId?questionId=$questionId" else "quiz_questions/$quizId"
+    }
+    fun sessions(quizId: Long) = "sessions/$quizId"
+    fun quiz(quizId: Long, sessionId: Long? = null): String {
+        return if (sessionId != null) "quiz/$quizId?sessionId=$sessionId" else "quiz/$quizId"
+    }
+    fun summary(sessionId: Long) = "summary/$sessionId"
+    fun scanner(quizId: Long) = "scanner/$quizId"
 
-// Knowledge Bank
-@Serializable data class FlashcardsRoute(val deckId: Long, val cardId: Long? = null)
-@Serializable data class SlideshowRoute(val courseId: Long, val slideId: Long? = null)
-@Serializable data class BlueprintRoute(val noteId: Long)
+    // Categories
+    fun category(category: String) = "category/${Uri.encode(category)}"
+    fun adaptive(type: String, id: String) = "adaptive/${Uri.encode(type)}/${Uri.encode(id)}"
 
-// Book Tools
-@Serializable data class BookDashboardRoute(val bookId: Long)
-@Serializable data class BookSlideshowsRoute(val bookId: Long)
-@Serializable data class BookBlueprintsRoute(val bookId: Long)
-@Serializable data class BookSourcesRoute(val bookId: Long, val sourceId: Long? = null)
-@Serializable data class BookNotesRoute(val bookId: Long)
-@Serializable data class BookPromptsRoute(val bookId: Long)
-@Serializable data class PromptDeckRoute(val promptId: Long, val cardId: Long? = null, val runId: Long? = null)
+    // Knowledge Bank
+    fun flashcards(deckId: Long, cardId: Long? = null): String {
+        return if (cardId != null) "flashcards/$deckId?cardId=$cardId" else "flashcards/$deckId"
+    }
+    fun slideshow(courseId: Long, slideId: Long? = null): String {
+        return if (slideId != null) "slideshow/$courseId?slideId=$slideId" else "slideshow/$courseId"
+    }
+    fun blueprint(noteId: Long) = "blueprint/$noteId"
+    
+    // Book Tools
+    fun bookDashboard(bookId: Long) = "book_dashboard/$bookId"
+    fun bookSlideshows(bookId: Long) = "book_slideshows/$bookId"
+    fun bookBlueprints(bookId: Long) = "book_blueprints/$bookId"
+    fun bookSources(bookId: Long, sourceId: Long? = null): String {
+        return if (sourceId != null) "book_sources/$bookId?sourceId=$sourceId" else "book_sources/$bookId"
+    }
+    fun bookNotes(bookId: Long) = "book_notes/$bookId"
+    fun bookPrompts(bookId: Long) = "book_prompts/$bookId"
+    fun promptDeck(promptId: Long, cardId: Long? = null, runId: Long? = null): String {
+        return when {
+            cardId != null -> "prompt_deck/$promptId?cardId=$cardId"
+            runId != null -> "prompt_deck/$promptId?runId=$runId"
+            else -> "prompt_deck/$promptId"
+        }
+    }
+}

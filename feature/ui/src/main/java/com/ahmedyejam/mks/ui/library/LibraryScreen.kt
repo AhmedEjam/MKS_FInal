@@ -96,7 +96,7 @@ fun LibraryScreen(
     val completedImportResultState = remember { mutableStateOf<ImportResult?>(null) }
     var completedImportResult by completedImportResultState
 
-    fun handleImportUri(uri: Uri, targetQuizId: Long? = null) {
+    fun handleImportUri(uri: Uri, targetQuizId: Long? = null, targetBookId: Long? = null) {
         val format = importViewModel.detectFormat(uri)
         if ((format == com.ahmedyejam.mks.data.importer.model.ImportFormat.XLSX) ||
             (format == com.ahmedyejam.mks.data.importer.model.ImportFormat.CSV_TSV)) {
@@ -105,7 +105,7 @@ fun LibraryScreen(
         } else if (format == com.ahmedyejam.mks.data.importer.model.ImportFormat.ZIP) {
             importViewModel.getImportPreview(
                 uri = uri,
-                targetBookId = null,
+                targetBookId = targetBookId,
                 targetQuizId = targetQuizId,
             )
         }
@@ -162,6 +162,10 @@ fun LibraryScreen(
     var showBookEditDialog by showBookEditDialogState
     val editingBookState = remember { mutableStateOf<BookEntity?>(null) }
     var editingBook by editingBookState
+    val showQuizEditDialogState = rememberSaveable { mutableStateOf(value = false) }
+    var showQuizEditDialog by showQuizEditDialogState
+    val editingQuizEditState = remember { mutableStateOf<QuizEntity?>(null) }
+    var editingQuizEdit by editingQuizEditState
     val showDeleteConfirmBookState = remember { mutableStateOf<BookEntity?>(null) }
     var showDeleteConfirmBook by showDeleteConfirmBookState
     val showDeleteConfirmQuizState = remember { mutableStateOf<QuizEntity?>(null) }
@@ -181,11 +185,11 @@ fun LibraryScreen(
     var pendingExportBookId by remember { mutableStateOf<Long?>(null) }
     var pendingExportQuizId by remember { mutableStateOf<Long?>(null) }
 
-    val categoriesExpandedState = rememberSaveable { mutableStateOf(value = false) }
+    val categoriesExpandedState = rememberSaveable { mutableStateOf(value = true) }
     var categoriesExpanded by categoriesExpandedState
     val showCategoryBrowserState = remember { mutableStateOf(value = false) }
     var showCategoryBrowser by showCategoryBrowserState
-    val previewCategories by remember {
+    val previewCategories by remember(categories) {
         derivedStateOf {
             val pinned = categories.asSequence()
                 .filter { it.isPinned }
@@ -194,9 +198,8 @@ fun LibraryScreen(
             val recent = categories.asSequence()
                 .filter { !it.isPinned && (it.lastEditedAt > 0) }
                 .sortedByDescending { it.lastEditedAt }
-                .take(8)
                 .toList()
-            pinned + recent
+            (pinned + recent).take(10)
         }
     }
     val showOverflowMenuState = remember { mutableStateOf(value = false) }
@@ -206,7 +209,7 @@ fun LibraryScreen(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri ->
         uri?.let {
-            handleImportUri(it)
+            handleImportUri(it, pendingExportQuizId, pendingExportBookId)
         }
     }
 
@@ -493,13 +496,17 @@ fun LibraryScreen(
             onBrowseQuestionsClick = { onBrowseQuestions(quiz.id) },
             onScanClick = { onScanSelected(quiz.id) },
             onPinClick = { viewModel.toggleQuizPinned(quiz) },
-            onEditClick = null,
+            onEditClick = { editingQuizEditState.value = quiz; showQuizEditDialogState.value = true },
             onExportClick = {
                 pendingExportQuizId = quiz.id
                 pendingExportBookId = null
                 exportLauncher.launch("${quiz.title.replace(" ", "_")}.mks.zip")
             },
-            onImportClick = null,
+            onImportClick = {
+                pendingExportQuizId = quiz.id
+                pendingExportBookId = null
+                importLauncher.launch(arrayOf("*/*"))
+            },
         ) { showDeleteConfirmQuizState.value = quiz }
     }
 
@@ -621,5 +628,22 @@ fun LibraryScreen(
             viewModel = viewModel,
             onDismiss = { showTrashBin = false }
         )
+        if (showQuizEditDialog) {
+        EntityEditDialog(
+            title = stringResource(R.string.edit),
+            initialName = editingQuizEdit?.title ?: "",
+            initialDescription = editingQuizEdit?.description ?: "",
+            initialImage = editingQuizEdit?.coverImage ?: "",
+            titleLabel = stringResource(R.string.quiz_title_label),
+            descriptionLabel = stringResource(R.string.description_label),
+            showImage = true,
+            onDismiss = { showQuizEditDialog = false }
+        ) { title, desc, cover ->
+            editingQuizEdit?.let { quiz ->
+                viewModel.updateQuiz(quiz.copy(title = title, description = desc), cover.ifBlank { null })
+            }
+            showQuizEditDialog = false
+        }
     }
+}
 }

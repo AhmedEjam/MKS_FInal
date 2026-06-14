@@ -1,6 +1,7 @@
 package com.ahmedyejam.mks.ui.booktools
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
@@ -43,6 +45,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +65,7 @@ import com.ahmedyejam.mks.core.ui.R
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
 import com.ahmedyejam.mks.ui.components.EntityEditDialog
 import com.ahmedyejam.mks.ui.library.components.CreateQuizDialog
+import com.ahmedyejam.mks.ui.review.CustomDatePickerDialog
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 import kotlinx.coroutines.launch
 
@@ -82,7 +86,7 @@ fun BookKnowledgeDashboardScreen(
     val scope = rememberCoroutineScope()
 
     val tabs = remember { BookTab.entries.toTypedArray() }
-    val pagerState = rememberPagerState(initialPage = tabs.indexOf(BookTab.MISTAKES).takeIf { it >= 0 } ?: 2) { tabs.size }
+    val pagerState = rememberPagerState(initialPage = tabs.indexOf(BookTab.QUIZZES).takeIf { it >= 0 } ?: 0) { tabs.size }
 
     var showCreateQuiz by remember { mutableStateOf(false) }
     var showCreateSlideshow by remember { mutableStateOf(false) }
@@ -90,6 +94,12 @@ fun BookKnowledgeDashboardScreen(
     var showCreateNote by remember { mutableStateOf(false) }
     var showCreatePrompt by remember { mutableStateOf(false) }
     var showCreateSource by remember { mutableStateOf(false) }
+
+    var editingSlideshow by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity?>(null) }
+    var editingNote by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity?>(null) }
+    var editingPrompt by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.PromptDeckEntity?>(null) }
+    var editingSource by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity?>(null) }
+    var itemToSnooze by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.MistakeLogEntryEntity?>(null) }
 
     LaunchedEffect(bookId) {
         viewModel.loadBook(bookId)
@@ -173,10 +183,11 @@ fun BookKnowledgeDashboardScreen(
             ) { page ->
                 when (tabs[page]) {
                     BookTab.DASHBOARD -> DashboardTab(uiState.bookSummary, bookId, viewModel)
+                    
                     BookTab.SLIDES -> SlidesTab(
                         uiState.allCourses,
                         onOpenSlideshow,
-                        { /* Edit */ },
+                        { editingSlideshow = it },
                         { viewModel.deleteSlideshowCourse(it) })
 
                     BookTab.QUIZZES -> QuizzesTab(
@@ -187,13 +198,14 @@ fun BookKnowledgeDashboardScreen(
                     BookTab.NOTES -> NotesTab(
                         uiState.allNotes,
                         onOpenNote,
-                        { /* Edit */ },
+                        { editingNote = it },
                         { viewModel.deleteNote(it) })
 
                     BookTab.MISTAKES -> MistakesTab(
                         uiState.mistakes,
                         { viewModel.updateQuestionNote(it, "Marked as fixed") },
-                        {})
+                        { itemToSnooze = it },
+                        { viewModel.deleteMistake(it) })
 
                     BookTab.FLASHCARDS -> FlashcardsTab(
                         uiState.flashcardDecks,
@@ -203,12 +215,13 @@ fun BookKnowledgeDashboardScreen(
                     BookTab.PROMPTS -> PromptsTab(
                         uiState.allPromptDecks,
                         onOpenPrompt,
-                        { /* Edit */ },
+                        { editingPrompt = it },
                         { viewModel.deletePromptDeck(it) })
 
                     BookTab.SOURCES -> SourcesTab(
                         uiState.allSources,
-                        { /* Edit */ },
+                        onOpenSource,
+                        { editingSource = it },
                         { viewModel.deleteSource(it) })
                 }
             }
@@ -291,13 +304,10 @@ fun BookKnowledgeDashboardScreen(
     }
 
     if (showCreatePrompt) {
-        EntityEditDialog(
-            title = "Create prompt deck",
-            titleLabel = "Deck title",
-            descriptionLabel = "Description",
+        PromptDeckCreateDialog(
             onDismiss = { showCreatePrompt = false },
-            onSave = { title, body, _ ->
-                viewModel.createPromptDeck(bookId, title, body.takeIf { it.isNotBlank() })
+            onCreate = { title, description, fromTemplates ->
+                viewModel.createPromptDeck(bookId, title, description.takeIf { it.isNotBlank() }, seedDefaultCards = fromTemplates)
                 showCreatePrompt = false
             }
         )
@@ -311,6 +321,78 @@ fun BookKnowledgeDashboardScreen(
             onConfirm = { title, type, details ->
                 viewModel.createSource(bookId, title, type, details)
                 showCreateSource = false
+            }
+        )
+    }
+
+    if (itemToSnooze != null) {
+        CustomDatePickerDialog(
+            onDismiss = { itemToSnooze = null },
+            onDateSelected = { selectedDateMillis ->
+                itemToSnooze?.let { mistake ->
+                    viewModel.snoozeMistake(mistake.id, selectedDateMillis)
+                }
+                itemToSnooze = null
+            }
+        )
+    }
+
+    editingSlideshow?.let { course ->
+        EntityEditDialog(
+            title = stringResource(R.string.edit),
+            initialName = course.title,
+            initialDescription = course.description ?: "",
+            titleLabel = "Course title",
+            descriptionLabel = "Description",
+            onDismiss = { editingSlideshow = null },
+            onSave = { title, body, _ ->
+                viewModel.updateSlideshowCourse(course.copy(title = title, description = body.takeIf { it.isNotBlank() }))
+                editingSlideshow = null
+            }
+        )
+    }
+
+    editingNote?.let { note ->
+        EntityEditDialog(
+            title = stringResource(R.string.edit),
+            initialName = note.title,
+            initialDescription = "",
+            titleLabel = "Note title",
+            descriptionLabel = "",
+            onDismiss = { editingNote = null },
+            onSave = { title, _, _ ->
+                viewModel.updateNote(note.copy(title = title))
+                editingNote = null
+            }
+        )
+    }
+
+    editingPrompt?.let { prompt ->
+        EntityEditDialog(
+            title = stringResource(R.string.edit),
+            initialName = prompt.title,
+            initialDescription = prompt.description ?: "",
+            titleLabel = "Deck name",
+            descriptionLabel = "Description",
+            onDismiss = { editingPrompt = null },
+            onSave = { title, body, _ ->
+                viewModel.updatePromptDeck(prompt.copy(title = title, description = body.takeIf { it.isNotBlank() }))
+                editingPrompt = null
+            }
+        )
+    }
+
+    editingSource?.let { source ->
+        EntityEditDialog(
+            title = stringResource(R.string.edit),
+            initialName = source.title,
+            initialDescription = source.externalUrl ?: "",
+            titleLabel = "Source Name",
+            descriptionLabel = "URL or short note",
+            onDismiss = { editingSource = null },
+            onSave = { title, body, _ ->
+                viewModel.updateSource(source.copy(title = title, externalUrl = body.takeIf { it.isNotBlank() }))
+                editingSource = null
             }
         )
     }
@@ -417,6 +499,16 @@ fun MagicActionsSection(
             }
             if (questions.isNotEmpty()) {
                 MagicActionChip(
+                    label = "Note from Questions",
+                    icon = Icons.Rounded.HistoryEdu,
+                    onClick = { viewModel.createBlueprintFromQuestions(bookId, "Study Note - ${System.currentTimeMillis() % 10000}", questions.map { it.id }) }
+                )
+                MagicActionChip(
+                    label = "Cards from Questions",
+                    icon = Icons.Rounded.ViewCarousel,
+                    onClick = { viewModel.createFlashcardDeckFromQuestions(bookId, "Study Cards - ${System.currentTimeMillis() % 10000}", questions.map { it.id }) }
+                )
+                MagicActionChip(
                     label = stringResource(R.string.generate_from_questions),
                     icon = Icons.Rounded.Slideshow,
                     onClick = { viewModel.createSlideshowCourseFromQuestions(bookId, "Study Slides - ${System.currentTimeMillis() % 10000}", questions.map { it.id }) }
@@ -476,4 +568,59 @@ private fun ToolCard(
             Text("$count items", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+@Composable
+fun PromptDeckCreateDialog(
+    onDismiss: () -> Unit,
+    onCreate: (title: String, description: String, fromTemplates: Boolean) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var fromTemplates by remember { mutableStateOf(false) }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Create prompt deck") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Deck title") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description (Optional)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically, 
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { fromTemplates = !fromTemplates }
+                        .padding(vertical = 4.dp)
+                ) {
+                    androidx.compose.material3.Checkbox(
+                        checked = fromTemplates, 
+                        onCheckedChange = { fromTemplates = it }
+                    )
+                    Text("Seed with best-in-class templates")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onCreate(title, description, fromTemplates) },
+                enabled = title.isNotBlank()
+            ) {
+                Text("Create")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }

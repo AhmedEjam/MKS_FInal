@@ -27,6 +27,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -183,6 +187,12 @@ private fun SourceAssetFormDialog(
     var isPinned by rememberSaveable(existing?.id) { mutableStateOf(existing?.isPinned ?: false) }
     var isPrimary by rememberSaveable(existing?.id) { mutableStateOf(existing?.isPrimary ?: false) }
 
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { localPath = it.toString() }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (existing == null) "Add attachment" else "Edit attachment") },
@@ -235,12 +245,21 @@ private fun SourceAssetFormDialog(
                         )
                     }
                     else -> {
-                        OutlinedTextField(
-                            value = localPath,
-                            onValueChange = { localPath = it },
-                            label = { Text("Local path / content URI") },
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth()
-                        )
+                        ) {
+                            OutlinedTextField(
+                                value = localPath,
+                                onValueChange = { localPath = it },
+                                label = { Text("Local path / content URI") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(onClick = { filePickerLauncher.launch("*/*") }) {
+                                Icon(Icons.Default.FolderOpen, contentDescription = "Pick file")
+                            }
+                        }
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {

@@ -2504,14 +2504,14 @@ class MksRepository constructor(
         return id
     }
 
-    suspend fun createDefaultPromptDeck(bookId: Long, title: String, description: String? = null): Long {
+    suspend fun createDefaultPromptDeck(bookId: Long, title: String, description: String? = null, seedDefaultCards: Boolean = false): Long {
         return insertPromptDeck(
             PromptDeckEntity(
                 bookId = bookId,
                 title = title.ifBlank { "Study prompt deck" },
                 description = description
             ),
-            seedDefaultCards = true
+            seedDefaultCards = seedDefaultCards
         )
     }
 
@@ -2521,8 +2521,8 @@ class MksRepository constructor(
             PromptCardEntity(
                 deckId = deckId,
                 title = "Quiz generator",
-                promptText = "<system_role>You are an expert educator.</system_role>\n<instructions>Create exam-style questions from the provided material. Return questions with answer choices, correct answers, and explanations.</instructions>\n<material>\n{selectedQuestions}\n</material>",
-                variablesJson = "[\"selectedQuestions\"]",
+                promptText = "<system_role>You are an expert test creator and medical educator.</system_role>\n<instructions>Analyze the provided material and generate 3 to 5 high-quality, challenging multiple-choice questions.\nEnsure that:\n1. The stem is clinically relevant or focuses on key conceptual understanding.\n2. There are 4-5 plausible options.\n3. The correct answer is unambiguously correct.\n4. A detailed rationale/explanation is provided for why the correct answer is right and why the distractors are wrong.\nOutput strictly in JSON format as an array of objects with keys: \"question\", \"options\" (array of strings), \"answer\" (string), \"explanation\" (string).</instructions>\n<material>\n{material}\n</material>",
+                variablesJson = "[\"material\"]",
                 outputType = PromptOutputType.QUIZ,
                 sortOrder = 0,
                 createdAt = now,
@@ -2531,8 +2531,8 @@ class MksRepository constructor(
             PromptCardEntity(
                 deckId = deckId,
                 title = "Flashcard generator",
-                promptText = "<system_role>You are an expert educator.</system_role>\n<instructions>Convert the provided material into concise flashcards. Use Front / Back / Hint format.</instructions>\n<material>\n{selectedQuestions}\n</material>",
-                variablesJson = "[\"selectedQuestions\"]",
+                promptText = "<system_role>You are an expert learning designer.</system_role>\n<instructions>Convert the core concepts from the provided material into concise, high-yield spaced-repetition flashcards.\nFollow these rules:\n1. Make the front of the card a clear, unambiguous question or cloze deletion.\n2. Keep the back of the card concise and to the point.\n3. Provide an optional brief hint to aid recall.\nOutput strictly in JSON format as an array of objects with keys: \"front\", \"back\", \"hint\".</instructions>\n<material>\n{material}\n</material>",
+                variablesJson = "[\"material\"]",
                 outputType = PromptOutputType.FLASHCARDS,
                 sortOrder = 1,
                 createdAt = now,
@@ -2541,8 +2541,8 @@ class MksRepository constructor(
             PromptCardEntity(
                 deckId = deckId,
                 title = "Blueprint maker",
-                promptText = "<system_role>You are an expert educator.</system_role>\n<instructions>Turn the provided content into a structured study blueprint with headings, bullets, mistakes to avoid, and review cues.</instructions>\n<material>\n{selectedQuestions}\n</material>",
-                variablesJson = "[\"selectedQuestions\"]",
+                promptText = "<system_role>You are an expert technical writer and educator.</system_role>\n<instructions>Synthesize the provided material into a highly structured, comprehensive, yet easy-to-digest study blueprint.\nFormat the output in Markdown with the following sections:\n- **Core Summary**: A brief 2-3 sentence overview.\n- **Key Concepts**: Bulleted list of the most important takeaways.\n- **Detailed Breakdown**: A structured analysis with subheadings.\n- **Common Pitfalls / Mistakes to Avoid**: What students usually get wrong about this.\n- **Review Cues**: Short questions to test memory.</instructions>\n<material>\n{material}\n</material>",
+                variablesJson = "[\"material\"]",
                 outputType = PromptOutputType.BLUEPRINT,
                 sortOrder = 2,
                 createdAt = now,

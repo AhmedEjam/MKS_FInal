@@ -585,6 +585,22 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    fun emptyTrash() {
+        viewModelScope.launch {
+            try {
+                deletedBooks.value.forEach { repository.permanentlyDeleteBook(it) }
+                deletedQuizzes.value.forEach { repository.permanentlyDeleteQuiz(it) }
+                deletedDecks.value.forEach { repository.permanentlyDeleteFlashcardDeck(it) }
+                deletedSlideshows.value.forEach { repository.permanentlyDeleteSlideshowCourse(it) }
+                deletedNotes.value.forEach { repository.permanentlyDeleteNoteBlueprint(it) }
+                deletedPrompts.value.forEach { repository.permanentlyDeletePromptDeck(it) }
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Trash emptied successfully"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to empty trash: ${e.message}"))
+            }
+        }
+    }
+
     fun permanentlyDeleteBook(book: BookEntity) {
         viewModelScope.launch {
             try {

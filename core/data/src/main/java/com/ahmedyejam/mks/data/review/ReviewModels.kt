@@ -18,5 +18,5 @@ data class ReviewQueueItem(
     val title: String,
     val subtitle: String? = null,
     val dueAt: Long? = null,
-    val route: Any? = null
+    val route: String? = null
 )

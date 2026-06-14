@@ -87,14 +87,43 @@ import javax.inject.Singleton
 
 @Singleton
 class BookRepository @Inject constructor(
+
     private val workspaceDao: WorkspaceDao,
     private val bookDao: BookDao,
     private val quizDao: QuizDao,
     private val questionDao: QuestionDao,
+    private val sessionDao: SessionDao,
+    private val categoryMetadataDao: CategoryMetadataDao,
     private val fileManager: FileManager,
+    private val exportManager: ExportManager? = null,
+    private val importManager: ImportLibraryManager? = null,
+    private val flashcardDeckDao: FlashcardDeckDao,
+    private val flashcardDao: FlashcardDao,
+    private val learningSessionDao: LearningSessionDao,
+    private val slideshowCourseDao: SlideshowCourseDao,
+    private val courseSlideDao: CourseSlideDao,
+    private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao,
+    private val noteBlueprintDao: NoteBlueprintDao,
+    private val promptDao: PromptDao,
+    private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao,
+    private val knowledgeStudySessionDao: KnowledgeStudySessionDao,
+    private val questionCategoryDao: QuestionCategoryDao,
+    private val assetReferenceDao: AssetReferenceDao,
+    private val questionAssetDao: QuestionAssetDao,
+    private val sourceDocumentDao: SourceDocumentDao,
+    private val sourceDocumentAssetDao: com.ahmedyejam.mks.data.local.dao.SourceDocumentAssetDao,
+    private val promptDeckDao: PromptDeckDao,
+    private val promptCardDao: PromptCardDao,
+    private val promptRunDao: PromptRunDao,
+    private val mistakeLogDao: MistakeLogDao,
+    private val quizRepositoryProvider: javax.inject.Provider<QuizRepository>,
+    private val assetRepositoryProvider: javax.inject.Provider<AssetRepository>,
+    private val annotationDao: AnnotationDao,
     private val deletePreviewService: DeletePreviewService? = null,
-    private val assetRepository: AssetRepository,
-    private val annotationDao: AnnotationDao
+    private val categoryMergePreviewService: CategoryMergePreviewService? = null,
+    private val clearMarksPreviewService: ClearMarksPreviewService? = null,
+    private val assetReferenceAuditService: AssetReferenceAuditService? = null
+
 ) {
 
     fun getAllWorkspaces(): Flow<List<WorkspaceEntity>> = workspaceDao.getAllWorkspacesFlow()
@@ -238,14 +267,14 @@ class BookRepository @Inject constructor(
             book.copy(workspaceId = workspaceId)
         }
         val id = bookDao.insertBook(finalBook)
-        assetRepository.replaceOwnerAssetReferences("book", id, listOf(finalBook.coverImage))
+        assetRepositoryProvider.get().replaceOwnerAssetReferences("book", id, listOf(finalBook.coverImage))
         return id
     }
 
     suspend fun updateBook(book: BookEntity) {
         val updated = book.copy(updatedAt = System.currentTimeMillis(), lastEditedAt = System.currentTimeMillis())
         bookDao.updateBook(updated)
-        assetRepository.replaceOwnerAssetReferences("book", updated.id, listOf(updated.coverImage))
+        assetRepositoryProvider.get().replaceOwnerAssetReferences("book", updated.id, listOf(updated.coverImage))
     }
 
     suspend fun deleteBook(book: BookEntity): BookEntity {
@@ -267,7 +296,7 @@ class BookRepository @Inject constructor(
     suspend fun permanentlyDeleteBook(book: BookEntity) {
         if (book.isSystem) throw IllegalStateException("Cannot delete system book")
         annotationDao.permanentlyDeleteAnnotationsByBookId(book.id)
-        assetRepository.releaseBookTreeAssets(book)
+        assetRepositoryProvider.get().releaseBookTreeAssets(book)
         bookDao.hardDeleteBook(book)
     }
 
@@ -307,4 +336,55 @@ class BookRepository @Inject constructor(
     }
 
 
+
+
+    fun getBookCompletion(bookId: Long): Flow<Float> = quizDao.getQuizzesByBookId(bookId)
+        .flatMapLatest { quizzes ->
+            if (quizzes.isEmpty()) return@flatMapLatest flowOf(0f)
+            combine(quizzes.map { getQuizCompletion(it.id) }) { completions ->
+                completions.average().toFloat()
+            }
+        }
+
+    // --- Knowledge Bank CRUD and Sync ---
+
+    // Slideshow Courses
+
+    suspend fun getBookKnowledgeSummary(bookId: Long): BookKnowledgeSummary {
+        val bundle = getBookStudyBundle(bookId) ?: return BookKnowledgeSummary(bookId)
+        val questions = bundle.questions.filter { !it.isDropped }
+        val allQuestionsWithDropped = bundle.questions
+        val assets = questionAssetDao.getAssetsByBookId(bookId).first()
+        var flashcards = 0
+        for (deck in bundle.flashcardDecks) {
+            flashcards += flashcardDao.countCardsInDeck(deck.id)
+        }
+        return BookKnowledgeSummary(
+            bookId = bookId,
+            totalQuizzes = bundle.quizzes.size,
+            totalQuestions = questions.size,
+            unansweredQuestions = questions.count { it.attempts == 0 },
+            questionsWithNotes = questions.count { !it.notes.isNullOrBlank() },
+            questionsWithAssets = assets.map { it.questionId }.distinct().size,
+            questionsWithSources = assets.filter { it.sourceDocumentId != null }.map { it.questionId }.distinct().size,
+            markedQuestions = questions.count { it.isMarked },
+            droppedQuestions = allQuestionsWithDropped.count { it.isDropped },
+            missedQuestions = questions.count { it.attempts > 0 && (it.correctCount < it.attempts || it.lastAttemptResult == false) },
+            weakQuestions = questions.count { it.attempts >= 2 && it.correctCount * 2 < it.attempts },
+            flashcardDecks = bundle.flashcardDecks.size,
+            totalFlashcards = flashcards,
+            totalBlueprints = bundle.noteBlueprints.size,
+            promptDecks = promptDeckDao.countByBookId(bookId),
+            promptCards = promptCardDao.countByBookId(bookId),
+            promptRuns = promptRunDao.countByBookId(bookId),
+            savedPromptOutputs = promptRunDao.countSavedOutputsByBookId(bookId),
+            openMistakes = mistakeLogDao.getMistakesByBookId(bookId).first().count { !it.isFixed }
+        )
+    }
+
+    fun getBookQuestionCount(bookId: Long): Flow<Int> = quizDao.getBookQuestionCount(bookId)
+
+    fun getDeletedBooks(workspaceId: Long): Flow<List<BookEntity>> = bookDao.getDeletedBooksByWorkspaceFlow(workspaceId)
+
+    fun getQuizCompletion(quizId: Long): kotlinx.coroutines.flow.Flow<Float> = quizRepositoryProvider.get().getQuizCompletion(quizId)
 }

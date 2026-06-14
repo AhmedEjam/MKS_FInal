@@ -165,6 +165,7 @@ fun NotesTab(
 fun MistakesTab(
     mistakes: List<MistakeLogEntryEntity>,
     onToggleFixed: (Long) -> Unit,
+    onSnooze: (MistakeLogEntryEntity) -> Unit,
     onDelete: (MistakeLogEntryEntity) -> Unit
 ) {
     if (mistakes.isEmpty()) {
@@ -181,7 +182,7 @@ fun MistakesTab(
                     mistake = mistake,
                     dateFormat = dateFormat,
                     onToggleFixed = { onToggleFixed(mistake.id) },
-                    onSnooze = { /* TODO if needed */ },
+                    onSnooze = { onSnooze(mistake) },
                     onDelete = { onDelete(mistake) }
                 )
             }
@@ -248,6 +249,7 @@ fun PromptsTab(
 @Composable
 fun SourcesTab(
     sources: List<SourceDocumentEntity>,
+    onOpenSource: (Long) -> Unit,
     onEdit: (SourceDocumentEntity) -> Unit,
     onDelete: (SourceDocumentEntity) -> Unit
 ) {
@@ -264,7 +266,7 @@ fun SourcesTab(
                     title = source.title,
                     subtitle = "${source.sourceType} - ${source.description.orEmpty()}",
                     icon = Icons.Rounded.Source,
-                    onClick = { /* View source? */ },
+                    onClick = { onOpenSource(source.id) },
                     onEdit = { onEdit(source) },
                     onDelete = { onDelete(source) }
                 )

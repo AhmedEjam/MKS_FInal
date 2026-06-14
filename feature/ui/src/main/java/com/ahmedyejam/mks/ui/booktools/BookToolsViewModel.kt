@@ -148,6 +148,18 @@ class BookToolsViewModel @Inject constructor(
         }
     }
 
+    fun deleteMistake(mistake: MistakeLogEntryEntity) {
+        viewModelScope.launch {
+            runCatching { repository.deleteMistake(mistake) }
+        }
+    }
+
+    fun snoozeMistake(mistakeId: Long, snoozeTime: Long) {
+        viewModelScope.launch {
+            runCatching { repository.snoozeMistake(mistakeId, snoozeTime) }
+        }
+    }
+
     fun createNote(bookId: Long, title: String, body: String, sourceQuestionId: Long? = null, mode: String = BlueprintMode.SIMPLE_NOTE) {
         viewModelScope.launch {
             try {
@@ -543,10 +555,10 @@ class BookToolsViewModel @Inject constructor(
         }
     }
 
-    fun createPromptDeck(bookId: Long, title: String, description: String? = null) {
+    fun createPromptDeck(bookId: Long, title: String, description: String? = null, seedDefaultCards: Boolean = false) {
         viewModelScope.launch {
             try {
-                val id = repository.createDefaultPromptDeck(bookId, title, description)
+                val id = repository.createDefaultPromptDeck(bookId, title, description, seedDefaultCards)
                 val saved = repository.getPromptDeckById(id)
                 _uiState.value = _uiState.value.copy(
                     allPromptDecks = saved?.let { (_uiState.value.allPromptDecks.filter { deck -> deck.id != id } + it).sortedByDescending { deck -> deck.updatedAt } } ?: _uiState.value.allPromptDecks,
@@ -832,17 +844,33 @@ class BookToolsViewModel @Inject constructor(
 
     fun createSlideshowCourseFromQuestions(bookId: Long, title: String, questionIds: List<Long>) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isSaving = true, error = null)
-            runCatching {
+            try {
                 repository.createSlideshowCourseFromQuestions(bookId, title, "Generated from questions", questionIds)
-            }.onSuccess {
-                _uiState.value = _uiState.value.copy(
-                    isSaving = false,
-                    successMessage = "Slideshow course created from questions"
-                )
-                loadBook(bookId)
-            }.onFailure { e ->
-                _uiState.value = _uiState.value.copy(isSaving = false, error = "Failed to create slideshow course: ${e.message}")
+                _uiState.value = _uiState.value.copy(successMessage = "Slideshow course generated")
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to generate slideshow course: ${e.message}")
+            }
+        }
+    }
+
+    fun createFlashcardDeckFromQuestions(bookId: Long, title: String, questionIds: List<Long>) {
+        viewModelScope.launch {
+            try {
+                repository.createFlashcardDeckFromQuestions(bookId, title, "Generated from questions", questionIds)
+                _uiState.value = _uiState.value.copy(successMessage = "Flashcard deck generated")
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to generate flashcard deck: ${e.message}")
+            }
+        }
+    }
+
+    fun createBlueprintFromQuestions(bookId: Long, title: String, questionIds: List<Long>) {
+        viewModelScope.launch {
+            try {
+                repository.createBlueprintFromQuestions(bookId, title, questionIds, com.ahmedyejam.mks.data.local.entity.BlueprintMode.SIMPLE_NOTE)
+                _uiState.value = _uiState.value.copy(successMessage = "Note blueprint generated")
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = "Failed to generate note blueprint: ${e.message}")
             }
         }
     }

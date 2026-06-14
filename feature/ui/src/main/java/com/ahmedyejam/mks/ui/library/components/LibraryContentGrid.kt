@@ -114,7 +114,6 @@ fun LibraryContentGrid(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 SectionHeader(
                     title = stringResource(R.string.books_header),
-                    subtitle = if (currentViewMode == "LIST") stringResource(R.string.list_view_label) else stringResource(R.string.grid_view_label),
                 )
             }
 

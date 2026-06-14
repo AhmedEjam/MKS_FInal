@@ -87,19 +87,43 @@ import javax.inject.Singleton
 
 @Singleton
 class QuizRepository @Inject constructor(
+
+    private val workspaceDao: WorkspaceDao,
     private val bookDao: BookDao,
     private val quizDao: QuizDao,
     private val questionDao: QuestionDao,
     private val sessionDao: SessionDao,
-    private val questionCategoryDao: QuestionCategoryDao,
     private val categoryMetadataDao: CategoryMetadataDao,
+    private val fileManager: FileManager,
+    private val exportManager: ExportManager? = null,
+    private val importManager: ImportLibraryManager? = null,
+    private val flashcardDeckDao: FlashcardDeckDao,
+    private val flashcardDao: FlashcardDao,
+    private val learningSessionDao: LearningSessionDao,
+    private val slideshowCourseDao: SlideshowCourseDao,
+    private val courseSlideDao: CourseSlideDao,
+    private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao,
+    private val noteBlueprintDao: NoteBlueprintDao,
+    private val promptDao: PromptDao,
+    private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao,
+    private val knowledgeStudySessionDao: KnowledgeStudySessionDao,
+    private val questionCategoryDao: QuestionCategoryDao,
+    private val assetReferenceDao: AssetReferenceDao,
+    private val questionAssetDao: QuestionAssetDao,
+    private val sourceDocumentDao: SourceDocumentDao,
+    private val sourceDocumentAssetDao: com.ahmedyejam.mks.data.local.dao.SourceDocumentAssetDao,
+    private val promptDeckDao: PromptDeckDao,
+    private val promptCardDao: PromptCardDao,
+    private val promptRunDao: PromptRunDao,
+    private val mistakeLogDao: MistakeLogDao,
+    private val annotationDao: AnnotationDao,
     private val deletePreviewService: DeletePreviewService? = null,
     private val categoryMergePreviewService: CategoryMergePreviewService? = null,
     private val clearMarksPreviewService: ClearMarksPreviewService? = null,
-    private val bookRepository: BookRepository,
-    private val assetRepository: AssetRepository,
-    private val fileManager: FileManager,
-    private val questionAssetDao: QuestionAssetDao
+    private val assetReferenceAuditService: AssetReferenceAuditService? = null,
+    private val bookRepositoryProvider: javax.inject.Provider<BookRepository>,
+    private val assetRepositoryProvider: javax.inject.Provider<AssetRepository>
+
 ) {
 
     fun getQuizzesByBookId(bookId: Long, sortBy: SortOption = SortOption.TITLE): Flow<List<QuizEntity>> = quizDao.getQuizzesByBookIdSorted(bookId, sortBy.name)
@@ -130,16 +154,16 @@ class QuizRepository @Inject constructor(
             updatedAt = System.currentTimeMillis(),
         )
         val id = quizDao.insertQuiz(saved)
-        assetRepository.replaceOwnerAssetReferences("quiz", id, listOf(saved.coverImage))
-        bookRepository.refreshBookStats(finalQuiz.bookId)
+        assetRepositoryProvider.get().replaceOwnerAssetReferences("quiz", id, listOf(saved.coverImage))
+        bookRepositoryProvider.get().refreshBookStats(finalQuiz.bookId)
         return id
     }
 
     suspend fun updateQuiz(quiz: QuizEntity) {
         val updated = quiz.copy(updatedAt = System.currentTimeMillis(), lastEditedAt = System.currentTimeMillis())
         quizDao.updateQuiz(updated)
-        assetRepository.replaceOwnerAssetReferences("quiz", updated.id, listOf(updated.coverImage))
-        bookRepository.refreshBookStats(quiz.bookId)
+        assetRepositoryProvider.get().replaceOwnerAssetReferences("quiz", updated.id, listOf(updated.coverImage))
+        bookRepositoryProvider.get().refreshBookStats(quiz.bookId)
     }
 
     // Questions
@@ -147,11 +171,11 @@ class QuizRepository @Inject constructor(
     suspend fun deleteQuiz(quiz: QuizEntity): QuizEntity {
         if (quiz.isSystem) throw IllegalStateException("Cannot delete system quiz")
         val now = System.currentTimeMillis()
-        assetRepository.softDeleteQuizAnnotationTree(quiz.id, now)
+        assetRepositoryProvider.get().softDeleteQuizAnnotationTree(quiz.id, now)
         sessionDao.softDeleteSessionsByQuizId(quiz.id, now)
         questionDao.softDeleteQuestionsByQuizId(quiz.id, now)
         quizDao.softDeleteQuizById(quiz.id, now)
-        bookRepository.refreshBookStats(quiz.bookId)
+        bookRepositoryProvider.get().refreshBookStats(quiz.bookId)
         return quiz.copy(deletedAt = now, updatedAt = now)
     }
 
@@ -160,24 +184,24 @@ class QuizRepository @Inject constructor(
         val quiz = quizDao.getQuizByIdIncludingDeleted(quizId) ?: return
         val book = bookDao.getBookByIdIncludingDeleted(quiz.bookId)
         if (book != null && book.deletedAt != null) {
-            bookRepository.restoreBook(book.id)
+            bookRepositoryProvider.get().restoreBook(book.id)
         }
         val now = System.currentTimeMillis()
         val deletedAtFilter = quiz.deletedAt ?: now
         quizDao.restoreQuizById(quizId, now)
         questionDao.restoreQuestionsByQuizId(quizId, now, deletedAtFilter)
         sessionDao.restoreSessionsByQuizId(quizId, now, deletedAtFilter)
-        assetRepository.restoreOwnerAnnotations("quiz", quizId, now)
-        bookRepository.refreshBookStats(quiz.bookId)
+        assetRepositoryProvider.get().restoreOwnerAnnotations("quiz", quizId, now)
+        bookRepositoryProvider.get().refreshBookStats(quiz.bookId)
     }
 
 
     suspend fun permanentlyDeleteQuiz(quiz: QuizEntity): QuizEntity {
         if (quiz.isSystem) throw IllegalStateException("Cannot delete system quiz")
-        assetRepository.permanentlyDeleteQuizAnnotationTree(quiz.id)
-        assetRepository.releaseQuizTreeAssets(quiz)
+        assetRepositoryProvider.get().permanentlyDeleteQuizAnnotationTree(quiz.id)
+        assetRepositoryProvider.get().releaseQuizTreeAssets(quiz)
         quizDao.hardDeleteQuiz(quiz)
-        bookRepository.refreshBookStats(quiz.bookId)
+        bookRepositoryProvider.get().refreshBookStats(quiz.bookId)
         return quiz
     }
 
@@ -217,7 +241,7 @@ class QuizRepository @Inject constructor(
         
         // Propagate to book
         val quiz = quizDao.getQuizById(quizId) ?: return
-        bookRepository.refreshBookStats(quiz.bookId)
+        bookRepositoryProvider.get().refreshBookStats(quiz.bookId)
     }
 
 
@@ -246,8 +270,8 @@ class QuizRepository @Inject constructor(
             updatedAt = System.currentTimeMillis(),
         )
         val id = questionDao.insertQuestion(saved)
-        assetRepository.syncQuestionCategories(id, saved.categories)
-        assetRepository.replaceOwnerAssetReferences("question", id, listOf(saved.imagePath))
+        assetRepositoryProvider.get().syncQuestionCategories(id, saved.categories)
+        assetRepositoryProvider.get().replaceOwnerAssetReferences("question", id, listOf(saved.imagePath))
         refreshQuizStats(finalQuestion.quizId)
         return id
     }
@@ -269,8 +293,8 @@ class QuizRepository @Inject constructor(
         }
         val ids = questionDao.insertQuestions(updatedQuestions)
         ids.zip(updatedQuestions).forEach { (id, question) ->
-            assetRepository.syncQuestionCategories(id, question.categories)
-            assetRepository.replaceOwnerAssetReferences("question", id, listOf(question.imagePath))
+            assetRepositoryProvider.get().syncQuestionCategories(id, question.categories)
+            assetRepositoryProvider.get().replaceOwnerAssetReferences("question", id, listOf(question.imagePath))
         }
         questions.asSequence().map { it.quizId }.distinct().forEach { refreshQuizStats(it) }
         return ids
@@ -280,14 +304,14 @@ class QuizRepository @Inject constructor(
     suspend fun updateQuestion(question: QuestionEntity) {
         val updated = question.copy(updatedAt = System.currentTimeMillis(), lastEditedAt = System.currentTimeMillis())
         questionDao.updateQuestion(updated)
-        assetRepository.syncQuestionCategories(updated.id, updated.categories)
-        assetRepository.replaceOwnerAssetReferences("question", updated.id, listOf(updated.imagePath))
+        assetRepositoryProvider.get().syncQuestionCategories(updated.id, updated.categories)
+        assetRepositoryProvider.get().replaceOwnerAssetReferences("question", updated.id, listOf(updated.imagePath))
         refreshQuizStats(question.quizId)
     }
 
     suspend fun deleteQuestion(question: QuestionEntity) {
         val now = System.currentTimeMillis()
-        assetRepository.softDeleteQuestionAnnotationTree(question.id, now)
+        assetRepositoryProvider.get().softDeleteQuestionAnnotationTree(question.id, now)
         questionAssetDao.softDeleteAssetsForQuestion(question.id, now)
         questionDao.softDeleteQuestionById(question.id, now)
         refreshQuizStats(question.quizId)
@@ -297,13 +321,13 @@ class QuizRepository @Inject constructor(
     suspend fun restoreQuestion(questionId: Long) {
         val now = System.currentTimeMillis()
         questionDao.restoreQuestionById(questionId, now)
-        assetRepository.restoreOwnerAnnotations(AnnotationOwnerType.QUESTION, questionId, now)
+        assetRepositoryProvider.get().restoreOwnerAnnotations(AnnotationOwnerType.QUESTION, questionId, now)
     }
 
 
     suspend fun permanentlyDeleteQuestion(question: QuestionEntity) {
-        assetRepository.permanentlyDeleteQuestionAnnotationTree(question.id)
-        assetRepository.releaseQuestionAssets(question)
+        assetRepositoryProvider.get().permanentlyDeleteQuestionAnnotationTree(question.id)
+        assetRepositoryProvider.get().releaseQuestionAssets(question)
         questionCategoryDao.deleteCategoriesForQuestion(question.id)
         questionDao.hardDeleteQuestion(question)
         refreshQuizStats(question.quizId)
@@ -350,7 +374,7 @@ class QuizRepository @Inject constructor(
             createdAt = if (session.createdAt == 0L) System.currentTimeMillis() else session.createdAt,
             updatedAt = System.currentTimeMillis()
         ))
-        bookRepository.updateLastStudied(session.quizId)
+        bookRepositoryProvider.get().updateLastStudied(session.quizId)
         return id
     }
 
@@ -359,10 +383,111 @@ class QuizRepository @Inject constructor(
         if (session.isCompleted) {
             refreshQuizStats(session.quizId)
         }
-        bookRepository.updateLastStudied(session.quizId)
+        bookRepositoryProvider.get().updateLastStudied(session.quizId)
     }
 
     suspend fun deleteSession(session: SessionEntity) = sessionDao.softDeleteSessionById(session.id, System.currentTimeMillis())
 
 
+
+
+    suspend fun createQuizFromCategory(category: String, title: String, bookId: Long): Long {
+        val quizId = quizDao.insertQuiz(
+            QuizEntity(
+                externalId = java.util.UUID.randomUUID().toString(),
+                bookId = bookId,
+                title = title,
+                description = "Quiz created from category: $category",
+                category = category,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+        )
+
+        val questions = questionCategoryDao.getQuestionsByCategory(category)
+        val duplicatedQuestions = questions.map { q ->
+            q.copy(
+                id = 0, // New ID for new quiz
+                externalId = java.util.UUID.randomUUID().toString(),
+                quizId = quizId,
+                attempts = 0,
+                correctCount = 0
+            )
+        }
+        insertQuestions(duplicatedQuestions)
+        refreshQuizStats(quizId)
+        return quizId
+    }
+
+    // Category Metadata
+
+    fun getDeletedQuizzes(workspaceId: Long): Flow<List<QuizEntity>> = quizDao.getDeletedQuizzesByWorkspaceFlow(workspaceId)
+
+    fun getQuizCompletion(quizId: Long): Flow<Float> = combine(
+        quizDao.getQuestionCount(quizId),
+        sessionDao.getLatestSessionForQuiz(quizId)
+    ) { total, session ->
+        when {
+            total == 0 -> 0f
+            session == null -> 0f
+            session.isCompleted -> 1f
+            else -> {
+                val answered = session.answers.size
+                (answered.toFloat() / total).coerceIn(0f, 1f)
+            }
+        }
+    }
+
+    // --- Flashcard decks and cards ---
+
+    suspend fun getQuizKnowledgeSummary(quizId: Long): QuizKnowledgeSummary {
+        val allQuestions = questionDao.getQuestionsByQuizId(quizId).first()
+        val questions = allQuestions.filter { !it.isDropped }
+        val assets = questionAssetDao.getAssetsByQuizId(quizId).first()
+        return QuizKnowledgeSummary(
+            quizId = quizId,
+            totalQuestions = questions.size,
+            unansweredQuestions = questions.count { it.attempts == 0 },
+            markedQuestions = questions.count { it.isMarked },
+            droppedQuestions = allQuestions.count { it.isDropped },
+            missedQuestions = questions.count { it.attempts > 0 && (it.correctCount < it.attempts || it.lastAttemptResult == false) },
+            questionsWithNotes = questions.count { !it.notes.isNullOrBlank() },
+            questionsWithAssets = assets.map { it.questionId }.distinct().size,
+            questionsWithSources = assets.filter { it.sourceDocumentId != null }.map { it.questionId }.distinct().size
+        )
+    }
+
+    // Sync Logic
+
+    fun getQuizQuestionCount(quizId: Long): Flow<Int> = quizDao.getQuestionCount(quizId)
+
+    suspend fun importCompiledQuestions(
+        title: String,
+        targetBookId: Long?,
+        targetQuizId: Long? = null,
+        newBookTitle: String? = null,
+        questions: List<ParsedQuestion>
+    ): ImportResult? {
+        val result = importManager?.importQuestions(
+            title = title,
+            questions = questions,
+            targetBookId = targetBookId,
+            targetQuizId = targetQuizId,
+            newBookTitle = newBookTitle
+        )
+        if (result?.success == true) {
+            result.affectedQuizIds.forEach { refreshQuizStats(it) }
+            for (id in result.affectedBookIds) { bookRepositoryProvider.get().refreshBookStats(id) }
+            if (targetQuizId != null && targetQuizId !in result.affectedQuizIds) {
+                refreshQuizStats(targetQuizId)
+            }
+        }
+        return result
+    }
+
+    suspend fun getImportPreview(uri: Uri) = importManager?.getImportPreview(uri)
+
+    fun detectFormat(uri: Uri): ImportFormat {
+        return importManager?.detectFormat(uri) ?: ImportFormat.UNKNOWN
+    }
 }

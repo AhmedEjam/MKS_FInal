@@ -43,32 +43,49 @@ class TextFlashcardParser {
             }
         } else {
             // Explicit Labels Mode
-            for (paragraph in paragraphs) {
-                // We expect each paragraph block to contain both a Front and a Back label
-                val frontMatch = Regex("^(?:Front|Q|Question):\\s*(.*?)(?:\\n(?:Back|A|Answer):|$)", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)).find(paragraph)
-                val backMatch = Regex("\\n(?:Back|A|Answer):\\s*(.*)$", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)).find(paragraph)
+            val frontRegex = Regex("(?m)^\\s*(?:Front|Q|Question):\\s*", RegexOption.IGNORE_CASE)
+            val frontMatches = frontRegex.findAll(text).toList()
 
-                if (frontMatch != null && backMatch != null) {
-                    result.add(
-                        FlashcardEntity(
-                            externalId = UUID.randomUUID().toString(),
-                            deckId = deckId,
-                            frontText = frontMatch.groupValues.getOrNull(1)?.trim() ?: "",
-                            backText = backMatch.groupValues.getOrNull(1)?.trim() ?: "",
-                            orderIndex = order++
-                        )
-                    )
+            if (frontMatches.isEmpty()) {
+                // Fallback: if no labels at all, just treat the whole text as one card
+                val parts = text.split(Regex("(?m)^\\s*(?:Back|A|Answer):\\s*", RegexOption.IGNORE_CASE), limit = 2)
+                if (parts.size == 2) {
+                    result.add(FlashcardEntity(externalId = UUID.randomUUID().toString(), deckId = deckId, frontText = parts[0].trim(), backText = parts[1].trim(), orderIndex = order++))
                 } else {
-                    // Fallback if labels not found: treat the whole block as front
-                    result.add(
-                        FlashcardEntity(
-                            externalId = UUID.randomUUID().toString(),
-                            deckId = deckId,
-                            frontText = paragraph.trim(),
-                            backText = "",
-                            orderIndex = order++
+                    result.add(FlashcardEntity(externalId = UUID.randomUUID().toString(), deckId = deckId, frontText = text.trim(), backText = "", orderIndex = order++))
+                }
+            } else {
+                for (i in frontMatches.indices) {
+                    val match = frontMatches[i]
+                    val startIndex = match.range.last + 1
+                    val endIndex = if (i + 1 < frontMatches.size) frontMatches[i+1].range.first else text.length
+                    
+                    val block = text.substring(startIndex, endIndex).trim()
+                    if (block.isEmpty()) continue
+                    
+                    val parts = block.split(Regex("(?m)^\\s*(?:Back|A|Answer):\\s*", RegexOption.IGNORE_CASE), limit = 2)
+                    
+                    if (parts.size == 2) {
+                        result.add(
+                            FlashcardEntity(
+                                externalId = UUID.randomUUID().toString(),
+                                deckId = deckId,
+                                frontText = parts[0].trim(),
+                                backText = parts[1].trim(),
+                                orderIndex = order++
+                            )
                         )
-                    )
+                    } else {
+                        result.add(
+                            FlashcardEntity(
+                                externalId = UUID.randomUUID().toString(),
+                                deckId = deckId,
+                                frontText = block.trim(),
+                                backText = "",
+                                orderIndex = order++
+                            )
+                        )
+                    }
                 }
             }
         }

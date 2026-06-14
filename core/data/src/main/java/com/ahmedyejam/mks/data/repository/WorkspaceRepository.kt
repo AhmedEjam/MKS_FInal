@@ -86,13 +86,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class StudyRepository @Inject constructor(
+class WorkspaceRepository @Inject constructor(
 
     private val workspaceDao: WorkspaceDao,
     private val bookDao: BookDao,
     private val quizDao: QuizDao,
     private val questionDao: QuestionDao,
-    private val quizRepositoryProvider: javax.inject.Provider<QuizRepository>,
     private val sessionDao: SessionDao,
     private val categoryMetadataDao: CategoryMetadataDao,
     private val fileManager: FileManager,
@@ -125,166 +124,83 @@ class StudyRepository @Inject constructor(
 
 ) {
 
-    fun getAllMistakes(): Flow<List<MistakeLogEntryEntity>> = mistakeLogDao.getAllMistakes()
 
-    fun getMistakesByBookId(bookId: Long): Flow<List<MistakeLogEntryEntity>> = mistakeLogDao.getMistakesByBookId(bookId)
+    fun getAllWorkspaces(): Flow<List<WorkspaceEntity>> = workspaceDao.getAllWorkspacesFlow()
 
-    fun getMistakesByQuizId(quizId: Long): Flow<List<MistakeLogEntryEntity>> = mistakeLogDao.getMistakesByQuizId(quizId)
+    suspend fun getDefaultWorkspace(): WorkspaceEntity? = workspaceDao.getDefaultWorkspace()
 
+    suspend fun getOrCreateDefaultWorkspace(): WorkspaceEntity {
+        workspaceDao.getWorkspaceByExternalId(WorkspaceDefaults.DEFAULT_EXTERNAL_ID)?.let { return it }
+        workspaceDao.getDefaultWorkspace()?.let { existing ->
+            val updated = existing.copy(
+                externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
+                name = WorkspaceDefaults.DEFAULT_NAME,
+                description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
+                isDefault = true,
+                deletedAt = null,
+                updatedAt = System.currentTimeMillis()
+            )
+            workspaceDao.updateWorkspace(updated)
+            ensureWorkspaceSettings(updated.id)
+            return updated
+        }
 
-    suspend fun insertMistake(entry: MistakeLogEntryEntity): Long = mistakeLogDao.insertMistake(entry)
-
-    // Annotations: polymorphic highlights/margin notes owned by QUESTION, SLIDE, NOTE, SOURCE, or ASSET.
-
-    suspend fun deleteMistake(entry: MistakeLogEntryEntity) {
-        mistakeLogDao.softDeleteMistakeById(entry.id, System.currentTimeMillis())
-    }
-
-
-    fun getAnnotationsByWorkspaceId(workspaceId: Long): Flow<List<AnnotationEntity>> =
-        annotationDao.getAnnotationsByWorkspaceId(workspaceId)
-
-
-    fun getAnnotationsByBookId(bookId: Long): Flow<List<AnnotationEntity>> =
-        annotationDao.getAnnotationsByBookId(bookId)
-
-
-    fun getAnnotationsByOwner(ownerType: String, ownerId: Long): Flow<List<AnnotationEntity>> =
-        annotationDao.getAnnotationsByOwner(ownerType, ownerId)
-
-
-    suspend fun getAnnotationById(annotationId: Long): AnnotationEntity? =
-        annotationDao.getAnnotationById(annotationId)
-
-
-    suspend fun insertAnnotation(annotation: AnnotationEntity): Long {
-        require(annotation.ownerType in AnnotationOwnerType.all) { "Unsupported annotation ownerType: ${annotation.ownerType}" }
-        val now = System.currentTimeMillis()
-        return annotationDao.insertAnnotation(annotation.copy(createdAt = annotation.createdAt.takeIf { it > 0 } ?: now, updatedAt = now))
-    }
-
-
-    suspend fun updateAnnotation(annotation: AnnotationEntity) {
-        require(annotation.ownerType in AnnotationOwnerType.all) { "Unsupported annotation ownerType: ${annotation.ownerType}" }
-        annotationDao.updateAnnotation(annotation.copy(updatedAt = System.currentTimeMillis()))
-    }
-
-
-
-
-    suspend fun autoLogWrongAnswer(
-        bookId: Long,
-        quizId: Long,
-        questionId: Long,
-        sessionId: Long?,
-        selectedAnswer: String?,
-        correctAnswer: String?
-    ): Long {
-        val existing = mistakeLogDao.findByQuestionAndSession(questionId, sessionId)
-        if (existing != null) return existing.id
-
-        val now = System.currentTimeMillis()
-        return mistakeLogDao.insertMistake(
-            MistakeLogEntryEntity(
-                bookId = bookId,
-                quizId = quizId,
-                questionId = questionId,
-                sessionId = sessionId,
-                selectedAnswer = selectedAnswer,
-                correctAnswer = correctAnswer,
-                reviewAt = now + 24L * 60L * 60L * 1000L,
-                createdAt = now,
-                updatedAt = now
+        val workspaceId = workspaceDao.insertWorkspace(
+            WorkspaceEntity(
+                externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
+                name = WorkspaceDefaults.DEFAULT_NAME,
+                description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
+                isDefault = true
             )
         )
+        ensureWorkspaceSettings(workspaceId)
+        return workspaceDao.getWorkspaceById(workspaceId)
+            ?: WorkspaceEntity(
+                id = workspaceId,
+                externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
+                name = WorkspaceDefaults.DEFAULT_NAME,
+                description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
+                isDefault = true
+            )
     }
 
-    suspend fun completeLearningSession(sessionId: Long) {
-        val session = knowledgeStudySessionDao.getSessionById(sessionId) ?: return
-        knowledgeStudySessionDao.updateSession(session.copy(isCompleted = true, updatedAt = System.currentTimeMillis()))
+    private suspend fun ensureWorkspaceSettings(workspaceId: Long) {
+        if (workspaceDao.getSettingsByWorkspaceId(workspaceId) == null) {
+            workspaceDao.insertSettings(WorkspaceSettingsEntity(workspaceId = workspaceId))
+        }
     }
 
-    suspend fun createLearningSession(targetType: String, targetId: Long, stateJson: String = ""): Long {
+    suspend fun getWorkspaceById(id: Long): WorkspaceEntity? = workspaceDao.getWorkspaceById(id)
+
+    suspend fun getWorkspaceByIdIncludingDeleted(id: Long): WorkspaceEntity? = workspaceDao.getWorkspaceByIdIncludingDeleted(id)
+
+    fun getDeletedWorkspaces(): Flow<List<WorkspaceEntity>> = workspaceDao.getDeletedWorkspacesFlow()
+
+    suspend fun getWorkspaceByExternalId(externalId: String): WorkspaceEntity? = workspaceDao.getWorkspaceByExternalId(externalId)
+
+    suspend fun insertWorkspace(workspace: WorkspaceEntity): Long = workspaceDao.insertWorkspace(workspace)
+
+    suspend fun updateWorkspace(workspace: WorkspaceEntity) = workspaceDao.updateWorkspace(workspace)
+
+    suspend fun deleteWorkspace(workspace: WorkspaceEntity) {
         val now = System.currentTimeMillis()
-        val session = KnowledgeStudySessionEntity(
-            targetType = targetType,
-            targetId = targetId,
-            stateJson = stateJson,
-            isCompleted = false,
-            createdAt = now,
-            updatedAt = now
-        )
-        return knowledgeStudySessionDao.insertSession(session)
+        workspaceDao.softDeleteWorkspaceById(workspace.id, now)
+        bookDao.softDeleteBooksByWorkspaceId(workspace.id, now)
     }
 
-    suspend fun deleteLearningSession(session: KnowledgeStudySessionEntity) {
-        knowledgeStudySessionDao.softDeleteSessionById(session.id, System.currentTimeMillis())
-    }
-
-    suspend fun getActiveSessionByTarget(targetType: String, targetId: Long): KnowledgeStudySessionEntity? =
-        knowledgeStudySessionDao.getActiveSessionByTarget(targetType, targetId)
-
-    suspend fun getAdaptiveQuestionsByBook(bookId: Long, limit: Int) = questionDao.getAdaptiveQuestionsByBook(bookId, limit)
-
-    // Sessions
-
-    suspend fun getLearningSessionById(sessionId: Long): KnowledgeStudySessionEntity? =
-        knowledgeStudySessionDao.getSessionById(sessionId)
-
-    fun getLearningSessionsByTarget(targetType: String, targetId: Long): Flow<List<KnowledgeStudySessionEntity>> =
-        knowledgeStudySessionDao.getSessionsByTarget(targetType, targetId)
-
-    fun getLearningSessionsByTargetType(targetType: String): Flow<List<KnowledgeStudySessionEntity>> =
-        knowledgeStudySessionDao.getSessionsByTargetType(targetType)
-
-    fun getSessionsByQuizId(quizId: Long): Flow<List<SessionEntity>> = sessionDao.getSessionsByQuizId(quizId)
-
-    suspend fun markMistakeFixed(mistakeId: Long) {
-        mistakeLogDao.markFixed(mistakeId, System.currentTimeMillis())
-    }
-
-    suspend fun permanentlyDeleteLearningSession(session: KnowledgeStudySessionEntity) {
-        knowledgeStudySessionDao.hardDeleteSession(session)
-    }
-
-    suspend fun permanentlyDeleteMistake(entry: MistakeLogEntryEntity) {
-        mistakeLogDao.hardDeleteMistake(entry)
-    }
-
-    suspend fun permanentlyDeleteSession(session: SessionEntity) = sessionDao.hardDeleteSession(session)
-
-    suspend fun restoreLearningSession(sessionId: Long) {
-        knowledgeStudySessionDao.restoreSessionById(sessionId, System.currentTimeMillis())
-    }
-
-    suspend fun restoreMistake(mistakeId: Long) {
-        mistakeLogDao.restoreMistakeById(mistakeId, System.currentTimeMillis())
-    }
-
-    suspend fun restoreSession(sessionId: Long) = sessionDao.restoreSessionById(sessionId, System.currentTimeMillis())
-
-    suspend fun snoozeMistake(mistakeId: Long, reviewAt: Long) {
-        mistakeLogDao.snooze(mistakeId, reviewAt, System.currentTimeMillis())
-    }
-
-    suspend fun updateLearningSession(session: KnowledgeStudySessionEntity) {
-        knowledgeStudySessionDao.updateSession(session.copy(updatedAt = System.currentTimeMillis()))
-    }
-
-    suspend fun updateQuestionMetrics(id: Long, isCorrect: Boolean, timeSpentMs: Long = 0) {
-        val question = questionDao.getQuestionById(id) ?: return
+    suspend fun restoreWorkspace(workspaceId: Long) {
+        val workspace = workspaceDao.getWorkspaceByIdIncludingDeleted(workspaceId) ?: return
+        val deletedAtFilter = workspace.deletedAt ?: return
         val now = System.currentTimeMillis()
-
-        questionDao.updatePerformanceMetrics(
-            id = id,
-            isCorrect = isCorrect,
-            isCorrectInt = if (isCorrect) 1 else 0,
-            timeSpentMs = timeSpentMs,
-            now = now
-        )
-
-        quizRepositoryProvider.get().refreshQuizStats(question.quizId)
+        workspaceDao.restoreWorkspaceById(workspaceId, now)
+        bookDao.restoreBooksByWorkspaceId(workspaceId, now, deletedAtFilter)
     }
 
-    // Question assets / media attachments
+    suspend fun permanentlyDeleteWorkspace(workspace: WorkspaceEntity) = workspaceDao.hardDeleteWorkspace(workspace)
+
+    suspend fun getWorkspaceSettings(workspaceId: Long): WorkspaceSettingsEntity? = workspaceDao.getSettingsByWorkspaceId(workspaceId)
+
+    suspend fun insertWorkspaceSettings(settings: WorkspaceSettingsEntity): Long = workspaceDao.insertSettings(settings)
+
+    suspend fun updateWorkspaceSettings(settings: WorkspaceSettingsEntity) = workspaceDao.updateSettings(settings)
 }

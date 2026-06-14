@@ -33,20 +33,20 @@ class ReviewRepository constructor(
 
     suspend fun loadQueues(now: Long = System.currentTimeMillis()): List<ReviewQueueItem> = withContext(Dispatchers.IO) {
         val flashcards = flashcardDao.getDueFlashcards(now, 20).map {
-            ReviewQueueItem(it.id.toString(), ReviewQueueType.FLASHCARD, it.frontText.take(90), it.backText.take(120), it.dueAt, FlashcardsRoute(it.deckId))
+            ReviewQueueItem(it.id.toString(), ReviewQueueType.FLASHCARD, it.frontText.take(90), it.backText.take(120), it.dueAt, MksRoutes.flashcards(it.deckId))
         }
         val blueprints = noteBlueprintDao.getDueBlueprints(now, 20).map {
-            ReviewQueueItem(it.id.toString(), ReviewQueueType.BLUEPRINT, it.title, it.summary, it.lastReviewedAt, BlueprintRoute(it.id))
+            ReviewQueueItem(it.id.toString(), ReviewQueueType.BLUEPRINT, it.title, it.summary, it.lastReviewedAt, MksRoutes.blueprint(it.id))
         }
         val mistakes = mistakeLogDao.getDueMistakes(now, 20).map {
-            ReviewQueueItem(it.id.toString(), ReviewQueueType.MISTAKE, it.correctConcept ?: "Mistake #${it.id}", it.preventionNote ?: it.userReason, it.reviewAt, ReviewDashboardRoute())
+            ReviewQueueItem(it.id.toString(), ReviewQueueType.MISTAKE, it.correctConcept ?: "Mistake #${it.id}", it.preventionNote ?: it.userReason, it.reviewAt, MksRoutes.REVIEW_DASHBOARD)
         }
         val marked = questionDao.getMarkedQuestionsForReview(now, 20).map {
-            ReviewQueueItem(it.id.toString(), ReviewQueueType.MARKED_QUESTION, it.text.take(90), it.markReason, it.markReviewAt, QuizQuestionsRoute(it.quizId))
+            ReviewQueueItem(it.id.toString(), ReviewQueueType.MARKED_QUESTION, it.text.take(90), it.markReason, it.markReviewAt, MksRoutes.quizQuestions(it.quizId))
         }
         val weakCutoff = now - 7L * 24L * 60L * 60L * 1000L
         val weak = questionDao.getWeakQuestionsDue(weakCutoff, 20).map {
-            ReviewQueueItem(it.id.toString(), ReviewQueueType.WEAK_QUESTION, it.text.take(90), "${it.correctCount}/${it.attempts} correct", it.lastStudiedAt, QuizQuestionsRoute(it.quizId))
+            ReviewQueueItem(it.id.toString(), ReviewQueueType.WEAK_QUESTION, it.text.take(90), "${it.correctCount}/${it.attempts} correct", it.lastStudiedAt, MksRoutes.quizQuestions(it.quizId))
         }
         flashcards + blueprints + mistakes + marked + weak
     }

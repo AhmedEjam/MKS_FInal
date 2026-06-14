@@ -48,6 +48,7 @@ import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.Source
@@ -864,6 +865,7 @@ fun AiPromptDeckScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val clipboard = LocalClipboardManager.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     var selectedCardId by remember { mutableStateOf<Long?>(null) }
     var outputText by remember { mutableStateOf("") }
 
@@ -1037,7 +1039,16 @@ fun AiPromptDeckScreen(
                         ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text("Live Rendered Prompt", fontWeight = FontWeight.Bold)
-                                IconButton(onClick = { clipboard.setText(AnnotatedString(renderedPrompt)) }) { Icon(Icons.Rounded.ContentCopy, "Copy") }
+                                Row {
+                                    IconButton(onClick = { clipboard.setText(AnnotatedString(renderedPrompt)) }) { Icon(Icons.Rounded.ContentCopy, "Copy") }
+                                    IconButton(onClick = {
+                                        val sendIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(android.content.Intent.EXTRA_TEXT, renderedPrompt)
+                                        }
+                                        context.startActivity(android.content.Intent.createChooser(sendIntent, "Send prompt to..."))
+                                    }) { Icon(Icons.Rounded.Share, "Share") }
+                                }
                             }
                             Text(renderedPrompt)
                         } }
@@ -1394,6 +1405,7 @@ private fun PromptRunItem(run: PromptRunEntity) {
     } }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun EntitySelectorDialog(
     state: BookToolsUiState,
@@ -1402,6 +1414,13 @@ fun EntitySelectorDialog(
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Notes", "Sources", "Questions")
+    
+    var selectedQuizId by remember { mutableStateOf<Long?>(null) }
+    val componentOptions = listOf("Stem", "Options", "Explanation", "Hint", "Reference", "Categories")
+    val selectedComponents = remember { mutableStateMapOf<String, Boolean>().apply {
+        componentOptions.forEach { put(it, it == "Stem" || it == "Options") }
+    } }
+    var quizExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1455,16 +1474,84 @@ fun EntitySelectorDialog(
                             }
                         }
                         2 -> {
-                            if (state.questions.isEmpty()) {
+                            item {
+                                androidx.compose.material3.ExposedDropdownMenuBox(
+                                    expanded = quizExpanded,
+                                    onExpandedChange = { quizExpanded = it }
+                                ) {
+                                    OutlinedTextField(
+                                        value = state.quizzes.find { it.id == selectedQuizId }?.title ?: "All Quizzes",
+                                        onValueChange = {},
+                                        readOnly = true,
+                                        trailingIcon = { androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = quizExpanded) },
+                                        colors = androidx.compose.material3.ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                        label = { Text("Select Quiz") }
+                                    )
+                                    ExposedDropdownMenu(
+                                        expanded = quizExpanded,
+                                        onDismissRequest = { quizExpanded = false }
+                                    ) {
+                                        androidx.compose.material3.DropdownMenuItem(
+                                            text = { Text("All Quizzes") },
+                                            onClick = { selectedQuizId = null; quizExpanded = false }
+                                        )
+                                        state.quizzes.forEach { quiz ->
+                                            androidx.compose.material3.DropdownMenuItem(
+                                                text = { Text(quiz.title) },
+                                                onClick = { selectedQuizId = quiz.id; quizExpanded = false }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            item {
+                                androidx.compose.foundation.layout.FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    componentOptions.forEach { comp ->
+                                        androidx.compose.material3.FilterChip(
+                                            selected = selectedComponents[comp] == true,
+                                            onClick = { selectedComponents[comp] = !(selectedComponents[comp] ?: false) },
+                                            label = { Text(comp) }
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            val filteredQuestions = if (selectedQuizId == null) state.questions else state.questions.filter { it.quizId == selectedQuizId }
+
+                            if (filteredQuestions.isEmpty()) {
                                 item { Text("No questions available.") }
                             } else {
-                                items(state.questions) { question ->
-                                    Card(modifier = Modifier.fillMaxWidth().clickable {
-                                        val opts = question.options.joinToString("\n") { "- $it" }
-                                        onEntitySelected("Question: ${question.text}\nOptions:\n$opts\nExplanation: ${question.explanation.orEmpty()}", null)
-                                    }) {
-                                        Column(Modifier.padding(12.dp)) {
-                                            Text(question.text.take(100), maxLines = 2)
+                                items(filteredQuestions) { question ->
+                                    val builder = StringBuilder()
+                                    if (selectedComponents["Stem"] == true) builder.append("Question: ${question.text}\n")
+                                    if (selectedComponents["Options"] == true && question.options.isNotEmpty()) {
+                                        builder.append("Options:\n")
+                                        question.options.forEach { builder.append("- $it\n") }
+                                    }
+                                    if (selectedComponents["Explanation"] == true && !question.explanation.isNullOrBlank()) {
+                                        builder.append("Explanation: ${question.explanation}\n")
+                                    }
+                                    if (selectedComponents["Hint"] == true && !question.hint.isNullOrBlank()) {
+                                        builder.append("Hint: ${question.hint}\n")
+                                    }
+                                    if (selectedComponents["Reference"] == true && !question.reference.isNullOrBlank()) {
+                                        builder.append("Reference: ${question.reference}\n")
+                                    }
+                                    if (selectedComponents["Categories"] == true && question.categories.isNotEmpty()) {
+                                        builder.append("Categories: ${question.categories.joinToString(", ")}\n")
+                                    }
+                                    val previewText = builder.toString().trim()
+                                    
+                                    if (previewText.isNotBlank()) {
+                                        Card(modifier = Modifier.fillMaxWidth().clickable {
+                                            onEntitySelected(previewText, null)
+                                        }) {
+                                            Column(Modifier.padding(12.dp)) {
+                                                Text(previewText.take(150), maxLines = 4, style = MaterialTheme.typography.bodySmall)
+                                            }
                                         }
                                     }
                                 }

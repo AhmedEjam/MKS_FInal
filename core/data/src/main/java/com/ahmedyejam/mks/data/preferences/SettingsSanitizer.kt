@@ -21,9 +21,9 @@ object SettingsSanitizer {
         else -> "LIST"
     }
 
-    fun fontScale(value: Float?): Float = (value ?: 1.0f).coerceIn(0.85f, 2.0f)
+    fun fontScale(value: Float?): Float = (value ?: 1.0f).coerceIn(0.5f, 2.0f)
     
-    fun uiDensity(value: Float?): Float = (value ?: 1.0f).coerceIn(0.85f, 1.5f)
+    fun uiDensity(value: Float?): Float = (value ?: 1.0f).coerceIn(0.5f, 1.5f)
     
     fun autoAdvanceDelay(value: Int?): Int = (value ?: 500).coerceIn(300, 10000)
     

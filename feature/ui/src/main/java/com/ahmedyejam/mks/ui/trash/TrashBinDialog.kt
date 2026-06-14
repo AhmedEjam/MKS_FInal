@@ -41,6 +41,7 @@ fun TrashBinDialog(
 
     var selectedTab by remember { mutableStateOf(TrashTab.BOOKS) }
     var itemToPurge by remember { mutableStateOf<Any?>(null) }
+    var showEmptyTrashConfirm by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -195,8 +196,45 @@ fun TrashBinDialog(
             TextButton(onClick = onDismiss) {
                 Text("Close")
             }
+        },
+        dismissButton = {
+            val isTrashEmpty = deletedBooks.isEmpty() && deletedQuizzes.isEmpty() &&
+                               deletedDecks.isEmpty() && deletedSlideshows.isEmpty() &&
+                               deletedNotes.isEmpty() && deletedPrompts.isEmpty()
+            if (!isTrashEmpty) {
+                TextButton(
+                    onClick = { showEmptyTrashConfirm = true },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Empty Trash")
+                }
+            }
         }
     )
+
+    if (showEmptyTrashConfirm) {
+        AlertDialog(
+            onDismissRequest = { showEmptyTrashConfirm = false },
+            title = { Text("Empty Trash?") },
+            text = { Text("Are you sure you want to permanently delete all items in the trash? This action is irreversible.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.emptyTrash()
+                        showEmptyTrashConfirm = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Empty Trash")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEmptyTrashConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     // Confirmation dialog for permanent deletion
     itemToPurge?.let { item ->
