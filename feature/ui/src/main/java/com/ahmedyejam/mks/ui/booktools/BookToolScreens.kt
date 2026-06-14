@@ -917,9 +917,46 @@ fun AiPromptDeckScreen(
         topBar = { ToolTopBar(state.promptDeck?.title ?: "Prompt deck", handleBack) },
         floatingActionButton = {
             if (selectedCardId == null) {
-                FloatingActionButton(onClick = {
-                    state.promptDeck?.let { viewModel.createPromptCard(it.id, "New Prompt", "") }
-                }) { Icon(Icons.Rounded.Add, null) }
+                var showCreateOptions by remember { mutableStateOf(false) }
+                Box {
+                    FloatingActionButton(onClick = { showCreateOptions = true }) { 
+                        Icon(Icons.Rounded.Add, null) 
+                    }
+                    DropdownMenu(
+                        expanded = showCreateOptions,
+                        onDismissRequest = { showCreateOptions = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Create empty prompt") },
+                            onClick = {
+                                state.promptDeck?.let { viewModel.createPromptCard(it.id, "New Prompt", "") }
+                                showCreateOptions = false
+                            }
+                        )
+                        androidx.compose.material3.HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Template: Quiz generator") },
+                            onClick = {
+                                state.promptDeck?.let { viewModel.createTemplatePromptCard(it.id, "QUIZ") }
+                                showCreateOptions = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Template: Flashcard generator") },
+                            onClick = {
+                                state.promptDeck?.let { viewModel.createTemplatePromptCard(it.id, "FLASHCARDS") }
+                                showCreateOptions = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Template: Blueprint maker") },
+                            onClick = {
+                                state.promptDeck?.let { viewModel.createTemplatePromptCard(it.id, "BLUEPRINT") }
+                                showCreateOptions = false
+                            }
+                        )
+                    }
+                }
             }
         }
     ) { padding ->
