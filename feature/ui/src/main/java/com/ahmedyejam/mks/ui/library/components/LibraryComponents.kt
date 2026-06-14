@@ -438,7 +438,7 @@ fun BookItem(
                         .aspectRatio(1.05f)
                 )
                 Spacer(Modifier.height(12.dp))
-                BookTextBlock(book = book, modifier = Modifier.fillMaxWidth())
+                BookTextBlock(book = book, modifier = Modifier.fillMaxWidth(), isGrid = true)
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     QuestionCountPill(count = book.questionCount)
@@ -476,7 +476,7 @@ fun BookItem(
 }
 
 @Composable
-private fun BookTextBlock(book: BookEntity, modifier: Modifier = Modifier) {
+private fun BookTextBlock(book: BookEntity, modifier: Modifier = Modifier, isGrid: Boolean = false) {
     val colors = MaterialTheme.colorScheme
     Column(modifier = modifier) {
         Text(
@@ -487,12 +487,13 @@ private fun BookTextBlock(book: BookEntity, modifier: Modifier = Modifier) {
             overflow = TextOverflow.Ellipsis,
             color = colors.onSurface
         )
-        if (book.description.isNotBlank()) {
+        if (isGrid || book.description.isNotBlank()) {
             Spacer(Modifier.height(3.dp))
             Text(
                 text = book.description,
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 2,
+                minLines = if (isGrid) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
                 color = colors.onSurfaceVariant,
                 lineHeight = 18.sp
@@ -656,7 +657,7 @@ fun QuizItem(
                         .aspectRatio(1.35f)
                 )
                 Spacer(Modifier.height(12.dp))
-                QuizTextBlock(quiz = quiz, modifier = Modifier.fillMaxWidth())
+                QuizTextBlock(quiz = quiz, modifier = Modifier.fillMaxWidth(), isGrid = true)
                 Spacer(Modifier.height(6.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     IconButton(onClick = onLongClick, modifier = Modifier.size(34.dp)) {
@@ -745,7 +746,7 @@ private fun QuizVisual(
 }
 
 @Composable
-private fun QuizTextBlock(quiz: QuizEntity, modifier: Modifier = Modifier) {
+private fun QuizTextBlock(quiz: QuizEntity, modifier: Modifier = Modifier, isGrid: Boolean = false) {
     val colors = MaterialTheme.colorScheme
     Column(modifier = modifier) {
         Text(
@@ -755,12 +756,13 @@ private fun QuizTextBlock(quiz: QuizEntity, modifier: Modifier = Modifier) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-        if (quiz.description.isNotBlank()) {
+        if (isGrid || quiz.description.isNotBlank()) {
             Spacer(Modifier.height(2.dp))
             Text(
                 text = quiz.description,
                 style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
+                maxLines = 2,
+                minLines = if (isGrid) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
                 color = colors.onSurfaceVariant
             )
