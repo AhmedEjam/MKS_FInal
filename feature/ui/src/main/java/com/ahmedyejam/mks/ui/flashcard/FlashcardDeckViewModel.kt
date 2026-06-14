@@ -8,10 +8,14 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.importer.parser.TextFlashcardParser
+import com.ahmedyejam.mks.data.repository.BookRepository
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
+import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
 import com.ahmedyejam.mks.data.model.FlashcardGenerationConfig
-import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.di.AppModule
 import com.ahmedyejam.mks.util.MksLogger
 import kotlinx.coroutines.Job
@@ -44,8 +48,14 @@ data class FlashcardDeckUiState(
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModule) : ViewModel() {
-    private val repository: MksRepository = appModule.repository
+class FlashcardDeckViewModel @Inject constructor(
+    private val appModule: AppModule,
+    private val bookRepository: BookRepository,
+    private val knowledgeRepository: KnowledgeRepository,
+    private val assetRepository: AssetRepository,
+    private val quizRepository: QuizRepository,
+    private val studyRepository: StudyRepository
+) : ViewModel() {
     private val _uiState = MutableStateFlow(FlashcardDeckUiState())
     val uiState = _uiState.asStateFlow()
     private var deckId: Long? = null
@@ -75,15 +85,15 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         loadJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             kotlinx.coroutines.flow.combine(
-                repository.observeFlashcardDeckById(id),
-                repository.getFlashcardsByDeckId(id)
+                knowledgeRepository.observeFlashcardDeckById(id),
+                knowledgeRepository.getFlashcardsByDeckId(id)
             ) { deck, cards -> Pair(deck, cards) }
             .flatMapLatest { pair ->
                 val deck = pair.first
                 val cards = pair.second
-                val decksFlow = deck?.bookId?.let { repository.getFlashcardDecksByBookId(it) } ?: kotlinx.coroutines.flow.flowOf(emptyList<FlashcardDeckEntity>())
-                val quizzesFlow = deck?.bookId?.let { repository.getQuizzesByBookId(it, com.ahmedyejam.mks.data.repository.SortOption.TITLE) } ?: kotlinx.coroutines.flow.flowOf(emptyList<com.ahmedyejam.mks.data.local.entity.QuizEntity>())
-                val categoriesFlow = repository.getAllCategoriesWithMetadata()
+                val decksFlow = deck?.bookId?.let { knowledgeRepository.getFlashcardDecksByBookId(it) } ?: kotlinx.coroutines.flow.flowOf(emptyList<FlashcardDeckEntity>())
+                val quizzesFlow = deck?.bookId?.let { quizRepository.getQuizzesByBookId(it, com.ahmedyejam.mks.data.repository.SortOption.TITLE) } ?: kotlinx.coroutines.flow.flowOf(emptyList<com.ahmedyejam.mks.data.local.entity.QuizEntity>())
+                val categoriesFlow = quizRepository.getAllCategoriesWithMetadata()
 
                 kotlinx.coroutines.flow.combine(decksFlow, quizzesFlow, categoriesFlow) { allDecks, quizzes, cats ->
                     Triple(deck, cards, Triple(allDecks, quizzes, cats))
@@ -174,8 +184,8 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         }
         
         appModule.applicationScope.launch {
-            repository.getLearningSessionById(sessionId)?.let { session ->
-                repository.updateLearningSession(session.copy(stateJson = json))
+            studyRepository.getLearningSessionById(sessionId)?.let { session ->
+                studyRepository.updateLearningSession(session.copy(stateJson = json))
             }
         }
     }
@@ -210,9 +220,9 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         }
         
         appModule.applicationScope.launch {
-            repository.getLearningSessionById(sessionId)?.let { session ->
-                repository.updateLearningSession(session.copy(stateJson = json, isCompleted = true))
-                repository.completeLearningSession(sessionId)
+            studyRepository.getLearningSessionById(sessionId)?.let { session ->
+                studyRepository.updateLearningSession(session.copy(stateJson = json, isCompleted = true))
+                studyRepository.completeLearningSession(sessionId)
             }
         }
     }
@@ -229,7 +239,7 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
             
             viewModelScope.launch {
                 val deckId = deckId ?: return@launch
-                val sessionId = repository.createLearningSession("FLASHCARD", deckId, "")
+                val sessionId = studyRepository.createLearningSession("FLASHCARD", deckId, "")
                 activeSessionId = sessionId
                 startSessionTimer()
             }
@@ -265,7 +275,7 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
     fun updateDeck(title: String, description: String?, coverImage: String?) {
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {
-            repository.updateFlashcardDeck(deck.copy(title = title, description = description, coverImage = coverImage))
+            knowledgeRepository.updateFlashcardDeck(deck.copy(title = title, description = description, coverImage = coverImage))
             _uiState.value = _uiState.value.copy(message = "Deck updated")
         }
     }
@@ -274,7 +284,7 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {
             val order = _uiState.value.cards.size
-            repository.insertFlashcard(
+            knowledgeRepository.insertFlashcard(
                 FlashcardEntity(
                     externalId = java.util.UUID.randomUUID().toString(),
                     deckId = deck.id,
@@ -291,7 +301,7 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
 
     fun updateCard(card: FlashcardEntity, front: String, back: String, hint: String?, tags: List<String>) {
         viewModelScope.launch {
-            repository.updateFlashcard(
+            knowledgeRepository.updateFlashcard(
                 card.copy(
                     frontText = front,
                     backText = back,
@@ -305,7 +315,7 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
 
     fun deleteCard(card: FlashcardEntity) {
         viewModelScope.launch {
-            repository.deleteFlashcard(card)
+            knowledgeRepository.deleteFlashcard(card)
             _uiState.value = _uiState.value.copy(message = "Card deleted")
         }
     }
@@ -317,7 +327,7 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         if (index !in cards.indices || target !in cards.indices) return
         val moved = cards.removeAt(index)
         cards.add(target, moved)
-        viewModelScope.launch { repository.reorderFlashcards(cards) }
+        viewModelScope.launch { knowledgeRepository.reorderFlashcards(cards) }
     }
 
     fun toggleCardSelection(id: Long) {
@@ -340,7 +350,7 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         if (ids.isEmpty()) return
         val cardsToDelete = _uiState.value.cards.filter { it.id in ids }
         viewModelScope.launch {
-            cardsToDelete.forEach { repository.deleteFlashcard(it) }
+            cardsToDelete.forEach { knowledgeRepository.deleteFlashcard(it) }
             _uiState.value = _uiState.value.copy(selectedCardIds = emptySet(), message = "${ids.size} cards deleted")
         }
     }
@@ -349,7 +359,7 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         val ids = _uiState.value.selectedCardIds.toList()
         if (ids.isEmpty()) return
         viewModelScope.launch {
-            repository.moveFlashcards(ids, targetDeckId)
+            knowledgeRepository.moveFlashcards(ids, targetDeckId)
             _uiState.value = _uiState.value.copy(selectedCardIds = emptySet(), message = "${ids.size} cards moved")
         }
     }
@@ -358,7 +368,7 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         val ids = _uiState.value.selectedCardIds.toList()
         if (ids.isEmpty()) return
         viewModelScope.launch {
-            repository.copyFlashcards(ids, targetDeckId)
+            knowledgeRepository.copyFlashcards(ids, targetDeckId)
             _uiState.value = _uiState.value.copy(selectedCardIds = emptySet(), message = "${ids.size} cards copied")
         }
     }
@@ -374,7 +384,7 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
             cardScores[card.id] = 0.2f
         }
         viewModelScope.launch {
-            repository.rateFlashcard(card, rating)
+            knowledgeRepository.rateFlashcard(card, rating)
             nextCard()
             saveSessionStateIncremental()
         }
@@ -388,11 +398,11 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {
             runCatching {
-                val markedQuestions = repository.getBookStudyBundle(deck.bookId)?.questions.orEmpty().filter { it.isMarked }
-                val count = repository.addFlashcardsFromQuestionsToDeck(deck.id, markedQuestions.map { it.id }, config)
+                val markedQuestions = bookRepository.getBookStudyBundle(deck.bookId)?.questions.orEmpty().filter { it.isMarked }
+                val count = knowledgeRepository.addFlashcardsFromQuestionsToDeck(deck.id, markedQuestions.map { it.id }, config)
                 if (clearMarksAfter) {
                     markedQuestions.forEach { question ->
-                        repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
+                        assetRepository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
                     }
                 }
                 count
@@ -408,10 +418,10 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {
             runCatching {
-                val missedIds = repository.getBookStudyBundle(deck.bookId)?.questions.orEmpty()
+                val missedIds = bookRepository.getBookStudyBundle(deck.bookId)?.questions.orEmpty()
                     .filter { it.attempts > 0 && (it.correctCount < it.attempts || it.lastAttemptResult == false) }
                     .map { it.id }
-                repository.addFlashcardsFromQuestionsToDeck(deck.id, missedIds, config)
+                knowledgeRepository.addFlashcardsFromQuestionsToDeck(deck.id, missedIds, config)
             }.onSuccess { count ->
                 _uiState.value = _uiState.value.copy(message = "$count missed-question card(s) added")
             }.onFailure { error ->
@@ -424,11 +434,11 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {
             runCatching {
-                val questions = repository.getBookStudyBundle(deck.bookId)?.questions.orEmpty()
-                val count = repository.addFlashcardsFromQuestionsToDeck(deck.id, questions.map { it.id }, config)
+                val questions = bookRepository.getBookStudyBundle(deck.bookId)?.questions.orEmpty()
+                val count = knowledgeRepository.addFlashcardsFromQuestionsToDeck(deck.id, questions.map { it.id }, config)
                 if (clearMarksAfter) {
                     questions.filter { it.isMarked }.forEach { question ->
-                        repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
+                        assetRepository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
                     }
                 }
                 count
@@ -444,12 +454,12 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {
             runCatching {
-                val bundle = repository.getBookStudyBundle(deck.bookId)
+                val bundle = bookRepository.getBookStudyBundle(deck.bookId)
                 val questions = bundle?.questionsByQuiz?.get(quizId).orEmpty()
-                val count = repository.addFlashcardsFromQuestionsToDeck(deck.id, questions.map { it.id }, config)
+                val count = knowledgeRepository.addFlashcardsFromQuestionsToDeck(deck.id, questions.map { it.id }, config)
                 if (clearMarksAfter) {
                     questions.filter { it.isMarked }.forEach { question ->
-                        repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
+                        assetRepository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
                     }
                 }
                 count
@@ -465,12 +475,12 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {
             runCatching {
-                val questions = repository.getBookStudyBundle(deck.bookId)?.questions.orEmpty()
+                val questions = bookRepository.getBookStudyBundle(deck.bookId)?.questions.orEmpty()
                     .filter { it.categories.contains(categoryName) }
-                val count = repository.addFlashcardsFromQuestionsToDeck(deck.id, questions.map { it.id }, config)
+                val count = knowledgeRepository.addFlashcardsFromQuestionsToDeck(deck.id, questions.map { it.id }, config)
                 if (clearMarksAfter) {
                     questions.filter { it.isMarked }.forEach { question ->
-                        repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
+                        assetRepository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
                     }
                 }
                 count
@@ -489,7 +499,7 @@ class FlashcardDeckViewModel @Inject constructor(private val appModule: AppModul
                 val currentOrder = _uiState.value.cards.size
                 val parser = TextFlashcardParser()
                 val flashcards = parser.parse(text, deck.id, currentOrder, mode)
-                repository.insertFlashcards(flashcards)
+                knowledgeRepository.insertFlashcards(flashcards)
                 flashcards.size
             }.onSuccess { count ->
                 _uiState.value = _uiState.value.copy(message = "$count card(s) imported")

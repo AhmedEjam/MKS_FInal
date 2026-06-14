@@ -8,9 +8,13 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
+import com.ahmedyejam.mks.data.repository.BookRepository
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
+import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.data.repository.SortOption
 import com.ahmedyejam.mks.util.MksLogger
 import com.ahmedyejam.mks.data.model.SlideGenerationConfig
@@ -44,8 +48,14 @@ data class SlideshowCourseUiState(
 }
 
 @HiltViewModel
-class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewModel() {
-    private val repository: MksRepository = appModule.repository
+class SlideshowCourseViewModel @Inject constructor(
+    appModule: AppModule,
+    private val bookRepository: BookRepository,
+    private val knowledgeRepository: KnowledgeRepository,
+    private val assetRepository: AssetRepository,
+    private val quizRepository: QuizRepository,
+    private val studyRepository: StudyRepository
+) : ViewModel() {
     private val _uiState = MutableStateFlow(SlideshowCourseUiState())
     val uiState = _uiState.asStateFlow()
     private var courseId: Long? = null
@@ -72,15 +82,15 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         loadJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             combine(
-                flowOf(repository.getSlideshowCourseById(id)), // getSlideshowCourseById is suspend in MksRepository. Wait, I should wrap it or adjust. Let me fix the loading block.
-                repository.getSlidesByCourseId(id)
+                flowOf(knowledgeRepository.getSlideshowCourseById(id)), // getSlideshowCourseById is suspend in MksRepository. Wait, I should wrap it or adjust. Let me fix the loading block.
+                knowledgeRepository.getSlidesByCourseId(id)
             ) { course, slides -> Pair(course, slides) }
             .flatMapLatest { pair ->
                 val course = pair.first
                 val slides = pair.second
-                val coursesFlow = course?.bookId?.let { repository.getSlideshowCoursesByBookId(it) } ?: flowOf(emptyList())
-                val quizzesFlow = course?.bookId?.let { repository.getQuizzesByBookId(it, SortOption.TITLE) } ?: flowOf(emptyList())
-                val categoriesFlow = repository.getAllCategoriesWithMetadata()
+                val coursesFlow = course?.bookId?.let { knowledgeRepository.getSlideshowCoursesByBookId(it) } ?: flowOf(emptyList())
+                val quizzesFlow = course?.bookId?.let { quizRepository.getQuizzesByBookId(it, SortOption.TITLE) } ?: flowOf(emptyList())
+                val categoriesFlow = quizRepository.getAllCategoriesWithMetadata()
 
                 combine(coursesFlow, quizzesFlow, categoriesFlow) { allCourses, quizzes, cats ->
                     Triple(course, slides, Triple(allCourses, quizzes, cats))
@@ -109,11 +119,11 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
 
     // A helper method since getSlideshowCourseById is a suspend function
     private suspend fun fetchCourseAndObserve(id: Long) {
-        val course = repository.getSlideshowCourseById(id)
-        repository.getSlidesByCourseId(id).flatMapLatest { slides ->
-            val coursesFlow = course?.bookId?.let { repository.getSlideshowCoursesByBookId(it) } ?: flowOf(emptyList())
-            val quizzesFlow = course?.bookId?.let { repository.getQuizzesByBookId(it, SortOption.TITLE) } ?: flowOf(emptyList())
-            val categoriesFlow = repository.getAllCategoriesWithMetadata()
+        val course = knowledgeRepository.getSlideshowCourseById(id)
+        knowledgeRepository.getSlidesByCourseId(id).flatMapLatest { slides ->
+            val coursesFlow = course?.bookId?.let { knowledgeRepository.getSlideshowCoursesByBookId(it) } ?: flowOf(emptyList())
+            val quizzesFlow = course?.bookId?.let { quizRepository.getQuizzesByBookId(it, SortOption.TITLE) } ?: flowOf(emptyList())
+            val categoriesFlow = quizRepository.getAllCategoriesWithMetadata()
 
             combine(coursesFlow, quizzesFlow, categoriesFlow) { allCourses, quizzes, cats ->
                 Triple(course, slides, Triple(allCourses, quizzes, cats))
@@ -209,8 +219,8 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         }
         
         appModule.applicationScope.launch {
-            repository.getLearningSessionById(sessionId)?.let { session ->
-                repository.updateLearningSession(session.copy(stateJson = json))
+            studyRepository.getLearningSessionById(sessionId)?.let { session ->
+                studyRepository.updateLearningSession(session.copy(stateJson = json))
             }
         }
     }
@@ -243,9 +253,9 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         }
         
         appModule.applicationScope.launch {
-            repository.getLearningSessionById(sessionId)?.let { session ->
-                repository.updateLearningSession(session.copy(stateJson = json, isCompleted = true))
-                repository.completeLearningSession(sessionId)
+            studyRepository.getLearningSessionById(sessionId)?.let { session ->
+                studyRepository.updateLearningSession(session.copy(stateJson = json, isCompleted = true))
+                studyRepository.completeLearningSession(sessionId)
             }
         }
     }
@@ -263,7 +273,7 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
             
             viewModelScope.launch {
                 val courseId = courseId ?: return@launch
-                val sessionId = repository.createLearningSession("COURSE", courseId, "")
+                val sessionId = studyRepository.createLearningSession("COURSE", courseId, "")
                 activeSessionId = sessionId
                 startSessionTimer()
             }
@@ -293,7 +303,7 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         val current = _uiState.value
         val slide = current.currentSlide ?: return
         viewModelScope.launch {
-            repository.updateCourseSlide(slide.copy(isCompleted = !slide.isCompleted))
+            knowledgeRepository.updateCourseSlide(slide.copy(isCompleted = !slide.isCompleted))
         }
     }
 
@@ -323,10 +333,10 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
     fun updateCourse(title: String, description: String?, coverImage: String?) {
         val course = _uiState.value.course ?: return
         viewModelScope.launch {
-            repository.updateSlideshowCourse(course.copy(title = title, description = description, coverImage = coverImage))
+            knowledgeRepository.updateSlideshowCourse(course.copy(title = title, description = description, coverImage = coverImage))
             _uiState.value = _uiState.value.copy(message = "Course updated")
             // refresh course object since it's not fully observed
-            val refreshed = repository.getSlideshowCourseById(course.id)
+            val refreshed = knowledgeRepository.getSlideshowCourseById(course.id)
             _uiState.value = _uiState.value.copy(course = refreshed)
         }
     }
@@ -336,7 +346,7 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         viewModelScope.launch {
             val order = _uiState.value.slides.size
             val now = System.currentTimeMillis()
-            repository.insertCourseSlide(
+            knowledgeRepository.insertCourseSlide(
                 CourseSlideEntity(
                     externalId = java.util.UUID.randomUUID().toString(),
                     courseId = course.id,
@@ -355,7 +365,7 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
 
     fun updateSlide(slide: CourseSlideEntity, title: String, body: String, notes: String?, imagePath: String?) {
         viewModelScope.launch {
-            repository.updateCourseSlide(
+            knowledgeRepository.updateCourseSlide(
                 slide.copy(
                     title = title,
                     body = body,
@@ -369,7 +379,7 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
 
     fun deleteSlide(slide: CourseSlideEntity) {
         viewModelScope.launch {
-            repository.deleteCourseSlide(slide)
+            knowledgeRepository.deleteCourseSlide(slide)
             _uiState.value = _uiState.value.copy(message = "Slide deleted")
         }
     }
@@ -381,7 +391,7 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         if (index !in slides.indices || target !in slides.indices) return
         val moved = slides.removeAt(index)
         slides.add(target, moved)
-        viewModelScope.launch { repository.reorderCourseSlides(slides) }
+        viewModelScope.launch { knowledgeRepository.reorderCourseSlides(slides) }
     }
 
     fun toggleSlideSelection(id: Long) {
@@ -404,7 +414,7 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         if (ids.isEmpty()) return
         val slidesToDelete = _uiState.value.slides.filter { it.id in ids }
         viewModelScope.launch {
-            slidesToDelete.forEach { repository.deleteCourseSlide(it) }
+            slidesToDelete.forEach { knowledgeRepository.deleteCourseSlide(it) }
             _uiState.value = _uiState.value.copy(selectedSlideIds = emptySet(), message = "${ids.size} slides deleted")
         }
     }
@@ -413,7 +423,7 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         val ids = _uiState.value.selectedSlideIds
         if (ids.isEmpty()) return
         viewModelScope.launch {
-            repository.moveCourseSlides(ids.toList(), targetCourseId)
+            knowledgeRepository.moveCourseSlides(ids.toList(), targetCourseId)
             _uiState.value = _uiState.value.copy(selectedSlideIds = emptySet(), message = "${ids.size} slides moved")
         }
     }
@@ -422,7 +432,7 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         val ids = _uiState.value.selectedSlideIds
         if (ids.isEmpty()) return
         viewModelScope.launch {
-            repository.copyCourseSlides(ids.toList(), targetCourseId)
+            knowledgeRepository.copyCourseSlides(ids.toList(), targetCourseId)
             _uiState.value = _uiState.value.copy(selectedSlideIds = emptySet(), message = "${ids.size} slides copied")
         }
     }
@@ -435,7 +445,7 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
                 val orderStart = _uiState.value.slides.size
                 val slides = parser.parse(text, course.id, orderStart, mode)
                 if (slides.isNotEmpty()) {
-                    repository.insertCourseSlides(slides)
+                    knowledgeRepository.insertCourseSlides(slides)
                 }
                 slides.size
             }.onSuccess { count ->
@@ -456,7 +466,7 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
                 val orderStart = _uiState.value.slides.size
                 val slides = parser.parse(context, uri, course.id, orderStart)
                 if (slides.isNotEmpty()) {
-                    repository.insertCourseSlides(slides)
+                    knowledgeRepository.insertCourseSlides(slides)
                 }
                 slides.size
             }.onSuccess { count ->
@@ -477,11 +487,11 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         val course = _uiState.value.course ?: return
         viewModelScope.launch {
             runCatching {
-                val markedQuestions = repository.getBookStudyBundle(course.bookId)?.questions.orEmpty().filter { it.isMarked }
-                val count = repository.addCourseSlidesFromQuestionsToCourse(course.id, markedQuestions.map { it.id }, config)
+                val markedQuestions = bookRepository.getBookStudyBundle(course.bookId)?.questions.orEmpty().filter { it.isMarked }
+                val count = knowledgeRepository.addCourseSlidesFromQuestionsToCourse(course.id, markedQuestions.map { it.id }, config)
                 if (clearMarksAfter) {
                     markedQuestions.forEach { question ->
-                        repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
+                        assetRepository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
                     }
                 }
                 count
@@ -497,10 +507,10 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         val course = _uiState.value.course ?: return
         viewModelScope.launch {
             runCatching {
-                val missedIds = repository.getBookStudyBundle(course.bookId)?.questions.orEmpty()
+                val missedIds = bookRepository.getBookStudyBundle(course.bookId)?.questions.orEmpty()
                     .filter { it.attempts > 0 && (it.correctCount < it.attempts || it.lastAttemptResult == false) }
                     .map { it.id }
-                repository.addCourseSlidesFromQuestionsToCourse(course.id, missedIds, config)
+                knowledgeRepository.addCourseSlidesFromQuestionsToCourse(course.id, missedIds, config)
             }.onSuccess { count ->
                 _uiState.value = _uiState.value.copy(message = "$count missed-question slide(s) added")
             }.onFailure { error ->
@@ -513,11 +523,11 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         val course = _uiState.value.course ?: return
         viewModelScope.launch {
             runCatching {
-                val questions = repository.getBookStudyBundle(course.bookId)?.questions.orEmpty()
-                val count = repository.addCourseSlidesFromQuestionsToCourse(course.id, questions.map { it.id }, config)
+                val questions = bookRepository.getBookStudyBundle(course.bookId)?.questions.orEmpty()
+                val count = knowledgeRepository.addCourseSlidesFromQuestionsToCourse(course.id, questions.map { it.id }, config)
                 if (clearMarksAfter) {
                     questions.filter { it.isMarked }.forEach { question ->
-                        repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
+                        assetRepository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
                     }
                 }
                 count
@@ -533,12 +543,12 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         val course = _uiState.value.course ?: return
         viewModelScope.launch {
             runCatching {
-                val bundle = repository.getBookStudyBundle(course.bookId)
+                val bundle = bookRepository.getBookStudyBundle(course.bookId)
                 val questions = bundle?.questionsByQuiz?.get(quizId).orEmpty()
-                val count = repository.addCourseSlidesFromQuestionsToCourse(course.id, questions.map { it.id }, config)
+                val count = knowledgeRepository.addCourseSlidesFromQuestionsToCourse(course.id, questions.map { it.id }, config)
                 if (clearMarksAfter) {
                     questions.filter { it.isMarked }.forEach { question ->
-                        repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
+                        assetRepository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
                     }
                 }
                 count
@@ -554,12 +564,12 @@ class SlideshowCourseViewModel @Inject constructor(appModule: AppModule) : ViewM
         val course = _uiState.value.course ?: return
         viewModelScope.launch {
             runCatching {
-                val questions = repository.getBookStudyBundle(course.bookId)?.questions.orEmpty()
+                val questions = bookRepository.getBookStudyBundle(course.bookId)?.questions.orEmpty()
                     .filter { it.categories.contains(categoryName) }
-                val count = repository.addCourseSlidesFromQuestionsToCourse(course.id, questions.map { it.id }, config)
+                val count = knowledgeRepository.addCourseSlidesFromQuestionsToCourse(course.id, questions.map { it.id }, config)
                 if (clearMarksAfter) {
                     questions.filter { it.isMarked }.forEach { question ->
-                        repository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
+                        assetRepository.updateQuestion(question.copy(isMarked = false, updatedAt = System.currentTimeMillis()))
                     }
                 }
                 count

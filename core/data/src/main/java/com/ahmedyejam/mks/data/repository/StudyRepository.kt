@@ -134,6 +134,10 @@ class StudyRepository @Inject constructor(
 
     suspend fun insertMistake(entry: MistakeLogEntryEntity): Long = mistakeLogDao.insertMistake(entry)
 
+    suspend fun updateMistake(entry: MistakeLogEntryEntity) {
+        mistakeLogDao.updateMistake(entry.copy(updatedAt = System.currentTimeMillis()))
+    }
+
     // Annotations: polymorphic highlights/margin notes owned by QUESTION, SLIDE, NOTE, SOURCE, or ASSET.
 
     suspend fun deleteMistake(entry: MistakeLogEntryEntity) {
@@ -284,6 +288,37 @@ class StudyRepository @Inject constructor(
         )
 
         quizRepositoryProvider.get().refreshQuizStats(question.quizId)
+    }
+
+    suspend fun getLibraryKnowledgeSummary(): KnowledgeSummary {
+        val now = System.currentTimeMillis()
+        return KnowledgeSummary(
+            totalBooks = bookDao.countAll(),
+            totalQuizzes = quizDao.countAll(),
+            totalQuestions = questionDao.countAll(),
+            unansweredQuestions = questionDao.countUnanswered(),
+            questionsWithNotes = questionDao.countWithNotes(),
+            questionsWithAssets = questionAssetDao.countDistinctQuestionsWithAssets(),
+            questionsWithSources = questionAssetDao.countDistinctQuestionsWithSources(),
+            markedQuestions = questionDao.countMarked(),
+            droppedQuestions = questionDao.countDropped(),
+            missedQuestions = questionDao.countMissed(),
+            weakQuestions = questionDao.countWeak(),
+            flashcardDecks = flashcardDeckDao.countAll(),
+            totalFlashcards = flashcardDao.countAll(),
+            dueFlashcards = flashcardDao.countDueFlashcards(now),
+            weakFlashcards = flashcardDao.countWeakFlashcards(),
+            totalBlueprints = noteBlueprintDao.countAll(),
+            blueprintsDueForReview = noteBlueprintDao.countDueBlueprints(now),
+            linkedBlueprints = noteBlueprintDao.countLinkedBlueprints(),
+            promptDecks = promptDeckDao.countAll(),
+            promptCards = promptCardDao.countAll(),
+            promptRuns = promptRunDao.countAll(),
+            savedPromptOutputs = promptRunDao.countSavedOutputs(),
+            openMistakes = mistakeLogDao.countOpenMistakes(),
+            fixedMistakes = mistakeLogDao.countFixedMistakes(),
+            mistakesDueForReview = mistakeLogDao.countDueMistakes(now)
+        )
     }
 
     // Question assets / media attachments

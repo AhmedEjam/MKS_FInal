@@ -366,6 +366,166 @@ class QuizRepository @Inject constructor(
     suspend fun updateCategoryMetadata(metadata: CategoryMetadataEntity) = 
         categoryMetadataDao.insertMetadata(metadata)
 
+    suspend fun clearAllCategories() {
+        val now = System.currentTimeMillis()
+        quizDao.clearAllQuizCategories(now)
+        questionDao.clearAllQuestionCategories(now)
+        questionCategoryDao.clearAllCategories()
+        categoryMetadataDao.deleteAllMetadata()
+    }
+
+    suspend fun deleteCategory(category: String) {
+        // 1. Clear category from quizzes
+        val quizzes = quizDao.getQuizzesByCategory(category).first()
+        quizzes.forEach { quiz ->
+            if (quiz.category == category) {
+                quizDao.updateQuiz(quiz.copy(category = null))
+            }
+        }
+
+        // 2. Remove category from questions
+        val questions = questionCategoryDao.getQuestionsByCategory(category)
+        val updatedQuestions = questions.map { question ->
+            question.copy(categories = question.categories.filter { it != category })
+        }
+        questionDao.updateQuestions(updatedQuestions)
+
+        // 3. Delete metadata
+        categoryMetadataDao.deleteMetadataByName(category)
+    }
+
+    fun getCategoryMetadata() = categoryMetadataDao.getAllMetadata()
+
+    fun getAllCategoriesWithMetadata(): Flow<List<CategoryWithMetadata>> = 
+        combine(
+            questionDao.getAllQuestionsFlow(),
+            quizDao.getAllQuizzesFlow(),
+            categoryMetadataDao.getAllMetadata()
+        ) { allQuestions, allQuizzes, metadataList ->
+            val quizCategoryMap = allQuizzes.associateBy({ it.id }) { it.category }
+            val metadataMap = metadataList.associateBy { it.name }
+            
+            // Map to store running stats per category
+            class CatStats {
+                var qCount = 0
+                var answered = 0
+                var attempts = 0L
+                var correct = 0L
+                var lastEditedAt = 0L
+            }
+            val categoryStats = mutableMapOf<String, CatStats>()
+            
+            allQuestions.forEach { question ->
+                // Collect unique categories for this question to avoid double-counting if 
+                // it's in both question.categories and quizCategoryMap
+                val uniqueCats = mutableSetOf<String>()
+                question.categories.forEach { if (it.isNotBlank()) uniqueCats.add(it) }
+                quizCategoryMap[question.quizId]?.let { if (it.isNotBlank()) uniqueCats.add(it) }
+
+                uniqueCats.forEach { cat ->
+                    val stats = categoryStats.getOrPut(cat) { CatStats() }
+                    stats.qCount++
+                    if (question.attempts > 0) stats.answered++
+                    stats.attempts += question.attempts
+                    stats.correct += question.correctCount
+                    stats.lastEditedAt = maxOf(stats.lastEditedAt, question.lastEditedAt)
+                }
+            }
+            
+            // Ensure categories from quizzes with no questions are included
+            allQuizzes.forEach { quiz ->
+                quiz.category?.let { cat ->
+                    if (cat.isNotBlank()) {
+                        categoryStats.getOrPut(cat) { CatStats() }
+                    }
+                }
+            }
+
+            categoryStats.map { (name, stats) ->
+                val accuracy = if (stats.attempts == 0L) 0f else stats.correct.toFloat() / stats.attempts
+
+                CategoryWithMetadata(
+                    name = name,
+                    questionCount = stats.qCount,
+                    answeredCount = stats.answered,
+                    accuracyPercentage = accuracy,
+                    lastEditedAt = stats.lastEditedAt,
+                    metadata = metadataMap[name]
+                )
+            }.sortedWith(compareByDescending<CategoryWithMetadata> { it.isPinned }.thenBy { it.name })
+        }.flowOn(Dispatchers.Default)
+
+    fun getCategoryQuestionCount(category: String): Flow<Int> = 
+        questionCategoryDao.getQuestionsByCategoryFlow(category).map { it.size }
+
+    private suspend fun updateQuestionsInPlace(questions: List<com.ahmedyejam.mks.data.local.entity.QuestionEntity>) {
+        questionDao.updateQuestions(questions)
+        questions.forEach { questionCategoryDao.replaceCategories(it.id, it.categories) }
+    }
+
+    suspend fun renameCategory(oldName: String, newName: String) {
+        // 1. Update quizzes
+        val quizzes = quizDao.getQuizzesByCategory(oldName).first()
+        quizzes.forEach { quiz ->
+            if (quiz.category == oldName) {
+                quizDao.updateQuiz(quiz.copy(category = newName))
+            }
+        }
+
+        // 2. Update questions
+        val questions = questionCategoryDao.getQuestionsByCategory(oldName)
+        val updatedQuestions = questions.map { question ->
+            val newCategories = question.categories.map { if (it == oldName) newName else it }.distinct()
+            question.copy(categories = newCategories)
+        }
+        updateQuestionsInPlace(updatedQuestions)
+
+        // 3. Migrate metadata
+        val oldMetadata = categoryMetadataDao.getMetadataForCategory(oldName)
+        if (oldMetadata != null) {
+            val newMetadata = oldMetadata.copy(name = newName)
+            categoryMetadataDao.insertMetadata(newMetadata)
+        }
+        categoryMetadataDao.deleteMetadataByName(oldName)
+    }
+
+    suspend fun mergeCategory(sourceCategory: String, targetCategory: String) {
+        if (sourceCategory == targetCategory) return
+
+        // 1. Update quizzes
+        val quizzes = quizDao.getQuizzesByCategory(sourceCategory).first()
+        quizzes.forEach { quiz ->
+            if (quiz.category == sourceCategory) {
+                quizDao.updateQuiz(quiz.copy(category = targetCategory))
+            }
+        }
+
+        // 2. Update questions
+        val questions = questionCategoryDao.getQuestionsByCategory(sourceCategory)
+        val updatedQuestions = questions.map { question ->
+            val newCategories = question.categories.map { 
+                if (it == sourceCategory) targetCategory else it 
+            }.distinct()
+            question.copy(categories = newCategories)
+        }
+        updateQuestionsInPlace(updatedQuestions)
+
+        // 3. Update metadata: Keep source's metadata (color/emoji/isPinned) if target has none, else target's wins.
+        val sourceMeta = categoryMetadataDao.getMetadataForCategory(sourceCategory)
+        val targetMeta = categoryMetadataDao.getMetadataForCategory(targetCategory)
+        if (sourceMeta != null && targetMeta == null) {
+            categoryMetadataDao.insertMetadata(sourceMeta.copy(name = targetCategory))
+        }
+        categoryMetadataDao.deleteMetadataByName(sourceCategory)
+    }
+
+    suspend fun getMergePreview(source: String, target: String): Int {
+        val questionsFromSource = questionCategoryDao.getQuestionsByCategory(source)
+        val questionsInTarget = questionCategoryDao.getQuestionsByCategory(target).asSequence().map { it.id }.toSet()
+        // Count questions that will be moved and are NOT already in target
+        return questionsFromSource.count { it.id !in questionsInTarget }
+    }
+
 
     suspend fun getSessionById(id: Long) = sessionDao.getSessionById(id)
 
@@ -486,6 +646,26 @@ class QuizRepository @Inject constructor(
     }
 
     suspend fun getImportPreview(uri: Uri) = importManager?.getImportPreview(uri)
+
+    suspend fun importFromUri(
+        uri: Uri,
+        strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING,
+        targetBookId: Long? = null,
+        targetQuizId: Long? = null,
+        allowInsecureRemoteImages: Boolean = false,
+        activeWorkspaceId: Long? = null,
+        onProgress: (Float, String) -> Unit = { _, _ -> },
+    ): ImportResult? {
+        return importManager?.importLibrary(
+            uri = uri,
+            strategy = strategy,
+            targetBookId = targetBookId,
+            targetQuizId = targetQuizId,
+            allowInsecureRemoteImages = allowInsecureRemoteImages,
+            activeWorkspaceId = activeWorkspaceId,
+            onProgress = onProgress
+        )
+    }
 
     fun detectFormat(uri: Uri): ImportFormat {
         return importManager?.detectFormat(uri) ?: ImportFormat.UNKNOWN

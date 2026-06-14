@@ -26,7 +26,7 @@ class ImportValidator {
         val warnings = mutableListOf<ImportWarning>()
         val skipped = mutableListOf<SkippedImportRecord>()
 
-        if (bundle.schema !in listOf(4, 5)) {
+        if (bundle.schema !in listOf(4, 5, 6, 7)) {
             warnings.add(ImportWarning("Schema version ${bundle.schema} is not officially supported, but import will proceed."))
         }
 

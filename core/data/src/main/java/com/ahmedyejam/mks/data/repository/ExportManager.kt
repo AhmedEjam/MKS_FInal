@@ -77,7 +77,14 @@ class ExportManager(
     suspend fun exportQuizToZip(quizId: Long, outputStream: OutputStream): ExportResult {
         val bundle = exportQuizAsBundle(quizId)
             ?: return ExportResult(success = false, errorMessage = "Quiz not found.")
-        return writeBundleToZip(bundle, outputStream)
+        val resolvedBundle = resolveBundleLocalPaths(bundle)
+        return try {
+            val supplemental = buildSupplementalData(quizId = quizId)
+            MksExchangeV7Archive.writeLegacyBundleToSchema7Zip(resolvedBundle, outputStream, supplemental)
+            ExportResult(success = true)
+        } catch (e: java.lang.Exception) {
+            ExportResult(success = false, errorMessage = e.message ?: "Export failed")
+        }
     }
 
 
@@ -265,319 +272,261 @@ class ExportManager(
     suspend fun exportBundleToZip(bookId: Long, outputStream: OutputStream): ExportResult {
         val bundle = exportBookAsBundle(bookId)
             ?: return ExportResult(success = false, errorMessage = "Book not found.")
-        return writeBundleToZip(bundle, outputStream)
+        val resolvedBundle = resolveBundleLocalPaths(bundle)
+        return try {
+            val supplemental = buildSupplementalData(bookId)
+            MksExchangeV7Archive.writeLegacyBundleToSchema7Zip(resolvedBundle, outputStream, supplemental)
+            ExportResult(success = true)
+        } catch (e: java.lang.Exception) {
+            ExportResult(success = false, errorMessage = e.message ?: "Export failed")
+        }
     }
 
     suspend fun exportAllToZip(outputStream: OutputStream): ExportResult {
         val bundle = exportAllBooksAsBundle()
-        return writeBundleToZip(bundle, outputStream)
+        val resolvedBundle = resolveBundleLocalPaths(bundle)
+        return try {
+            val supplemental = buildSupplementalData(null)
+            MksExchangeV7Archive.writeLegacyBundleToSchema7Zip(resolvedBundle, outputStream, supplemental)
+            ExportResult(success = true)
+        } catch (e: java.lang.Exception) {
+            ExportResult(success = false, errorMessage = e.message ?: "Export failed")
+        }
     }
 
-    internal suspend fun writeBundleToZip(bundle: LibraryBundleDto, outputStream: OutputStream): ExportResult = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-        val successfullyProcessedAssets = mutableMapOf<String, File>() // sourcePathOrUrl -> tempFile
-        val assetsToProcess = mutableSetOf<String>()
-        val warnings = mutableListOf<ExportWarning>()
-
-        // Pass 1: Collect all potential assets
-        bundle.books.forEach { book ->
-            val img = when {
-                !book.coverImage.isNullOrBlank() -> book.coverImage
-                !book.coverIcon.isNullOrBlank() && (book.coverIcon.startsWith("http") || book.coverIcon.contains("/") || book.coverIcon.contains("\\")) -> book.coverIcon
-                else -> null
-            }
-            if (!img.isNullOrBlank() && !img.startsWith("data:") && !img.startsWith("assets/")) {
-                assetsToProcess.add(img)
-            }
+    private fun resolveLocalPath(path: String?): String? {
+        if (path.isNullOrBlank()) return null
+        if (path.startsWith("data:") || path.startsWith("http://") || path.startsWith("https://")) {
+            return path
         }
-        bundle.quizzes.forEach { quiz ->
-            val img = when {
-                !quiz.coverImage.isNullOrBlank() -> quiz.coverImage
-                !quiz.coverIcon.isNullOrBlank() && (quiz.coverIcon.startsWith("http") || quiz.coverIcon.contains("/") || quiz.coverIcon.contains("\\")) -> quiz.coverIcon
-                else -> null
-            }
-            if (!img.isNullOrBlank() && !img.startsWith("data:") && !img.startsWith("assets/")) {
-                assetsToProcess.add(img)
-            }
-            quiz.questions.forEach { q ->
-                val qImg = when {
-                    !q.imageDataUrl.isNullOrBlank() -> q.imageDataUrl
-                    !q.imageSource.isNullOrBlank() -> q.imageSource
-                    else -> null
-                }
-                if (!qImg.isNullOrBlank() && !qImg.startsWith("data:") && !qImg.startsWith("assets/")) {
-                    assetsToProcess.add(qImg)
-                }
-            }
+        val file = fileManager.getFile(path) ?: run {
+            if (!path.contains("/") && !path.contains("\\")) {
+                fileManager.getFile(File(File(fileManager.getContext().filesDir, "images"), path).absolutePath)
+            } else null
         }
+        return file?.absolutePath ?: path
+    }
 
-        bundle.flashcardDecks.forEach { deck ->
-            if (!deck.coverImage.isNullOrBlank() && !deck.coverImage.startsWith("data:") && !deck.coverImage.startsWith("assets/")) {
-                assetsToProcess.add(deck.coverImage)
-            }
-            deck.cards.forEach { card ->
-                if (!card.imagePath.isNullOrBlank() && !card.imagePath.startsWith("data:") && !card.imagePath.startsWith("assets/")) {
-                    assetsToProcess.add(card.imagePath)
-                }
-            }
-        }
-
-        bundle.slideshowCourses.forEach { course ->
-            if (!course.coverImage.isNullOrBlank() && !course.coverImage.startsWith("data:") && !course.coverImage.startsWith("assets/")) {
-                assetsToProcess.add(course.coverImage)
-            }
-            course.slides.forEach { slide ->
-                if (!slide.imagePath.isNullOrBlank() && !slide.imagePath.startsWith("data:") && !slide.imagePath.startsWith("assets/")) {
-                    assetsToProcess.add(slide.imagePath)
-                }
-            }
-        }
-
-        // Pass 2: Process assets (download/copy to temp files)
-        assetsToProcess.forEach { source ->
-            var tempFile: File? = null
-            try {
-                val assetTempFile = File.createTempFile("mks_asset_", ".tmp", fileManager.getContext().cacheDir)
-                tempFile = assetTempFile
-                var success = false
-                if (source.startsWith("http")) {
-                    val request = okhttp3.Request.Builder().url(source).build()
-                    okHttpClient.newCall(request).execute().use { response ->
-                        if (response.isSuccessful) {
-                            response.body?.byteStream()?.use { input ->
-                                assetTempFile.outputStream().use { output -> input.copyTo(output) }
-                                success = true
-                            }
-                        } else {
-                            warnings += ExportWarning(
-                                source = source,
-                                message = "Download failed with HTTP ${response.code}."
-                            )
-                        }
-                    }
-                } else {
-                    val file = fileManager.getFile(source) ?: run {
-                        // Fallback for simple names that might be in images dir
-                        if (!source.contains("/") && !source.contains("\\")) {
-                            fileManager.getFile(File(File(fileManager.getContext().filesDir, "images"), source).absolutePath)
-                        } else null
-                    }
-                    if (file != null && file.exists()) {
-                        file.inputStream().use { input ->
-                            assetTempFile.outputStream().use { output -> input.copyTo(output) }
-                            success = true
-                        }
-                    } else {
-                        warnings += ExportWarning(
-                            source = source,
-                            message = "Local asset file could not be found."
+    private fun resolveBundleLocalPaths(bundle: LibraryBundleDto): LibraryBundleDto {
+        return bundle.copy(
+            books = bundle.books.map { it.copy(coverImage = resolveLocalPath(it.coverImage) ?: "") },
+            quizzes = bundle.quizzes.map { quiz ->
+                quiz.copy(
+                    coverImage = resolveLocalPath(quiz.coverImage) ?: "",
+                    questions = quiz.questions.map { q ->
+                        q.copy(
+                            imageDataUrl = resolveLocalPath(q.imageDataUrl) ?: "",
+                            imageSource = resolveLocalPath(q.imageSource) ?: ""
                         )
                     }
-                }
-
-                if (success) {
-                    successfullyProcessedAssets[source] = assetTempFile
-                } else {
-                    assetTempFile.delete()
-                }
-            } catch (e: Exception) {
-                tempFile?.delete()
-                warnings += ExportWarning(
-                    source = source,
-                    message = e.message ?: "Asset export failed."
+                )
+            },
+            flashcardDecks = bundle.flashcardDecks.map { deck ->
+                deck.copy(
+                    coverImage = resolveLocalPath(deck.coverImage),
+                    cards = deck.cards.map { card ->
+                        card.copy(imagePath = resolveLocalPath(card.imagePath))
+                    }
+                )
+            },
+            slideshowCourses = bundle.slideshowCourses.map { course ->
+                course.copy(
+                    coverImage = resolveLocalPath(course.coverImage),
+                    slides = course.slides.map { slide ->
+                        slide.copy(imagePath = resolveLocalPath(slide.imagePath))
+                    }
                 )
             }
-        }
-
-        // Pass 3: Update Bundle and identify final zip paths
-        val zipPathsToInclude = mutableMapOf<String, File>() // zipPath -> tempFile
-        val manifestAssets = mutableMapOf<String, String>() // sourceRef or bundleRef -> zipPath
-
-        val updatedBooks = bundle.books.map { book ->
-            val img = when {
-                !book.coverImage.isNullOrBlank() -> book.coverImage
-                !book.coverIcon.isNullOrBlank() && (book.coverIcon.startsWith("http") || book.coverIcon.contains("/") || book.coverIcon.contains("\\")) -> book.coverIcon
-                else -> null
-            }
-            if (!img.isNullOrBlank()) {
-                successfullyProcessedAssets[img]?.let { processedFile ->
-                    val fileName = generateSafeFileName("book", book.id, img)
-                    val zipPath = "assets/$fileName"
-                    zipPathsToInclude[zipPath] = processedFile
-                    manifestAssets[img] = zipPath
-                    manifestAssets[zipPath] = zipPath
-                    book.copy(coverImage = zipPath)
-                } ?: run {
-                    // Portability: only remove non-portable path if processing failed
-                    // If it's a URL or relative path, keep it so it's not silent data loss
-                    if (img.startsWith("/") || img.contains("\\")) {
-                        book.copy(coverImage = "")
-                    } else book
-                }
-            } else book
-        }
-
-        val updatedQuizzes = bundle.quizzes.map { quiz ->
-            val quizImage = when {
-                !quiz.coverImage.isNullOrBlank() -> quiz.coverImage
-                !quiz.coverIcon.isNullOrBlank() && (quiz.coverIcon.startsWith("http") || quiz.coverIcon.contains("/") || quiz.coverIcon.contains("\\")) -> quiz.coverIcon
-                else -> null
-            }
-
-            var currentQuiz = quiz
-            if (!quizImage.isNullOrBlank()) {
-                successfullyProcessedAssets[quizImage]?.let { processedFile ->
-                    val fileName = generateSafeFileName("quiz", quiz.id, quizImage)
-                    val zipPath = "assets/$fileName"
-                    zipPathsToInclude[zipPath] = processedFile
-                    manifestAssets[quizImage] = zipPath
-                    manifestAssets[zipPath] = zipPath
-                    currentQuiz = currentQuiz.copy(coverImage = zipPath)
-                } ?: run {
-                    if (quizImage.startsWith("/") || quizImage.contains("\\")) {
-                        currentQuiz = currentQuiz.copy(coverImage = "")
-                    }
-                }
-            }
-
-            val updatedQuestions = currentQuiz.questions.map { q ->
-                val qImage = when {
-                    !q.imageDataUrl.isNullOrBlank() -> q.imageDataUrl
-                    !q.imageSource.isNullOrBlank() -> q.imageSource
-                    else -> null
-                }
-
-                if (!qImage.isNullOrBlank()) {
-                    successfullyProcessedAssets[qImage]?.let { processedFile ->
-                        val fileName = generateSafeFileName("q", q.id, qImage)
-                        val zipPath = "assets/$fileName"
-                        zipPathsToInclude[zipPath] = processedFile
-                        manifestAssets[qImage] = zipPath
-                        manifestAssets[zipPath] = zipPath
-                        q.copy(imageDataUrl = zipPath, imageSource = zipPath)
-                    } ?: run {
-                        if (qImage.startsWith("/") || qImage.contains("\\")) {
-                            q.copy(imageDataUrl = "", imageSource = "")
-                        } else q
-                    }
-                } else q
-            }
-            currentQuiz.copy(questions = updatedQuestions)
-        }
-
-        val updatedFlashcardDecks = bundle.flashcardDecks.map { deck ->
-            var currentDeck = deck
-            if (!deck.coverImage.isNullOrBlank()) {
-                successfullyProcessedAssets[deck.coverImage]?.let { processedFile ->
-                    val fileName = generateSafeFileName("deck", deck.id, deck.coverImage)
-                    val zipPath = "assets/$fileName"
-                    zipPathsToInclude[zipPath] = processedFile
-                    manifestAssets[deck.coverImage] = zipPath
-                    currentDeck = currentDeck.copy(coverImage = zipPath)
-                }
-            }
-            val updatedCards = currentDeck.cards.map { card ->
-                if (!card.imagePath.isNullOrBlank()) {
-                    successfullyProcessedAssets[card.imagePath]?.let { processedFile ->
-                        val fileName = generateSafeFileName("card", card.id, card.imagePath)
-                        val zipPath = "assets/$fileName"
-                        zipPathsToInclude[zipPath] = processedFile
-                        manifestAssets[card.imagePath] = zipPath
-                        card.copy(imagePath = zipPath)
-                    } ?: card
-                } else card
-            }
-            currentDeck.copy(cards = updatedCards)
-        }
-
-        val updatedSlideshowCourses = bundle.slideshowCourses.map { course ->
-            var currentCourse = course
-            if (!course.coverImage.isNullOrBlank()) {
-                successfullyProcessedAssets[course.coverImage]?.let { processedFile ->
-                    val fileName = generateSafeFileName("course", course.id, course.coverImage)
-                    val zipPath = "assets/$fileName"
-                    zipPathsToInclude[zipPath] = processedFile
-                    manifestAssets[course.coverImage] = zipPath
-                    currentCourse = currentCourse.copy(coverImage = zipPath)
-                }
-            }
-            val updatedSlides = currentCourse.slides.map { slide ->
-                if (!slide.imagePath.isNullOrBlank()) {
-                    successfullyProcessedAssets[slide.imagePath]?.let { processedFile ->
-                        val fileName = generateSafeFileName("slide", slide.id, slide.imagePath)
-                        val zipPath = "assets/$fileName"
-                        zipPathsToInclude[zipPath] = processedFile
-                        manifestAssets[slide.imagePath] = zipPath
-                        slide.copy(imagePath = zipPath)
-                    } ?: slide
-                } else slide
-            }
-            currentCourse.copy(slides = updatedSlides)
-        }
-
-        val finalBundle = bundle.copy(
-            books = updatedBooks,
-            quizzes = updatedQuizzes,
-            flashcardDecks = updatedFlashcardDecks,
-            slideshowCourses = updatedSlideshowCourses,
-            exportedAt = System.currentTimeMillis()
         )
-
-        val jsonStr = json.encodeToString(finalBundle)
-        val manifestJsonStr = json.encodeToString(ManifestDto(assets = manifestAssets))
-        
-        // Create a temporary file to build the zip
-        val tempZipFile = File.createTempFile("mks_export_", ".zip", fileManager.getContext().cacheDir)
-        
-        try {
-            val zipParameters = ZipParameters().apply {
-                isEncryptFiles = true
-                encryptionMethod = EncryptionMethod.AES
-                aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
-            }
-
-            ZipFile(tempZipFile, "mks_secure_bundle_2024".toCharArray()).use { zipFile ->
-                // 1. Write library.json
-                val libraryJsonFile = File(fileManager.getContext().cacheDir, "library_${System.currentTimeMillis()}.json")
-                libraryJsonFile.writeText(jsonStr)
-                zipParameters.fileNameInZip = "library.json"
-                zipFile.addFile(libraryJsonFile, zipParameters)
-                libraryJsonFile.delete()
-
-                // 2. Write manifest.json
-                val manifestJsonFile = File(fileManager.getContext().cacheDir, "manifest_${System.currentTimeMillis()}.json")
-                manifestJsonFile.writeText(manifestJsonStr)
-                zipParameters.fileNameInZip = "manifest.json"
-                zipFile.addFile(manifestJsonFile, zipParameters)
-                manifestJsonFile.delete()
-
-                // 3. Add physical assets
-                zipPathsToInclude.forEach { (zipPath, tempAssetFile) ->
-                    zipParameters.fileNameInZip = zipPath
-                    zipFile.addFile(tempAssetFile, zipParameters)
-                }
-            }
-
-            // Copy temp zip to outputStream
-            tempZipFile.inputStream().use { input ->
-                input.copyTo(outputStream)
-            }
-
-            ExportResult(
-                success = true,
-                exportedAssetCount = zipPathsToInclude.size,
-                failedAssetCount = warnings.size,
-                warnings = warnings.toList()
-            )
-        } finally {
-            successfullyProcessedAssets.values.forEach { it.delete() }
-            tempZipFile.delete()
-        }
     }
 
-    private fun generateSafeFileName(prefix: String, id: String, originalSource: String): String {
-        val extension = originalSource.substringAfterLast('.', "webp").lowercase().split('?').first()
-        val safeId = id.filter { it.isLetterOrDigit() || it == '-' || it == '_' }.take(20)
-        val unique = System.currentTimeMillis().toString().takeLast(5)
-        return "${prefix}_${safeId}_$unique.$extension"
+    private suspend fun buildSupplementalData(bookId: Long? = null, quizId: Long? = null): MksExchangeV7SupplementalData {
+        val allBooks = bookDao.getAllBooksFlow().first()
+        val allQuizzes = quizDao.getAllQuizzesFlow().first()
+        val allQuestions = questionDao.getAllQuestionsFlow().first()
+
+        val bookMap = allBooks.associateBy { it.id }
+        val quizMap = allQuizzes.associateBy { it.id }
+        val questionMap = allQuestions.associateBy { it.id }
+
+        val targetBookId = bookId ?: quizId?.let { qId -> quizMap[qId]?.bookId }
+
+        // Fetch Room entities
+        val sourceDocEntities = if (targetBookId != null) {
+            database.sourceDocumentDao().getSourcesByBookIdIncludingDeleted(targetBookId)
+        } else {
+            database.sourceDocumentDao().getAllSourcesIncludingDeleted()
+        }
+
+        val questionAssetEntities = if (targetBookId != null) {
+            database.questionAssetDao().getAssetsByBookIdIncludingDeleted(targetBookId).let { assets ->
+                if (quizId != null) assets.filter { it.quizId == quizId } else assets
+            }
+        } else {
+            database.questionAssetDao().getAllAssetsIncludingDeleted()
+        }
+
+        val annotationEntities = if (targetBookId != null) {
+            database.annotationDao().getAnnotationsByBookIdIncludingDeleted(targetBookId).let { annotations ->
+                if (quizId != null) annotations.filter { ann ->
+                    val isQuiz = ann.ownerType.uppercase() == "QUIZ" && ann.ownerId == quizId
+                    val isQuestion = ann.ownerType.uppercase() == "QUESTION" && questionMap[ann.ownerId]?.quizId == quizId
+                    isQuiz || isQuestion
+                } else annotations
+            }
+        } else {
+            database.annotationDao().getAllAnnotationsIncludingDeleted()
+        }
+
+        val assetReferenceEntities = database.assetReferenceDao().getAllReferencesIncludingDeleted().run {
+            if (bookId != null) {
+                // Filter references in memory to only those belonging to the book or its sub-entities
+                val quizIds = allQuizzes.filter { it.bookId == bookId }.map { it.id }.toSet()
+                val questionIds = allQuestions.filter { it.quizId in quizIds }.map { it.id }.toSet()
+                val sourceDocIds = sourceDocEntities.map { it.id }.toSet()
+
+                val flashcardDeckIds = database.flashcardDeckDao().getFlashcardDecksByBookIdNow(bookId).map { it.id }.toSet()
+                val flashcardIds = flashcardDeckIds.flatMap { database.flashcardDao().getFlashcardsByDeckIdNow(it) }.map { it.id }.toSet()
+                val slideshowCourseIds = database.slideshowCourseDao().getSlideshowCoursesByBookIdNow(bookId).map { it.id }.toSet()
+                val courseSlideIds = slideshowCourseIds.flatMap { database.courseSlideDao().getSlidesByCourseIdNow(it) }.map { it.id }.toSet()
+                val noteBlueprintIds = database.noteBlueprintDao().getNotesByBookIdNow(bookId).map { it.id }.toSet()
+                val promptDeckIds = database.promptDeckDao().getDecksByBookIdNow(bookId).map { it.id }.toSet()
+                val promptCardIds = promptDeckIds.flatMap { database.promptCardDao().getCardsByDeckIdNow(it) }.map { it.id }.toSet()
+
+                filter { ref ->
+                    when (ref.ownerType.uppercase()) {
+                        "BOOK" -> ref.ownerId == bookId
+                        "QUIZ" -> ref.ownerId in quizIds
+                        "QUESTION" -> ref.ownerId in questionIds
+                        "SOURCE_DOCUMENT" -> ref.ownerId in sourceDocIds
+                        "FLASHCARD_DECK" -> ref.ownerId in flashcardDeckIds
+                        "FLASHCARD" -> ref.ownerId in flashcardIds
+                        "SLIDESHOW", "SLIDESHOW_COURSE" -> ref.ownerId in slideshowCourseIds
+                        "COURSE_SLIDE" -> ref.ownerId in courseSlideIds
+                        "NOTE_BLUEPRINT", "NOTE" -> ref.ownerId in noteBlueprintIds
+                        "PROMPT_DECK" -> ref.ownerId in promptDeckIds
+                        "PROMPT_CARD", "PROMPT" -> ref.ownerId in promptCardIds
+                        else -> false
+                    }
+                }
+            } else if (quizId != null) {
+                val questionIds = allQuestions.filter { it.quizId == quizId }.map { it.id }.toSet()
+                filter { ref ->
+                    when (ref.ownerType.uppercase()) {
+                        "QUIZ" -> ref.ownerId == quizId
+                        "QUESTION" -> ref.ownerId in questionIds
+                        else -> false
+                    }
+                }
+            } else {
+                this
+            }
+        }
+
+        // Map Room entities to Supplemental DTOs
+        val sourceDocuments = sourceDocEntities.map { doc ->
+            val bookExtId = doc.bookId?.let { bookMap[it]?.externalId }
+            MksExchangeV7SupplementalSourceDocument(
+                id = doc.id,
+                bookId = doc.bookId,
+                bookExternalId = bookExtId,
+                title = doc.title,
+                sourceType = doc.sourceType,
+                author = doc.author,
+                edition = doc.edition,
+                year = doc.year,
+                publisher = doc.publisher,
+                localPath = resolveLocalPath(doc.localPath),
+                externalUrl = doc.externalUrl,
+                description = doc.description,
+                createdAt = doc.createdAt,
+                updatedAt = doc.updatedAt,
+                deletedAt = doc.deletedAt
+            )
+        }
+
+        val questionAssets = questionAssetEntities.map { asset ->
+            val bookExtId = bookMap[asset.bookId]?.externalId
+            val quizExtId = quizMap[asset.quizId]?.externalId
+            val questionExtId = questionMap[asset.questionId]?.externalId
+            MksExchangeV7SupplementalQuestionAsset(
+                id = asset.id,
+                bookId = asset.bookId,
+                quizId = asset.quizId,
+                questionId = asset.questionId,
+                bookExternalId = bookExtId,
+                quizExternalId = quizExtId,
+                questionExternalId = questionExtId,
+                assetType = asset.assetType,
+                title = asset.title,
+                description = asset.description,
+                localPath = resolveLocalPath(asset.localPath),
+                externalUrl = asset.externalUrl,
+                mimeType = asset.mimeType,
+                fileName = asset.fileName,
+                fileSizeBytes = asset.fileSizeBytes,
+                textContent = asset.textContent,
+                sourceDocumentId = asset.sourceDocumentId,
+                sourcePage = asset.sourcePage,
+                sourceQuote = asset.sourceQuote,
+                sortOrder = asset.sortOrder,
+                isPinned = asset.isPinned,
+                isPrimary = asset.isPrimary,
+                createdAt = asset.createdAt,
+                updatedAt = asset.updatedAt,
+                deletedAt = asset.deletedAt
+            )
+        }
+
+        val annotations = annotationEntities.map { ann ->
+            val bookExtId = bookMap[ann.bookId]?.externalId
+            val ownerExtId = when (ann.ownerType.uppercase()) {
+                "BOOK" -> bookMap[ann.ownerId]?.externalId
+                "QUIZ" -> quizMap[ann.ownerId]?.externalId
+                "QUESTION" -> questionMap[ann.ownerId]?.externalId
+                else -> null
+            }
+            MksExchangeV7SupplementalAnnotation(
+                id = ann.id,
+                workspaceId = ann.workspaceId,
+                bookId = ann.bookId,
+                bookExternalId = bookExtId,
+                ownerType = ann.ownerType,
+                ownerId = ann.ownerId,
+                ownerExternalId = ownerExtId,
+                selectedText = ann.selectedText,
+                noteBody = ann.noteBody,
+                colorLabel = ann.colorLabel,
+                positionDataJson = ann.positionDataJson,
+                createdAt = ann.createdAt,
+                updatedAt = ann.updatedAt,
+                deletedAt = ann.deletedAt
+            )
+        }
+
+        val assetReferences = assetReferenceEntities.map { ref ->
+            val ownerExtId = when (ref.ownerType.uppercase()) {
+                "BOOK" -> bookMap[ref.ownerId]?.externalId
+                "QUIZ" -> quizMap[ref.ownerId]?.externalId
+                "QUESTION" -> questionMap[ref.ownerId]?.externalId
+                else -> null
+            }
+            MksExchangeV7SupplementalAssetReference(
+                id = ref.id,
+                path = resolveLocalPath(ref.path) ?: ref.path,
+                ownerType = ref.ownerType,
+                ownerId = ref.ownerId,
+                ownerExternalId = ownerExtId,
+                createdAt = ref.createdAt,
+                deletedAt = ref.deletedAt
+            )
+        }
+
+        return MksExchangeV7SupplementalData(
+            assetReferences = assetReferences,
+            questionAssets = questionAssets,
+            sourceDocuments = sourceDocuments,
+            annotations = annotations
+        )
     }
 }

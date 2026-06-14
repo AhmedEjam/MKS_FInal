@@ -76,6 +76,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun SettingsScreen(
     appModule: AppModule,
+    viewModel: SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
     onBack: () -> Unit,
     onGlobalSearch: () -> Unit = {},
     onReviewDashboard: () -> Unit = {},
@@ -106,35 +107,8 @@ fun SettingsScreen(
         uri?.let { exportUri ->
             scope.launch {
                 withContext(Dispatchers.IO) {
-                    try {
-                        val result = context.contentResolver.openOutputStream(exportUri)?.use { stream ->
-                            appModule.repository.exportAllToZip(stream)
-                        }
-                        withContext(Dispatchers.Main) {
-                            if (result?.success == true) {
-                                val message = if (result.failedAssetCount > 0) {
-                                    context.getString(
-                                        R.string.export_completed_with_warnings,
-                                        result.failedAssetCount
-                                    )
-                                } else {
-                                    context.getString(R.string.export_successful)
-                                }
-                                snackbarHostState.showSnackbar(message)
-                            } else {
-                                snackbarHostState.showSnackbar(
-                                    context.getString(
-                                        R.string.export_failed,
-                                        result?.errorMessage ?: context.getString(R.string.unknown_error)
-                                    )
-                                )
-                            }
-                        }
-                    } catch (e: Exception) {
-                        MksLogger.e("SettingsScreen", "Export failed", e)
-                        withContext(Dispatchers.Main) {
-                            snackbarHostState.showSnackbar(context.getString(R.string.export_failed, e.message))
-                        }
+                    context.contentResolver.openOutputStream(exportUri)?.use { stream ->
+                        viewModel.exportAllData(stream)
                     }
                 }
             }
@@ -485,13 +459,9 @@ fun SettingsScreen(
                 TextButton(
                     onClick = {
                         showClearCategoriesDialog = false
+                        viewModel.clearCategories()
                         scope.launch {
-                            try {
-                                withContext(Dispatchers.IO) { appModule.repository.clearAllCategories() }
-                                snackbarHostState.showSnackbar(context.getString(R.string.clear_categories_success))
-                            } catch (e: Exception) {
-                                snackbarHostState.showSnackbar(context.getString(R.string.clear_categories_failed, e.message ?: "Unknown error"))
-                            }
+                            snackbarHostState.showSnackbar(context.getString(R.string.clear_categories_success))
                         }
                     }
                 ) {
@@ -514,7 +484,7 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        appModule.resetDatabase()
+                        viewModel.resetDatabase()
                         showResetDialog = false
                     }
                 ) {

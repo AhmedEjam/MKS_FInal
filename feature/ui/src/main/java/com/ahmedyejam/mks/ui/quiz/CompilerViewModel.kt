@@ -12,6 +12,8 @@ import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.importer.detector.ImportFormatDetector
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.importer.model.ImportFormat
 import com.ahmedyejam.mks.data.importer.model.ImportMode
 import com.ahmedyejam.mks.data.importer.model.ParseStats
@@ -28,7 +30,6 @@ import com.ahmedyejam.mks.data.importer.security.ImportLimits
 import com.ahmedyejam.mks.util.copyToWithLimit
 import com.ahmedyejam.mks.util.readTextWithLimit
 import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
-import com.ahmedyejam.mks.data.repository.MksRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,7 +64,8 @@ data class CompilerUiState(
 @HiltViewModel
 class CompilerViewModel @Inject constructor(
     @ApplicationContext context: Context,
-    private val repository: MksRepository,
+    private val knowledgeRepository: KnowledgeRepository,
+    private val quizRepository: QuizRepository
 ) : ViewModel() {
 
     private val applicationContext = context.applicationContext
@@ -492,11 +494,11 @@ class CompilerViewModel @Inject constructor(
                             orderIndex = index
                         )
                     }
-                    val currentOrder = repository.getFlashcardsByDeckId(currentTargetDeckId).firstOrNull()?.size ?: 0
+                    val currentOrder = knowledgeRepository.getFlashcardsByDeckId(currentTargetDeckId).firstOrNull()?.size ?: 0
                     val finalFlashcards = flashcards.mapIndexed { i, f -> f.copy(orderIndex = currentOrder + i) }
-                    repository.insertFlashcards(finalFlashcards)
+                    knowledgeRepository.insertFlashcards(finalFlashcards)
                 } else {
-                    repository.importCompiledQuestions(
+                    quizRepository.importCompiledQuestions(
                         title = title,
                         targetBookId = bookId,
                         targetQuizId = targetQuizId,

@@ -89,6 +89,7 @@ import javax.inject.Singleton
 class WorkspaceRepository @Inject constructor(
 
     private val workspaceDao: WorkspaceDao,
+    private val database: com.ahmedyejam.mks.data.local.MksDatabase,
     private val bookDao: BookDao,
     private val quizDao: QuizDao,
     private val questionDao: QuestionDao,
@@ -203,4 +204,21 @@ class WorkspaceRepository @Inject constructor(
     suspend fun insertWorkspaceSettings(settings: WorkspaceSettingsEntity): Long = workspaceDao.insertSettings(settings)
 
     suspend fun updateWorkspaceSettings(settings: WorkspaceSettingsEntity) = workspaceDao.updateSettings(settings)
+
+    suspend fun resetDatabase() {
+        database.clearAllTables()
+        val workspaceId = workspaceDao.getWorkspaceByExternalId(WorkspaceDefaults.DEFAULT_EXTERNAL_ID)?.id
+            ?: workspaceDao.getDefaultWorkspace()?.id
+            ?: workspaceDao.insertWorkspace(
+                WorkspaceEntity(
+                    externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
+                    name = WorkspaceDefaults.DEFAULT_NAME,
+                    description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
+                    createdAt = System.currentTimeMillis()
+                )
+            )
+        if (workspaceDao.getSettingsByWorkspaceId(workspaceId) == null) {
+            workspaceDao.insertSettings(WorkspaceSettingsEntity(workspaceId = workspaceId))
+        }
+    }
 }

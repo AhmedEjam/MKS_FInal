@@ -13,7 +13,7 @@ import com.ahmedyejam.mks.data.preview.ClearMarksPreviewService
 import com.ahmedyejam.mks.data.preview.DeletePreviewService
 import com.ahmedyejam.mks.data.repair.AssetReferenceAuditService
 import com.ahmedyejam.mks.data.repository.ExportManager
-import com.ahmedyejam.mks.data.repository.MksRepository
+
 import com.ahmedyejam.mks.data.repository.OllamaRepository
 import com.ahmedyejam.mks.data.review.ReviewRepository
 import com.ahmedyejam.mks.data.search.GlobalSearchRepository
@@ -42,26 +42,43 @@ object HiltDataModule {
 
     @Provides
     @Singleton
-    fun provideFileManager(appModule: AppModule): FileManager {
-        return appModule.fileManager
+    fun provideFileManager(@ApplicationContext context: Context): FileManager {
+        return FileManager(context)
     }
 
     @Provides
     @Singleton
-    fun provideLibraryMapper(appModule: AppModule): LibraryMapper {
-        return appModule.libraryMapper
+    fun provideLibraryMapper(): LibraryMapper {
+        return LibraryMapper()
     }
 
     @Provides
     @Singleton
-    fun provideExportManager(appModule: AppModule): ExportManager {
-        return appModule.exportManager
+    fun provideExportManager(
+        database: MksDatabase,
+        fileManager: FileManager,
+        libraryMapper: LibraryMapper
+    ): ExportManager {
+        return ExportManager(
+            database = database,
+            bookDao = database.bookDao(),
+            quizDao = database.quizDao(),
+            questionDao = database.questionDao(),
+            sessionDao = database.sessionDao(),
+            categoryMetadataDao = database.categoryMetadataDao(),
+            fileManager = fileManager,
+            mapper = libraryMapper
+        )
     }
 
     @Provides
     @Singleton
-    fun provideImportLibraryManager(appModule: AppModule): ImportLibraryManager {
-        return appModule.importManager
+    fun provideImportLibraryManager(
+        @ApplicationContext context: Context,
+        database: MksDatabase,
+        fileManager: FileManager
+    ): ImportLibraryManager {
+        return ImportLibraryManager(context, database, fileManager)
     }
 
     @Provides
@@ -82,16 +99,11 @@ object HiltDataModule {
         return appModule.ollamaRepository
     }
 
-    @Provides
-    @Singleton
-    fun provideMksRepository(appModule: AppModule): MksRepository {
-        return appModule.repository
-    }
 
     @Provides
     @Singleton
-    fun provideGlobalSearchRepository(appModule: AppModule): GlobalSearchRepository {
-        return appModule.globalSearchRepository
+    fun provideGlobalSearchRepository(database: MksDatabase): GlobalSearchRepository {
+        return GlobalSearchRepository(database.globalSearchDao())
     }
 
     @Provides
@@ -243,49 +255,49 @@ object HiltDataModule {
 
     @Provides
     @Singleton
-    fun provideWorkspaceDao(appModule: AppModule): WorkspaceDao {
-        return appModule.workspaceDao
+    fun provideWorkspaceDao(database: MksDatabase): WorkspaceDao {
+        return database.workspaceDao()
     }
 
     @Provides
     @Singleton
-    fun provideFlashcardDeckDao(appModule: AppModule): FlashcardDeckDao {
-        return appModule.flashcardDeckDao
+    fun provideFlashcardDeckDao(database: MksDatabase): FlashcardDeckDao {
+        return database.flashcardDeckDao()
     }
 
     @Provides
     @Singleton
-    fun provideFlashcardDao(appModule: AppModule): FlashcardDao {
-        return appModule.flashcardDao
+    fun provideFlashcardDao(database: MksDatabase): FlashcardDao {
+        return database.flashcardDao()
     }
 
     @Provides
     @Singleton
-    fun provideLearningSessionDao(appModule: AppModule): LearningSessionDao {
-        return appModule.learningSessionDao
+    fun provideLearningSessionDao(database: MksDatabase): LearningSessionDao {
+        return database.learningSessionDao()
     }
 
     @Provides
     @Singleton
-    fun providePromptDeckDao(appModule: AppModule): PromptDeckDao {
-        return appModule.promptDeckDao
+    fun providePromptDeckDao(database: MksDatabase): PromptDeckDao {
+        return database.promptDeckDao()
     }
 
     @Provides
     @Singleton
-    fun providePromptCardDao(appModule: AppModule): PromptCardDao {
-        return appModule.promptCardDao
+    fun providePromptCardDao(database: MksDatabase): PromptCardDao {
+        return database.promptCardDao()
     }
 
     @Provides
     @Singleton
-    fun providePromptRunDao(appModule: AppModule): PromptRunDao {
-        return appModule.promptRunDao
+    fun providePromptRunDao(database: MksDatabase): PromptRunDao {
+        return database.promptRunDao()
     }
 
     @Provides
     @Singleton
-    fun provideMistakeLogDao(appModule: AppModule): MistakeLogDao {
-        return appModule.mistakeLogDao
+    fun provideMistakeLogDao(database: MksDatabase): MistakeLogDao {
+        return database.mistakeLogDao()
     }
 }

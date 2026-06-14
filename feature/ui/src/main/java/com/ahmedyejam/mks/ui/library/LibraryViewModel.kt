@@ -9,6 +9,11 @@ import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.BookEntity
+import com.ahmedyejam.mks.data.repository.BookRepository
+import com.ahmedyejam.mks.data.repository.WorkspaceRepository
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.local.entity.CategoryMetadataEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
 import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
@@ -20,7 +25,6 @@ import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.model.CategoryWithMetadata
 import com.ahmedyejam.mks.data.model.ExportResult
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
-import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.data.repository.SortOption
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -53,8 +57,13 @@ private data class WorkspaceBookFilter(
 @OptIn(ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
-    private val repository: MksRepository,
     private val dataStoreManager: DataStoreManager,
+    private val bookRepository: BookRepository,
+    private val workspaceRepository: WorkspaceRepository,
+    private val knowledgeRepository: KnowledgeRepository,
+    private val assetRepository: AssetRepository,
+    private val quizRepository: QuizRepository,
+    private val exportManager: com.ahmedyejam.mks.data.repository.ExportManager
 ) : ViewModel() {
 
     private val _uiEvent = Channel<LibraryUiEvent>()
@@ -71,7 +80,7 @@ class LibraryViewModel @Inject constructor(
     val isSearching = _isSearching.asStateFlow()
 
     val currentWorkspaceId = dataStoreManager.currentWorkspaceId
-        .map { storedId -> storedId ?: repository.getOrCreateDefaultWorkspace().id }
+        .map { storedId -> storedId ?: assetRepository.getOrCreateDefaultWorkspace().id }
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0L)
 
     val sortBy = dataStoreManager.librarySortOption
@@ -97,7 +106,7 @@ class LibraryViewModel @Inject constructor(
     }
 
     val categories = combine(
-        repository.getAllCategoriesWithMetadata(),
+        quizRepository.getAllCategoriesWithMetadata(),
         sortBy,
     ) { list, sortOption ->
         list.sortedWith(
@@ -115,7 +124,7 @@ class LibraryViewModel @Inject constructor(
                 }
                 .thenBy { if (sortOption == SortOption.TITLE) it.name else "" },
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList<CategoryWithMetadata>())
 
 
     val books = combine(
@@ -127,7 +136,7 @@ class LibraryViewModel @Inject constructor(
     }.flatMapLatest { filter ->
         if (filter.workspaceId <= 0L) {
             flowOf(emptyList())
-        } else repository.getBooksByWorkspace(filter.workspaceId, filter.sortBy).map { list ->
+        } else bookRepository.getBooksByWorkspace(filter.workspaceId, filter.sortBy).map { list ->
             list.asSequence()
                 .filter { book ->
                     ((filter.filterField == null) || book.fields.contains(filter.filterField)) &&
@@ -137,7 +146,7 @@ class LibraryViewModel @Inject constructor(
                         book.fields.any { it.contains(filter.searchQuery, ignoreCase = true) }
                     )
                 }
-                .map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
+                .map { it.copy(coverImage = assetRepository.resolveImagePath(it.coverImage)) }
                 .sortedByDescending { it.isPinned }
                 .toList()
         }
@@ -151,7 +160,7 @@ class LibraryViewModel @Inject constructor(
         _searchQuery,
     ) { category, bookSortBy, searchQuery ->
         val baseFlow = when {
-            category != null -> repository.getQuizzesByCategory(category, bookSortBy)
+            category != null -> quizRepository.getQuizzesByCategory(category, bookSortBy)
             else -> flowOf(emptyList())
         }
         baseFlow.map { list ->
@@ -162,7 +171,7 @@ class LibraryViewModel @Inject constructor(
                     quiz.description.contains(searchQuery, ignoreCase = true) ||
                     (quiz.category?.contains(searchQuery, ignoreCase = true) ?: false)
                 }
-                .map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
+                .map { it.copy(coverImage = assetRepository.resolveImagePath(it.coverImage)) }
                 .sortedByDescending { it.isPinned }
                 .toList()
         }
@@ -170,24 +179,24 @@ class LibraryViewModel @Inject constructor(
     .flowOn(Dispatchers.Default)
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val recentQuizzes = repository.getAllQuizzesFlow()
+    val recentQuizzes = quizRepository.getAllQuizzesFlow()
         .map { list ->
             list.asSequence()
                 .sortedByDescending { it.updatedAt }
                 .take(5)
-                .map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) }
+                .map { it.copy(coverImage = assetRepository.resolveImagePath(it.coverImage)) }
                 .toList()
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val resumeQuiz = combine(
         dataStoreManager.lastSession,
-        repository.getAllQuizzesFlow(),
+        quizRepository.getAllQuizzesFlow(),
     ) { lastSession, list ->
         val lastQuizId = lastSession?.first
         val selected = lastQuizId?.let { id -> list.find { it.id == id } }
             ?: list.maxByOrNull { it.updatedAt }
-        selected?.copy(coverImage = repository.resolveImagePath(selected.coverImage))
+        selected?.copy(coverImage = assetRepository.resolveImagePath(selected.coverImage))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun setSearchQuery(query: String) {
@@ -237,13 +246,13 @@ class LibraryViewModel @Inject constructor(
 
     fun toggleBookPinned(book: BookEntity) {
         viewModelScope.launch {
-            repository.updateBook(book.copy(isPinned = !book.isPinned))
+            bookRepository.updateBook(book.copy(isPinned = !book.isPinned))
         }
     }
 
     fun toggleQuizPinned(quiz: QuizEntity) {
         viewModelScope.launch {
-            repository.updateQuiz(quiz.copy(isPinned = !quiz.isPinned))
+            quizRepository.updateQuiz(quiz.copy(isPinned = !quiz.isPinned))
         }
     }
 
@@ -251,7 +260,7 @@ class LibraryViewModel @Inject constructor(
     fun deleteBook(book: BookEntity) {
         viewModelScope.launch {
             try {
-                repository.deleteBook(book)
+                bookRepository.deleteBook(book)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Book '${book.title}' deleted"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to delete book: ${e.message}"))
@@ -262,7 +271,7 @@ class LibraryViewModel @Inject constructor(
     fun deleteQuiz(quiz: QuizEntity) {
         viewModelScope.launch {
             try {
-                repository.deleteQuiz(quiz)
+                quizRepository.deleteQuiz(quiz)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Quiz '${quiz.title}' deleted"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to delete quiz: ${e.message}"))
@@ -276,7 +285,7 @@ class LibraryViewModel @Inject constructor(
                 val finalBook = when {
                     newCoverUri?.startsWith("content://") == true -> {
                         val savedPath = withContext(Dispatchers.IO) {
-                            repository.saveImage(newCoverUri.toUri())
+                            assetRepository.saveImage(newCoverUri.toUri())
                         }
                         book.copy(coverImage = savedPath, updatedAt = System.currentTimeMillis())
                     }
@@ -285,7 +294,7 @@ class LibraryViewModel @Inject constructor(
                     }
                     else -> book.copy(updatedAt = System.currentTimeMillis())
                 }
-                repository.updateBook(finalBook)
+                bookRepository.updateBook(finalBook)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Book updated"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to update book: ${e.message}"))
@@ -299,7 +308,7 @@ class LibraryViewModel @Inject constructor(
                 val finalQuiz = when {
                     newCoverUri?.startsWith("content://") == true -> {
                         val savedPath = withContext(Dispatchers.IO) {
-                            repository.saveImage(newCoverUri.toUri())
+                            assetRepository.saveImage(newCoverUri.toUri())
                         }
                         quiz.copy(coverImage = savedPath, updatedAt = System.currentTimeMillis())
                     }
@@ -308,7 +317,7 @@ class LibraryViewModel @Inject constructor(
                     }
                     else -> quiz.copy(updatedAt = System.currentTimeMillis())
                 }
-                repository.updateQuiz(finalQuiz)
+                quizRepository.updateQuiz(finalQuiz)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Quiz updated"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to update quiz: ${e.message}"))
@@ -322,13 +331,13 @@ class LibraryViewModel @Inject constructor(
             try {
                 val finalBook = if (coverUri?.startsWith("content://") == true) {
                     val savedPath = withContext(Dispatchers.IO) {
-                        repository.saveImage(coverUri.toUri())
+                        assetRepository.saveImage(coverUri.toUri())
                     }
                     book.copy(coverImage = savedPath)
                 } else {
                     book
                 }
-                repository.insertBook(finalBook)
+                bookRepository.insertBook(finalBook)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Book created"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to create book: ${e.message}"))
@@ -341,13 +350,13 @@ class LibraryViewModel @Inject constructor(
             try {
                 val finalQuiz = if (coverUri?.startsWith("content://") == true) {
                     val savedPath = withContext(Dispatchers.IO) {
-                        repository.saveImage(coverUri.toUri())
+                        assetRepository.saveImage(coverUri.toUri())
                     }
                     quiz.copy(coverImage = savedPath)
                 } else {
                     quiz
                 }
-                repository.insertQuiz(finalQuiz)
+                knowledgeRepository.insertQuiz(finalQuiz)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Quiz created"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to create quiz: ${e.message}"))
@@ -357,23 +366,23 @@ class LibraryViewModel @Inject constructor(
 
 
     fun deleteCategory(category: String) {
-        viewModelScope.launch { repository.deleteCategory(category) }
+        viewModelScope.launch { quizRepository.deleteCategory(category) }
     }
 
     fun renameCategory(oldName: String, newName: String) {
-        viewModelScope.launch { repository.renameCategory(oldName, newName) }
+        viewModelScope.launch { quizRepository.renameCategory(oldName, newName) }
     }
 
     fun mergeCategory(source: String, target: String) {
-        viewModelScope.launch { repository.mergeCategory(source, target) }
+        viewModelScope.launch { quizRepository.mergeCategory(source, target) }
     }
 
     suspend fun getMergePreview(source: String, target: String): Int {
-        return repository.getMergePreview(source, target)
+        return quizRepository.getMergePreview(source, target)
     }
 
     fun createQuizFromCategory(category: String, title: String, bookId: Long) {
-        viewModelScope.launch { repository.createQuizFromCategory(category, title, bookId) }
+        viewModelScope.launch { quizRepository.createQuizFromCategory(category, title, bookId) }
     }
 
     fun createNewQuiz(
@@ -386,7 +395,7 @@ class LibraryViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                val newQuizId = repository.insertQuiz(
+                val newQuizId = knowledgeRepository.insertQuiz(
                     QuizEntity(
                         externalId = java.util.UUID.randomUUID().toString(),
                         bookId = bookId,
@@ -399,16 +408,16 @@ class LibraryViewModel @Inject constructor(
                 )
 
                 if (sourceQuizIds.isNotEmpty() || sourceCategories.isNotEmpty()) {
-                    val bookQuizzes = repository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
+                    val bookQuizzes = quizRepository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
                     val allQuestions = mutableListOf<QuestionEntity>()
 
                     if (sourceQuizIds.isNotEmpty()) {
                         for (qId in sourceQuizIds) {
-                            allQuestions.addAll(repository.getQuestionsByQuizId(qId).first())
+                            allQuestions.addAll(quizRepository.getQuestionsByQuizId(qId).first())
                         }
                     } else if (sourceCategories.isNotEmpty()) {
                         for (quiz in bookQuizzes) {
-                            allQuestions.addAll(repository.getQuestionsByQuizId(quiz.id).first())
+                            allQuestions.addAll(quizRepository.getQuestionsByQuizId(quiz.id).first())
                         }
                     }
 
@@ -434,7 +443,7 @@ class LibraryViewModel @Inject constructor(
                     }
                     
                     if (duplicatedQuestions.isNotEmpty()) {
-                        repository.insertQuestions(duplicatedQuestions)
+                        knowledgeRepository.insertQuestions(duplicatedQuestions)
                     }
                 }
 
@@ -447,7 +456,7 @@ class LibraryViewModel @Inject constructor(
 
     fun updateCategoryMetadata(name: String, emoji: String?, color: Int?, isPinned: Boolean) {
         viewModelScope.launch {
-            repository.updateCategoryMetadata(
+            quizRepository.updateCategoryMetadata(
                 CategoryMetadataEntity(
                     name = name,
                     emoji = emoji,
@@ -458,10 +467,10 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
-    val workspaces = repository.getAllWorkspaces()
+    val workspaces = workspaceRepository.getAllWorkspaces()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val deletedWorkspaces = repository.getDeletedWorkspaces()
+    val deletedWorkspaces = workspaceRepository.getDeletedWorkspaces()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun selectWorkspace(workspaceId: Long) {
@@ -474,7 +483,7 @@ class LibraryViewModel @Inject constructor(
     fun insertWorkspace(name: String, description: String? = null) {
         viewModelScope.launch {
             try {
-                repository.insertWorkspace(
+                workspaceRepository.insertWorkspace(
                     WorkspaceEntity(
                         externalId = java.util.UUID.randomUUID().toString(),
                         name = name,
@@ -491,7 +500,7 @@ class LibraryViewModel @Inject constructor(
     fun updateWorkspace(workspace: WorkspaceEntity) {
         viewModelScope.launch {
             try {
-                repository.updateWorkspace(workspace)
+                workspaceRepository.updateWorkspace(workspace)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Workspace updated"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to update workspace: ${e.message}"))
@@ -502,10 +511,10 @@ class LibraryViewModel @Inject constructor(
     fun deleteWorkspace(workspace: WorkspaceEntity) {
         viewModelScope.launch {
             try {
-                repository.deleteWorkspace(workspace)
+                workspaceRepository.deleteWorkspace(workspace)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Workspace deleted"))
                 if (currentWorkspaceId.value == workspace.id) {
-                    val defaultWs = repository.getDefaultWorkspace() ?: repository.getOrCreateDefaultWorkspace()
+                    val defaultWs = workspaceRepository.getDefaultWorkspace() ?: assetRepository.getOrCreateDefaultWorkspace()
                     selectWorkspace(defaultWs.id)
                 }
             } catch (e: Exception) {
@@ -517,7 +526,7 @@ class LibraryViewModel @Inject constructor(
     fun restoreWorkspace(workspaceId: Long) {
         viewModelScope.launch {
             try {
-                repository.restoreWorkspace(workspaceId)
+                workspaceRepository.restoreWorkspace(workspaceId)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Workspace restored"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore workspace: ${e.message}"))
@@ -528,7 +537,7 @@ class LibraryViewModel @Inject constructor(
     fun permanentlyDeleteWorkspace(workspace: WorkspaceEntity) {
         viewModelScope.launch {
             try {
-                repository.permanentlyDeleteWorkspace(workspace)
+                workspaceRepository.permanentlyDeleteWorkspace(workspace)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Workspace permanently deleted"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete workspace: ${e.message}"))
@@ -537,39 +546,39 @@ class LibraryViewModel @Inject constructor(
     }
 
     suspend fun exportQuiz(quizId: Long, outputStream: java.io.OutputStream): ExportResult {
-        return repository.exportQuizToZip(quizId, outputStream)
+        return exportManager.exportQuizToZip(quizId, outputStream)
     }
 
     suspend fun exportBook(bookId: Long, outputStream: java.io.OutputStream): ExportResult {
-        return repository.exportBundleToZip(bookId, outputStream)
+        return exportManager.exportBundleToZip(bookId, outputStream)
     }
 
     suspend fun exportAll(outputStream: java.io.OutputStream): ExportResult {
-        return repository.exportAllToZip(outputStream)
+        return exportManager.exportAllToZip(outputStream)
     }
 
     val deletedBooks = currentWorkspaceId.flatMapLatest { workspaceId ->
-        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedBooks(workspaceId)
+        if (workspaceId <= 0L) flowOf(emptyList()) else bookRepository.getDeletedBooks(workspaceId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val deletedQuizzes = currentWorkspaceId.flatMapLatest { workspaceId ->
-        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedQuizzes(workspaceId)
+        if (workspaceId <= 0L) flowOf(emptyList()) else quizRepository.getDeletedQuizzes(workspaceId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val deletedDecks = currentWorkspaceId.flatMapLatest { workspaceId ->
-        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedFlashcardDecks(workspaceId)
+        if (workspaceId <= 0L) flowOf(emptyList()) else knowledgeRepository.getDeletedFlashcardDecks(workspaceId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val deletedSlideshows = currentWorkspaceId.flatMapLatest { workspaceId ->
-        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedSlideshowCourses(workspaceId)
+        if (workspaceId <= 0L) flowOf(emptyList()) else knowledgeRepository.getDeletedSlideshowCourses(workspaceId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val deletedNotes = currentWorkspaceId.flatMapLatest { workspaceId ->
-        if (workspaceId <= 0L) flowOf(emptyList()) else repository.getDeletedNoteBlueprints(workspaceId)
+        if (workspaceId <= 0L) flowOf(emptyList()) else knowledgeRepository.getDeletedNoteBlueprints(workspaceId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val deletedPrompts = currentWorkspaceId.flatMapLatest { workspaceId ->
-        if (workspaceId <= 0L) flowOf(emptyOf<PromptDeckEntity>()) else repository.getDeletedPromptDecks(
+        if (workspaceId <= 0L) flowOf(emptyOf<PromptDeckEntity>()) else knowledgeRepository.getDeletedPromptDecks(
             workspaceId
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -577,7 +586,7 @@ class LibraryViewModel @Inject constructor(
     fun restoreBook(bookId: Long) {
         viewModelScope.launch {
             try {
-                repository.restoreBook(bookId)
+                bookRepository.restoreBook(bookId)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Book restored"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore book: ${e.message}"))
@@ -588,12 +597,12 @@ class LibraryViewModel @Inject constructor(
     fun emptyTrash() {
         viewModelScope.launch {
             try {
-                deletedBooks.value.forEach { repository.permanentlyDeleteBook(it) }
-                deletedQuizzes.value.forEach { repository.permanentlyDeleteQuiz(it) }
-                deletedDecks.value.forEach { repository.permanentlyDeleteFlashcardDeck(it) }
-                deletedSlideshows.value.forEach { repository.permanentlyDeleteSlideshowCourse(it) }
-                deletedNotes.value.forEach { repository.permanentlyDeleteNoteBlueprint(it) }
-                deletedPrompts.value.forEach { repository.permanentlyDeletePromptDeck(it) }
+                deletedBooks.value.forEach { bookRepository.permanentlyDeleteBook(it) }
+                deletedQuizzes.value.forEach { quizRepository.permanentlyDeleteQuiz(it) }
+                deletedDecks.value.forEach { knowledgeRepository.permanentlyDeleteFlashcardDeck(it) }
+                deletedSlideshows.value.forEach { knowledgeRepository.permanentlyDeleteSlideshowCourse(it) }
+                deletedNotes.value.forEach { knowledgeRepository.permanentlyDeleteNoteBlueprint(it) }
+                deletedPrompts.value.forEach { knowledgeRepository.permanentlyDeletePromptDeck(it) }
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Trash emptied successfully"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to empty trash: ${e.message}"))
@@ -604,7 +613,7 @@ class LibraryViewModel @Inject constructor(
     fun permanentlyDeleteBook(book: BookEntity) {
         viewModelScope.launch {
             try {
-                repository.permanentlyDeleteBook(book)
+                bookRepository.permanentlyDeleteBook(book)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Book permanently deleted"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete book: ${e.message}"))
@@ -615,7 +624,7 @@ class LibraryViewModel @Inject constructor(
     fun restoreQuiz(quizId: Long) {
         viewModelScope.launch {
             try {
-                repository.restoreQuiz(quizId)
+                quizRepository.restoreQuiz(quizId)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Quiz restored"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore quiz: ${e.message}"))
@@ -626,7 +635,7 @@ class LibraryViewModel @Inject constructor(
     fun permanentlyDeleteQuiz(quiz: QuizEntity) {
         viewModelScope.launch {
             try {
-                repository.permanentlyDeleteQuiz(quiz)
+                quizRepository.permanentlyDeleteQuiz(quiz)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Quiz permanently deleted"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete quiz: ${e.message}"))
@@ -637,7 +646,7 @@ class LibraryViewModel @Inject constructor(
     fun restoreFlashcardDeck(deckId: Long) {
         viewModelScope.launch {
             try {
-                repository.restoreFlashcardDeck(deckId)
+                knowledgeRepository.restoreFlashcardDeck(deckId)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Flashcard deck restored"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore flashcard deck: ${e.message}"))
@@ -648,7 +657,7 @@ class LibraryViewModel @Inject constructor(
     fun permanentlyDeleteFlashcardDeck(deck: FlashcardDeckEntity) {
         viewModelScope.launch {
             try {
-                repository.permanentlyDeleteFlashcardDeck(deck)
+                knowledgeRepository.permanentlyDeleteFlashcardDeck(deck)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Flashcard deck permanently deleted"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete deck: ${e.message}"))
@@ -659,7 +668,7 @@ class LibraryViewModel @Inject constructor(
     fun restoreSlideshowCourse(courseId: Long) {
         viewModelScope.launch {
             try {
-                repository.restoreSlideshowCourse(courseId)
+                knowledgeRepository.restoreSlideshowCourse(courseId)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Slideshow course restored"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore slideshow course: ${e.message}"))
@@ -670,7 +679,7 @@ class LibraryViewModel @Inject constructor(
     fun permanentlyDeleteSlideshowCourse(course: SlideshowCourseEntity) {
         viewModelScope.launch {
             try {
-                repository.permanentlyDeleteSlideshowCourse(course)
+                knowledgeRepository.permanentlyDeleteSlideshowCourse(course)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Slideshow course permanently deleted"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete slideshow course: ${e.message}"))
@@ -681,7 +690,7 @@ class LibraryViewModel @Inject constructor(
     fun restoreNoteBlueprint(noteId: Long) {
         viewModelScope.launch {
             try {
-                repository.restoreNoteBlueprint(noteId)
+                knowledgeRepository.restoreNoteBlueprint(noteId)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Note blueprint restored"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore note blueprint: ${e.message}"))
@@ -692,7 +701,7 @@ class LibraryViewModel @Inject constructor(
     fun permanentlyDeleteNoteBlueprint(note: NoteBlueprintEntity) {
         viewModelScope.launch {
             try {
-                repository.permanentlyDeleteNoteBlueprint(note)
+                knowledgeRepository.permanentlyDeleteNoteBlueprint(note)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Note blueprint permanently deleted"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete note blueprint: ${e.message}"))
@@ -703,7 +712,7 @@ class LibraryViewModel @Inject constructor(
     fun restorePromptDeck(deckId: Long) {
         viewModelScope.launch {
             try {
-                repository.restorePromptDeck(deckId)
+                knowledgeRepository.restorePromptDeck(deckId)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Prompt deck restored"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to restore prompt deck: ${e.message}"))
@@ -714,7 +723,7 @@ class LibraryViewModel @Inject constructor(
     fun permanentlyDeletePromptDeck(deck: PromptDeckEntity) {
         viewModelScope.launch {
             try {
-                repository.permanentlyDeletePromptDeck(deck)
+                knowledgeRepository.permanentlyDeletePromptDeck(deck)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Prompt deck permanently deleted"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to permanently delete prompt deck: ${e.message}"))

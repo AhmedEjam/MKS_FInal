@@ -8,10 +8,12 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.AnnotationEntity
+import com.ahmedyejam.mks.data.repository.BookRepository
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.local.entity.MistakeLogEntryEntity
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.data.repository.KnowledgeSummary
-import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.data.repository.SortOption
 import com.ahmedyejam.mks.data.review.ReviewDashboardSummary
 import com.ahmedyejam.mks.data.review.ReviewQueueItem
@@ -32,23 +34,25 @@ data class ReviewDashboardUiState(
 @HiltViewModel
 class ReviewDashboardViewModel @Inject constructor(
     private val repository: ReviewRepository,
-    private val mksRepository: MksRepository,
-    private val dataStoreManager: DataStoreManager
+    private val dataStoreManager: DataStoreManager,
+    private val bookRepository: BookRepository,
+    private val assetRepository: AssetRepository,
+    private val studyRepository: StudyRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(ReviewDashboardUiState())
     val state: StateFlow<ReviewDashboardUiState> = _state.asStateFlow()
 
     val currentWorkspaceId = dataStoreManager.currentWorkspaceId
-        .map { storedId -> storedId ?: mksRepository.getOrCreateDefaultWorkspace().id }
+        .map { storedId -> storedId ?: assetRepository.getOrCreateDefaultWorkspace().id }
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0L)
 
     val annotations = currentWorkspaceId.flatMapLatest { wsId ->
-        if (wsId <= 0L) flowOf(emptyList()) else mksRepository.getAnnotationsByWorkspaceId(wsId)
+        if (wsId <= 0L) flowOf(emptyList()) else studyRepository.getAnnotationsByWorkspaceId(wsId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val mistakes = currentWorkspaceId.flatMapLatest { wsId ->
-        if (wsId <= 0L) flowOf(emptyList()) else mksRepository.getAllMistakes().map { list ->
-            val bookIds = mksRepository.getBooksByWorkspace(wsId, SortOption.TITLE).first().map { it.id }.toSet()
+        if (wsId <= 0L) flowOf(emptyList()) else studyRepository.getAllMistakes().map { list ->
+            val bookIds = bookRepository.getBooksByWorkspace(wsId, SortOption.TITLE).first().map { it.id }.toSet()
             list.filter { it.bookId in bookIds && it.deletedAt == null }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -60,7 +64,7 @@ class ReviewDashboardViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
             runCatching {
                 val summary = repository.loadSummary()
-                val knowledgeSummary = mksRepository.getLibraryKnowledgeSummary()
+                val knowledgeSummary = studyRepository.getLibraryKnowledgeSummary()
                 val queue = repository.loadQueues()
                 Triple(summary, knowledgeSummary, queue)
             }.onSuccess { (summary, knowledgeSummary, queue) ->
@@ -94,34 +98,34 @@ class ReviewDashboardViewModel @Inject constructor(
 
     fun snoozeMistake(mistakeId: Long, snoozeTime: Long) {
         viewModelScope.launch {
-            runCatching { mksRepository.snoozeMistake(mistakeId, snoozeTime) }
+            runCatching { studyRepository.snoozeMistake(mistakeId, snoozeTime) }
             refresh()
         }
     }
 
     fun markMistakeFixed(mistakeId: Long) {
         viewModelScope.launch {
-            runCatching { mksRepository.markMistakeFixed(mistakeId) }
+            runCatching { studyRepository.markMistakeFixed(mistakeId) }
             refresh()
         }
     }
 
     fun deleteMistake(entry: MistakeLogEntryEntity) {
         viewModelScope.launch {
-            runCatching { mksRepository.deleteMistake(entry) }
+            runCatching { studyRepository.deleteMistake(entry) }
             refresh()
         }
     }
 
     fun updateAnnotation(annotation: AnnotationEntity) {
         viewModelScope.launch {
-            runCatching { mksRepository.updateAnnotation(annotation) }
+            runCatching { studyRepository.updateAnnotation(annotation) }
         }
     }
 
     fun deleteAnnotation(annotationId: Long) {
         viewModelScope.launch {
-            runCatching { mksRepository.softDeleteAnnotation(annotationId) }
+            runCatching { assetRepository.softDeleteAnnotation(annotationId) }
         }
     }
 }

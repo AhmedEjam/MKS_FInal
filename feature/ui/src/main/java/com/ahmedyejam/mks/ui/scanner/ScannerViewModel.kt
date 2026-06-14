@@ -9,8 +9,8 @@ import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
 import com.ahmedyejam.mks.data.local.entity.QuestionType
-import com.ahmedyejam.mks.data.repository.MksRepository
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -23,7 +23,7 @@ import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class ScannerViewModel @Inject constructor(
-    private val repository: MksRepository
+    private val knowledgeRepository: KnowledgeRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ScannerUiState>(ScannerUiState.Idle)
@@ -158,7 +158,7 @@ class ScannerViewModel @Inject constructor(
 
     fun saveQuestions(questions: List<QuestionEntity>) {
         viewModelScope.launch {
-            repository.insertQuestions(questions)
+            knowledgeRepository.insertQuestions(questions)
             _uiState.value = ScannerUiState.Saved
         }
     }

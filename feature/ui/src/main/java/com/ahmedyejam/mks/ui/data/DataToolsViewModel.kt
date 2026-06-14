@@ -21,7 +21,7 @@ data class DataToolsUiState(
 
 @HiltViewModel
 class DataToolsViewModel @Inject constructor(
-    private val repository: com.ahmedyejam.mks.data.repository.MksRepository
+    private val exportManager: com.ahmedyejam.mks.data.repository.ExportManager
 ) : ViewModel() {
     private val _state = MutableStateFlow(DataToolsUiState())
     val state: StateFlow<DataToolsUiState> = _state.asStateFlow()
@@ -29,7 +29,7 @@ class DataToolsViewModel @Inject constructor(
     fun exportFullLibrary(outputStream: java.io.OutputStream) {
         viewModelScope.launch {
             _state.update { it.copy(isWorking = true, error = null, message = null) }
-            val result = repository.exportAllToZip(outputStream)
+            val result = exportManager.exportAllToZip(outputStream)
             _state.update {
                 it.copy(
                     isWorking = false,

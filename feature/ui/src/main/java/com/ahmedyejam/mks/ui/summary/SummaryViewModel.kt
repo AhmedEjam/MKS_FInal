@@ -8,8 +8,8 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
+import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
-import com.ahmedyejam.mks.data.repository.MksRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -45,7 +45,7 @@ data class CategoryStats(
 
 @HiltViewModel
 class SummaryViewModel @Inject constructor(
-    private val repository: MksRepository,
+    private val quizRepository: QuizRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SummaryState())
@@ -54,10 +54,10 @@ class SummaryViewModel @Inject constructor(
     fun loadSummary(sessionId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val session = repository.getSessionById(sessionId)
+            val session = quizRepository.getSessionById(sessionId)
             if (session != null) {
                 // Get all questions in the sequence (including repeats)
-                val allQuestionsInQuiz = repository.getQuestionsByQuizId(session.quizId).first()
+                val allQuestionsInQuiz = quizRepository.getQuestionsByQuizId(session.quizId).first()
                 
                 val sessionQuestions = session.questionIds.map { id -> 
                     allQuestionsInQuiz.find { it.id == id } ?: QuestionEntity(
@@ -225,14 +225,14 @@ class SummaryViewModel @Inject constructor(
 
     fun previewClearMarks(quizId: Long, onResult: (String) -> Unit) {
         viewModelScope.launch {
-            val res = repository.clearMarksForQuizWithPreview(quizId)
+            val res = quizRepository.clearMarksForQuizWithPreview(quizId)
             onResult(res.summary)
         }
     }
 
     fun applyClearMarks(quizId: Long) {
         viewModelScope.launch {
-            repository.applyClearMarksForQuiz(quizId)
+            quizRepository.applyClearMarksForQuiz(quizId)
             _uiState.value.session?.id?.let { loadSummary(it) }
         }
     }

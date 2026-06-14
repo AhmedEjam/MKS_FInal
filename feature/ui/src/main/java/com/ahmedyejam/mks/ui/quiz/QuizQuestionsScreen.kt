@@ -206,23 +206,58 @@ fun QuizQuestionsScreen(
     }
 
     if (isEmbedded) {
-        Column(Modifier.fillMaxSize()) {
-            if (showFilters) {
-                FilterControls(
-                    visibility = uiState.visibility,
-                    onToggle = { viewModel.toggleVisibility(it) }
+        Scaffold(
+            topBar = {
+                if (isSelectionMode) {
+                    SelectionTopAppBar(
+                        selectedCount = uiState.selectedQuestionIds.size,
+                        onClearSelection = { viewModel.clearSelection() },
+                        onDelete = { showDeleteConfirm = true },
+                        onMove = { showMoveDialog = true },
+                        onSelectAll = { viewModel.toggleAllSelection() },
+                        onCopy = { showCopyDialog = true },
+                        onExport = { showExportDialog = true },
+                        onCreateFlashcards = { showFlashcardDialog = true },
+                        onMarkSelected = { viewModel.markSelectedQuestions(true) },
+                        onUnmarkSelected = { viewModel.markSelectedQuestions(false) },
+                        showMarkActions = true,
+                        scrollBehavior = null
+                    )
+                }
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { showAddDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_question))
+                }
+            }
+        ) { padding ->
+            Column(Modifier.fillMaxSize().padding(padding)) {
+                if (showFilters && !isSelectionMode) {
+                    FilterControls(
+                        visibility = uiState.visibility,
+                        onToggle = { viewModel.toggleVisibility(it) }
+                    )
+                } else if (showFilters && isSelectionMode) {
+                    FilterControls(
+                        visibility = uiState.visibility,
+                        onToggle = { viewModel.toggleVisibility(it) }
+                    )
+                }
+                QuizQuestionsList(
+                    uiState = uiState,
+                    scrollState = scrollState,
+                    onToggleSelection = { viewModel.toggleSelection(it) },
+                    onToggleMarked = { viewModel.toggleMarked(it) },
+                    onImageClick = { fullscreenImageUrl = it },
+                    onEditClick = { showEditDialog = it },
+                    onAssetsClick = { showAssetsDialog = it },
+                    onToggleDropped = { viewModel.toggleDropped(it) }
                 )
             }
-            QuizQuestionsList(
-                uiState = uiState,
-                scrollState = scrollState,
-                onToggleSelection = { viewModel.toggleSelection(it) },
-                onToggleMarked = { viewModel.toggleMarked(it) },
-                onImageClick = { fullscreenImageUrl = it },
-                onEditClick = { showEditDialog = it },
-                onAssetsClick = { showAssetsDialog = it },
-                onToggleDropped = { viewModel.toggleDropped(it) }
-            )
         }
     } else {
         Scaffold(

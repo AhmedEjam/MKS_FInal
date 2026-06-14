@@ -228,6 +228,7 @@ fun LibraryScreen(
                     targetBookId = state.targetBookId,
                     targetQuizId = state.targetQuizId,
                     allowInsecureRemoteImages = allowInsecureHttpImages,
+                    activeWorkspaceId = workspaceId
                 )
             }
         }

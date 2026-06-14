@@ -9,31 +9,31 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.importer.model.ImportFormat
+import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.importer.model.ImportResult
 import com.ahmedyejam.mks.data.importer.model.ImportPreviewDto
 import com.ahmedyejam.mks.data.importer.model.MergeStrategy
-import com.ahmedyejam.mks.data.repository.MksRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 @HiltViewModel
 class ImportViewModel @Inject constructor(
-    private val repository: MksRepository
+    private val quizRepository: QuizRepository
 ) : ViewModel() {
 
     private val _importState = MutableStateFlow<ImportState>(ImportState.Idle)
     val importState: StateFlow<ImportState> = _importState
 
     fun detectFormat(uri: Uri): ImportFormat {
-        return repository.detectFormat(uri)
+        return quizRepository.detectFormat(uri)
     }
 
     fun getImportPreview(uri: Uri, targetBookId: Long? = null, targetQuizId: Long? = null) {
         viewModelScope.launch {
             _importState.value = ImportState.Loading(0.1f, "Preparing preview...")
             try {
-                val preview = repository.getImportPreview(uri)
+                val preview = quizRepository.getImportPreview(uri)
                     ?: throw Exception("Could not load preview")
                 _importState.value = ImportState.Review(preview, uri, targetBookId, targetQuizId)
             } catch (e: Exception) {
@@ -47,17 +47,19 @@ class ImportViewModel @Inject constructor(
         strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING,
         targetBookId: Long? = null,
         targetQuizId: Long? = null,
-        allowInsecureRemoteImages: Boolean = false
+        allowInsecureRemoteImages: Boolean = false,
+        activeWorkspaceId: Long? = null
     ) {
         viewModelScope.launch {
             _importState.value = ImportState.Loading(0f, "Starting import...")
             try {
-                val result = repository.importFromUri(
+                val result = quizRepository.importFromUri(
                     uri = uri,
                     strategy = strategy,
                     targetBookId = targetBookId,
                     targetQuizId = targetQuizId,
-                    allowInsecureRemoteImages = allowInsecureRemoteImages
+                    allowInsecureRemoteImages = allowInsecureRemoteImages,
+                    activeWorkspaceId = activeWorkspaceId
                 ) { progress, message ->
                     _importState.value = ImportState.Loading(progress, message)
                 }

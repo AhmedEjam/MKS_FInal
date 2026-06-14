@@ -8,6 +8,11 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.BlueprintMode
+import com.ahmedyejam.mks.data.repository.BookRepository
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
+import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.local.entity.BlueprintReviewStatus
 import com.ahmedyejam.mks.data.local.entity.BookEntity
 import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
@@ -26,7 +31,6 @@ import com.ahmedyejam.mks.data.local.entity.SourceDocumentAssetEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentTypes
 import com.ahmedyejam.mks.ui.library.components.QuizCreationFilters
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
-import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.data.repository.OllamaRepository
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.data.repository.SortOption
@@ -80,10 +84,14 @@ data class BookToolsUiState(
 
 @HiltViewModel
 class BookToolsViewModel @Inject constructor(
-    private val repository: MksRepository,
     private val ollamaRepository: OllamaRepository,
     private val dataStoreManager: DataStoreManager,
-    private val fileManager: com.ahmedyejam.mks.data.local.FileManager
+    private val fileManager: com.ahmedyejam.mks.data.local.FileManager,
+    private val bookRepository: BookRepository,
+    private val knowledgeRepository: KnowledgeRepository,
+    private val assetRepository: AssetRepository,
+    private val quizRepository: QuizRepository,
+    private val studyRepository: StudyRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BookToolsUiState())
@@ -93,25 +101,25 @@ class BookToolsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                val bundle = repository.getBookStudyBundle(bookId)
+                val bundle = bookRepository.getBookStudyBundle(bookId)
                 if (bundle == null) {
                     _uiState.value = BookToolsUiState(isLoading = false, error = "Book not found")
                     return@launch
                 }
                 _uiState.value = BookToolsUiState(
-                    book = bundle.book.copy(coverImage = repository.resolveImagePath(bundle.book.coverImage)),
-                    quizzes = bundle.quizzes.map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) },
-                    questions = bundle.questions.map { it.copy(imagePath = repository.resolveImagePath(it.imagePath)) },
+                    book = bundle.book.copy(coverImage = assetRepository.resolveImagePath(bundle.book.coverImage)),
+                    quizzes = bundle.quizzes.map { it.copy(coverImage = assetRepository.resolveImagePath(it.coverImage)) },
+                    questions = bundle.questions.map { it.copy(imagePath = assetRepository.resolveImagePath(it.imagePath)) },
                     questionsByQuiz = bundle.questionsByQuiz.mapValues { (_, questions) ->
-                        questions.map { it.copy(imagePath = repository.resolveImagePath(it.imagePath)) }
+                        questions.map { it.copy(imagePath = assetRepository.resolveImagePath(it.imagePath)) }
                     },
-                    flashcardDecks = bundle.flashcardDecks.map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) },
-                    allCourses = bundle.slideshowCourses.map { it.copy(coverImage = repository.resolveImagePath(it.coverImage)) },
+                    flashcardDecks = bundle.flashcardDecks.map { it.copy(coverImage = assetRepository.resolveImagePath(it.coverImage)) },
+                    allCourses = bundle.slideshowCourses.map { it.copy(coverImage = assetRepository.resolveImagePath(it.coverImage)) },
                     allNotes = bundle.noteBlueprints,
                     allSources = bundle.sourceDocuments,
                     allPromptDecks = bundle.promptDecks,
                     mistakes = bundle.mistakes,
-                    bookSummary = repository.getBookKnowledgeSummary(bookId),
+                    bookSummary = bookRepository.getBookKnowledgeSummary(bookId),
                     isLoading = false
                 )
             } catch (e: Exception) {
@@ -125,7 +133,7 @@ class BookToolsViewModel @Inject constructor(
     fun loadNote(noteId: Long) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            val note = repository.getNoteBlueprintById(noteId)
+            val note = knowledgeRepository.getNoteBlueprintById(noteId)
             _uiState.value = if (note == null) {
                 _uiState.value.copy(isLoading = false, error = "Blueprint not found")
             } else {
@@ -137,7 +145,7 @@ class BookToolsViewModel @Inject constructor(
     fun updateQuestionNote(questionId: Long, note: String) {
         val question = _uiState.value.questions.firstOrNull { it.id == questionId } ?: return
         viewModelScope.launch {
-            repository.updateQuestion(question.copy(notes = note))
+            assetRepository.updateQuestion(question.copy(notes = note))
             _uiState.value = _uiState.value.copy(
                 questions = _uiState.value.questions.map { if (it.id == questionId) it.copy(notes = note) else it },
                 questionsByQuiz = _uiState.value.questionsByQuiz.mapValues { (_, questions) ->
@@ -153,7 +161,7 @@ class BookToolsViewModel @Inject constructor(
             val mistake = _uiState.value.mistakes.find { it.id == mistakeId } ?: return@launch
             try {
                 val updatedMistake = mistake.copy(isFixed = !mistake.isFixed)
-                repository.updateMistake(updatedMistake)
+                studyRepository.updateMistake(updatedMistake)
                 _uiState.value = _uiState.value.copy(
                     mistakes = _uiState.value.mistakes.map { if (it.id == mistakeId) updatedMistake else it },
                     successMessage = if (updatedMistake.isFixed) "Mistake marked as fixed" else "Mistake unmarked"
@@ -166,13 +174,13 @@ class BookToolsViewModel @Inject constructor(
 
     fun deleteMistake(mistake: MistakeLogEntryEntity) {
         viewModelScope.launch {
-            runCatching { repository.deleteMistake(mistake) }
+            runCatching { studyRepository.deleteMistake(mistake) }
         }
     }
 
     fun snoozeMistake(mistakeId: Long, snoozeTime: Long) {
         viewModelScope.launch {
-            runCatching { repository.snoozeMistake(mistakeId, snoozeTime) }
+            runCatching { studyRepository.snoozeMistake(mistakeId, snoozeTime) }
         }
     }
 
@@ -182,7 +190,7 @@ class BookToolsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(isSaving = true, error = null)
                 val note = NoteBlueprintEntity(
                     externalId = java.util.UUID.randomUUID().toString(),
-                    collectionId = repository.getOrCreateDefaultNoteCollection(bookId),
+                    collectionId = knowledgeRepository.getOrCreateDefaultNoteCollection(bookId),
                     title = title.ifBlank { "Untitled blueprint" },
                     body = body,
                     bulletPoints = emptyList(),
@@ -192,8 +200,8 @@ class BookToolsViewModel @Inject constructor(
                     createdAt = System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis()
                 )
-                val id = repository.insertNoteBlueprint(note)
-                val saved = repository.getNoteBlueprintById(id) ?: note.copy(id = id)
+                val id = knowledgeRepository.insertNoteBlueprint(note)
+                val saved = knowledgeRepository.getNoteBlueprintById(id) ?: note.copy(id = id)
                 _uiState.value = _uiState.value.copy(
                     noteBlueprint = saved,
                     allNotes = (_uiState.value.allNotes.filter { it.id != id } + saved).sortedByDescending { it.updatedAt },
@@ -210,7 +218,7 @@ class BookToolsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val updated = note.copy(updatedAt = System.currentTimeMillis())
-                repository.updateNoteBlueprint(updated)
+                knowledgeRepository.updateNoteBlueprint(updated)
                 _uiState.value = _uiState.value.copy(
                     noteBlueprint = updated,
                     allNotes = _uiState.value.allNotes.map { if (it.id == updated.id) updated else it },
@@ -225,7 +233,7 @@ class BookToolsViewModel @Inject constructor(
     fun deleteNote(note: NoteBlueprintEntity) {
         viewModelScope.launch {
             try {
-                repository.deleteNoteBlueprint(note)
+                knowledgeRepository.deleteNoteBlueprint(note)
                 _uiState.value = _uiState.value.copy(
                     noteBlueprint = null,
                     allNotes = _uiState.value.allNotes.filter { it.id != note.id },
@@ -245,7 +253,7 @@ class BookToolsViewModel @Inject constructor(
                 reviewStatus = BlueprintReviewStatus.REVIEWED,
                 updatedAt = System.currentTimeMillis()
             )
-            repository.updateNoteBlueprint(updated)
+            knowledgeRepository.updateNoteBlueprint(updated)
             _uiState.value = _uiState.value.copy(
                 noteBlueprint = updated,
                 allNotes = _uiState.value.allNotes.map { if (it.id == updated.id) updated else it },
@@ -263,8 +271,8 @@ class BookToolsViewModel @Inject constructor(
                     sourceType = type.ifBlank { SourceDocumentTypes.OTHER },
                     description = details.takeIf { it.isNotBlank() }
                 )
-                val id = repository.insertSourceDocument(source)
-                val saved = repository.getSourceDocumentById(id) ?: source.copy(id = id)
+                val id = assetRepository.insertSourceDocument(source)
+                val saved = assetRepository.getSourceDocumentById(id) ?: source.copy(id = id)
                 _uiState.value = _uiState.value.copy(
                     allSources = (_uiState.value.allSources.filter { it.id != id } + saved).sortedByDescending { it.updatedAt },
                     successMessage = "Source created"
@@ -279,7 +287,7 @@ class BookToolsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val updated = source.copy(updatedAt = System.currentTimeMillis())
-                repository.updateSourceDocument(updated)
+                assetRepository.updateSourceDocument(updated)
                 _uiState.value = _uiState.value.copy(
                     allSources = _uiState.value.allSources.map { if (it.id == updated.id) updated else it },
                     successMessage = "Source updated"
@@ -293,7 +301,7 @@ class BookToolsViewModel @Inject constructor(
     fun deleteSource(source: SourceDocumentEntity) {
         viewModelScope.launch {
             try {
-                repository.permanentlyDeleteSourceDocument(source)
+                assetRepository.permanentlyDeleteSourceDocument(source)
                 _uiState.value = _uiState.value.copy(
                     allSources = _uiState.value.allSources.filter { it.id != source.id },
                     successMessage = "Source deleted"
@@ -307,7 +315,7 @@ class BookToolsViewModel @Inject constructor(
     fun loadSourceAssets(sourceId: Long) {
         viewModelScope.launch {
             try {
-                val assets = repository.getAssetsBySourceIdNow(sourceId)
+                val assets = assetRepository.getAssetsBySourceIdNow(sourceId)
                 _uiState.value = _uiState.value.copy(sourceAssets = assets)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Failed to load source assets: ${e.message}")
@@ -318,8 +326,8 @@ class BookToolsViewModel @Inject constructor(
     fun addSourceAsset(asset: SourceDocumentAssetEntity) {
         viewModelScope.launch {
             try {
-                val id = repository.insertSourceAsset(asset)
-                val saved = repository.getSourceAssetById(id) ?: asset.copy(id = id)
+                val id = assetRepository.insertSourceAsset(asset)
+                val saved = assetRepository.getSourceAssetById(id) ?: asset.copy(id = id)
                 _uiState.value = _uiState.value.copy(
                     sourceAssets = (_uiState.value.sourceAssets.filter { it.id != id } + saved).sortedBy { it.sortOrder },
                     successMessage = "Attachment added"
@@ -333,8 +341,8 @@ class BookToolsViewModel @Inject constructor(
     fun updateSourceAsset(asset: SourceDocumentAssetEntity) {
         viewModelScope.launch {
             try {
-                repository.updateSourceAsset(asset)
-                val updated = repository.getSourceAssetById(asset.id) ?: asset
+                assetRepository.updateSourceAsset(asset)
+                val updated = assetRepository.getSourceAssetById(asset.id) ?: asset
                 _uiState.value = _uiState.value.copy(
                     sourceAssets = _uiState.value.sourceAssets.map { if (it.id == asset.id) updated else it }.sortedBy { it.sortOrder },
                     successMessage = "Attachment updated"
@@ -348,7 +356,7 @@ class BookToolsViewModel @Inject constructor(
     fun deleteSourceAsset(asset: SourceDocumentAssetEntity) {
         viewModelScope.launch {
             try {
-                repository.permanentlyDeleteSourceAsset(asset)
+                assetRepository.permanentlyDeleteSourceAsset(asset)
                 _uiState.value = _uiState.value.copy(
                     sourceAssets = _uiState.value.sourceAssets.filter { it.id != asset.id },
                     successMessage = "Attachment deleted"
@@ -363,9 +371,9 @@ class BookToolsViewModel @Inject constructor(
         val bookId = _uiState.value.book?.id ?: return
         viewModelScope.launch {
             try {
-                val newIds = repository.addArticlesFromQuestions(bookId, questionIds, config)
+                val newIds = knowledgeRepository.addArticlesFromQuestions(bookId, questionIds, config)
                 _uiState.value = _uiState.value.copy(
-                    allNotes = repository.getNoteBlueprintsByBookId(bookId).first(),
+                    allNotes = knowledgeRepository.getNoteBlueprintsByBookId(bookId).first(),
                     successMessage = "Generated ${newIds.size} Articles"
                 )
             } catch (e: Exception) {
@@ -407,11 +415,11 @@ class BookToolsViewModel @Inject constructor(
                 }
 
                 parsedNotes.forEach { note ->
-                    repository.insertNoteBlueprint(note)
+                    knowledgeRepository.insertNoteBlueprint(note)
                 }
 
                 _uiState.value = _uiState.value.copy(
-                    allNotes = repository.getNoteBlueprintsByBookId(bookId).first(),
+                    allNotes = knowledgeRepository.getNoteBlueprintsByBookId(bookId).first(),
                     successMessage = "Imported ${parsedNotes.size} Articles"
                 )
             } catch (e: Exception) {
@@ -423,8 +431,8 @@ class BookToolsViewModel @Inject constructor(
     fun createBlueprintFromQuestion(bookId: Long, questionId: Long, mode: String = BlueprintMode.CONCEPT_TEMPLATE) {
         viewModelScope.launch {
             try {
-                val id = repository.createBlueprintFromQuestion(bookId, questionId, mode)
-                val saved = repository.getNoteBlueprintById(id)
+                val id = knowledgeRepository.createBlueprintFromQuestion(bookId, questionId, mode)
+                val saved = knowledgeRepository.getNoteBlueprintById(id)
                 _uiState.value = _uiState.value.copy(
                     allNotes = saved?.let { (_uiState.value.allNotes.filter { note -> note.id != id } + it).sortedByDescending { note -> note.updatedAt } } ?: _uiState.value.allNotes,
                     successMessage = "Article created from question"
@@ -438,8 +446,8 @@ class BookToolsViewModel @Inject constructor(
     fun createBlueprintFromMarked(bookId: Long, title: String) {
         viewModelScope.launch {
             try {
-                val id = repository.createBlueprintFromMarkedQuestions(bookId, title)
-                val saved = repository.getNoteBlueprintById(id)
+                val id = knowledgeRepository.createBlueprintFromMarkedQuestions(bookId, title)
+                val saved = knowledgeRepository.getNoteBlueprintById(id)
                 _uiState.value = _uiState.value.copy(
                     allNotes = saved?.let { (_uiState.value.allNotes.filter { note -> note.id != id } + it).sortedByDescending { note -> note.updatedAt } } ?: _uiState.value.allNotes,
                     successMessage = "Article created from marked questions"
@@ -453,8 +461,8 @@ class BookToolsViewModel @Inject constructor(
     fun createBlueprintFromMissed(bookId: Long, title: String) {
         viewModelScope.launch {
             try {
-                val id = repository.createBlueprintFromMissedQuestions(bookId, title)
-                val saved = repository.getNoteBlueprintById(id)
+                val id = knowledgeRepository.createBlueprintFromMissedQuestions(bookId, title)
+                val saved = knowledgeRepository.getNoteBlueprintById(id)
                 _uiState.value = _uiState.value.copy(
                     allNotes = saved?.let { (_uiState.value.allNotes.filter { note -> note.id != id } + it).sortedByDescending { note -> note.updatedAt } } ?: _uiState.value.allNotes,
                     successMessage = "Article created from missed questions"
@@ -468,7 +476,7 @@ class BookToolsViewModel @Inject constructor(
     fun createFlashcardsFromBlueprint(noteId: Long) {
         viewModelScope.launch {
             try {
-                repository.createFlashcardDeckFromBlueprint(noteId)
+                knowledgeRepository.createFlashcardDeckFromBlueprint(noteId)
                 _uiState.value = _uiState.value.copy(successMessage = "Flashcards created from blueprint")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Failed to create flashcards: ${e.message}")
@@ -479,7 +487,7 @@ class BookToolsViewModel @Inject constructor(
     fun appendBlueprintToQuestionNote(noteId: Long) {
         viewModelScope.launch {
             try {
-                repository.appendBlueprintToSourceQuestionNote(noteId)
+                assetRepository.appendBlueprintToSourceQuestionNote(noteId)
                 _uiState.value = _uiState.value.copy(successMessage = "Blueprint appended to question note")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Failed to append blueprint: ${e.message}")
@@ -508,8 +516,8 @@ class BookToolsViewModel @Inject constructor(
                     isDerived = false,
                     sourceQuizId = null
                 )
-                val id = repository.insertSlideshowCourse(course)
-                val saved = repository.getSlideshowCourseById(id) ?: course.copy(id = id)
+                val id = knowledgeRepository.insertSlideshowCourse(course)
+                val saved = knowledgeRepository.getSlideshowCourseById(id) ?: course.copy(id = id)
                 _uiState.value = _uiState.value.copy(
                     slideshowCourse = saved,
                     allCourses = (_uiState.value.allCourses.filter { it.id != id } + saved).sortedByDescending { it.lastEditedAt },
@@ -525,7 +533,7 @@ class BookToolsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val updated = course.copy(updatedAt = System.currentTimeMillis(), lastEditedAt = System.currentTimeMillis())
-                repository.updateSlideshowCourse(updated)
+                knowledgeRepository.updateSlideshowCourse(updated)
                 _uiState.value = _uiState.value.copy(
                     slideshowCourse = updated,
                     allCourses = _uiState.value.allCourses.map { if (it.id == updated.id) updated else it },
@@ -540,7 +548,7 @@ class BookToolsViewModel @Inject constructor(
     fun deleteSlideshowCourse(course: SlideshowCourseEntity) {
         viewModelScope.launch {
             try {
-                repository.deleteSlideshowCourse(course)
+                knowledgeRepository.deleteSlideshowCourse(course)
                 _uiState.value = _uiState.value.copy(
                     slideshowCourse = null,
                     courseSlides = emptyList(),
@@ -557,16 +565,16 @@ class BookToolsViewModel @Inject constructor(
     fun loadPromptDeck(deckId: Long) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            val deck = repository.getPromptDeckById(deckId)
+            val deck = knowledgeRepository.getPromptDeckById(deckId)
             if (deck == null) {
                 _uiState.value = _uiState.value.copy(isLoading = false, error = "Prompt deck not found")
                 return@launch
             }
-            val bundle = repository.getBookStudyBundle(deck.bookId)
+            val bundle = bookRepository.getBookStudyBundle(deck.bookId)
             _uiState.value = _uiState.value.copy(
                 promptDeck = deck,
-                promptCards = repository.getPromptCardsByDeckIdNow(deckId),
-                promptRuns = repository.getPromptRunsByDeckIdNow(deckId),
+                promptCards = knowledgeRepository.getPromptCardsByDeckIdNow(deckId),
+                promptRuns = knowledgeRepository.getPromptRunsByDeckIdNow(deckId),
                 book = bundle?.book,
                 questions = bundle?.questions ?: emptyList(),
                 allNotes = bundle?.noteBlueprints ?: emptyList(),
@@ -579,8 +587,8 @@ class BookToolsViewModel @Inject constructor(
     fun createPromptDeck(bookId: Long, title: String, description: String? = null, seedDefaultCards: Boolean = false) {
         viewModelScope.launch {
             try {
-                val id = repository.createDefaultPromptDeck(bookId, title, description, seedDefaultCards)
-                val saved = repository.getPromptDeckById(id)
+                val id = knowledgeRepository.createDefaultPromptDeck(bookId, title, description, seedDefaultCards)
+                val saved = knowledgeRepository.getPromptDeckById(id)
                 _uiState.value = _uiState.value.copy(
                     allPromptDecks = saved?.let { (_uiState.value.allPromptDecks.filter { deck -> deck.id != id } + it).sortedByDescending { deck -> deck.updatedAt } } ?: _uiState.value.allPromptDecks,
                     successMessage = "Prompt deck created"
@@ -595,7 +603,7 @@ class BookToolsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val updated = deck.copy(updatedAt = System.currentTimeMillis())
-                repository.updatePromptDeck(updated)
+                knowledgeRepository.updatePromptDeck(updated)
                 _uiState.value = _uiState.value.copy(
                     promptDeck = updated,
                     allPromptDecks = _uiState.value.allPromptDecks.map { if (it.id == updated.id) updated else it },
@@ -610,7 +618,7 @@ class BookToolsViewModel @Inject constructor(
     fun deletePromptDeck(deck: PromptDeckEntity) {
         viewModelScope.launch {
             try {
-                repository.deletePromptDeck(deck)
+                knowledgeRepository.deletePromptDeck(deck)
                 _uiState.value = _uiState.value.copy(
                     promptDeck = null,
                     promptCards = emptyList(),
@@ -628,7 +636,7 @@ class BookToolsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val variablesJson = extractVariables(promptText).joinToString(prefix = "[", postfix = "]") { "\"${it.escapeJsonValue()}\"" }
-                val id = repository.insertPromptCard(
+                val id = knowledgeRepository.insertPromptCard(
                     PromptCardEntity(
                         deckId = deckId,
                         title = title.ifBlank { "Untitled prompt" },
@@ -638,9 +646,9 @@ class BookToolsViewModel @Inject constructor(
                         sortOrder = _uiState.value.promptCards.size
                     )
                 )
-                val saved = repository.getPromptCardsByDeckIdNow(deckId).firstOrNull { it.id == id }
+                val saved = knowledgeRepository.getPromptCardsByDeckIdNow(deckId).firstOrNull { it.id == id }
                 _uiState.value = _uiState.value.copy(
-                    promptCards = repository.getPromptCardsByDeckIdNow(deckId),
+                    promptCards = knowledgeRepository.getPromptCardsByDeckIdNow(deckId),
                     successMessage = if (saved != null) "Prompt card created" else "Prompt card created"
                 )
             } catch (e: Exception) {
@@ -671,7 +679,7 @@ class BookToolsViewModel @Inject constructor(
                     else -> PromptOutputType.OTHER
                 }
                 val variablesJson = extractVariables(promptText).joinToString(prefix = "[", postfix = "]") { "\"${it.escapeJsonValue()}\"" }
-                val id = repository.insertPromptCard(
+                val id = knowledgeRepository.insertPromptCard(
                     PromptCardEntity(
                         deckId = deckId,
                         title = title,
@@ -682,7 +690,7 @@ class BookToolsViewModel @Inject constructor(
                     )
                 )
                 _uiState.value = _uiState.value.copy(
-                    promptCards = repository.getPromptCardsByDeckIdNow(deckId),
+                    promptCards = knowledgeRepository.getPromptCardsByDeckIdNow(deckId),
                     successMessage = "Template prompt card created"
                 )
             } catch (e: Exception) {
@@ -698,7 +706,7 @@ class BookToolsViewModel @Inject constructor(
                     variablesJson = extractVariables(card.promptText).joinToString(prefix = "[", postfix = "]") { "\"${it.escapeJsonValue()}\"" },
                     updatedAt = System.currentTimeMillis()
                 )
-                repository.updatePromptCard(updated)
+                knowledgeRepository.updatePromptCard(updated)
                 _uiState.value = _uiState.value.copy(
                     promptCards = _uiState.value.promptCards.map { if (it.id == updated.id) updated else it },
                     successMessage = "Prompt card updated"
@@ -712,7 +720,7 @@ class BookToolsViewModel @Inject constructor(
     fun deletePromptCard(card: PromptCardEntity) {
         viewModelScope.launch {
             try {
-                repository.deletePromptCard(card)
+                knowledgeRepository.deletePromptCard(card)
                 _uiState.value = _uiState.value.copy(
                     promptCards = _uiState.value.promptCards.filter { it.id != card.id },
                     successMessage = "Prompt card deleted"
@@ -732,7 +740,7 @@ class BookToolsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(promptCards = updatedList)
         viewModelScope.launch {
             try {
-                repository.updatePromptCards(updatedList)
+                knowledgeRepository.updatePromptCards(updatedList)
             } catch (e: Exception) {
                 // Revert or show error
                 _uiState.value = _uiState.value.copy(error = "Failed to save card order: ${e.message}")
@@ -751,10 +759,10 @@ class BookToolsViewModel @Inject constructor(
     fun recordPromptCardRun(card: PromptCardEntity, inputValues: Map<String, String>, renderedPrompt: String, outputText: String? = null) {
         viewModelScope.launch {
             try {
-                repository.recordPromptRun(card.id, inputValues.toSimpleJson(), renderedPrompt, outputText)
+                knowledgeRepository.recordPromptRun(card.id, inputValues.toSimpleJson(), renderedPrompt, outputText)
                 _uiState.value = _uiState.value.copy(
-                    promptCards = repository.getPromptCardsByDeckIdNow(card.deckId),
-                    promptRuns = repository.getPromptRunsByDeckIdNow(card.deckId),
+                    promptCards = knowledgeRepository.getPromptCardsByDeckIdNow(card.deckId),
+                    promptRuns = knowledgeRepository.getPromptRunsByDeckIdNow(card.deckId),
                     successMessage = if (outputText.isNullOrBlank()) "Prompt run recorded" else "Prompt output saved"
                 )
             } catch (e: Exception) {
@@ -808,10 +816,10 @@ class BookToolsViewModel @Inject constructor(
         val bookId = _uiState.value.promptDeck?.bookId ?: return
         viewModelScope.launch {
             try {
-                val id = repository.convertPromptOutputToNote(bookId, title, outputText, card.id)
+                val id = knowledgeRepository.convertPromptOutputToNote(bookId, title, outputText, card.id)
                 _uiState.value = _uiState.value.copy(
-                    allNotes = repository.getNoteBlueprintsByBookId(bookId).first(),
-                    promptRuns = repository.getPromptRunsByDeckIdNow(card.deckId),
+                    allNotes = knowledgeRepository.getNoteBlueprintsByBookId(bookId).first(),
+                    promptRuns = knowledgeRepository.getPromptRunsByDeckIdNow(card.deckId),
                     successMessage = "Prompt output saved as note #$id"
                 )
             } catch (e: Exception) {
@@ -824,10 +832,10 @@ class BookToolsViewModel @Inject constructor(
         val bookId = _uiState.value.promptDeck?.bookId ?: return
         viewModelScope.launch {
             try {
-                val id = repository.convertPromptOutputToBlueprint(bookId, title, outputText, card.id)
+                val id = knowledgeRepository.convertPromptOutputToBlueprint(bookId, title, outputText, card.id)
                 _uiState.value = _uiState.value.copy(
-                    allNotes = repository.getNoteBlueprintsByBookId(bookId).first(),
-                    promptRuns = repository.getPromptRunsByDeckIdNow(card.deckId),
+                    allNotes = knowledgeRepository.getNoteBlueprintsByBookId(bookId).first(),
+                    promptRuns = knowledgeRepository.getPromptRunsByDeckIdNow(card.deckId),
                     successMessage = "Prompt output saved as blueprint #$id"
                 )
             } catch (e: Exception) {
@@ -840,10 +848,10 @@ class BookToolsViewModel @Inject constructor(
         val bookId = _uiState.value.promptDeck?.bookId ?: return
         viewModelScope.launch {
             try {
-                val id = repository.convertPromptOutputToFlashcards(bookId, title, outputText, card.id)
+                val id = knowledgeRepository.convertPromptOutputToFlashcards(bookId, title, outputText, card.id)
                 _uiState.value = _uiState.value.copy(
-                    flashcardDecks = repository.getFlashcardDecksByBookId(bookId).first(),
-                    promptRuns = repository.getPromptRunsByDeckIdNow(card.deckId),
+                    flashcardDecks = knowledgeRepository.getFlashcardDecksByBookId(bookId).first(),
+                    promptRuns = knowledgeRepository.getPromptRunsByDeckIdNow(card.deckId),
                     successMessage = "Prompt output saved as flashcards deck #$id"
                 )
             } catch (e: Exception) {
@@ -856,10 +864,10 @@ class BookToolsViewModel @Inject constructor(
         val bookId = _uiState.value.promptDeck?.bookId ?: return
         viewModelScope.launch {
             try {
-                val id = repository.convertPromptOutputToQuiz(bookId, title, outputText, card.id)
+                val id = knowledgeRepository.convertPromptOutputToQuiz(bookId, title, outputText, card.id)
                 _uiState.value = _uiState.value.copy(
-                    quizzes = repository.getQuizzesByBookId(bookId, SortOption.TITLE).first(),
-                    promptRuns = repository.getPromptRunsByDeckIdNow(card.deckId),
+                    quizzes = quizRepository.getQuizzesByBookId(bookId, SortOption.TITLE).first(),
+                    promptRuns = knowledgeRepository.getPromptRunsByDeckIdNow(card.deckId),
                     successMessage = "Prompt output saved as quiz #$id"
                 )
             } catch (e: Exception) {
@@ -875,7 +883,7 @@ class BookToolsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, error = null)
             runCatching {
-                repository.createFlashcardDeckFromMarkedQuestions(bookId, title, "Generated from marked questions")
+                knowledgeRepository.createFlashcardDeckFromMarkedQuestions(bookId, title, "Generated from marked questions")
             }.onSuccess {
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
@@ -892,7 +900,7 @@ class BookToolsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, error = null)
             runCatching {
-                repository.createFlashcardDeckFromMissedQuestions(bookId, title, "Generated from missed questions")
+                knowledgeRepository.createFlashcardDeckFromMissedQuestions(bookId, title, "Generated from missed questions")
             }.onSuccess {
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
@@ -908,7 +916,7 @@ class BookToolsViewModel @Inject constructor(
     fun createSlideshowCourseFromQuestions(bookId: Long, title: String, questionIds: List<Long>) {
         viewModelScope.launch {
             try {
-                repository.createSlideshowCourseFromQuestions(bookId, title, "Generated from questions", questionIds)
+                knowledgeRepository.createSlideshowCourseFromQuestions(bookId, title, "Generated from questions", questionIds)
                 _uiState.value = _uiState.value.copy(successMessage = "Slideshow course generated")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Failed to generate slideshow course: ${e.message}")
@@ -919,7 +927,7 @@ class BookToolsViewModel @Inject constructor(
     fun createFlashcardDeckFromQuestions(bookId: Long, title: String, questionIds: List<Long>) {
         viewModelScope.launch {
             try {
-                repository.createFlashcardDeckFromQuestions(bookId, title, "Generated from questions", questionIds)
+                knowledgeRepository.createFlashcardDeckFromQuestions(bookId, title, "Generated from questions", questionIds)
                 _uiState.value = _uiState.value.copy(successMessage = "Flashcard deck generated")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Failed to generate flashcard deck: ${e.message}")
@@ -930,7 +938,7 @@ class BookToolsViewModel @Inject constructor(
     fun createBlueprintFromQuestions(bookId: Long, title: String, questionIds: List<Long>) {
         viewModelScope.launch {
             try {
-                repository.createBlueprintFromQuestions(bookId, title, questionIds, com.ahmedyejam.mks.data.local.entity.BlueprintMode.SIMPLE_NOTE)
+                knowledgeRepository.createBlueprintFromQuestions(bookId, title, questionIds, com.ahmedyejam.mks.data.local.entity.BlueprintMode.SIMPLE_NOTE)
                 _uiState.value = _uiState.value.copy(successMessage = "Note blueprint generated")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Failed to generate note blueprint: ${e.message}")
@@ -945,7 +953,7 @@ class BookToolsViewModel @Inject constructor(
     fun deleteQuiz(quiz: QuizEntity) {
         viewModelScope.launch {
             try {
-                repository.deleteQuiz(quiz)
+                quizRepository.deleteQuiz(quiz)
                 _uiState.value = _uiState.value.copy(
                     quizzes = _uiState.value.quizzes.filter { it.id != quiz.id },
                     successMessage = "Quiz deleted"
@@ -959,7 +967,7 @@ class BookToolsViewModel @Inject constructor(
     fun deleteFlashcardDeck(deck: FlashcardDeckEntity) {
         viewModelScope.launch {
             try {
-                repository.deleteFlashcardDeck(deck)
+                knowledgeRepository.deleteFlashcardDeck(deck)
                 _uiState.value = _uiState.value.copy(
                     flashcardDecks = _uiState.value.flashcardDecks.filter { it.id != deck.id },
                     successMessage = "Flashcard deck deleted"
@@ -980,7 +988,7 @@ class BookToolsViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                val deckId = repository.insertFlashcardDeck(
+                val deckId = knowledgeRepository.insertFlashcardDeck(
                     FlashcardDeckEntity(
                         externalId = java.util.UUID.randomUUID().toString(),
                         bookId = bookId,
@@ -992,7 +1000,7 @@ class BookToolsViewModel @Inject constructor(
                         lastEditedAt = System.currentTimeMillis()
                     )
                 )
-                val savedList = repository.getFlashcardDecksByBookId(bookId).first()
+                val savedList = knowledgeRepository.getFlashcardDecksByBookId(bookId).first()
                 val saved = savedList.find { it.id == deckId }
                 _uiState.value = _uiState.value.copy(
                     flashcardDecks = (_uiState.value.flashcardDecks.filter { it.id != deckId } + (saved
@@ -1018,7 +1026,7 @@ class BookToolsViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                val newQuizId = repository.insertQuiz(
+                val newQuizId = knowledgeRepository.insertQuiz(
                     QuizEntity(
                         externalId = java.util.UUID.randomUUID().toString(),
                         bookId = bookId,
@@ -1036,12 +1044,12 @@ class BookToolsViewModel @Inject constructor(
 
                     if (sourceQuizIds.isNotEmpty()) {
                         for (qId in sourceQuizIds) {
-                            allQuestions.addAll(repository.getQuestionsByQuizId(qId).first())
+                            allQuestions.addAll(quizRepository.getQuestionsByQuizId(qId).first())
                         }
                     } else if (sourceCategories.isNotEmpty()) {
-                        val bookQuizzes = repository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
+                        val bookQuizzes = quizRepository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
                         for (quiz in bookQuizzes) {
-                            allQuestions.addAll(repository.getQuestionsByQuizId(quiz.id).first())
+                            allQuestions.addAll(quizRepository.getQuestionsByQuizId(quiz.id).first())
                         }
                     }
 
@@ -1078,11 +1086,11 @@ class BookToolsViewModel @Inject constructor(
                     }
 
                     if (duplicatedQuestions.isNotEmpty()) {
-                        repository.insertQuestions(duplicatedQuestions)
+                        knowledgeRepository.insertQuestions(duplicatedQuestions)
                     }
                 }
 
-                val savedList = repository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
+                val savedList = quizRepository.getQuizzesByBookId(bookId, SortOption.TITLE).first()
                 val saved = savedList.find { it.id == newQuizId }
                 _uiState.value = _uiState.value.copy(
                     quizzes = (_uiState.value.quizzes.filter { it.id != newQuizId } + (saved
@@ -1097,7 +1105,7 @@ class BookToolsViewModel @Inject constructor(
 
     fun getImagesForSource(sourceId: Long, onResult: (List<String>) -> Unit) {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val assets = repository.getAssetsBySourceIdNow(sourceId)
+            val assets = assetRepository.getAssetsBySourceIdNow(sourceId)
             val base64Images = assets.filter { it.assetType == com.ahmedyejam.mks.data.local.entity.SourceAssetType.IMAGE }
                 .mapNotNull { asset -> 
                     try {

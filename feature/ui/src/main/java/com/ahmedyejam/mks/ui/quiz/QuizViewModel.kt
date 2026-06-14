@@ -8,9 +8,12 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
+import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.local.entity.QuestionType
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
-import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.data.focus.FocusManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -129,9 +132,12 @@ enum class NavigationFilter {
  */
 @HiltViewModel
 class QuizViewModel @Inject constructor(
-    private val repository: MksRepository,
     private val dataStoreManager: DataStoreManager,
     private val focusManager: FocusManager,
+    private val knowledgeRepository: KnowledgeRepository,
+    private val assetRepository: AssetRepository,
+    private val quizRepository: QuizRepository,
+    private val studyRepository: StudyRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuizState())
@@ -149,7 +155,7 @@ class QuizViewModel @Inject constructor(
 
     init {
         combine(
-            repository.getAllCategoriesWithMetadata(),
+            quizRepository.getAllCategoriesWithMetadata(),
             dataStoreManager.showCategorization,
             dataStoreManager.oneByOneMode,
             dataStoreManager.eliminationModeEnabled,
@@ -232,11 +238,11 @@ class QuizViewModel @Inject constructor(
                 var sessionQuestionIds: List<Long>? = null
                 var sessionOriginalCount = 0
 
-                val session = sessionId?.let { repository.getSessionById(it) }
+                val session = sessionId?.let { quizRepository.getSessionById(it) }
                 
                 // Pre-fetch session questions if any to avoid many DB calls
                 val sessionQuestionsMap = if ((session != null) && session.questionIds.isNotEmpty()) {
-                    repository.getQuestionsByIds(session.questionIds).associateBy { it.id }
+                    quizRepository.getQuestionsByIds(session.questionIds).associateBy { it.id }
                 } else emptyMap()
 
                 if (session != null) {
@@ -284,7 +290,7 @@ class QuizViewModel @Inject constructor(
                 val quizQuestions = if (!sessionQuestionIds.isNullOrEmpty()) {
                     sessionQuestionIds.mapNotNull { sessionQuestionsMap[it] }
                 } else {
-                    val allRawQuestions = repository.getQuestionsByQuizId(quizId).first()
+                    val allRawQuestions = quizRepository.getQuestionsByQuizId(quizId).first()
                         .filter { !it.isDropped }
 
                     val includeFilters = session?.includeFilters ?: emptyList()
@@ -386,7 +392,7 @@ class QuizViewModel @Inject constructor(
             
             // Save initial sequence if new session
             if (session != null && session.questionIds.isEmpty()) {
-                repository.updateSession(session.copy(
+                quizRepository.updateSession(session.copy(
                     questionIds = quizQuestions.map { it.id },
                     originalQuestionCount = finalOriginalCount
                 ))
@@ -475,9 +481,9 @@ class QuizViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = true, error = null) }
                 
                 val questions = when (type) {
-                    "BOOK" -> id?.toLongOrNull()?.let { repository.getAdaptiveQuestionsByBook(it, limit) } ?: emptyList()
-                    "CATEGORY" -> if (id != null) repository.getQuestionsByCategory(id) else emptyList()
-                    "ALL" -> repository.getAdaptiveQuestionsByBook(-1L, limit)
+                    "BOOK" -> id?.toLongOrNull()?.let { studyRepository.getAdaptiveQuestionsByBook(it, limit) } ?: emptyList()
+                    "CATEGORY" -> if (id != null) quizRepository.getQuestionsByCategory(id) else emptyList()
+                    "ALL" -> studyRepository.getAdaptiveQuestionsByBook(-1L, limit)
                     else -> emptyList()
                 }.shuffled()
 
@@ -511,8 +517,8 @@ class QuizViewModel @Inject constructor(
         _uiState.update { it.copy(isRapidMode = newMode) }
         viewModelScope.launch {
             _uiState.value.sessionId?.let { sessionId ->
-                repository.getSessionById(sessionId)?.let { session ->
-                    repository.updateSession(session.copy(rapidMode = newMode))
+                quizRepository.getSessionById(sessionId)?.let { session ->
+                    quizRepository.updateSession(session.copy(rapidMode = newMode))
                 }
             }
         }
@@ -569,7 +575,7 @@ class QuizViewModel @Inject constructor(
         
         viewModelScope.launch {
             val updatedQuestion = currentQuestion.copy(isMarked = newMarked)
-            repository.updateQuestion(updatedQuestion)
+            assetRepository.updateQuestion(updatedQuestion)
             
             _uiState.update { s ->
                 val newQuestions = s.questions.toMutableList()
@@ -589,7 +595,7 @@ class QuizViewModel @Inject constructor(
         val droppedQuestion = currentQuestion.copy(isDropped = true, updatedAt = System.currentTimeMillis())
         
         viewModelScope.launch {
-            repository.updateQuestion(droppedQuestion)
+            assetRepository.updateQuestion(droppedQuestion)
             _uiState.update { state ->
                 val updatedQuestions = state.questions.toMutableList()
                 updatedQuestions[state.currentIndex] = droppedQuestion
@@ -598,8 +604,8 @@ class QuizViewModel @Inject constructor(
             
             // Sync session if active
             currentState.sessionId?.let { sessionId ->
-                repository.getSessionById(sessionId)?.let { currentSession ->
-                repository.updateSession(
+                quizRepository.getSessionById(sessionId)?.let { currentSession ->
+                quizRepository.updateSession(
                     currentSession.copy(
                         lastModifiedAt = System.currentTimeMillis(),
                     ),
@@ -620,7 +626,7 @@ class QuizViewModel @Inject constructor(
         val restoredQuestion = currentQuestion.copy(isDropped = false, updatedAt = System.currentTimeMillis())
 
         viewModelScope.launch {
-            repository.updateQuestion(restoredQuestion)
+            assetRepository.updateQuestion(restoredQuestion)
             _uiState.update { state ->
                 val updatedQuestions = state.questions.toMutableList()
                 updatedQuestions[state.currentIndex] = restoredQuestion
@@ -639,9 +645,9 @@ class QuizViewModel @Inject constructor(
         viewModelScope.launch {
             val state = _uiState.value
             state.sessionId?.let { sessionId ->
-                val session = repository.getSessionById(sessionId)
+                val session = quizRepository.getSessionById(sessionId)
                 session?.let {
-                    repository.updateSession(
+                    quizRepository.updateSession(
                         it.copy(
                             isCompleted = true,
                             score = state.score,
@@ -685,7 +691,7 @@ class QuizViewModel @Inject constructor(
         
         _uiState.update { it.copy(questions = updatedQuestions) }
         viewModelScope.launch {
-            repository.updateQuestion(updatedQuestion)
+            assetRepository.updateQuestion(updatedQuestion)
         }
     }
 
@@ -698,7 +704,7 @@ class QuizViewModel @Inject constructor(
         viewModelScope.launch {
             val metadata = _uiState.value.allCategoriesWithMetadata.find { it.name == categoryName }?.metadata
                 ?: CategoryMetadataEntity(name = categoryName)
-            repository.updateCategoryMetadata(metadata.copy(isPinned = !metadata.isPinned))
+            quizRepository.updateCategoryMetadata(metadata.copy(isPinned = !metadata.isPinned))
         }
     }
 
@@ -712,7 +718,7 @@ class QuizViewModel @Inject constructor(
         viewModelScope.launch {
             val metadata = _uiState.value.allCategoriesWithMetadata.find { it.name == categoryName }?.metadata
                 ?: CategoryMetadataEntity(name = categoryName)
-            repository.updateCategoryMetadata(metadata.copy(emoji = emoji))
+            quizRepository.updateCategoryMetadata(metadata.copy(emoji = emoji))
         }
     }
 
@@ -726,7 +732,7 @@ class QuizViewModel @Inject constructor(
         viewModelScope.launch {
             val metadata = _uiState.value.allCategoriesWithMetadata.find { it.name == categoryName }?.metadata
                 ?: CategoryMetadataEntity(name = categoryName)
-            repository.updateCategoryMetadata(metadata.copy(color = color))
+            quizRepository.updateCategoryMetadata(metadata.copy(color = color))
         }
     }
 
@@ -738,7 +744,7 @@ class QuizViewModel @Inject constructor(
      * @return The number of questions that would be updated.
      */
     suspend fun getMergePreview(source: String, target: String): Int {
-        return repository.getMergePreview(source, target)
+        return quizRepository.getMergePreview(source, target)
     }
 
     /**
@@ -749,7 +755,7 @@ class QuizViewModel @Inject constructor(
      */
     fun renameCategory(oldName: String, newName: String) {
         viewModelScope.launch {
-            repository.renameCategory(oldName, newName)
+            quizRepository.renameCategory(oldName, newName)
         }
     }
 
@@ -760,7 +766,7 @@ class QuizViewModel @Inject constructor(
      */
     fun deleteCategory(name: String) {
         viewModelScope.launch {
-            repository.deleteCategory(name)
+            quizRepository.deleteCategory(name)
         }
     }
 
@@ -772,7 +778,7 @@ class QuizViewModel @Inject constructor(
      */
     fun mergeCategory(source: String, target: String) {
         viewModelScope.launch {
-            repository.mergeCategory(source, target)
+            quizRepository.mergeCategory(source, target)
         }
     }
 
@@ -791,7 +797,7 @@ class QuizViewModel @Inject constructor(
         if (index in state.questions.indices) {
             questionStartTime = System.currentTimeMillis()
             viewModelScope.launch {
-                val session = state.sessionId?.let { repository.getSessionById(it) }
+                val session = state.sessionId?.let { quizRepository.getSessionById(it) }
                 val restoredAnswers = session?.answersByIndex?.get(index)?.toSet()
                 val restoredDropped = session?.droppedOptionsByIndex?.get(index)?.toSet()
                 val restoredVisibleCount = session?.visibleOptionsCountByIndex?.get(index)
@@ -807,7 +813,7 @@ class QuizViewModel @Inject constructor(
                 // Save progress to session if active
                 state.sessionId?.let {
                     session?.let { currentSession ->
-                    repository.updateSession(
+                    quizRepository.updateSession(
                         currentSession.copy(
                             currentQuestionIndex = index,
                             lastModifiedAt = System.currentTimeMillis(),
@@ -957,10 +963,10 @@ class QuizViewModel @Inject constructor(
             // Sync visible count to session
             viewModelScope.launch {
                 currentState.sessionId?.let { sessionId ->
-                    repository.getSessionById(sessionId)?.let { session ->
+                    quizRepository.getSessionById(sessionId)?.let { session ->
                         val updatedVisible = session.visibleOptionsCountByIndex.toMutableMap()
                         updatedVisible[currentIndex] = nextVisibleCount
-                        repository.updateSession(session.copy(visibleOptionsCountByIndex = updatedVisible))
+                        quizRepository.updateSession(session.copy(visibleOptionsCountByIndex = updatedVisible))
                     }
                 }
             }
@@ -1049,12 +1055,12 @@ class QuizViewModel @Inject constructor(
     ) {
         val timeSpent = System.currentTimeMillis() - questionStartTime
         viewModelScope.launch {
-            repository.updateQuestionMetrics(currentQuestion.id, isCorrect, timeSpent)
+            studyRepository.updateQuestionMetrics(currentQuestion.id, isCorrect, timeSpent)
             if (!isCorrect) {
-                val quiz = repository.getQuizById(currentQuestion.quizId)
+                val quiz = quizRepository.getQuizById(currentQuestion.quizId)
                 val selectedText = selectedOptions.asSequence().sorted().mapNotNull { currentQuestion.options.getOrNull(it) }.joinToString(", ").ifBlank { selectedOptions.joinToString(",") }
                 val correctText = currentQuestion.correctAnswers.asSequence().sorted().mapNotNull { currentQuestion.options.getOrNull(it) }.joinToString(", ").ifBlank { currentQuestion.correctAnswers.joinToString(",") }
-                repository.autoLogWrongAnswer(
+                studyRepository.autoLogWrongAnswer(
                     bookId = quiz?.bookId ?: 0L,
                     quizId = currentQuestion.quizId,
                     questionId = currentQuestion.id,
@@ -1066,7 +1072,7 @@ class QuizViewModel @Inject constructor(
             
             // Save score and incorrect count to session
             sessionId?.let { sId ->
-                val session = repository.getSessionById(sId)
+                val session = quizRepository.getSessionById(sId)
                 session?.let { currentSession ->
                     val isFirstAttempt = currentIndex < initialQuestionCount
                     val newIncorrectCount = if (!isCorrect && isFirstAttempt) currentSession.incorrectCount + 1 else currentSession.incorrectCount
@@ -1089,7 +1095,7 @@ class QuizViewModel @Inject constructor(
                         session.questionIds
                     }
 
-                    repository.updateSession(
+                    quizRepository.updateSession(
                         session.copy(
                             score = newScore,
                             currentStreak = newCurrentStreak,
@@ -1144,9 +1150,9 @@ class QuizViewModel @Inject constructor(
             }
             
             viewModelScope.launch {
-                repository.updateQuestionMetrics(currentQuestion.id, isCorrect = false)
+                studyRepository.updateQuestionMetrics(currentQuestion.id, isCorrect = false)
                 _uiState.value.sessionId?.let { sessionId ->
-                    val session = repository.getSessionById(sessionId)
+                    val session = quizRepository.getSessionById(sessionId)
                     session?.let { currentSession ->
                         val newIncorrectCount = if (isFirstAttempt) currentSession.incorrectCount + 1 else currentSession.incorrectCount
                         val newCurrentStreak = _uiState.value.currentStreak
@@ -1160,7 +1166,7 @@ class QuizViewModel @Inject constructor(
                             session.questionIds
                         }
 
-                        repository.updateSession(session.copy(
+                        quizRepository.updateSession(session.copy(
                             incorrectCount = newIncorrectCount,
                             currentStreak = newCurrentStreak,
                             maxStreak = newMaxStreak,
@@ -1203,10 +1209,10 @@ class QuizViewModel @Inject constructor(
 
             viewModelScope.launch {
                 currentState.sessionId?.let { sessionId ->
-                    repository.getSessionById(sessionId)?.let { session ->
+                    quizRepository.getSessionById(sessionId)?.let { session ->
                         val updatedDropped = session.droppedOptionsByIndex.toMutableMap()
                         updatedDropped[currentIndex] = nextDropped.toList()
-                        repository.updateSession(session.copy(droppedOptionsByIndex = updatedDropped))
+                        quizRepository.updateSession(session.copy(droppedOptionsByIndex = updatedDropped))
                     }
                 }
             }
@@ -1226,7 +1232,7 @@ class QuizViewModel @Inject constructor(
         if (nextIndex < currentState.questions.size) {
             questionStartTime = System.currentTimeMillis()
             viewModelScope.launch {
-                val session = currentState.sessionId?.let { repository.getSessionById(it) }
+                val session = currentState.sessionId?.let { quizRepository.getSessionById(it) }
                 val restoredAnswers = session?.answersByIndex?.get(nextIndex)?.toSet()
                 val restoredDropped = session?.droppedOptionsByIndex?.get(nextIndex)?.toSet()
                 val restoredVisibleCount = session?.visibleOptionsCountByIndex?.get(nextIndex)
@@ -1266,7 +1272,7 @@ class QuizViewModel @Inject constructor(
                 // Save progress to session if active
                 currentState.sessionId?.let {
                     session?.let { currentSession ->
-                    repository.updateSession(
+                    quizRepository.updateSession(
                         currentSession.copy(
                             currentQuestionIndex = nextIndex,
                             lastModifiedAt = System.currentTimeMillis(),
@@ -1291,9 +1297,9 @@ class QuizViewModel @Inject constructor(
                 viewModelScope.launch {
                     val state = _uiState.value
                     state.sessionId?.let { sessionId ->
-                        val session = repository.getSessionById(sessionId)
+                        val session = quizRepository.getSessionById(sessionId)
                         session?.let { currentSession ->
-                            repository.updateSession(
+                            quizRepository.updateSession(
                                 currentSession.copy(
                                     isCompleted = true,
                                     score = state.score,
@@ -1382,15 +1388,15 @@ class QuizViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            repository.updateQuestion(updatedQuestion)
+            assetRepository.updateQuestion(updatedQuestion)
         }
     }
 
-    fun assetsForQuestion(questionId: Long) = repository.getQuestionAssets(questionId)
+    fun assetsForQuestion(questionId: Long) = assetRepository.getQuestionAssets(questionId)
 
     fun sourceDocumentsForCurrentQuiz(): Flow<List<com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity>> = flow {
-        val quiz = repository.getQuizById(_uiState.value.quizId)
-        if (quiz == null) emit(emptyList()) else emitAll(repository.getSourceDocumentsByBookId(quiz.bookId))
+        val quiz = quizRepository.getQuizById(_uiState.value.quizId)
+        if (quiz == null) emit(emptyList()) else emitAll(assetRepository.getSourceDocumentsByBookId(quiz.bookId))
     }
 
     override fun onCleared() {
@@ -1404,14 +1410,14 @@ class QuizViewModel @Inject constructor(
         viewModelScope.launch {
             val quizId = uiState.value.quizId
             if (quizId == 0L) return@launch
-            val bookId = repository.getQuizById(quizId)?.bookId ?: return@launch
-            val decks = repository.getPromptDecksByBookId(bookId).firstOrNull() ?: emptyList()
+            val bookId = quizRepository.getQuizById(quizId)?.bookId ?: return@launch
+            val decks = knowledgeRepository.getPromptDecksByBookId(bookId).firstOrNull() ?: emptyList()
             val existingDeck = decks.find { it.title.equals("Ask AI", ignoreCase = true) || it.title.equals("Explain & Teach", ignoreCase = true) }
             
             if (existingDeck != null) {
                 onResult(existingDeck.id)
             } else {
-                val newDeckId = repository.createDefaultPromptDeck(
+                val newDeckId = knowledgeRepository.createDefaultPromptDeck(
                     bookId = bookId,
                     title = "Ask AI",
                     description = "AI Agent configured to explain concepts and answer questions.",

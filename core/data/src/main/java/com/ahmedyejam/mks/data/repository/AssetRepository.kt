@@ -266,6 +266,33 @@ class AssetRepository @Inject constructor(
         updateQuestion(question.copy(notes = appended))
     }
 
+    suspend fun rebuildDerivedIndexes() {
+        questionCategoryDao.clearAllCategories()
+        questionDao.getAllQuestionsFlow().first().forEach { question ->
+            syncQuestionCategories(question.id, question.categories)
+        }
+
+        assetReferenceDao.clearAllReferences()
+        bookDao.getAllBooksFlow().first().forEach { book ->
+            replaceOwnerAssetReferences("book", book.id, listOf(book.coverImage))
+            quizDao.getQuizzesByBookId(book.id).first().forEach { quiz ->
+                replaceOwnerAssetReferences("quiz", quiz.id, listOf(quiz.coverImage))
+                questionDao.getQuestionsByQuizId(quiz.id).first().forEach { question ->
+                    replaceOwnerAssetReferences("question", question.id, listOf(question.imagePath))
+                    questionAssetDao.getAssetsByQuestionIdNow(question.id).forEach { asset ->
+                        replaceOwnerAssetReferences("question_asset", asset.id, listOf(asset.localPath))
+                    }
+                }
+            }
+        }
+        sourceDocumentDao.getAllSourcesIncludingDeleted().forEach { source ->
+            replaceOwnerAssetReferences("source_document", source.id, listOf(source.localPath))
+            sourceDocumentAssetDao.getAssetsBySourceIdIncludingDeleted(source.id).forEach { asset ->
+                replaceOwnerAssetReferences("source_document_asset", asset.id, listOf(asset.localPath))
+            }
+        }
+    }
+
     suspend fun auditAssetReferences() = assetReferenceAuditService?.audit()
 
     suspend fun cleanupDeletedAnnotationsOlderThan(olderThan: Long): Int =

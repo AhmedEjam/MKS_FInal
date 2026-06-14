@@ -249,12 +249,13 @@ class ImportLibraryManager constructor(
         }
     }
 
-    suspend fun import(
+    suspend fun importLibrary(
         uri: Uri,
         strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING,
         targetBookId: Long? = null,
         targetQuizId: Long? = null,
         allowInsecureRemoteImages: Boolean = false,
+        activeWorkspaceId: Long? = null,
         onProgress: (Float, String) -> Unit = { _, _ -> }
     ): ImportResult = withContext(Dispatchers.IO) {
         val startTime = System.currentTimeMillis()
@@ -314,7 +315,8 @@ class ImportLibraryManager constructor(
                 onProgress = onProgress,
                 allowInsecureRemoteImages = allowInsecureRemoteImages,
                 rootDir = zipResult?.rootDir,
-                manifest = zipResult?.manifest
+                manifest = zipResult?.manifest,
+                activeWorkspaceId = activeWorkspaceId
             )
 
             return@withContext result
@@ -450,7 +452,8 @@ class ImportLibraryManager constructor(
         onProgress: (Float, String) -> Unit,
         allowInsecureRemoteImages: Boolean = false,
         rootDir: File? = null,
-        manifest: ManifestDto? = null
+        manifest: ManifestDto? = null,
+        activeWorkspaceId: Long? = null
     ): ImportResult {
         // 1. Validate
         onProgress(0.2f, "Validating bundle...")
@@ -525,7 +528,7 @@ class ImportLibraryManager constructor(
             // Books
             normalizedBundle.books.forEach { bookDto ->
                 try {
-                    val targetWorkspaceId = bookDto.workspaceExternalId
+                    val targetWorkspaceId = activeWorkspaceId ?: bookDto.workspaceExternalId
                         ?.let { workspaceDao.getWorkspaceByExternalId(it)?.id }
                         ?: defaultWorkspaceId
                     val existingBook = bookDao.getBookByExternalIdInWorkspace(bookDto.id, targetWorkspaceId)

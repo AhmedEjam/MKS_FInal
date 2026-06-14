@@ -8,7 +8,8 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
-import com.ahmedyejam.mks.data.repository.MksRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
+import com.ahmedyejam.mks.data.repository.StudyRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -16,7 +17,8 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class SessionViewModel @Inject constructor(
-    private val repository: MksRepository
+    private val quizRepository: QuizRepository,
+    private val studyRepository: StudyRepository
 ) : ViewModel() {
 
     private val _sessions = MutableStateFlow<List<SessionEntity>>(emptyList())
@@ -27,12 +29,12 @@ class SessionViewModel @Inject constructor(
 
     fun loadSessions(quizId: Long) {
         viewModelScope.launch {
-            repository.getSessionsByQuizId(quizId).collect {
+            studyRepository.getSessionsByQuizId(quizId).collect {
                 _sessions.value = it
             }
         }
         viewModelScope.launch {
-            val count = repository.getQuestionsByQuizId(quizId).first().count { !it.isDropped }
+            val count = quizRepository.getQuestionsByQuizId(quizId).first().count { !it.isDropped }
             _quizQuestionCounts.value += (quizId to count)
         }
     }
@@ -65,14 +67,14 @@ class SessionViewModel @Inject constructor(
                 rangeTo = rangeTo,
                 includeFilters = includeFilters
             )
-            val id = repository.insertSession(session)
+            val id = quizRepository.insertSession(session)
             onCreated(id)
         }
     }
 
     fun deleteSession(session: SessionEntity) {
         viewModelScope.launch {
-            repository.deleteSession(session)
+            quizRepository.deleteSession(session)
         }
     }
 
@@ -87,7 +89,7 @@ class SessionViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             // Fetch all questions for this quiz and filter by categories
-            val questions = repository.getQuestionsByQuizId(quizId).first()
+            val questions = quizRepository.getQuestionsByQuizId(quizId).first()
                 .filter { q -> q.categories.any { it in categories } }
             
             val questionIds = questions.map { it.id }
@@ -100,7 +102,7 @@ class SessionViewModel @Inject constructor(
                 // Ensure default filters are set or cleared as this is a custom explicit list
                 includeFilters = emptyList() 
             )
-            val id = repository.insertSession(session)
+            val id = quizRepository.insertSession(session)
             onCreated(id)
         }
     }

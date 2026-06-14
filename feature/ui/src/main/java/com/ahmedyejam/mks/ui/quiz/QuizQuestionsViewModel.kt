@@ -8,6 +8,10 @@ import javax.inject.Inject
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.AnnotationColorLabel
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
+import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.local.entity.AnnotationEntity
 import com.ahmedyejam.mks.data.local.entity.AnnotationOwnerType
 import com.ahmedyejam.mks.data.local.entity.QuestionAssetEntity
@@ -17,7 +21,6 @@ import com.ahmedyejam.mks.data.local.entity.QuestionAssetType
 import com.ahmedyejam.mks.data.local.entity.BlueprintMode
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
-import com.ahmedyejam.mks.data.repository.MksRepository
 import com.ahmedyejam.mks.data.repository.QuizKnowledgeSummary
 import com.ahmedyejam.mks.ui.category.VisibilityState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -42,7 +45,12 @@ data class QuizQuestionsUiState(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepository) : ViewModel() {
+class QuizQuestionsViewModel @Inject constructor(
+    private val knowledgeRepository: KnowledgeRepository,
+    private val assetRepository: AssetRepository,
+    private val quizRepository: QuizRepository,
+    private val studyRepository: StudyRepository
+) : ViewModel() {
 
     private val _quizId = MutableStateFlow<Long?>(null)
     private val _searchQuery = MutableStateFlow("")
@@ -51,17 +59,17 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
     private val _selectedQuestionIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _quizSummary = MutableStateFlow<QuizKnowledgeSummary?>(null)
     private val _questionIdsWithAssets = _quizId.flatMapLatest { id ->
-        if (id != null) repository.getQuestionIdsWithAssetsForQuizFlow(id) else flowOf(emptyList())
+        if (id != null) assetRepository.getQuestionIdsWithAssetsForQuizFlow(id) else flowOf(emptyList())
     }.map { it.toSet() }
      .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
-    val allQuizzes: StateFlow<List<QuizEntity>> = repository.getAllQuizzesFlow()
+    val allQuizzes: StateFlow<List<QuizEntity>> = quizRepository.getAllQuizzesFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _quiz: Flow<QuizEntity?> = _quizId.flatMapLatest { id ->
         if (id != null) {
             flow { 
-                val quiz = repository.getQuizById(id)
+                val quiz = quizRepository.getQuizById(id)
                 emit(quiz) 
             }
         } else {
@@ -71,7 +79,7 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
 
     private val _allQuestions: Flow<List<QuestionEntity>> = _quizId.flatMapLatest { id ->
         if (id != null) {
-            repository.getQuestionsByQuizId(id)
+            quizRepository.getQuestionsByQuizId(id)
         } else {
             flowOf(emptyList())
         }
@@ -116,7 +124,7 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
         _quizId.value = quizId
         _isLoading.value = false
         viewModelScope.launch {
-            _quizSummary.value = runCatching { repository.getQuizKnowledgeSummary(quizId) }.getOrNull()
+            _quizSummary.value = runCatching { quizRepository.getQuizKnowledgeSummary(quizId) }.getOrNull()
         }
     }
 
@@ -141,9 +149,9 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
         viewModelScope.launch {
             val selectedIds = _selectedQuestionIds.value
             val questionsToDelete = uiState.value.allQuestions.filter { selectedIds.contains(it.id) }
-            questionsToDelete.forEach { repository.deleteQuestion(it) }
+            questionsToDelete.forEach { quizRepository.deleteQuestion(it) }
             clearSelection()
-            _quizId.value?.let { repository.refreshQuizStats(it) }
+            _quizId.value?.let { quizRepository.refreshQuizStats(it) }
         }
     }
 
@@ -153,11 +161,11 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
             val currentQuizId = _quizId.value
             val questionsToMove = uiState.value.allQuestions.filter { selectedIds.contains(it.id) }
             questionsToMove.forEach { 
-                repository.updateQuestion(it.copy(quizId = targetQuizId))
+                assetRepository.updateQuestion(it.copy(quizId = targetQuizId))
             }
             clearSelection()
-            currentQuizId?.let { repository.refreshQuizStats(it) }
-            repository.refreshQuizStats(targetQuizId)
+            currentQuizId?.let { quizRepository.refreshQuizStats(it) }
+            quizRepository.refreshQuizStats(targetQuizId)
         }
     }
 
@@ -168,9 +176,9 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
             val newQuestions = questionsToCopy.map { 
                 it.copy(id = 0, quizId = targetQuizId, externalId = java.util.UUID.randomUUID().toString()) 
             }
-            repository.insertQuestions(newQuestions)
+            knowledgeRepository.insertQuestions(newQuestions)
             clearSelection()
-            repository.refreshQuizStats(targetQuizId)
+            quizRepository.refreshQuizStats(targetQuizId)
         }
     }
 
@@ -180,7 +188,7 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
             val selectedIds = _selectedQuestionIds.value
             val questionsToExport = uiState.value.allQuestions.filter { selectedIds.contains(it.id) }
             
-            val newQuizId = repository.insertQuiz(
+            val newQuizId = knowledgeRepository.insertQuiz(
                 QuizEntity(
                     bookId = quiz.bookId,
                     externalId = java.util.UUID.randomUUID().toString(),
@@ -192,9 +200,9 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
             val newQuestions = questionsToExport.map { 
                 it.copy(id = 0, quizId = newQuizId, externalId = java.util.UUID.randomUUID().toString()) 
             }
-            repository.insertQuestions(newQuestions)
+            knowledgeRepository.insertQuestions(newQuestions)
             clearSelection()
-            repository.refreshQuizStats(newQuizId)
+            quizRepository.refreshQuizStats(newQuizId)
         }
     }
 
@@ -202,16 +210,16 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
         if (!QuestionValidator.validate(question).isValid) return
         viewModelScope.launch {
             val quizId = _quizId.value ?: return@launch
-            repository.insertQuestion(question.copy(quizId = quizId))
-            repository.refreshQuizStats(quizId)
+            knowledgeRepository.insertQuestion(question.copy(quizId = quizId))
+            quizRepository.refreshQuizStats(quizId)
         }
     }
 
     fun updateQuestion(question: QuestionEntity) {
         if (!QuestionValidator.validate(question).isValid) return
         viewModelScope.launch {
-            repository.updateQuestion(question)
-            _quizId.value?.let { repository.refreshQuizStats(it) }
+            assetRepository.updateQuestion(question)
+            _quizId.value?.let { quizRepository.refreshQuizStats(it) }
         }
     }
 
@@ -221,7 +229,7 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
             val selectedIds = _selectedQuestionIds.value
             val questionsToMark = uiState.value.allQuestions.filter { selectedIds.contains(it.id) }
             questionsToMark.forEach { question ->
-                repository.updateQuestion(question.copy(isMarked = marked, updatedAt = System.currentTimeMillis()))
+                assetRepository.updateQuestion(question.copy(isMarked = marked, updatedAt = System.currentTimeMillis()))
             }
             clearSelection()
         }
@@ -247,24 +255,24 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
 
     fun toggleMarked(question: QuestionEntity) {
         viewModelScope.launch {
-            repository.updateQuestionMark(question.id, !question.isMarked)
+            quizRepository.updateQuestionMark(question.id, !question.isMarked)
         }
     }
 
     fun toggleDropped(question: QuestionEntity) {
         viewModelScope.launch {
-            repository.updateQuestionDrop(question.id, !question.isDropped)
+            quizRepository.updateQuestionDrop(question.id, !question.isDropped)
         }
     }
 
-    fun assetsForQuestion(questionId: Long) = repository.getQuestionAssets(questionId)
+    fun assetsForQuestion(questionId: Long) = assetRepository.getQuestionAssets(questionId)
 
     fun annotationsForQuestion(questionId: Long) =
-        repository.getAnnotationsByOwner(AnnotationOwnerType.QUESTION, questionId)
+        studyRepository.getAnnotationsByOwner(AnnotationOwnerType.QUESTION, questionId)
 
     fun addQuestionAnnotation(bookId: Long, questionId: Long, selectedText: String?, noteBody: String, colorLabel: String = AnnotationColorLabel.YELLOW) {
         viewModelScope.launch {
-            repository.createAnnotationForOwner(
+            assetRepository.createAnnotationForOwner(
                 bookId = bookId,
                 ownerType = AnnotationOwnerType.QUESTION,
                 ownerId = questionId,
@@ -276,20 +284,20 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
     }
 
     fun updateAnnotation(annotation: AnnotationEntity) {
-        viewModelScope.launch { repository.updateAnnotation(annotation) }
+        viewModelScope.launch { studyRepository.updateAnnotation(annotation) }
     }
 
     fun deleteAnnotation(annotation: AnnotationEntity) {
-        viewModelScope.launch { repository.softDeleteAnnotation(annotation.id) }
+        viewModelScope.launch { assetRepository.softDeleteAnnotation(annotation.id) }
     }
 
-    fun sourceDocumentsForBook(bookId: Long) = repository.getSourceDocumentsByBookId(bookId)
+    fun sourceDocumentsForBook(bookId: Long) = assetRepository.getSourceDocumentsByBookId(bookId)
 
     fun linkedBlueprintsForQuestion(bookId: Long, questionId: Long) =
-        repository.getLinkedBlueprintsForQuestion(bookId, questionId)
+        knowledgeRepository.getLinkedBlueprintsForQuestion(bookId, questionId)
 
     fun addQuestionAsset(asset: QuestionAssetEntity) {
-        viewModelScope.launch { repository.insertQuestionAsset(asset) }
+        viewModelScope.launch { assetRepository.insertQuestionAsset(asset) }
     }
 
     fun createSourceAndAddQuestionAsset(asset: QuestionAssetEntity, source: SourceDocumentEntity) {
@@ -298,20 +306,20 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
                 sourceType = source.sourceType.ifBlank { SourceDocumentTypes.OTHER },
                 bookId = source.bookId ?: asset.bookId
             )
-            repository.createSourceDocumentAndQuestionAsset(preparedSource, asset.copy(assetType = QuestionAssetType.SOURCE_REFERENCE))
+            assetRepository.createSourceDocumentAndQuestionAsset(preparedSource, asset.copy(assetType = QuestionAssetType.SOURCE_REFERENCE))
         }
     }
 
     fun createBlueprintFromQuestion(bookId: Long, questionId: Long) {
-        viewModelScope.launch { repository.createBlueprintFromQuestion(bookId, questionId, BlueprintMode.CONCEPT_TEMPLATE) }
+        viewModelScope.launch { knowledgeRepository.createBlueprintFromQuestion(bookId, questionId, BlueprintMode.CONCEPT_TEMPLATE) }
     }
 
     fun updateQuestionAsset(asset: QuestionAssetEntity) {
-        viewModelScope.launch { repository.updateQuestionAsset(asset) }
+        viewModelScope.launch { assetRepository.updateQuestionAsset(asset) }
     }
 
     fun deleteQuestionAsset(asset: QuestionAssetEntity) {
-        viewModelScope.launch { repository.deleteQuestionAsset(asset) }
+        viewModelScope.launch { assetRepository.deleteQuestionAsset(asset) }
     }
 
     fun createFlashcardsFromSelected(title: String, clearMarksAfter: Boolean) {
@@ -319,7 +327,7 @@ class QuizQuestionsViewModel @Inject constructor(private val repository: MksRepo
         val quiz = uiState.value.quiz ?: return
         if (selected.isEmpty() || title.isBlank()) return
         viewModelScope.launch {
-            repository.createFlashcardDeckFromQuestions(quiz.bookId, title, "Generated from selected questions", selected, clearMarksAfter)
+            knowledgeRepository.createFlashcardDeckFromQuestions(quiz.bookId, title, "Generated from selected questions", selected, clearMarksAfter)
             clearSelection()
         }
     }
