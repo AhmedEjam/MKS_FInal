@@ -39,15 +39,24 @@ secrets.properties
 .directory
 *.swp
 *.swo
+.vscode/
 
 # Project runtime/temp artifacts
 app/images/
 app/temp_files_dir/
 app/src/main/java/**/.artifacts/
+.artifacts/
+.junie/
+archive/
+*.patch
+duplications_report.txt
+build_env.txt
 
 # Keep Room schemas under version control.
 !app/schemas/
 !app/schemas/**
 
+# Specific large or temp folders
 .gradle_home/
 .gradle_tmp/
+
