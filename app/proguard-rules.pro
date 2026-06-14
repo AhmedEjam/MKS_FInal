@@ -37,3 +37,5 @@
 -dontwarn aQute.bnd.annotation.**
 -dontwarn edu.umd.cs.findbugs.annotations.**
 -dontwarn java.awt.**
+-dontwarn javax.xml.stream.**
+-dontwarn org.osgi.framework.**
