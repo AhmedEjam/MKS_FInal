@@ -41,6 +41,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ahmedyejam.mks.core.ui.R
 import com.ahmedyejam.mks.data.importer.model.ImportResult
 import com.ahmedyejam.mks.data.local.entity.BookEntity
@@ -90,6 +91,7 @@ fun LibraryScreen(
     val currentThemeMode by dataStoreManager.themeMode.collectAsState(initial = "DAWN")
 
     val importState by importViewModel.importState.collectAsState()
+    val workspaceId by viewModel.currentWorkspaceId.collectAsState()
 
     val showCompilerDialogState = remember { mutableStateOf(value = false) }
     var showCompilerDialog by showCompilerDialogState
@@ -100,7 +102,7 @@ fun LibraryScreen(
         val format = importViewModel.detectFormat(uri)
         if ((format == com.ahmedyejam.mks.data.importer.model.ImportFormat.XLSX) ||
             (format == com.ahmedyejam.mks.data.importer.model.ImportFormat.CSV_TSV)) {
-            compilerViewModel.onFileSelected(uri, targetQuizId)
+            compilerViewModel.onFileSelected(uri, targetQuizId, activeWorkspaceId = workspaceId)
             showCompilerDialog = true
         } else if (format == com.ahmedyejam.mks.data.importer.model.ImportFormat.ZIP) {
             importViewModel.getImportPreview(
@@ -134,17 +136,16 @@ fun LibraryScreen(
         }
     }
 
-    val books by viewModel.books.collectAsState(initial = emptyList())
-    val quizzes by viewModel.quizzes.collectAsState(initial = emptyList())
-    val workspaceId by viewModel.currentWorkspaceId.collectAsState()
-    val recentQuizzes by viewModel.recentQuizzes.collectAsState(initial = emptyList())
-    val resumeQuiz by viewModel.resumeQuiz.collectAsState(initial = null)
-    val categories by viewModel.categories.collectAsState(initial = emptyList())
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val isSearching by viewModel.isSearching.collectAsState()
-    val selectedCategory by viewModel.selectedCategory.collectAsState()
-    val libraryViewMode by viewModel.libraryViewMode.collectAsState()
-    val bookViewMode by viewModel.bookViewMode.collectAsState()
+    val books by viewModel.books.collectAsStateWithLifecycle(initialValue = emptyList())
+    val quizzes by viewModel.quizzes.collectAsStateWithLifecycle(initialValue = emptyList())
+    val recentQuizzes by viewModel.recentQuizzes.collectAsStateWithLifecycle(initialValue = emptyList())
+    val resumeQuiz by viewModel.resumeQuiz.collectAsStateWithLifecycle(initialValue = null)
+    val categories by viewModel.categories.collectAsStateWithLifecycle(initialValue = emptyList())
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
+    val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
+    val libraryViewMode by viewModel.libraryViewMode.collectAsStateWithLifecycle()
+    val bookViewMode by viewModel.bookViewMode.collectAsStateWithLifecycle()
 
     val currentViewMode by remember {
         derivedStateOf {

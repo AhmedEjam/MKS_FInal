@@ -1,10 +1,5 @@
 package com.ahmedyejam.mks.ui.quiz
 
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
-
 
 import android.content.Context
 import android.net.Uri
@@ -12,8 +7,6 @@ import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.importer.detector.ImportFormatDetector
-import com.ahmedyejam.mks.data.repository.KnowledgeRepository
-import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.importer.model.ImportFormat
 import com.ahmedyejam.mks.data.importer.model.ImportMode
 import com.ahmedyejam.mks.data.importer.model.ParseStats
@@ -24,16 +17,20 @@ import com.ahmedyejam.mks.data.importer.parser.JsonQuestionParser
 import com.ahmedyejam.mks.data.importer.parser.SpreadsheetHeaderMapper
 import com.ahmedyejam.mks.data.importer.parser.SpreadsheetQuestionParser
 import com.ahmedyejam.mks.data.importer.parser.TextQuestionParser
-import com.ahmedyejam.mks.data.importer.xlsx.XlsxImageResolver
-import com.ahmedyejam.mks.data.importer.xlsx.SheetImageResolution
 import com.ahmedyejam.mks.data.importer.security.ImportLimits
+import com.ahmedyejam.mks.data.importer.xlsx.SheetImageResolution
+import com.ahmedyejam.mks.data.importer.xlsx.XlsxImageResolver
+import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.util.copyToWithLimit
 import com.ahmedyejam.mks.util.readTextWithLimit
-import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,6 +40,7 @@ import org.apache.poi.ss.usermodel.DataFormatter
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import java.util.zip.ZipFile
+import javax.inject.Inject
 
 data class CompilerUiState(
     val questions: List<ParsedQuestion> = emptyList(),
@@ -65,7 +63,8 @@ data class CompilerUiState(
 class CompilerViewModel @Inject constructor(
     @ApplicationContext context: Context,
     private val knowledgeRepository: KnowledgeRepository,
-    private val quizRepository: QuizRepository
+    private val quizRepository: QuizRepository,
+    private val dataStoreManager: com.ahmedyejam.mks.data.preferences.DataStoreManager
 ) : ViewModel() {
 
     private val applicationContext = context.applicationContext
@@ -85,6 +84,7 @@ class CompilerViewModel @Inject constructor(
     private var currentUri: Uri? = null
     private var tempFile: java.io.File? = null
     private var currentFormat: ImportFormat = ImportFormat.UNKNOWN
+    private var activeWorkspaceIdOverride: Long? = null
 
     // Cache for raw spreadsheet/CSV data
     private var cachedRows: List<List<String>>? = null
@@ -134,8 +134,14 @@ class CompilerViewModel @Inject constructor(
         }
     }
 
-    fun onFileSelected(uri: Uri, targetQuizId: Long? = null, targetDeckId: Long? = null) {
+    fun onFileSelected(
+        uri: Uri,
+        targetQuizId: Long? = null,
+        targetDeckId: Long? = null,
+        activeWorkspaceId: Long? = null
+    ) {
         currentUri = uri
+        activeWorkspaceIdOverride = activeWorkspaceId
         closeCurrentResources()
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, questions = emptyList(), targetQuizId = targetQuizId, targetDeckId = targetDeckId) }
@@ -467,6 +473,8 @@ class CompilerViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isLoading = true) }
             try {
+                val currentWorkspaceId =
+                    activeWorkspaceIdOverride ?: dataStoreManager.currentWorkspaceId.firstOrNull()
                 val currentTargetDeckId = targetDeckId ?: _uiState.value.targetDeckId
                 if (currentTargetDeckId != null) {
                     val flashcards = questions.mapIndexed { index, q ->
@@ -503,9 +511,11 @@ class CompilerViewModel @Inject constructor(
                         targetBookId = bookId,
                         targetQuizId = targetQuizId,
                         newBookTitle = newBookTitle,
-                        questions = questions
+                        questions = questions,
+                        activeWorkspaceId = currentWorkspaceId
                     )
                 }
+                activeWorkspaceIdOverride = null
                 _uiState.update { it.copy(isLoading = false, questions = emptyList()) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
