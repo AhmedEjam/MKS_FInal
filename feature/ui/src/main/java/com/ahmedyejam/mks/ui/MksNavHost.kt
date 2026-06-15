@@ -24,7 +24,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.ahmedyejam.mks.di.AppModule
+import com.ahmedyejam.mks.data.focus.FocusManager
+import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.ui.booktools.AiPromptDeckListScreen
 import com.ahmedyejam.mks.ui.booktools.AiPromptDeckScreen
 import com.ahmedyejam.mks.ui.booktools.BookNotesScreen
@@ -69,12 +70,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun MksNavHost(
     navController: NavHostController,
-    appModule: AppModule,
+    dataStoreManager: DataStoreManager,
+    focusManager: FocusManager,
     showWelcomeOnStartup: Boolean,
     sharedUris: List<Uri>? = null,
     onConsumedSharedUris: () -> Unit = {},
 ) {
-    val currentThemeMode by appModule.dataStoreManager.themeMode.collectAsState(initial = "DAWN")
+    val currentThemeMode by dataStoreManager.themeMode.collectAsState(initial = "DAWN")
     val scope = rememberCoroutineScope()
     val startDestination = if (showWelcomeOnStartup) MksRoutes.WELCOME else MksRoutes.LIBRARY
     var libraryResetSignal by remember { mutableIntStateOf(0) }
@@ -97,16 +99,16 @@ fun MksNavHost(
     ) {
         composable(MksRoutes.WELCOME) {
             // Get initial language for WelcomeScreen without observing it here to avoid NavHost restarts
-            val currentLanguage by appModule.dataStoreManager.language.collectAsState(initial = "en")
+            val currentLanguage by dataStoreManager.language.collectAsState(initial = "en")
 
             WelcomeScreen(
                 currentLanguage = currentLanguage,
                 themeMode = currentThemeMode,
                 onLanguageChanged = { lang ->
-                    scope.launch { appModule.dataStoreManager.setLanguage(lang) }
+                    scope.launch { dataStoreManager.setLanguage(lang) }
                 },
             ) {
-                scope.launch { appModule.dataStoreManager.setShowWelcomeOnStartup(enabled = false) }
+                scope.launch { dataStoreManager.setShowWelcomeOnStartup(enabled = false) }
                 navController.navigate(MksRoutes.LIBRARY) {
                     popUpTo(MksRoutes.WELCOME) { inclusive = true }
                     launchSingleTop = true
@@ -180,7 +182,6 @@ fun MksNavHost(
             FlashcardDeckScreen(
                 deckId = deckId,
                 focusedCardId = cardId,
-                appModule = appModule,
             ) { navController.popBackStack() }
         }
 
@@ -276,7 +277,6 @@ fun MksNavHost(
             SlideshowCourseScreen(
                 courseId = courseId,
                 focusedSlideId = slideId,
-                appModule = appModule,
             ) { navController.popBackStack() }
         }
 
@@ -375,7 +375,8 @@ fun MksNavHost(
 
         composable("settings") {
             SettingsScreen(
-                appModule = appModule,
+                dataStoreManager = dataStoreManager,
+                focusManager = focusManager,
                 onBack = { returnToLibraryRoot() },
                 onGlobalSearch = { navController.navigate("global_search") },
                 onReviewDashboard = { navController.navigate("review_dashboard") },
@@ -470,7 +471,7 @@ fun MksNavHost(
                 quizTitle = questionsState.quiz?.title,
                 sessionViewModel = sessionViewModel,
                 questionsViewModel = questionsViewModel,
-                dataStoreManager = appModule.dataStoreManager,
+                dataStoreManager = dataStoreManager,
                 onSessionSelected = { sessionId, isCompleted ->
                     if (isCompleted) {
                         navController.navigate("summary/$sessionId")
