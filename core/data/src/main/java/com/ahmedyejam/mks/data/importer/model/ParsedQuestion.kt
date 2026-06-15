@@ -7,37 +7,37 @@ enum class ImportMode {
     TEXT,
     JSON,
     HTML,
-    AUTO
+    AUTO,
 }
 
 data class ResolvedImage(
     val imageDataUrl: String? = null,
     val imageSource: String? = null,
-    val via: String? = null
+    val via: String? = null,
 )
 
 data class ImageDebug(
     val cellImagesFound: Int = 0,
     val dispImgMapped: Int = 0,
     val rowsResolved: Int = 0,
-    val anchorCandidates: Int = 0
+    val anchorCandidates: Int = 0,
 )
 
 data class ParsedOption(
     val id: String,
     val text: String,
-    val marked: Boolean = false
+    val marked: Boolean = false,
 )
 
 data class ParseIssue(
     val message: String,
-    val severity: IssueSeverity = IssueSeverity.WARNING
+    val severity: IssueSeverity = IssueSeverity.WARNING,
 )
 
 enum class IssueSeverity {
     INFO,
     WARNING,
-    ERROR
+    ERROR,
 }
 
 data class ParseStats(
@@ -46,7 +46,7 @@ data class ParseStats(
     val skippedEmptyStem: Int = 0,
     val errors: Int = 0,
     val questionsWithImages: Int = 0,
-    val questionsWithIssues: Int = 0
+    val questionsWithIssues: Int = 0,
 )
 
 data class ParsedQuestion(
@@ -67,12 +67,12 @@ data class ParsedQuestion(
     val parseIssues: List<ParseIssue> = emptyList(),
     val answerMode: String? = null,
     val type: QuestionType = QuestionType.SINGLE_CHOICE,
-    val isIncluded: Boolean = true
+    val isIncluded: Boolean = true,
 )
 
 data class ParseResult(
     val questions: List<ParsedQuestion>,
     val mode: ImportMode,
     val debugInfo: String? = null,
-    val stats: ParseStats = ParseStats()
+    val stats: ParseStats = ParseStats(),
 )

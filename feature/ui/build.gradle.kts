@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.dagger.hilt.android)
     alias(libs.plugins.kotlin.compose)
     id("org.jetbrains.kotlin.android")
-    id("kotlin-kapt")
+    alias(libs.plugins.google.devtools.ksp)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -24,6 +24,14 @@ android {
     }
 }
 
+hilt {
+    enableAggregatingTask = true
+}
+
+ksp {
+    arg("moshi.generateAdapter.kapt", "false")
+}
+
 kotlin {
     jvmToolchain(11)
 }
@@ -34,7 +42,8 @@ dependencies {
     implementation(project(":core:network"))
     implementation(project(":core:ui"))
     implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.moshi.kotlin)
+    implementation(libs.moshi)
+    ksp(libs.moshi.kotlin.codegen)
     implementation(libs.kotlinx.serialization.json)
     
     implementation(platform(libs.androidx.compose.bom))
@@ -60,7 +69,7 @@ dependencies {
     
     // Hilt enabled
     implementation(libs.hilt.android)
-    "kapt"(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 }

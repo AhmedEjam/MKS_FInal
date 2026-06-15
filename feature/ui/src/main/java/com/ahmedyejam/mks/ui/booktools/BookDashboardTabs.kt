@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.FactCheck
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.Error
-import androidx.compose.material.icons.rounded.FactCheck
 import androidx.compose.material.icons.rounded.NoteAlt
 import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.rounded.Slideshow
@@ -48,7 +48,7 @@ enum class BookTab(val title: String, val icon: ImageVector) {
     PROMPTS("Prompts", Icons.Rounded.Psychology),
     MISTAKES("Mistakes", Icons.Rounded.Error),
     SLIDES("Slides", Icons.Rounded.Slideshow),
-    QUIZZES("Quizzes", Icons.Rounded.FactCheck),
+    QUIZZES("Quizzes", Icons.AutoMirrored.Rounded.FactCheck),
     FLASHCARDS("Cards", Icons.Rounded.ViewCarousel),
     NOTES("Articles & short notes", Icons.Rounded.NoteAlt),
     SOURCES("Sources", Icons.Rounded.Source)
@@ -83,7 +83,7 @@ fun QuizzesTab(
     onQuizLongClick: (QuizEntity) -> Unit
 ) {
     if (quizzes.isEmpty()) {
-        EmptyTabContent("No quizzes found", "Quizzes created for this book will appear here.", Icons.Rounded.FactCheck)
+        EmptyTabContent("No quizzes found", "Quizzes created for this book will appear here.", Icons.AutoMirrored.Rounded.FactCheck)
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -94,7 +94,7 @@ fun QuizzesTab(
                 BookToolListItem(
                     title = quiz.title,
                     subtitle = quiz.description ?: "Quiz",
-                    icon = Icons.Rounded.FactCheck,
+                    icon = Icons.AutoMirrored.Rounded.FactCheck,
                     onClick = { onOpenQuiz(quiz.id) },
                     onDelete = { onQuizLongClick(quiz) }
                 )

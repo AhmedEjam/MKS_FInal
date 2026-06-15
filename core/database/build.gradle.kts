@@ -1,11 +1,9 @@
 plugins {
     id("org.jetbrains.kotlin.android")
     alias(libs.plugins.android.library)
-    // alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.dagger.hilt.android)
     alias(libs.plugins.google.devtools.ksp)
 }
-
-apply(plugin = "com.google.dagger.hilt.android")
 
 android {
     namespace = "com.ahmedyejam.mks.core.database"
@@ -22,13 +20,15 @@ android {
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.incremental", "true")
+    arg("moshi.generateAdapter.kapt", "false")
 }
 dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     "ksp"(libs.androidx.room.compiler)
     implementation(project(":core:model"))
-    implementation(libs.moshi.kotlin)
+    implementation(libs.moshi)
+    ksp(libs.moshi.kotlin.codegen)
 
     // Hilt
     implementation(libs.hilt.android)

@@ -17,7 +17,7 @@ import java.util.zip.ZipInputStream
 
 class ZipLibraryParser(
     private val context: Context,
-    private val jsonParser: JsonLibraryParser
+    private val jsonParser: JsonLibraryParser,
 ) {
     companion object {
         private const val MAX_ENTRIES = ImportLimits.MAX_ZIP_ENTRIES
@@ -32,7 +32,7 @@ class ZipLibraryParser(
         val bundle: LibraryBundleDto,
         val manifest: ManifestDto?,
         val libraryDir: File,
-        val rootDir: File
+        val rootDir: File,
     )
 
     fun parse(inputStream: InputStream): ZipResult {
@@ -90,37 +90,44 @@ class ZipLibraryParser(
 
             val manifestJsonFile = tempDir.walkTopDown().find { it.name == "manifest.json" }
             val manifestText = manifestJsonFile?.readTextWithLimit(ImportLimits.MAX_TEXT_IMPORT_BYTES)
-            val isSchema7Exchange = manifestText?.let { text ->
-                runCatching {
-                    val root = json.parseToJsonElement(text) as? JsonObject
-                    (root?.get("format")?.jsonPrimitive?.content == "mks.exchange" &&
-                            root["schemaVersion"]?.jsonPrimitive?.content?.toIntOrNull() == 7)
-                }.getOrDefault(false)
-            } ?: false
+            val isSchema7Exchange =
+                manifestText?.let { text ->
+                    runCatching {
+                        val root = json.parseToJsonElement(text) as? JsonObject
+                        (
+                            root?.get("format")?.jsonPrimitive?.content == "mks.exchange" &&
+                                root["schemaVersion"]?.jsonPrimitive?.content?.toIntOrNull() == 7
+                        )
+                    }.getOrDefault(false)
+                } ?: false
 
             if (isSchema7Exchange) {
                 val bundle = MksExchangeV7Archive.readLegacyBundleFromDirectory(tempDir)
-                val manifest = manifestText.let {
-                    json.decodeFromString(ManifestDto.serializer(), it)
-                }
+                val manifest =
+                    manifestText.let {
+                        json.decodeFromString(ManifestDto.serializer(), it)
+                    }
                 return ZipResult(bundle, manifest, tempDir, tempDir)
             }
 
-            var libraryJsonFile = tempDir.walkTopDown()
-                .find { it.name == "library.json" || it.name == "bundle.json" || it.name == "data.json" }
+            var libraryJsonFile =
+                tempDir.walkTopDown()
+                    .find { it.name == "library.json" || it.name == "bundle.json" || it.name == "data.json" }
 
             if (libraryJsonFile == null) {
                 // Look for any non-manifest JSON file if the canonical names are absent.
-                libraryJsonFile = tempDir.walkTopDown()
-                    .find { it.extension.lowercase() == "json" && it.name != "manifest.json" }
+                libraryJsonFile =
+                    tempDir.walkTopDown()
+                        .find { it.extension.lowercase() == "json" && it.name != "manifest.json" }
             }
 
             if (libraryJsonFile == null) throw IllegalStateException("No JSON library file found in ZIP")
 
             val bundle = libraryJsonFile.inputStream().use { jsonParser.parse(it) }
-            val manifest = manifestText?.let {
-                json.decodeFromString(ManifestDto.serializer(), it)
-            }
+            val manifest =
+                manifestText?.let {
+                    json.decodeFromString(ManifestDto.serializer(), it)
+                }
 
             return ZipResult(bundle, manifest, libraryJsonFile.parentFile ?: tempDir, tempDir)
         } catch (e: Exception) {
@@ -131,8 +138,10 @@ class ZipLibraryParser(
         }
     }
 
-
-    private fun extractPlainZip(zipFile: File, targetDir: File) {
+    private fun extractPlainZip(
+        zipFile: File,
+        targetDir: File,
+    ) {
         var totalBytes = 0L
         var totalEntries = 0
         val canonicalTempDir = targetDir.canonicalFile.toPath()
@@ -146,7 +155,11 @@ class ZipLibraryParser(
                 totalEntries++
                 if (totalEntries > MAX_ENTRIES) throw IllegalStateException("Too many entries in ZIP archive")
                 val entryName = entry.name.replace('\\', '/')
-                if (entryName.contains("..") || entryName.startsWith("/")) throw SecurityException("Illegal zip entry name detected: $entryName")
+                if (entryName.contains("..") || entryName.startsWith("/")) {
+                    throw SecurityException(
+                        "Illegal zip entry name detected: $entryName",
+                    )
+                }
                 if (entry.size > MAX_SINGLE_FILE_SIZE) throw IllegalStateException("Zip entry '$entryName' exceeds maximum size")
                 val destinationFile = File(targetDir, entryName)
                 val destinationPath = destinationFile.canonicalFile.toPath()

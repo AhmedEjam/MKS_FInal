@@ -3,7 +3,6 @@ package com.ahmedyejam.mks.data.repository
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -38,7 +37,7 @@ data class OllamaRequest(
 @JsonClass(generateAdapter = true)
 data class OllamaResponse(
     val model: String,
-    @Json(name = "created_at") val createdAt: String,
+    @param:Json(name = "created_at") val createdAt: String,
     val response: String,
     val done: Boolean
 )
@@ -52,7 +51,6 @@ class OllamaRepository {
         .build()
 
     private val moshi = Moshi.Builder()
-        .addLast(KotlinJsonAdapterFactory())
         .build()
 
     private val requestAdapter = moshi.adapter(OllamaRequest::class.java)

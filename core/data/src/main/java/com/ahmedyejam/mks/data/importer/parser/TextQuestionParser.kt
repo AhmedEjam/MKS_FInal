@@ -5,13 +5,15 @@ import com.ahmedyejam.mks.data.importer.model.ParsedQuestion
 import com.ahmedyejam.mks.data.local.entity.QuestionType
 
 class TextQuestionParser(
-    private val imageExtractor: GenericImageExtractor
+    private val imageExtractor: GenericImageExtractor,
 ) {
-
-    fun parse(text: String, answersText: String? = null): List<ParsedQuestion> {
+    fun parse(
+        text: String,
+        answersText: String? = null,
+    ): List<ParsedQuestion> {
         val lines = text.lines()
         val answerMap = parseAnswerBlock(answersText)
-        
+
         val result = mutableListOf<ParsedQuestion>()
         var current: RawQuestion? = null
         var qNum = 0
@@ -23,11 +25,12 @@ class TextQuestionParser(
             if (isQuestionStart(s)) {
                 current?.let { result.add(finalize(it, answerMap)) }
                 qNum++
-                current = RawQuestion(
-                    stem = stripQuestionMarker(s),
-                    sourceLine = index + 1,
-                    qNum = qNum
-                )
+                current =
+                    RawQuestion(
+                        stem = stripQuestionMarker(s),
+                        sourceLine = index + 1,
+                        qNum = qNum,
+                    )
             } else {
                 current?.let { q ->
                     val opt = parseOption(s)
@@ -55,7 +58,7 @@ class TextQuestionParser(
 
     private fun isQuestionStart(line: String): Boolean {
         return Regex("""^(?:q(?:uestion)?\s*)?\d+[\)\.\-:\s]+""", RegexOption.IGNORE_CASE).containsMatchIn(line) ||
-               Regex("""^س(?:ؤال)?\s*\d+[\)\.\-:\s]*""").containsMatchIn(line)
+            Regex("""^س(?:ؤال)?\s*\d+[\)\.\-:\s]*""").containsMatchIn(line)
     }
 
     private fun stripQuestionMarker(line: String): String {
@@ -70,20 +73,21 @@ class TextQuestionParser(
             return ParsedOption(
                 id = "opt_${match.groupValues[1].uppercase()}",
                 text = match.groupValues[2].trim(),
-                marked = line.contains(Regex("""[*✓✔☑]"""))
+                marked = line.contains(Regex("""[*✓✔☑]""")),
             )
         }
         return null
     }
 
     private fun parseField(line: String): Pair<String, String>? {
-        val prefixes = mapOf(
-            "answer" to listOf("answer:", "ans:", "correct:", "الإجابة:", "الجواب:"),
-            "explanation" to listOf("explanation:", "rationale:", "exp:", "الشرح:", "تفسير:"),
-            "hint" to listOf("hint:", "tip:", "تلميح:"),
-            "reference" to listOf("reference:", "ref:", "مرجع:"),
-            "categories" to listOf("categories:", "category:", "tags:", "تصنيف:")
-        )
+        val prefixes =
+            mapOf(
+                "answer" to listOf("answer:", "ans:", "correct:", "الإجابة:", "الجواب:"),
+                "explanation" to listOf("explanation:", "rationale:", "exp:", "الشرح:", "تفسير:"),
+                "hint" to listOf("hint:", "tip:", "تلميح:"),
+                "reference" to listOf("reference:", "ref:", "مرجع:"),
+                "categories" to listOf("categories:", "category:", "tags:", "تصنيف:"),
+            )
         for ((field, list) in prefixes) {
             for (p in list) {
                 if (line.trim().startsWith(p, ignoreCase = true)) {
@@ -106,11 +110,15 @@ class TextQuestionParser(
         return map
     }
 
-    private fun finalize(raw: RawQuestion, answerMap: Map<Int, String>): ParsedQuestion {
+    private fun finalize(
+        raw: RawQuestion,
+        answerMap: Map<Int, String>,
+    ): ParsedQuestion {
         val answerRaw = raw.fields["answer"] ?: answerMap[raw.qNum] ?: ""
-        
-        val resolvedImage = imageExtractor.extractFromFields(raw.stem + "\n" + raw.fields.values.joinToString("\n"))
-            ?: imageExtractor.extractFromText(raw.stem)
+
+        val resolvedImage =
+            imageExtractor.extractFromFields(raw.stem + "\n" + raw.fields.values.joinToString("\n"))
+                ?: imageExtractor.extractFromText(raw.stem)
 
         val correctIds = resolveCorrect(answerRaw, raw.options)
 
@@ -125,14 +133,17 @@ class TextQuestionParser(
             imageDataUrl = resolvedImage?.imageDataUrl,
             imageSource = resolvedImage?.imageSource,
             sourceLine = raw.sourceLine,
-            type = if (correctIds.size > 1) QuestionType.MULTIPLE_CHOICE else QuestionType.SINGLE_CHOICE
+            type = if (correctIds.size > 1) QuestionType.MULTIPLE_CHOICE else QuestionType.SINGLE_CHOICE,
         )
     }
 
-    private fun resolveCorrect(answerRaw: String, options: List<ParsedOption>): List<String> {
+    private fun resolveCorrect(
+        answerRaw: String,
+        options: List<ParsedOption>,
+    ): List<String> {
         val result = mutableSetOf<String>()
         val trimmedAnswer = answerRaw.trim()
-        
+
         if (options.isEmpty()) return emptyList()
 
         // 1. Try exact textual match against options (Case insensitive)
@@ -156,11 +167,12 @@ class TextQuestionParser(
         // 3. If still no match, parse by delimiter (comma, semicolon, space)
         if (result.isEmpty()) {
             val upperTrimmed = trimmedAnswer.uppercase()
-            val parts = upperTrimmed
-                .split(Regex("[,;\\s]+"))
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-                
+            val parts =
+                upperTrimmed
+                    .split(Regex("[,;\\s]+"))
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+
             parts.forEach { part ->
                 options.forEach { opt ->
                     val letter = opt.id.removePrefix("opt_")
@@ -177,7 +189,7 @@ class TextQuestionParser(
                 if (opt.marked) result.add(opt.id)
             }
         }
-        
+
         // 5. Global fallback (isolated letters only - to fix Issue 6)
         if (result.isEmpty() && answerRaw.isNotBlank()) {
             val upperAnswer = answerRaw.uppercase()
@@ -202,6 +214,6 @@ class TextQuestionParser(
         val options: MutableList<ParsedOption> = mutableListOf(),
         val fields: MutableMap<String, String> = mutableMapOf(),
         val sourceLine: Int,
-        val qNum: Int
+        val qNum: Int,
     )
 }

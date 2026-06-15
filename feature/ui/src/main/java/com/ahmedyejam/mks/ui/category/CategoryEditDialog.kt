@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.FactCheck
+import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -394,7 +396,7 @@ fun CategoryEditDialog(
             
             ListItem(
                 headlineContent = { Text(stringResource(R.string.browse_questions)) },
-                leadingContent = { Icon(Icons.Rounded.List, contentDescription = null) },
+                leadingContent = { Icon(Icons.AutoMirrored.Rounded.List, contentDescription = null) },
                 modifier = Modifier.clickable { 
                     onViewQuestions()
                     onDismiss()
@@ -430,7 +432,7 @@ fun CategoryEditDialog(
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.make_separate_quiz)) },
-                leadingContent = { Icon(Icons.Rounded.FactCheck, contentDescription = null) },
+                leadingContent = { Icon(Icons.AutoMirrored.Rounded.FactCheck, contentDescription = null) },
                 modifier = Modifier.clickable { 
                     showCreateQuizDialog = true
                 }

@@ -29,8 +29,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.FactCheck
-import androidx.compose.material.icons.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.FactCheck
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -120,7 +120,7 @@ fun LibraryContentGrid(
             if (books.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }, key = "empty_books") {
                     LibraryEmptyStateCard(
-                        icon = Icons.Rounded.MenuBook,
+                        icon = Icons.AutoMirrored.Rounded.MenuBook,
                         title = stringResource(R.string.empty_books_title),
                         body = stringResource(R.string.empty_books_body),
                     )
@@ -140,7 +140,7 @@ fun LibraryContentGrid(
             if (quizzes.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }, key = "empty_quizzes") {
                     LibraryEmptyStateCard(
-                        icon = Icons.Rounded.FactCheck,
+                        icon = Icons.AutoMirrored.Rounded.FactCheck,
                         title = stringResource(R.string.empty_quizzes_title),
                         body = stringResource(R.string.empty_quizzes_body),
                     )

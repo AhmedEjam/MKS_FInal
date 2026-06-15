@@ -3,7 +3,6 @@ package com.ahmedyejam.mks.data.focus
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import com.ahmedyejam.mks.util.MksLogger
 
@@ -23,7 +22,7 @@ class FocusManager(private val context: Context) {
 
     fun enableFocusMode(): Boolean {
         if (!hasNotificationPolicyAccess()) return false
-        
+
         try {
             previousFilter = notificationManager.currentInterruptionFilter
             notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
@@ -36,7 +35,7 @@ class FocusManager(private val context: Context) {
 
     fun disableFocusMode() {
         if (!hasNotificationPolicyAccess()) return
-        
+
         try {
             notificationManager.setInterruptionFilter(previousFilter)
         } catch (e: Exception) {

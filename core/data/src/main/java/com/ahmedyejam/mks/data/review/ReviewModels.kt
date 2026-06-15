@@ -9,7 +9,7 @@ data class ReviewDashboardSummary(
     val pendingMistakes: Int = 0,
     val markedQuestions: Int = 0,
     val weakQuestions: Int = 0,
-    val unfinishedSlides: Int = 0
+    val unfinishedSlides: Int = 0,
 )
 
 data class ReviewQueueItem(
@@ -18,5 +18,5 @@ data class ReviewQueueItem(
     val title: String,
     val subtitle: String? = null,
     val dueAt: Long? = null,
-    val route: String? = null
+    val route: String? = null,
 )

@@ -9,14 +9,13 @@ import com.ahmedyejam.mks.data.local.entity.QuestionType
 data class QuestionValidationResult(
     val isValid: Boolean,
     val errors: List<String> = emptyList(),
-    val warnings: List<String> = emptyList()
+    val warnings: List<String> = emptyList(),
 )
 
 /**
  * Validates question data integrity.
  */
 object QuestionValidator {
-
     fun validate(question: QuestionEntity): QuestionValidationResult {
         val errors = mutableListOf<String>()
         val warnings = mutableListOf<String>()
@@ -53,7 +52,7 @@ object QuestionValidator {
         return QuestionValidationResult(
             isValid = errors.isEmpty(),
             errors = errors,
-            warnings = warnings
+            warnings = warnings,
         )
     }
 }

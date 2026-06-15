@@ -3,14 +3,15 @@ package com.ahmedyejam.mks.data.local
 import android.content.Context
 import io.mockk.every
 import io.mockk.mockk
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import java.io.File
 import java.nio.file.Files
 
 class FileManagerTest {
-
     private lateinit var fileManager: FileManager
     private lateinit var context: Context
     private lateinit var filesDir: File
@@ -23,18 +24,18 @@ class FileManagerTest {
         filesDir = Files.createTempDirectory("mks_files").toFile()
         imagesDir = File(filesDir, "images")
         imagesDir.mkdirs()
-        
+
         every { context.filesDir } returns filesDir
     }
 
     @Test
     fun saveImage_RejectsPathOutsideImagesDir() {
         fileManager = FileManager(context)
-        
+
         // Create a file in filesDir but NOT in imagesDir
         val sensitiveFile = File(filesDir, "sensitive.txt")
         sensitiveFile.writeText("secret data")
-        
+
         val result = fileManager.saveImage(sensitiveFile.absolutePath)
         assertNull("Should reject path outside images directory", result)
     }
@@ -42,10 +43,10 @@ class FileManagerTest {
     @Test
     fun saveImage_AcceptsPathInsideImagesDir() {
         fileManager = FileManager(context)
-        
+
         val imageFile = File(imagesDir, "test.png")
         imageFile.writeText("image data")
-        
+
         val result = fileManager.saveImage(imageFile.absolutePath)
         assertEquals("Should accept path inside images directory", imageFile.absolutePath, result)
     }
@@ -53,10 +54,10 @@ class FileManagerTest {
     @Test
     fun getFile_RejectsPathOutsideImagesDir() {
         fileManager = FileManager(context)
-        
+
         val sensitiveFile = File(filesDir, "sensitive.txt")
         sensitiveFile.writeText("secret data")
-        
+
         val result = fileManager.getFile(sensitiveFile.absolutePath)
         assertNull("Should reject file access outside images directory", result)
     }
@@ -64,10 +65,10 @@ class FileManagerTest {
     @Test
     fun getFile_AcceptsPathInsideImagesDir() {
         fileManager = FileManager(context)
-        
+
         val imageFile = File(imagesDir, "test.png")
         imageFile.writeText("image data")
-        
+
         val result = fileManager.getFile(imageFile.absolutePath)
         assertNotNull("Should allow file access inside images directory", result)
         assertEquals(imageFile.absolutePath, result?.absolutePath)
@@ -96,5 +97,4 @@ class FileManagerTest {
         val result = fileManager.getBase64Image(sensitiveFile.absolutePath)
         assertEquals("Should not export files outside the images directory", "", result)
     }
-
 }

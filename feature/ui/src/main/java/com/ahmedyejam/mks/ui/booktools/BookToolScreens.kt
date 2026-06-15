@@ -72,6 +72,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -1670,7 +1671,7 @@ fun EntitySelectorDialog(
                                         readOnly = true,
                                         trailingIcon = { androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = quizExpanded) },
                                         colors = androidx.compose.material3.ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                                         label = { Text("Select Quiz") }
                                     )
                                     ExposedDropdownMenu(

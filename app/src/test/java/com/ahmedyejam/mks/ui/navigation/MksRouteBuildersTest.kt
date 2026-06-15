@@ -4,7 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class MksRouteBuildersTest {
-
     @Test
     fun testQuizRoute() {
         assertEquals("quiz/123", MksRouteBuilders.quiz(123L))

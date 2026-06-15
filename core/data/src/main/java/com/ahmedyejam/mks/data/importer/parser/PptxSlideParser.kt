@@ -9,7 +9,12 @@ import org.apache.poi.xslf.usermodel.XMLSlideShow
 import java.util.UUID
 
 class PptxSlideParser {
-    suspend fun parse(context: Context, uri: Uri, courseId: Long, startIndex: Int = 0): List<CourseSlideEntity> {
+    suspend fun parse(
+        context: Context,
+        uri: Uri,
+        courseId: Long,
+        startIndex: Int = 0,
+    ): List<CourseSlideEntity> {
         return withContext(Dispatchers.IO) {
             val result = mutableListOf<CourseSlideEntity>()
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -19,14 +24,15 @@ class PptxSlideParser {
 
                 for (slide in ppt.slides) {
                     val title = slide.title ?: ""
-                    
+
                     // Extract text from text shapes, excluding the title shape
                     val bodyParts = mutableListOf<String>()
                     for (shape in slide.shapes) {
                         if (shape is org.apache.poi.xslf.usermodel.XSLFTextShape) {
                             // POI has placeholder checking
                             if (shape.textType != org.apache.poi.sl.usermodel.Placeholder.TITLE &&
-                                shape.textType != org.apache.poi.sl.usermodel.Placeholder.CENTERED_TITLE) {
+                                shape.textType != org.apache.poi.sl.usermodel.Placeholder.CENTERED_TITLE
+                            ) {
                                 val text = shape.text?.trim()
                                 if (!text.isNullOrEmpty()) {
                                     bodyParts.add(text)
@@ -64,8 +70,8 @@ class PptxSlideParser {
                             speakerNotes = notes,
                             orderIndex = order++,
                             createdAt = now,
-                            updatedAt = now
-                        )
+                            updatedAt = now,
+                        ),
                     )
                 }
             }

@@ -10,46 +10,55 @@ class SpreadsheetQuestionParser(
     private val optionCols: List<Int>,
     private val sheetAddressImages: Map<String, String>,
     private val sheetRowImages: Map<Int, String>,
-    private val imageExtractor: GenericImageExtractor
+    private val imageExtractor: GenericImageExtractor,
 ) {
-
     companion object {
         private val CATEGORY_DELIMITER = Regex("""[,،;؛/|]+""")
         private val MARKED_REGEX = Regex("""[*✓✔☑]""")
-        private val DISPIMG_REGEX = Regex(
-            """(?:_xlfn\.)?DISPIMG\([^)]*\)""",
-            RegexOption.IGNORE_CASE
-        )
+        private val DISPIMG_REGEX =
+            Regex(
+                """(?:_xlfn\.)?DISPIMG\([^)]*\)""",
+                RegexOption.IGNORE_CASE,
+            )
         private val WHITESPACE_REGEX = Regex("""\s+""")
         private val NORMALIZED_KEY_REGEX = Regex("[^A-Z0-9,;|\\s]")
         private val PART_DELIMITER_REGEX = Regex("[,;|\\s]+")
     }
 
-    fun parseRow(row: List<String>, rowNumberOneBased: Int): ParsedQuestion? {
+    fun parseRow(
+        row: List<String>,
+        rowNumberOneBased: Int,
+    ): ParsedQuestion? {
         val stem = cleanCellText(get(row, "question"))
         val externalId = cleanCellText(get(row, "id")).ifBlank { null }
         val answerRaw = cleanCellText(get(row, "answer"))
 
-        val options = optionCols.mapIndexedNotNull { index, colIdx ->
-            val cell = cleanCellText(row.getOrNull(colIdx))
-            if (cell.isBlank()) null else ParsedOption(
-                id = generateOptionId(index),
-                text = cell,
-                marked = isMarked(cell)
-            )
-        }
+        val options =
+            optionCols.mapIndexedNotNull { index, colIdx ->
+                val cell = cleanCellText(row.getOrNull(colIdx))
+                if (cell.isBlank()) {
+                    null
+                } else {
+                    ParsedOption(
+                        id = generateOptionId(index),
+                        text = cell,
+                        marked = isMarked(cell),
+                    )
+                }
+            }
 
         val resolvedCorrectAnswers = resolveCorrectAnswers(answerRaw, options)
         val questionColIdx = mapping["question"] ?: -1
         val imageColIdx = mapping["image"] ?: -1
         val resolvedImage = resolveImage(row, rowNumberOneBased, questionColIdx, imageColIdx, optionCols)
 
-        val categories = cleanCellText(get(row, "categories"))
-            .split(CATEGORY_DELIMITER)
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .ifEmpty { listOf("none") }
+        val categories =
+            cleanCellText(get(row, "categories"))
+                .split(CATEGORY_DELIMITER)
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+                .ifEmpty { listOf("none") }
 
         val type = if (resolvedCorrectAnswers.size > 1) QuestionType.MULTIPLE_CHOICE else QuestionType.SINGLE_CHOICE
 
@@ -78,7 +87,7 @@ class SpreadsheetQuestionParser(
             type = type,
             issues = issues,
             answerMode = if (type == QuestionType.MULTIPLE_CHOICE) "multiple" else "single",
-            isIncluded = true
+            isIncluded = true,
         )
     }
 
@@ -95,7 +104,7 @@ class SpreadsheetQuestionParser(
         rowNumber: Int,
         qIdx: Int,
         imgIdx: Int,
-        optIdxs: List<Int>
+        optIdxs: List<Int>,
     ): ResolvedImage {
         if (imgIdx != -1) {
             resolveFromCell(row.getOrNull(imgIdx), cellRef(imgIdx, rowNumber), rowNumber)?.let { return it }
@@ -114,7 +123,11 @@ class SpreadsheetQuestionParser(
         }
     }
 
-    private fun resolveFromCell(value: String?, ref: String, rowNum: Int): ResolvedImage? {
+    private fun resolveFromCell(
+        value: String?,
+        ref: String,
+        rowNum: Int,
+    ): ResolvedImage? {
         imageExtractor.extractFromText(value)?.let { return it }
         sheetAddressImages[ref]?.takeIf { it.isNotBlank() }?.let {
             return ResolvedImage(imageDataUrl = it, via = "exact-cell")
@@ -124,7 +137,10 @@ class SpreadsheetQuestionParser(
         }
     }
 
-    private fun get(row: List<String>, field: String): String? {
+    private fun get(
+        row: List<String>,
+        field: String,
+    ): String? {
         val idx = mapping[field] ?: return null
         return row.getOrNull(idx)
     }
@@ -139,7 +155,10 @@ class SpreadsheetQuestionParser(
             .trim()
     }
 
-    private fun cellRef(colIdx: Int, rowNum: Int): String {
+    private fun cellRef(
+        colIdx: Int,
+        rowNum: Int,
+    ): String {
         var n = colIdx + 1
         var letters = ""
         while (n > 0) {
@@ -150,7 +169,10 @@ class SpreadsheetQuestionParser(
         return letters + rowNum
     }
 
-    private fun resolveCorrectAnswers(answerRaw: String, options: List<ParsedOption>): List<String> {
+    private fun resolveCorrectAnswers(
+        answerRaw: String,
+        options: List<ParsedOption>,
+    ): List<String> {
         val indices = linkedSetOf<String>()
         val normalizedKey = answerRaw.uppercase().replace(NORMALIZED_KEY_REGEX, " ")
         val parts = normalizedKey.split(PART_DELIMITER_REGEX).filter { it.isNotEmpty() }
@@ -160,14 +182,14 @@ class SpreadsheetQuestionParser(
             if (part.length == 1 && part[0] in 'A'..'Z') {
                 val index = part[0] - 'A'
                 if (index in options.indices) indices.add(options[index].id)
-            } 
+            }
             // Check for multi-char string of letters like "ABC"
             else if (part.all { it in 'A'..'Z' } && part.length > 1 && part.length <= options.size) {
                 part.forEach { char ->
                     val index = char - 'A'
                     if (index in options.indices) indices.add(options[index].id)
                 }
-            } 
+            }
             // Check for numeric 1-26
             else {
                 val numericIndex = part.toIntOrNull()?.minus(1)
@@ -175,9 +197,10 @@ class SpreadsheetQuestionParser(
                     indices.add(options[numericIndex].id)
                 } else {
                     // Direct text match
-                    val directIndex = options.indexOfFirst { option ->
-                        option.text.trim().equals(part.trim(), ignoreCase = true)
-                    }
+                    val directIndex =
+                        options.indexOfFirst { option ->
+                            option.text.trim().equals(part.trim(), ignoreCase = true)
+                        }
                     if (directIndex != -1) indices.add(options[directIndex].id)
                 }
             }
@@ -185,9 +208,10 @@ class SpreadsheetQuestionParser(
 
         // Direct text match fallback
         if (indices.isEmpty() && answerRaw.isNotBlank()) {
-            val directIndex = options.indexOfFirst { option ->
-                option.text.trim().equals(answerRaw.trim(), ignoreCase = true)
-            }
+            val directIndex =
+                options.indexOfFirst { option ->
+                    option.text.trim().equals(answerRaw.trim(), ignoreCase = true)
+                }
             if (directIndex != -1) indices.add(options[directIndex].id)
         }
 

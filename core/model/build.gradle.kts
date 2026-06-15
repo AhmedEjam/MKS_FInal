@@ -16,10 +16,13 @@ android {
         buildConfig = true
     }
 }
+ksp {
+    arg("moshi.generateAdapter.kapt", "false")
+}
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.room.runtime)
-    implementation(libs.moshi.kotlin)
+    implementation(libs.moshi)
     ksp(libs.moshi.kotlin.codegen)
     implementation(libs.kotlinx.serialization.json)
 }

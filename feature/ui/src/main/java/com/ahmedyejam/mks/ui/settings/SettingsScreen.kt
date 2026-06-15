@@ -427,10 +427,6 @@ fun SettingsScreen(
                     Spacer(Modifier.width(8.dp))
                     Column(horizontalAlignment = Alignment.Start) {
                         Text(stringResource(R.string.clear_categories))
-                        Text(
-                            text = stringResource(R.string.clear_categories_desc),
-                            style = MaterialTheme.typography.labelSmall
-                        )
                     }
                 }
 

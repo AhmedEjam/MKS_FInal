@@ -147,7 +147,6 @@ fun ImportReviewDialog(
                                     MergeStrategy.SKIP_EXISTING -> stringResource(R.string.strategy_skip)
                                     MergeStrategy.OVERWRITE_EXISTING -> stringResource(R.string.strategy_overwrite)
                                     MergeStrategy.DUPLICATE -> stringResource(R.string.strategy_duplicate)
-                                    else -> entry.name
                                 },
                                 style = MaterialTheme.typography.bodyMedium
                             )

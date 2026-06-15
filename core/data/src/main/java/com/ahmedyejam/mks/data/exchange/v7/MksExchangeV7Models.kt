@@ -35,7 +35,7 @@ data class MksExchangeV7Manifest(
     val softDeletePolicy: String = "deletedAt rows are preserved through soft_deletes.json when present.",
     val entries: List<String> = emptyList(),
     val counts: MksExchangeV7Counts = MksExchangeV7Counts(),
-    val warnings: List<String> = emptyList()
+    val warnings: List<String> = emptyList(),
 )
 
 @Serializable
@@ -51,13 +51,13 @@ data class MksExchangeV7Counts(
     val sourceDocuments: Int = 0,
     val annotations: Int = 0,
     val mediaFiles: Int = 0,
-    val softDeletedRecords: Int = 0
+    val softDeletedRecords: Int = 0,
 )
 
 @Serializable
 data class MksExchangeV7WorkspaceEnvelope(
     val workspaces: List<MksExchangeV7Workspace> = emptyList(),
-    val workspaceSettings: List<MksExchangeV7WorkspaceSettings> = emptyList()
+    val workspaceSettings: List<MksExchangeV7WorkspaceSettings> = emptyList(),
 )
 
 @Serializable
@@ -69,7 +69,7 @@ data class MksExchangeV7Workspace(
     val isDefault: Boolean = true,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -83,7 +83,7 @@ data class MksExchangeV7WorkspaceSettings(
     val importDefaultsJson: String? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -108,7 +108,7 @@ data class MksExchangeV7Book(
     val totalAttempts: Int = 0,
     val completionPercentage: Float = 0f,
     val accuracyPercentage: Float = 0f,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -133,7 +133,7 @@ data class MksExchangeV7Quiz(
     val totalAttempts: Int = 0,
     val completionPercentage: Float = 0f,
     val accuracyPercentage: Float = 0f,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -174,13 +174,13 @@ data class MksExchangeV7Question(
     val timeSpentMs: Long = 0,
     val lastAttemptResult: Boolean? = null,
     val consecutiveCorrect: Int = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 @Serializable
 data class MksExchangeV7QuestionCategory(
     val questionId: Long = 0,
-    val category: String = ""
+    val category: String = "",
 )
 
 @Serializable
@@ -190,7 +190,7 @@ data class MksExchangeV7AssetReference(
     val ownerType: String,
     val ownerId: Long,
     val createdAt: Long = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -216,7 +216,7 @@ data class MksExchangeV7QuestionAsset(
     val isPrimary: Boolean = false,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -234,7 +234,7 @@ data class MksExchangeV7SourceDocument(
     val description: String? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -250,13 +250,13 @@ data class MksExchangeV7Annotation(
     val positionDataJson: String? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 @Serializable
 data class MksExchangeV7MediaManifest(
     val files: List<MksExchangeV7MediaFile> = emptyList(),
-    val missingFiles: List<String> = emptyList()
+    val missingFiles: List<String> = emptyList(),
 )
 
 @Serializable
@@ -269,7 +269,7 @@ data class MksExchangeV7MediaFile(
     val ownerKind: String,
     val ownerExternalId: String? = null,
     val ownerId: Long = 0,
-    val sha256: String? = null
+    val sha256: String? = null,
 )
 
 @Serializable
@@ -277,7 +277,7 @@ data class MksExchangeV7SoftDeleteRecord(
     val kind: String,
     val recordId: Long,
     val externalId: String? = null,
-    val deletedAt: Long
+    val deletedAt: Long,
 )
 
 /**
@@ -290,7 +290,7 @@ data class MksExchangeV7SupplementalData(
     val assetReferences: List<MksExchangeV7SupplementalAssetReference> = emptyList(),
     val questionAssets: List<MksExchangeV7SupplementalQuestionAsset> = emptyList(),
     val sourceDocuments: List<MksExchangeV7SupplementalSourceDocument> = emptyList(),
-    val annotations: List<MksExchangeV7SupplementalAnnotation> = emptyList()
+    val annotations: List<MksExchangeV7SupplementalAnnotation> = emptyList(),
 )
 
 data class MksExchangeV7SupplementalAssetReference(
@@ -300,7 +300,7 @@ data class MksExchangeV7SupplementalAssetReference(
     val ownerId: Long,
     val ownerExternalId: String? = null,
     val createdAt: Long = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 data class MksExchangeV7SupplementalQuestionAsset(
@@ -328,7 +328,7 @@ data class MksExchangeV7SupplementalQuestionAsset(
     val isPrimary: Boolean = false,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 data class MksExchangeV7SupplementalSourceDocument(
@@ -346,7 +346,7 @@ data class MksExchangeV7SupplementalSourceDocument(
     val description: String? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )
 
 data class MksExchangeV7SupplementalAnnotation(
@@ -363,5 +363,5 @@ data class MksExchangeV7SupplementalAnnotation(
     val positionDataJson: String? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )

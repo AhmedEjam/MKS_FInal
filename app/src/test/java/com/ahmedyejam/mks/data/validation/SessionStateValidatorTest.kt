@@ -6,13 +6,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SessionStateValidatorTest {
-
     @Test
     fun uninitializedQuestionSequenceIsRepairable() {
-        val session = SessionEntity(
-            quizId = 1L,
-            label = "New session"
-        )
+        val session =
+            SessionEntity(
+                quizId = 1L,
+                label = "New session",
+            )
 
         val result = SessionStateValidator.validate(session)
 
@@ -22,12 +22,13 @@ class SessionStateValidatorTest {
 
     @Test
     fun currentIndexOutsideInitializedSequenceIsRepairable() {
-        val session = SessionEntity(
-            quizId = 1L,
-            label = "Existing session",
-            questionIds = listOf(10L, 11L),
-            currentQuestionIndex = 3
-        )
+        val session =
+            SessionEntity(
+                quizId = 1L,
+                label = "Existing session",
+                questionIds = listOf(10L, 11L),
+                currentQuestionIndex = 3,
+            )
 
         val result = SessionStateValidator.validate(session)
 
@@ -37,12 +38,13 @@ class SessionStateValidatorTest {
 
     @Test
     fun initializedSequenceWithValidIndexIsValid() {
-        val session = SessionEntity(
-            quizId = 1L,
-            label = "Existing session",
-            questionIds = listOf(10L, 11L),
-            currentQuestionIndex = 1
-        )
+        val session =
+            SessionEntity(
+                quizId = 1L,
+                label = "Existing session",
+                questionIds = listOf(10L, 11L),
+                currentQuestionIndex = 1,
+            )
 
         val result = SessionStateValidator.validate(session)
 

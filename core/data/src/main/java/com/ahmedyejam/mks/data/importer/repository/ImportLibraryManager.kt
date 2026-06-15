@@ -10,31 +10,27 @@ import com.ahmedyejam.mks.data.importer.mapping.LibraryMapper
 import com.ahmedyejam.mks.data.importer.model.*
 import com.ahmedyejam.mks.data.importer.normalization.BundleNormalizer
 import com.ahmedyejam.mks.data.importer.parser.*
-import com.ahmedyejam.mks.data.importer.validation.ImportValidator
 import com.ahmedyejam.mks.data.importer.security.ImportLimits
-import com.ahmedyejam.mks.util.readTextWithLimit
-import com.ahmedyejam.mks.data.network.RemoteAssetPolicy
+import com.ahmedyejam.mks.data.importer.validation.ImportValidator
 import com.ahmedyejam.mks.data.importer.xlsx.XlsxLibraryCompiler
 import com.ahmedyejam.mks.data.local.FileManager
 import com.ahmedyejam.mks.data.local.MksDatabase
 import com.ahmedyejam.mks.data.local.WorkspaceDefaults
 import com.ahmedyejam.mks.data.local.entity.BookEntity
-import com.ahmedyejam.mks.data.local.entity.QuizEntity
-import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
+import com.ahmedyejam.mks.data.network.RemoteAssetPolicy
+import com.ahmedyejam.mks.util.readTextWithLimit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
 
-
-
 class ImportLibraryManager constructor(
     private val context: Context,
     private val database: MksDatabase,
-    private val fileManager: FileManager
+    private val fileManager: FileManager,
 ) {
     private val bookDao = database.bookDao()
     private val quizDao = database.quizDao()
@@ -48,7 +44,7 @@ class ImportLibraryManager constructor(
     private val formatDetector = ImportFormatDetector(context)
     private val jsonParser = JsonLibraryParser()
     private val zipParser = ZipLibraryParser(context, jsonParser)
-    
+
     private val csvParser = CsvParser()
     private val headerMapper = SpreadsheetHeaderMapper()
     private val imageExtractor = GenericImageExtractor()
@@ -56,7 +52,7 @@ class ImportLibraryManager constructor(
     private val jsonQuestionParser = JsonQuestionParser(imageExtractor)
     private val htmlParser = HtmlQuestionParser(jsonParser = jsonQuestionParser)
     private val xlsxCompiler = XlsxLibraryCompiler(context)
-    
+
     private val validator = ImportValidator()
     private val normalizer = BundleNormalizer()
     private val mapper = LibraryMapper()
@@ -71,8 +67,8 @@ class ImportLibraryManager constructor(
                     description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
                     isDefault = true,
                     deletedAt = null,
-                    updatedAt = System.currentTimeMillis()
-                )
+                    updatedAt = System.currentTimeMillis(),
+                ),
             )
             if (workspaceDao.getSettingsByWorkspaceId(workspace.id) == null) {
                 workspaceDao.insertSettings(WorkspaceSettingsEntity(workspaceId = workspace.id))
@@ -80,14 +76,15 @@ class ImportLibraryManager constructor(
             return workspace.id
         }
 
-        val workspaceId = workspaceDao.insertWorkspace(
-            WorkspaceEntity(
-                externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
-                name = WorkspaceDefaults.DEFAULT_NAME,
-                description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
-                isDefault = true
+        val workspaceId =
+            workspaceDao.insertWorkspace(
+                WorkspaceEntity(
+                    externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
+                    name = WorkspaceDefaults.DEFAULT_NAME,
+                    description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
+                    isDefault = true,
+                ),
             )
-        )
         workspaceDao.insertSettings(WorkspaceSettingsEntity(workspaceId = workspaceId))
         return workspaceId
     }
@@ -102,7 +99,7 @@ class ImportLibraryManager constructor(
     private data class ResolvedImageResult(
         val path: String? = null,
         val warning: String? = null,
-        val importedLocally: Boolean = false
+        val importedLocally: Boolean = false,
     )
 
     private fun isTrackableLocalAsset(path: String?): Boolean {
@@ -115,13 +112,19 @@ class ImportLibraryManager constructor(
             !value.startsWith("assets/", ignoreCase = true)
     }
 
-    private suspend fun replaceOwnerAssetReferences(ownerType: String, ownerId: Long, paths: List<String?>) {
-        val cleaned = paths
-            .mapNotNull { it?.trim()?.takeIf { value -> isTrackableLocalAsset(value) } }
-            .distinct()
-        val previousPaths = assetReferenceDao.getReferencesForOwner(ownerType, ownerId)
-            .map { it.path }
-            .distinct()
+    private suspend fun replaceOwnerAssetReferences(
+        ownerType: String,
+        ownerId: Long,
+        paths: List<String?>,
+    ) {
+        val cleaned =
+            paths
+                .mapNotNull { it?.trim()?.takeIf { value -> isTrackableLocalAsset(value) } }
+                .distinct()
+        val previousPaths =
+            assetReferenceDao.getReferencesForOwner(ownerType, ownerId)
+                .map { it.path }
+                .distinct()
         assetReferenceDao.replaceOwnerReferences(ownerType, ownerId, cleaned)
         previousPaths
             .filterNot { it in cleaned }
@@ -132,7 +135,10 @@ class ImportLibraryManager constructor(
             }
     }
 
-    private suspend fun syncQuestionCategories(questionId: Long, categories: List<String>) {
+    private suspend fun syncQuestionCategories(
+        questionId: Long,
+        categories: List<String>,
+    ) {
         questionCategoryDao.replaceCategories(questionId, categories)
     }
 
@@ -140,114 +146,124 @@ class ImportLibraryManager constructor(
         return formatDetector.detectFormat(uri)
     }
 
-    suspend fun getImportPreview(uri: Uri): ImportPreviewDto = withContext(Dispatchers.IO) {
-        val format = formatDetector.detectFormat(uri)
-        if (format == ImportFormat.UNKNOWN) throw Exception("Unsupported file format")
+    suspend fun getImportPreview(uri: Uri): ImportPreviewDto =
+        withContext(Dispatchers.IO) {
+            val format = formatDetector.detectFormat(uri)
+            if (format == ImportFormat.UNKNOWN) throw Exception("Unsupported file format")
 
-        var zipResult: ZipLibraryParser.ZipResult? = null
-        try {
-            val bundle = when (format) {
-                ImportFormat.JSON -> {
-                    val stream = context.contentResolver.openInputStream(uri) ?: throw Exception("Could not open stream")
-                    stream.use { jsonParser.parse(it) }
-                }
-                ImportFormat.ZIP -> {
-                    val stream = context.contentResolver.openInputStream(uri) ?: throw Exception("Could not open stream")
-                    val parsedZip = stream.use { zipParser.parse(it) }
-                    zipResult = parsedZip
-                    parsedZip.bundle
-                }
-                ImportFormat.XLSX -> {
-                    xlsxCompiler.compile(uri)
-                }
-                ImportFormat.CSV_TSV, ImportFormat.TEXT, ImportFormat.HTML -> {
-                    val content = readImportText(uri, format)
-                    val questions = when (format) {
-                        ImportFormat.HTML -> htmlParser.parse(content)
-                        ImportFormat.TEXT -> textParser.parse(content)
-                        else -> parseSpreadsheetSimple(uri)
+            var zipResult: ZipLibraryParser.ZipResult? = null
+            try {
+                val bundle =
+                    when (format) {
+                        ImportFormat.JSON -> {
+                            val stream = context.contentResolver.openInputStream(uri) ?: throw Exception("Could not open stream")
+                            stream.use { jsonParser.parse(it) }
+                        }
+                        ImportFormat.ZIP -> {
+                            val stream = context.contentResolver.openInputStream(uri) ?: throw Exception("Could not open stream")
+                            val parsedZip = stream.use { zipParser.parse(it) }
+                            zipResult = parsedZip
+                            parsedZip.bundle
+                        }
+                        ImportFormat.XLSX -> {
+                            xlsxCompiler.compile(uri)
+                        }
+                        ImportFormat.CSV_TSV, ImportFormat.TEXT, ImportFormat.HTML -> {
+                            val content = readImportText(uri, format)
+                            val questions =
+                                when (format) {
+                                    ImportFormat.HTML -> htmlParser.parse(content)
+                                    ImportFormat.TEXT -> textParser.parse(content)
+                                    else -> parseSpreadsheetSimple(uri)
+                                }
+                            wrapQuestionsToBundle(questions, uri.lastPathSegment ?: "Imported File")
+                        }
+                        else -> throw Exception("Unexpected format: $format")
                     }
-                    wrapQuestionsToBundle(questions, uri.lastPathSegment ?: "Imported File")
+
+                val validation = validator.validate(bundle)
+                val sanitizedBundle = validation.sanitizedBundle ?: bundle
+                val normalized = normalizer.normalize(sanitizedBundle)
+
+                val booksToCreate = mutableListOf<String>()
+                val booksToUpdate = mutableListOf<String>()
+                normalized.books.forEach { book ->
+                    if (bookDao.getBookByExternalId(book.id) != null) {
+                        booksToUpdate.add(book.title)
+                    } else {
+                        booksToCreate.add(book.title)
+                    }
                 }
-                else -> throw Exception("Unexpected format: $format")
-            }
 
-            val validation = validator.validate(bundle)
-            val sanitizedBundle = validation.sanitizedBundle ?: bundle
-            val normalized = normalizer.normalize(sanitizedBundle)
+                val quizzesToCreate = mutableListOf<String>()
+                val quizzesToUpdate = mutableListOf<String>()
+                normalized.quizzes.forEach { quiz ->
+                    if (quizDao.getQuizByExternalId(quiz.id) != null) {
+                        quizzesToUpdate.add(quiz.title)
+                    } else {
+                        quizzesToCreate.add(quiz.title)
+                    }
+                }
 
-            val booksToCreate = mutableListOf<String>()
-            val booksToUpdate = mutableListOf<String>()
-            normalized.books.forEach { book ->
-                if (bookDao.getBookByExternalId(book.id) != null) booksToUpdate.add(book.title)
-                else booksToCreate.add(book.title)
-            }
-
-            val quizzesToCreate = mutableListOf<String>()
-            val quizzesToUpdate = mutableListOf<String>()
-            normalized.quizzes.forEach { quiz ->
-                if (quizDao.getQuizByExternalId(quiz.id) != null) quizzesToUpdate.add(quiz.title)
-                else quizzesToCreate.add(quiz.title)
-            }
-
-            val questionsToCreate = mutableListOf<String>()
-            val questionsToUpdate = mutableListOf<String>()
-            normalized.quizzes.forEach { quizDto ->
-                val existingQuiz = quizDao.getQuizByExternalId(quizDto.id)
-                if (existingQuiz == null) {
-                    questionsToCreate.addAll(quizDto.questions.map { it.stem.take(50) })
-                } else {
-                    quizDto.questions.forEach { questionDto ->
-                        if (questionDao.getQuestionByExternalId(existingQuiz.id, questionDto.id) != null) {
-                            questionsToUpdate.add(questionDto.stem.take(50))
-                        } else {
-                            questionsToCreate.add(questionDto.stem.take(50))
+                val questionsToCreate = mutableListOf<String>()
+                val questionsToUpdate = mutableListOf<String>()
+                normalized.quizzes.forEach { quizDto ->
+                    val existingQuiz = quizDao.getQuizByExternalId(quizDto.id)
+                    if (existingQuiz == null) {
+                        questionsToCreate.addAll(quizDto.questions.map { it.stem.take(50) })
+                    } else {
+                        quizDto.questions.forEach { questionDto ->
+                            if (questionDao.getQuestionByExternalId(existingQuiz.id, questionDto.id) != null) {
+                                questionsToUpdate.add(questionDto.stem.take(50))
+                            } else {
+                                questionsToCreate.add(questionDto.stem.take(50))
+                            }
                         }
                     }
                 }
-            }
 
-            val searchDirs = mutableListOf<File>()
-            zipResult?.libraryDir?.let { searchDirs.add(it) }
-            zipResult?.rootDir?.let { if (it != zipResult.libraryDir) searchDirs.add(it) }
+                val searchDirs = mutableListOf<File>()
+                zipResult?.libraryDir?.let { searchDirs.add(it) }
+                zipResult?.rootDir?.let { if (it != zipResult.libraryDir) searchDirs.add(it) }
 
-            val imageFiles = searchDirs.flatMap { dir ->
-                dir.walkTopDown().filter {
-                    it.isFile && it.extension.matches(Regex("png|jpe?g|webp|gif|svg|bmp", RegexOption.IGNORE_CASE))
-                }.toList()
-            }
-            val totalImages = imageFiles.size
-            val hasAssets = totalImages > 0
-            val previewWarnings = validation.warnings.toMutableList()
-            if (bundleContainsPlainHttpAssets(normalized)) {
-                previewWarnings.add(
-                    ImportWarning(
-                        "This import contains plain HTTP image URLs. They will not be downloaded unless you explicitly allow insecure image downloads in the review dialog.",
-                        details = "Plain HTTP images are visible to the network and can be modified in transit."
+                val imageFiles =
+                    searchDirs.flatMap { dir ->
+                        dir.walkTopDown().filter {
+                            it.isFile && it.extension.matches(Regex("png|jpe?g|webp|gif|svg|bmp", RegexOption.IGNORE_CASE))
+                        }.toList()
+                    }
+                val totalImages = imageFiles.size
+                val hasAssets = totalImages > 0
+                val previewWarnings = validation.warnings.toMutableList()
+                if (bundleContainsPlainHttpAssets(normalized)) {
+                    previewWarnings.add(
+                        ImportWarning(
+                            "This import contains plain HTTP image URLs. They will not be downloaded unless you explicitly allow insecure image downloads in the review dialog.",
+                            details = "Plain HTTP images are visible to the network and can be modified in transit.",
+                        ),
                     )
-                )
-            }
+                }
 
-            ImportPreviewDto(
-                bundle = normalized,
-                booksToCreate = booksToCreate,
-                booksToUpdate = booksToUpdate,
-                quizzesToCreate = quizzesToCreate,
-                quizzesToUpdate = quizzesToUpdate,
-                questionsToCreate = questionsToCreate,
-                questionsToUpdate = questionsToUpdate,
-                totalQuestions = normalized.quizzes.sumOf { it.questions.size },
-                totalSessions = normalized.sessions?.size ?: 0,
-                totalCategories = normalized.categories.size,
-                totalImages = totalImages,
-                skippedRecordsCount = validation.skippedRecordsCount,
-                hasAssets = hasAssets,
-                warnings = previewWarnings
-            )
-        } finally {
-            zipResult?.rootDir?.deleteRecursively()
+                ImportPreviewDto(
+                    bundle = normalized,
+                    booksToCreate = booksToCreate,
+                    booksToUpdate = booksToUpdate,
+                    quizzesToCreate = quizzesToCreate,
+                    quizzesToUpdate = quizzesToUpdate,
+                    questionsToCreate = questionsToCreate,
+                    questionsToUpdate = questionsToUpdate,
+                    totalQuestions = normalized.quizzes.sumOf { it.questions.size },
+                    totalSessions = normalized.sessions?.size ?: 0,
+                    totalCategories = normalized.categories.size,
+                    totalImages = totalImages,
+                    skippedRecordsCount = validation.skippedRecordsCount,
+                    hasAssets = hasAssets,
+                    warnings = previewWarnings,
+                )
+            } finally {
+                zipResult?.rootDir?.deleteRecursively()
+            }
         }
-    }
 
     suspend fun importLibrary(
         uri: Uri,
@@ -256,80 +272,86 @@ class ImportLibraryManager constructor(
         targetQuizId: Long? = null,
         allowInsecureRemoteImages: Boolean = false,
         activeWorkspaceId: Long? = null,
-        onProgress: (Float, String) -> Unit = { _, _ -> }
-    ): ImportResult = withContext(Dispatchers.IO) {
-        val startTime = System.currentTimeMillis()
-        onProgress(0.05f, "Detecting format...")
-        val format = formatDetector.detectFormat(uri)
-        
-        if (format == ImportFormat.UNKNOWN) {
-            return@withContext ImportResult(
-                success = false,
-                detectedFormat = format,
-                errors = listOf(ImportError("Unsupported file format"))
-            )
-        }
+        onProgress: (Float, String) -> Unit = { _, _ -> },
+    ): ImportResult =
+        withContext(Dispatchers.IO) {
+            val startTime = System.currentTimeMillis()
+            onProgress(0.05f, "Detecting format...")
+            val format = formatDetector.detectFormat(uri)
 
-        var zipResult: ZipLibraryParser.ZipResult? = null
-        try {
-            val bundle = when (format) {
-                ImportFormat.JSON -> {
-                    onProgress(0.1f, "Parsing JSON...")
-                    val stream = context.contentResolver.openInputStream(uri)
-                        ?: throw Exception("Could not open stream")
-                    stream.use { jsonParser.parse(it) }
-                }
-                ImportFormat.ZIP -> {
-                    onProgress(0.1f, "Extracting ZIP...")
-                    val stream = context.contentResolver.openInputStream(uri)
-                        ?: throw Exception("Could not open stream")
-                    val parsedZip = stream.use { zipParser.parse(it) }
-                    zipResult = parsedZip
-                    parsedZip.bundle
-                }
-                ImportFormat.XLSX -> {
-                    onProgress(0.1f, "Compiling XLSX...")
-                    xlsxCompiler.compile(uri)
-                }
-                ImportFormat.CSV_TSV, ImportFormat.TEXT, ImportFormat.HTML -> {
-                    onProgress(0.1f, "Parsing file...")
-                    val content = readImportText(uri, format)
-                    val questions = when (format) {
-                        ImportFormat.HTML -> htmlParser.parse(content)
-                        ImportFormat.TEXT -> textParser.parse(content)
-                        else -> parseSpreadsheetSimple(uri)
-                    }
-                    wrapQuestionsToBundle(questions, uri.lastPathSegment ?: "Imported File")
-                }
-                else -> throw Exception("Unexpected format: $format")
+            if (format == ImportFormat.UNKNOWN) {
+                return@withContext ImportResult(
+                    success = false,
+                    detectedFormat = format,
+                    errors = listOf(ImportError("Unsupported file format")),
+                )
             }
 
-            val result = executeImportPipeline(
-                bundle = bundle,
-                assetsDir = zipResult?.libraryDir,
-                format = format,
-                strategy = strategy,
-                targetBookId = targetBookId,
-                targetQuizId = targetQuizId,
-                startTime = startTime,
-                onProgress = onProgress,
-                allowInsecureRemoteImages = allowInsecureRemoteImages,
-                rootDir = zipResult?.rootDir,
-                manifest = zipResult?.manifest,
-                activeWorkspaceId = activeWorkspaceId
-            )
+            var zipResult: ZipLibraryParser.ZipResult? = null
+            try {
+                val bundle =
+                    when (format) {
+                        ImportFormat.JSON -> {
+                            onProgress(0.1f, "Parsing JSON...")
+                            val stream =
+                                context.contentResolver.openInputStream(uri)
+                                    ?: throw Exception("Could not open stream")
+                            stream.use { jsonParser.parse(it) }
+                        }
+                        ImportFormat.ZIP -> {
+                            onProgress(0.1f, "Extracting ZIP...")
+                            val stream =
+                                context.contentResolver.openInputStream(uri)
+                                    ?: throw Exception("Could not open stream")
+                            val parsedZip = stream.use { zipParser.parse(it) }
+                            zipResult = parsedZip
+                            parsedZip.bundle
+                        }
+                        ImportFormat.XLSX -> {
+                            onProgress(0.1f, "Compiling XLSX...")
+                            xlsxCompiler.compile(uri)
+                        }
+                        ImportFormat.CSV_TSV, ImportFormat.TEXT, ImportFormat.HTML -> {
+                            onProgress(0.1f, "Parsing file...")
+                            val content = readImportText(uri, format)
+                            val questions =
+                                when (format) {
+                                    ImportFormat.HTML -> htmlParser.parse(content)
+                                    ImportFormat.TEXT -> textParser.parse(content)
+                                    else -> parseSpreadsheetSimple(uri)
+                                }
+                            wrapQuestionsToBundle(questions, uri.lastPathSegment ?: "Imported File")
+                        }
+                        else -> throw Exception("Unexpected format: $format")
+                    }
 
-            return@withContext result
-        } catch (e: Exception) {
-            return@withContext ImportResult(
-                success = false,
-                detectedFormat = format,
-                errors = listOf(ImportError("Import failed: ${e.message}", e))
-            )
-        } finally {
-            zipResult?.rootDir?.deleteRecursively()
+                val result =
+                    executeImportPipeline(
+                        bundle = bundle,
+                        assetsDir = zipResult?.libraryDir,
+                        format = format,
+                        strategy = strategy,
+                        targetBookId = targetBookId,
+                        targetQuizId = targetQuizId,
+                        startTime = startTime,
+                        onProgress = onProgress,
+                        allowInsecureRemoteImages = allowInsecureRemoteImages,
+                        rootDir = zipResult?.rootDir,
+                        manifest = zipResult?.manifest,
+                        activeWorkspaceId = activeWorkspaceId,
+                    )
+
+                return@withContext result
+            } catch (e: Exception) {
+                return@withContext ImportResult(
+                    success = false,
+                    detectedFormat = format,
+                    errors = listOf(ImportError("Import failed: ${e.message}", e)),
+                )
+            } finally {
+                zipResult?.rootDir?.deleteRecursively()
+            }
         }
-    }
 
     suspend fun importQuestions(
         title: String,
@@ -337,72 +359,78 @@ class ImportLibraryManager constructor(
         targetBookId: Long? = null,
         targetQuizId: Long? = null,
         newBookTitle: String? = null,
-        onProgress: (Float, String) -> Unit = { _, _ -> }
-    ): ImportResult = withContext(Dispatchers.IO) {
-        val startTime = System.currentTimeMillis()
-        val bundle = wrapQuestionsToBundle(
-            questions = questions,
-            quizTitle = title,
-            bookTitle = newBookTitle,
-            includeBook = targetBookId == null && targetQuizId == null
-        )
+        onProgress: (Float, String) -> Unit = { _, _ -> },
+    ): ImportResult =
+        withContext(Dispatchers.IO) {
+            val startTime = System.currentTimeMillis()
+            val bundle =
+                wrapQuestionsToBundle(
+                    questions = questions,
+                    quizTitle = title,
+                    bookTitle = newBookTitle,
+                    includeBook = targetBookId == null && targetQuizId == null,
+                )
 
-        executeImportPipeline(
-            bundle = bundle,
-            assetsDir = null,
-            format = ImportFormat.TEXT,
-            strategy = MergeStrategy.SKIP_EXISTING,
-            targetBookId = targetBookId,
-            targetQuizId = targetQuizId,
-            startTime = startTime,
-            onProgress = onProgress
-        )
-    }
+            executeImportPipeline(
+                bundle = bundle,
+                assetsDir = null,
+                format = ImportFormat.TEXT,
+                strategy = MergeStrategy.SKIP_EXISTING,
+                targetBookId = targetBookId,
+                targetQuizId = targetQuizId,
+                startTime = startTime,
+                onProgress = onProgress,
+            )
+        }
 
     private fun wrapQuestionsToBundle(
         questions: List<ParsedQuestion>,
         quizTitle: String,
         bookTitle: String? = null,
-        includeBook: Boolean = true
+        includeBook: Boolean = true,
     ): LibraryBundleDto {
         val normalizedQuizTitle = quizTitle.ifBlank { "Imported Quiz" }
         val normalizedBookTitle = bookTitle?.ifBlank { normalizedQuizTitle } ?: normalizedQuizTitle
         val quizId = UUID.nameUUIDFromBytes(normalizedQuizTitle.toByteArray()).toString()
         val bookId = UUID.nameUUIDFromBytes("book_$normalizedBookTitle".toByteArray()).toString()
-        
-        val questionDtos = questions.map { pq ->
-            val deterministicId = pq.externalId ?: generateDeterministicId(pq.stem, pq.options.map { it.text })
-            QuestionDto(
-                id = deterministicId,
-                stem = pq.stem,
-                options = pq.options.map { OptionDto(it.id, it.text) },
-                correct = pq.correctAnswers,
-                explanation = pq.explanation ?: "",
-                hint = pq.hint ?: "",
-                reference = pq.reference ?: "",
-                imageDataUrl = pq.imageDataUrl ?: "",
-                imageSource = pq.imageSource ?: "",
-                categories = pq.categories,
-                additionalInfo = pq.additionalInfo ?: "",
-                sourceLine = pq.sourceLine.takeIf { it > 0 }
-            )
-        }
+
+        val questionDtos =
+            questions.map { pq ->
+                val deterministicId = pq.externalId ?: generateDeterministicId(pq.stem, pq.options.map { it.text })
+                QuestionDto(
+                    id = deterministicId,
+                    stem = pq.stem,
+                    options = pq.options.map { OptionDto(it.id, it.text) },
+                    correct = pq.correctAnswers,
+                    explanation = pq.explanation ?: "",
+                    hint = pq.hint ?: "",
+                    reference = pq.reference ?: "",
+                    imageDataUrl = pq.imageDataUrl ?: "",
+                    imageSource = pq.imageSource ?: "",
+                    categories = pq.categories,
+                    additionalInfo = pq.additionalInfo ?: "",
+                    sourceLine = pq.sourceLine.takeIf { it > 0 },
+                )
+            }
 
         return LibraryBundleDto(
             books = if (includeBook) listOf(BookDto(id = bookId, title = normalizedBookTitle)) else emptyList(),
-            quizzes = listOf(QuizDto(
-                id = quizId,
-                bookId = bookId,
-                title = normalizedQuizTitle,
-                questions = questionDtos
-            ))
+            quizzes =
+                listOf(
+                    QuizDto(
+                        id = quizId,
+                        bookId = bookId,
+                        title = normalizedQuizTitle,
+                        questions = questionDtos,
+                    ),
+                ),
         )
     }
 
     private fun parseSpreadsheetSimple(uri: Uri): List<ParsedQuestion> {
         val content = runCatching { readImportText(uri, ImportFormat.CSV_TSV) }.getOrDefault("")
         if (content.isBlank()) return emptyList()
-        
+
         val rows = csvParser.parse(content)
         if (rows.isEmpty()) return emptyList()
 
@@ -410,7 +438,7 @@ class ImportLibraryManager constructor(
         var bestRowIdx = 0
         var maxScore = -1
         val scanLimit = minOf(rows.size - 1, 20)
-        
+
         for (i in 0..scanLimit) {
             val cells = rows[i]
             val mapping = headerMapper.mapHeaders(cells)
@@ -424,13 +452,14 @@ class ImportLibraryManager constructor(
         val mapping = headerMapper.mapHeaders(headerRow)
         val optionCols = headerMapper.guessOptionColumns(headerRow, mapping)
 
-        val parser = SpreadsheetQuestionParser(
-            mapping = mapping,
-            optionCols = optionCols,
-            sheetAddressImages = emptyMap(),
-            sheetRowImages = emptyMap(),
-            imageExtractor = imageExtractor
-        )
+        val parser =
+            SpreadsheetQuestionParser(
+                mapping = mapping,
+                optionCols = optionCols,
+                sheetAddressImages = emptyMap(),
+                sheetRowImages = emptyMap(),
+                imageExtractor = imageExtractor,
+            )
 
         val questions = mutableListOf<ParsedQuestion>()
         for (i in (bestRowIdx + 1) until rows.size) {
@@ -453,21 +482,22 @@ class ImportLibraryManager constructor(
         allowInsecureRemoteImages: Boolean = false,
         rootDir: File? = null,
         manifest: ManifestDto? = null,
-        activeWorkspaceId: Long? = null
+        activeWorkspaceId: Long? = null,
     ): ImportResult {
         // 1. Validate
         onProgress(0.2f, "Validating bundle...")
-        val validation = validator.validate(
-            bundle,
-            allowUnboundQuizzes = targetBookId != null || targetQuizId != null
-        )
+        val validation =
+            validator.validate(
+                bundle,
+                allowUnboundQuizzes = targetBookId != null || targetQuizId != null,
+            )
         if (!validation.isValid) {
             return ImportResult(
                 success = false,
                 detectedFormat = format,
                 detectedSchemaVersion = bundle.schema,
                 errors = listOf(ImportError(validation.criticalError ?: "Validation failed")),
-                warnings = validation.warnings
+                warnings = validation.warnings,
             )
         }
 
@@ -494,19 +524,21 @@ class ImportLibraryManager constructor(
             val bookIdMap = mutableMapOf<String, Long>()
             val quizIdMap = mutableMapOf<String, Long>()
             val questionIdMap = mutableMapOf<String, Long>()
-            val targetQuiz = targetQuizId?.let { quizId ->
-                quizDao.getQuizById(quizId)
-                    ?: throw IllegalArgumentException("Target quiz not found: $quizId")
-            }
-            
+            val targetQuiz =
+                targetQuizId?.let { quizId ->
+                    quizDao.getQuizById(quizId)
+                        ?: throw IllegalArgumentException("Target quiz not found: $quizId")
+                }
+
             val affectedBookIds = mutableSetOf<Long>()
             val affectedQuizIds = mutableSetOf<Long>()
 
             // Total steps for progress calculation
-            val totalSteps = normalizedBundle.categories.size + 
-                             normalizedBundle.books.size + 
-                             normalizedBundle.quizzes.size + 
-                             (normalizedBundle.sessions?.size ?: 0)
+            val totalSteps =
+                normalizedBundle.categories.size +
+                    normalizedBundle.books.size +
+                    normalizedBundle.quizzes.size +
+                    (normalizedBundle.sessions?.size ?: 0)
             var currentStep = 0
 
             fun updateProgress(label: String) {
@@ -528,11 +560,12 @@ class ImportLibraryManager constructor(
             // Books
             normalizedBundle.books.forEach { bookDto ->
                 try {
-                    val targetWorkspaceId = activeWorkspaceId ?: bookDto.workspaceExternalId
-                        ?.let { workspaceDao.getWorkspaceByExternalId(it)?.id }
-                        ?: defaultWorkspaceId
+                    val targetWorkspaceId =
+                        activeWorkspaceId ?: bookDto.workspaceExternalId
+                            ?.let { workspaceDao.getWorkspaceByExternalId(it)?.id }
+                            ?: defaultWorkspaceId
                     val existingBook = bookDao.getBookByExternalIdInWorkspace(bookDto.id, targetWorkspaceId)
-                    
+
                     if (existingBook != null && strategy == MergeStrategy.SKIP_EXISTING) {
                         bookIdMap[bookDto.id] = existingBook.id
                         updateProgress("Skipping existing book: ${bookDto.title}")
@@ -545,24 +578,25 @@ class ImportLibraryManager constructor(
                     }
                     val coverPath = coverImage.path
                     if (coverImage.importedLocally) imagesCount++
-                    
+
                     val bookEntity = mapper.mapToBookEntity(bookDto, targetWorkspaceId, coverPath)
-                    val bookId = if (existingBook != null) {
-                        bookDao.updateBook(
-                            bookEntity.copy(
-                                id = existingBook.id,
-                                workspaceId = existingBook.workspaceId,
-                                createdAt = existingBook.createdAt,
-                                lastStudiedAt = existingBook.lastStudiedAt
+                    val bookId =
+                        if (existingBook != null) {
+                            bookDao.updateBook(
+                                bookEntity.copy(
+                                    id = existingBook.id,
+                                    workspaceId = existingBook.workspaceId,
+                                    createdAt = existingBook.createdAt,
+                                    lastStudiedAt = existingBook.lastStudiedAt,
+                                ),
                             )
-                        )
-                        updatedBooksCount++
-                        existingBook.id
-                    } else {
-                        val newId = bookDao.insertBook(bookEntity)
-                        booksCount++
-                        newId
-                    }
+                            updatedBooksCount++
+                            existingBook.id
+                        } else {
+                            val newId = bookDao.insertBook(bookEntity)
+                            booksCount++
+                            newId
+                        }
                     bookIdMap[bookDto.id] = bookId
                     replaceOwnerAssetReferences("book", bookId, listOf(coverPath))
                     affectedBookIds.add(bookId)
@@ -583,132 +617,151 @@ class ImportLibraryManager constructor(
                         warnings.add(
                             ImportWarning(
                                 "Ignoring targetBookId=$targetBookId because targetQuizId=$targetQuizId belongs to bookId=${targetQuiz.bookId}.",
-                                affectedId = quizDto.id
-                            )
+                                affectedId = quizDto.id,
+                            ),
                         )
                     }
-                    
+
                     if (localBookId == null && targetQuizId == null) {
                         // If it's a single quiz import without targetBookId, find first book or create default
-                        val firstBookId = bookIdMap.values.firstOrNull()
-                            ?: bookDao.getBookByExternalIdInWorkspace("imported_default", defaultWorkspaceId)?.id
+                        val firstBookId =
+                            bookIdMap.values.firstOrNull()
+                                ?: bookDao.getBookByExternalIdInWorkspace("imported_default", defaultWorkspaceId)?.id
                         if (firstBookId != null) {
                             localBookId = firstBookId
-                            warnings.add(ImportWarning("Quiz '${quizDto.title}' refers to unknown book ID '${quizDto.bookId}'. Linked to an available book.", affectedId = quizDto.id))
+                            warnings.add(
+                                ImportWarning(
+                                    "Quiz '${quizDto.title}' refers to unknown book ID '${quizDto.bookId}'. Linked to an available book.",
+                                    affectedId = quizDto.id,
+                                ),
+                            )
                         } else {
                             // Create a default book if none exists
-                            val defaultBook = BookEntity(
-                                workspaceId = defaultWorkspaceId,
-                                title = "Imported Books",
-                                externalId = "imported_default",
-                                description = "Automatically created for imported quizzes"
-                            )
+                            val defaultBook =
+                                BookEntity(
+                                    workspaceId = defaultWorkspaceId,
+                                    title = "Imported Books",
+                                    externalId = "imported_default",
+                                    description = "Automatically created for imported quizzes",
+                                )
                             localBookId = bookDao.insertBook(defaultBook)
                             bookIdMap["imported_default"] = localBookId
                             booksCount++
                         }
                     }
-                    
+
                     val existingQuiz = quizDao.getQuizByExternalId(quizDto.id)
                     var quizCoverPath: String? = null
-                    
-                    val quizId = targetQuizId ?: if (existingQuiz != null && strategy == MergeStrategy.SKIP_EXISTING) {
-                        quizIdMap[quizDto.id] = existingQuiz.id
-                        updateProgress("Skipping existing quiz: ${quizDto.title}")
-                        return@forEach
-                    } else if (existingQuiz != null) {
-                        val resolvedBookId = localBookId
-                            ?: throw IllegalStateException("Could not resolve a destination book for quiz '${quizDto.title}'")
-                        val coverImage = resolveImagePath(quizDto.coverImage, assetsDir, rootDir, manifest, allowInsecureRemoteImages)
-                        coverImage.warning?.let { warning ->
-                            warnings.add(ImportWarning("Quiz '${quizDto.title}' cover image import warning: $warning", affectedId = quizDto.id))
-                        }
-                        val coverPath = coverImage.path
-                        quizCoverPath = coverPath
-                        if (coverImage.importedLocally) imagesCount++
-                        val quizEntity = mapper.mapToQuizEntity(quizDto, resolvedBookId, coverPath)
-                        quizDao.updateQuiz(
-                            quizEntity.copy(
-                                id = existingQuiz.id,
-                                createdAt = existingQuiz.createdAt,
-                                lastStudiedAt = existingQuiz.lastStudiedAt
+
+                    val quizId =
+                        targetQuizId ?: if (existingQuiz != null && strategy == MergeStrategy.SKIP_EXISTING) {
+                            quizIdMap[quizDto.id] = existingQuiz.id
+                            updateProgress("Skipping existing quiz: ${quizDto.title}")
+                            return@forEach
+                        } else if (existingQuiz != null) {
+                            val resolvedBookId =
+                                localBookId
+                                    ?: throw IllegalStateException("Could not resolve a destination book for quiz '${quizDto.title}'")
+                            val coverImage = resolveImagePath(quizDto.coverImage, assetsDir, rootDir, manifest, allowInsecureRemoteImages)
+                            coverImage.warning?.let { warning ->
+                                warnings.add(ImportWarning("Quiz '${quizDto.title}' cover image import warning: $warning", affectedId = quizDto.id))
+                            }
+                            val coverPath = coverImage.path
+                            quizCoverPath = coverPath
+                            if (coverImage.importedLocally) imagesCount++
+                            val quizEntity = mapper.mapToQuizEntity(quizDto, resolvedBookId, coverPath)
+                            quizDao.updateQuiz(
+                                quizEntity.copy(
+                                    id = existingQuiz.id,
+                                    createdAt = existingQuiz.createdAt,
+                                    lastStudiedAt = existingQuiz.lastStudiedAt,
+                                ),
                             )
-                        )
-                        updatedQuizzesCount++
-                        existingQuiz.id
-                    } else {
-                        val resolvedBookId = localBookId
-                            ?: throw IllegalStateException("Could not resolve a destination book for quiz '${quizDto.title}'")
-                        val coverImage = resolveImagePath(quizDto.coverImage, assetsDir, rootDir, manifest, allowInsecureRemoteImages)
-                        coverImage.warning?.let { warning ->
-                            warnings.add(ImportWarning("Quiz '${quizDto.title}' cover image import warning: $warning", affectedId = quizDto.id))
+                            updatedQuizzesCount++
+                            existingQuiz.id
+                        } else {
+                            val resolvedBookId =
+                                localBookId
+                                    ?: throw IllegalStateException("Could not resolve a destination book for quiz '${quizDto.title}'")
+                            val coverImage = resolveImagePath(quizDto.coverImage, assetsDir, rootDir, manifest, allowInsecureRemoteImages)
+                            coverImage.warning?.let { warning ->
+                                warnings.add(ImportWarning("Quiz '${quizDto.title}' cover image import warning: $warning", affectedId = quizDto.id))
+                            }
+                            val coverPath = coverImage.path
+                            quizCoverPath = coverPath
+                            if (coverImage.importedLocally) imagesCount++
+                            val quizEntity = mapper.mapToQuizEntity(quizDto, resolvedBookId, coverPath)
+                            val newId = quizDao.insertQuiz(quizEntity)
+                            quizzesCount++
+                            newId
                         }
-                        val coverPath = coverImage.path
-                        quizCoverPath = coverPath
-                        if (coverImage.importedLocally) imagesCount++
-                        val quizEntity = mapper.mapToQuizEntity(quizDto, resolvedBookId, coverPath)
-                        val newId = quizDao.insertQuiz(quizEntity)
-                        quizzesCount++
-                        newId
-                    }
                     quizIdMap[quizDto.id] = quizId
                     if (quizCoverPath != null) {
                         replaceOwnerAssetReferences("quiz", quizId, listOf(quizCoverPath))
                     }
                     affectedQuizIds.add(quizId)
-                    affectedBookIds.add(localBookId ?: targetQuiz?.bookId
-                        ?: throw IllegalStateException("Could not resolve a destination book for quiz '${quizDto.title}'"))
+                    affectedBookIds.add(
+                        localBookId ?: targetQuiz?.bookId
+                            ?: throw IllegalStateException("Could not resolve a destination book for quiz '${quizDto.title}'"),
+                    )
 
                     quizDto.questions.forEach { qDto ->
                         try {
                             val primaryImage = resolveImagePath(qDto.imageDataUrl, assetsDir, rootDir, manifest, allowInsecureRemoteImages)
-                            val secondaryImage = if (primaryImage.path == null) {
-                                resolveImagePath(qDto.imageSource, assetsDir, rootDir, manifest, allowInsecureRemoteImages)
-                            } else {
-                                ResolvedImageResult()
-                            }
+                            val secondaryImage =
+                                if (primaryImage.path == null) {
+                                    resolveImagePath(qDto.imageSource, assetsDir, rootDir, manifest, allowInsecureRemoteImages)
+                                } else {
+                                    ResolvedImageResult()
+                                }
                             val chosenImage = if (primaryImage.path != null) primaryImage else secondaryImage
                             val imagePath = chosenImage.path
                             if (primaryImage.importedLocally || secondaryImage.importedLocally) {
                                 imagesCount++
                             }
                             chosenImage.warning?.let { warning ->
-                                warnings.add(ImportWarning("Question image in quiz '${quizDto.title}' import warning: $warning", affectedId = qDto.id))
-                            }
-                            
-                            val qEntity = mapper.mapToQuestionEntity(qDto, quizId, imagePath)
-                            
-                            val existingQuestion = questionDao.getQuestionByExternalId(quizId, qEntity.externalId)
-                            
-                            val localId = if (existingQuestion != null) {
-                                questionDao.updateQuestion(
-                                    qEntity.copy(
-                                        id = existingQuestion.id,
-                                        attempts = existingQuestion.attempts,
-                                        correctCount = existingQuestion.correctCount,
-                                        isDropped = existingQuestion.isDropped,
-                                        droppedAt = existingQuestion.droppedAt,
-                                        droppedReason = existingQuestion.droppedReason,
-                                        isMarked = existingQuestion.isMarked,
-                                        markedAt = existingQuestion.markedAt,
-                                        markReason = existingQuestion.markReason,
-                                        markReviewAt = existingQuestion.markReviewAt,
-                                        notes = existingQuestion.notes ?: qEntity.notes,
-                                        createdAt = existingQuestion.createdAt,
-                                        lastStudiedAt = existingQuestion.lastStudiedAt,
-                                        timeSpentMs = existingQuestion.timeSpentMs,
-                                        lastAttemptResult = existingQuestion.lastAttemptResult,
-                                        consecutiveCorrect = existingQuestion.consecutiveCorrect
-                                    )
+                                warnings.add(
+                                    ImportWarning(
+                                        "Question image in quiz '${quizDto.title}' import warning: $warning",
+                                        affectedId = qDto.id,
+                                    ),
                                 )
-                                updatedQuestionsCount++
-                                existingQuestion.id
-                            } else {
-                                val newId = questionDao.insertQuestion(qEntity)
-                                questionsCount++
-                                newId
                             }
-                            
+
+                            val qEntity = mapper.mapToQuestionEntity(qDto, quizId, imagePath)
+
+                            val existingQuestion = questionDao.getQuestionByExternalId(quizId, qEntity.externalId)
+
+                            val localId =
+                                if (existingQuestion != null) {
+                                    questionDao.updateQuestion(
+                                        qEntity.copy(
+                                            id = existingQuestion.id,
+                                            attempts = existingQuestion.attempts,
+                                            correctCount = existingQuestion.correctCount,
+                                            isDropped = existingQuestion.isDropped,
+                                            droppedAt = existingQuestion.droppedAt,
+                                            droppedReason = existingQuestion.droppedReason,
+                                            isMarked = existingQuestion.isMarked,
+                                            markedAt = existingQuestion.markedAt,
+                                            markReason = existingQuestion.markReason,
+                                            markReviewAt = existingQuestion.markReviewAt,
+                                            notes = existingQuestion.notes ?: qEntity.notes,
+                                            createdAt = existingQuestion.createdAt,
+                                            lastStudiedAt = existingQuestion.lastStudiedAt,
+                                            timeSpentMs = existingQuestion.timeSpentMs,
+                                            lastAttemptResult = existingQuestion.lastAttemptResult,
+                                            consecutiveCorrect = existingQuestion.consecutiveCorrect,
+                                        ),
+                                    )
+                                    updatedQuestionsCount++
+                                    existingQuestion.id
+                                } else {
+                                    val newId = questionDao.insertQuestion(qEntity)
+                                    questionsCount++
+                                    newId
+                                }
+
                             questionIdMap[qDto.id] = localId
                             syncQuestionCategories(localId, qEntity.categories)
                             replaceOwnerAssetReferences("question", localId, listOf(qEntity.imagePath))
@@ -762,7 +815,7 @@ class ImportLibraryManager constructor(
                 affectedQuizIds = affectedQuizIds.toList(),
                 warnings = warnings,
                 durationMillis = System.currentTimeMillis() - startTime,
-                partiallyImported = skippedRecordsCount > 0
+                partiallyImported = skippedRecordsCount > 0,
             )
         }
     }
@@ -772,17 +825,17 @@ class ImportLibraryManager constructor(
         assetsDir: File?,
         rootDir: File? = null,
         manifest: ManifestDto? = null,
-        allowInsecureRemoteImages: Boolean = false
+        allowInsecureRemoteImages: Boolean = false,
     ): ResolvedImageResult {
         if (assetRef.isNullOrBlank()) return ResolvedImageResult()
-        
+
         // If it's a data URL, save it directly via the new sanitization helper
         if (assetRef.startsWith("data:")) {
             val saved = fileManager.saveBase64AsImageDetailed(assetRef)
             return ResolvedImageResult(
                 path = saved.path,
                 warning = saved.error,
-                importedLocally = saved.path != null
+                importedLocally = saved.path != null,
             )
         }
 
@@ -799,16 +852,17 @@ class ImportLibraryManager constructor(
                     return ResolvedImageResult(
                         path = saved.path,
                         warning = saved.error,
-                        importedLocally = saved.path != null
+                        importedLocally = saved.path != null,
                     )
                 }
             }
 
             // 2. Try manifest mappings for exported bundles and legacy manifests.
             if (manifest != null && manifest.assets.isNotEmpty()) {
-                val manifestPath = manifest.assets[assetRef]
-                    ?: manifest.assets.entries.find { normalizeAssetRef(it.key) == normalizeAssetRef(assetRef) }?.value
-                    ?: manifest.assets.entries.find { normalizeAssetRef(it.value) == normalizeAssetRef(assetRef) }?.key
+                val manifestPath =
+                    manifest.assets[assetRef]
+                        ?: manifest.assets.entries.find { normalizeAssetRef(it.key) == normalizeAssetRef(assetRef) }?.value
+                        ?: manifest.assets.entries.find { normalizeAssetRef(it.value) == normalizeAssetRef(assetRef) }?.key
                 manifestPath?.let { path ->
                     resolveRelativeAssetPath(searchDirs, path)?.let { manifestFile ->
                         manifestFile.inputStream().use { input ->
@@ -816,7 +870,7 @@ class ImportLibraryManager constructor(
                             return ResolvedImageResult(
                                 path = saved.path,
                                 warning = saved.error,
-                                importedLocally = saved.path != null
+                                importedLocally = saved.path != null,
                             )
                         }
                     }
@@ -827,28 +881,31 @@ class ImportLibraryManager constructor(
             val fileName = assetRef.substringAfterLast('/')
             val cleanRef = normalizeAssetRef(assetRef)
 
-            val suffixMatches = searchDirs.flatMap { dir ->
-                dir.walkTopDown()
-                    .filter { file -> file.isFile }
-                    .filter { file ->
-                        val relativePath = file.relativeTo(dir).invariantSeparatorsPath
-                        relativePath == cleanRef || relativePath.endsWith("/$cleanRef")
-                    }
-                    .toList()
-            }.distinctBy { it.canonicalPath }
+            val suffixMatches =
+                searchDirs.flatMap { dir ->
+                    dir.walkTopDown()
+                        .filter { file -> file.isFile }
+                        .filter { file ->
+                            val relativePath = file.relativeTo(dir).invariantSeparatorsPath
+                            relativePath == cleanRef || relativePath.endsWith("/$cleanRef")
+                        }
+                        .toList()
+                }.distinctBy { it.canonicalPath }
 
-            val matchedFile = when {
-                suffixMatches.size == 1 -> suffixMatches.first()
-                suffixMatches.isEmpty() -> {
-                    val nameMatches = searchDirs.flatMap { dir ->
-                        dir.walkTopDown()
-                            .filter { file -> file.isFile && file.name == fileName }
-                            .toList()
-                    }.distinctBy { it.canonicalPath }
-                    nameMatches.singleOrNull()
+            val matchedFile =
+                when {
+                    suffixMatches.size == 1 -> suffixMatches.first()
+                    suffixMatches.isEmpty() -> {
+                        val nameMatches =
+                            searchDirs.flatMap { dir ->
+                                dir.walkTopDown()
+                                    .filter { file -> file.isFile && file.name == fileName }
+                                    .toList()
+                            }.distinctBy { it.canonicalPath }
+                        nameMatches.singleOrNull()
+                    }
+                    else -> null
                 }
-                else -> null
-            }
 
             if (matchedFile != null) {
                 matchedFile.inputStream().use { input ->
@@ -856,37 +913,39 @@ class ImportLibraryManager constructor(
                     return ResolvedImageResult(
                         path = saved.path,
                         warning = saved.error,
-                        importedLocally = saved.path != null
+                        importedLocally = saved.path != null,
                     )
                 }
             }
         }
-        
+
         // If it's a remote URL, download it through the central policy gate.
         val remoteScheme = runCatching { assetRef.toUri().scheme?.lowercase() }.getOrNull()
         if (remoteScheme == "http" || remoteScheme == "https") {
-            val localImage = fileManager.downloadAndSaveImageDetailed(
-                assetRef,
-                if (allowInsecureRemoteImages) RemoteAssetPolicy.UserAllowedPlainHttp else RemoteAssetPolicy.Default
-            )
+            val localImage =
+                fileManager.downloadAndSaveImageDetailed(
+                    assetRef,
+                    if (allowInsecureRemoteImages) RemoteAssetPolicy.UserAllowedPlainHttp else RemoteAssetPolicy.Default,
+                )
             if (localImage.path != null) {
                 return ResolvedImageResult(path = localImage.path, warning = localImage.error, importedLocally = true)
             }
             if (remoteScheme == "http" && !allowInsecureRemoteImages) {
                 return ResolvedImageResult(
                     warning = localImage.error ?: "Plain HTTP image URL was skipped until the user allows insecure image downloads.",
-                    importedLocally = false
+                    importedLocally = false,
                 )
             }
             // HTTPS failures and user-approved HTTP failures are preserved as remote references.
             return ResolvedImageResult(
                 path = assetRef,
-                warning = localImage.error?.let { "Kept remote URL instead of importing locally: $it" }
-                    ?: "Kept remote URL instead of importing locally.",
-                importedLocally = false
+                warning =
+                    localImage.error?.let { "Kept remote URL instead of importing locally: $it" }
+                        ?: "Kept remote URL instead of importing locally.",
+                importedLocally = false,
             )
         }
-        
+
         // Final attempt as base64 or other string-based image if not already tried
         // SECURITY: FileManager.saveImage handles absolute path validation
         val saved = fileManager.saveImageDetailed(assetRef)
@@ -901,7 +960,10 @@ class ImportLibraryManager constructor(
         }
     }
 
-    private fun resolveRelativeAssetPath(searchDirs: List<File>, assetRef: String): File? {
+    private fun resolveRelativeAssetPath(
+        searchDirs: List<File>,
+        assetRef: String,
+    ): File? {
         val normalizedRef = normalizeAssetRef(assetRef)
         if (normalizedRef.isBlank() || normalizedRef.split('/').any { it == ".." }) return null
 
@@ -927,24 +989,32 @@ class ImportLibraryManager constructor(
         fun isPlainHttp(value: String?): Boolean = value?.startsWith("http://", ignoreCase = true) == true
         if (bundle.books.any { isPlainHttp(it.coverImage) }) return true
         return bundle.quizzes.any { quiz ->
-            isPlainHttp(quiz.coverImage) || quiz.questions.any { question ->
-                isPlainHttp(question.imageDataUrl) || isPlainHttp(question.imageSource) || isPlainHttp(question.imageName)
-            }
+            isPlainHttp(quiz.coverImage) ||
+                quiz.questions.any { question ->
+                    isPlainHttp(question.imageDataUrl) || isPlainHttp(question.imageSource) || isPlainHttp(question.imageName)
+                }
         }
     }
 
-    private fun readImportText(uri: Uri, format: ImportFormat): String {
-        val limit = when (format) {
-            ImportFormat.HTML -> ImportLimits.MAX_HTML_IMPORT_BYTES
-            ImportFormat.CSV_TSV -> ImportLimits.MAX_CSV_IMPORT_BYTES
-            else -> ImportLimits.MAX_TEXT_IMPORT_BYTES
-        }
+    private fun readImportText(
+        uri: Uri,
+        format: ImportFormat,
+    ): String {
+        val limit =
+            when (format) {
+                ImportFormat.HTML -> ImportLimits.MAX_HTML_IMPORT_BYTES
+                ImportFormat.CSV_TSV -> ImportLimits.MAX_CSV_IMPORT_BYTES
+                else -> ImportLimits.MAX_TEXT_IMPORT_BYTES
+            }
         return context.contentResolver.openInputStream(uri)?.use { input -> input.readTextWithLimit(limit) }
             ?: throw Exception("Could not read file content")
     }
 
     companion object {
-        fun generateDeterministicId(stem: String, options: List<String>): String {
+        fun generateDeterministicId(
+            stem: String,
+            options: List<String>,
+        ): String {
             val input = stem + options.sorted().joinToString("|")
             return try {
                 val digest = MessageDigest.getInstance("SHA-256")

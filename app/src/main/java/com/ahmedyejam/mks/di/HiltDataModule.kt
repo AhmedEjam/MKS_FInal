@@ -6,17 +6,8 @@ import com.ahmedyejam.mks.data.importer.mapping.LibraryMapper
 import com.ahmedyejam.mks.data.importer.repository.ImportLibraryManager
 import com.ahmedyejam.mks.data.local.FileManager
 import com.ahmedyejam.mks.data.local.MksDatabase
-import com.ahmedyejam.mks.data.local.dao.*
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
-import com.ahmedyejam.mks.data.preview.CategoryMergePreviewService
-import com.ahmedyejam.mks.data.preview.ClearMarksPreviewService
-import com.ahmedyejam.mks.data.preview.DeletePreviewService
-import com.ahmedyejam.mks.data.repair.AssetReferenceAuditService
 import com.ahmedyejam.mks.data.repository.ExportManager
-
-import com.ahmedyejam.mks.data.repository.OllamaRepository
-import com.ahmedyejam.mks.data.review.ReviewRepository
-import com.ahmedyejam.mks.data.search.GlobalSearchRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,10 +18,11 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object HiltDataModule {
-
     @Provides
     @Singleton
-    fun provideAppModule(@ApplicationContext context: Context): AppModule {
+    fun provideAppModule(
+        @ApplicationContext context: Context,
+    ): AppModule {
         return AppModule(context)
     }
 
@@ -42,7 +34,9 @@ object HiltDataModule {
 
     @Provides
     @Singleton
-    fun provideFileManager(@ApplicationContext context: Context): FileManager {
+    fun provideFileManager(
+        @ApplicationContext context: Context,
+    ): FileManager {
         return FileManager(context)
     }
 
@@ -57,7 +51,7 @@ object HiltDataModule {
     fun provideExportManager(
         database: MksDatabase,
         fileManager: FileManager,
-        libraryMapper: LibraryMapper
+        libraryMapper: LibraryMapper,
     ): ExportManager {
         return ExportManager(
             database = database,
@@ -67,7 +61,7 @@ object HiltDataModule {
             sessionDao = database.sessionDao(),
             categoryMetadataDao = database.categoryMetadataDao(),
             fileManager = fileManager,
-            mapper = libraryMapper
+            mapper = libraryMapper,
         )
     }
 
@@ -76,7 +70,7 @@ object HiltDataModule {
     fun provideImportLibraryManager(
         @ApplicationContext context: Context,
         database: MksDatabase,
-        fileManager: FileManager
+        fileManager: FileManager,
     ): ImportLibraryManager {
         return ImportLibraryManager(context, database, fileManager)
     }
@@ -91,207 +85,5 @@ object HiltDataModule {
     @Singleton
     fun provideFocusManager(appModule: AppModule): FocusManager {
         return appModule.focusManager
-    }
-
-    @Provides
-    @Singleton
-    fun provideOllamaRepository(appModule: AppModule): OllamaRepository {
-        return appModule.ollamaRepository
-    }
-
-
-    @Provides
-    @Singleton
-    fun provideGlobalSearchRepository(database: MksDatabase): GlobalSearchRepository {
-        return GlobalSearchRepository(database.globalSearchDao())
-    }
-
-    @Provides
-    @Singleton
-    fun provideReviewRepository(appModule: AppModule): ReviewRepository {
-        return appModule.reviewRepository
-    }
-
-    // Services
-    @Provides
-    @Singleton
-    fun provideDeletePreviewService(appModule: AppModule): DeletePreviewService {
-        return appModule.deletePreviewService
-    }
-
-    @Provides
-    @Singleton
-    fun provideCategoryMergePreviewService(appModule: AppModule): CategoryMergePreviewService {
-        return appModule.categoryMergePreviewService
-    }
-
-    @Provides
-    @Singleton
-    fun provideClearMarksPreviewService(appModule: AppModule): ClearMarksPreviewService {
-        return appModule.clearMarksPreviewService
-    }
-
-    @Provides
-    @Singleton
-    fun provideAssetReferenceAuditService(appModule: AppModule): AssetReferenceAuditService {
-        return appModule.assetReferenceAuditService
-    }
-
-    // DAOs
-
-    @Provides
-    @Singleton
-    fun provideBookDao(appModule: AppModule): BookDao {
-        return appModule.database.bookDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideQuizDao(appModule: AppModule): QuizDao {
-        return appModule.database.quizDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideQuestionDao(appModule: AppModule): QuestionDao {
-        return appModule.database.questionDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideSessionDao(appModule: AppModule): SessionDao {
-        return appModule.database.sessionDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideCategoryMetadataDao(appModule: AppModule): CategoryMetadataDao {
-        return appModule.database.categoryMetadataDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideSlideshowCourseDao(appModule: AppModule): SlideshowCourseDao {
-        return appModule.database.slideshowCourseDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideCourseSlideDao(appModule: AppModule): CourseSlideDao {
-        return appModule.database.courseSlideDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideNoteBlueprintDao(appModule: AppModule): NoteBlueprintDao {
-        return appModule.database.noteBlueprintDao()
-    }
-
-    @Provides
-    @Singleton
-    fun providePromptDao(appModule: AppModule): PromptDao {
-        return appModule.database.promptDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideKnowledgeStudySessionDao(appModule: AppModule): KnowledgeStudySessionDao {
-        return appModule.database.knowledgeStudySessionDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideQuestionCategoryDao(appModule: AppModule): QuestionCategoryDao {
-        return appModule.database.questionCategoryDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideAssetReferenceDao(appModule: AppModule): AssetReferenceDao {
-        return appModule.database.assetReferenceDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideQuestionAssetDao(appModule: AppModule): QuestionAssetDao {
-        return appModule.database.questionAssetDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideSourceDocumentDao(appModule: AppModule): SourceDocumentDao {
-        return appModule.database.sourceDocumentDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideGlobalSearchDao(appModule: AppModule): GlobalSearchDao {
-        return appModule.database.globalSearchDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideAnnotationDao(appModule: AppModule): AnnotationDao {
-        return appModule.database.annotationDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideNoteCollectionDao(appModule: AppModule): NoteCollectionDao {
-        return appModule.database.noteCollectionDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideStudySessionDao(appModule: AppModule): StudySessionDao {
-        return appModule.database.studySessionDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideWorkspaceDao(database: MksDatabase): WorkspaceDao {
-        return database.workspaceDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideFlashcardDeckDao(database: MksDatabase): FlashcardDeckDao {
-        return database.flashcardDeckDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideFlashcardDao(database: MksDatabase): FlashcardDao {
-        return database.flashcardDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideLearningSessionDao(database: MksDatabase): LearningSessionDao {
-        return database.learningSessionDao()
-    }
-
-    @Provides
-    @Singleton
-    fun providePromptDeckDao(database: MksDatabase): PromptDeckDao {
-        return database.promptDeckDao()
-    }
-
-    @Provides
-    @Singleton
-    fun providePromptCardDao(database: MksDatabase): PromptCardDao {
-        return database.promptCardDao()
-    }
-
-    @Provides
-    @Singleton
-    fun providePromptRunDao(database: MksDatabase): PromptRunDao {
-        return database.promptRunDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideMistakeLogDao(database: MksDatabase): MistakeLogDao {
-        return database.mistakeLogDao()
     }
 }

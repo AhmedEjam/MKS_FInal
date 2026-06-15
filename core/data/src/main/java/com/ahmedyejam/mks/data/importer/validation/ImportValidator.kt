@@ -8,7 +8,7 @@ data class SkippedImportRecord(
     val id: String?,
     val quizId: String?,
     val line: Int?,
-    val reason: String
+    val reason: String,
 )
 
 data class ValidationResult(
@@ -16,13 +16,16 @@ data class ValidationResult(
     val warnings: List<ImportWarning> = emptyList(),
     val criticalError: String? = null,
     val sanitizedBundle: LibraryBundleDto? = null,
-    val skippedRecords: List<SkippedImportRecord> = emptyList()
+    val skippedRecords: List<SkippedImportRecord> = emptyList(),
 ) {
     val skippedRecordsCount: Int get() = skippedRecords.size
 }
 
 class ImportValidator {
-    fun validate(bundle: LibraryBundleDto, allowUnboundQuizzes: Boolean = false): ValidationResult {
+    fun validate(
+        bundle: LibraryBundleDto,
+        allowUnboundQuizzes: Boolean = false,
+    ): ValidationResult {
         val warnings = mutableListOf<ImportWarning>()
         val skipped = mutableListOf<SkippedImportRecord>()
 
@@ -45,45 +48,50 @@ class ImportValidator {
             warnings.add(ImportWarning("Duplicate quiz IDs found in bundle"))
         }
 
-        val sanitizedQuizzes = bundle.quizzes.map { quiz ->
-            if (!allowUnboundQuizzes && quiz.bookId !in bookIds) {
-                warnings.add(ImportWarning("Quiz '${quiz.title}' refers to unknown book ID '${quiz.bookId}'", affectedId = quiz.id))
-            }
-
-            val seenQuestionIds = mutableSetOf<String>()
-            val validQuestions = quiz.questions.mapIndexedNotNull { index, question ->
-                val problems = questionProblems(question, seenQuestionIds)
-                if (problems.isEmpty()) {
-                    seenQuestionIds.add(question.id)
-                    question
-                } else {
-                    val location = question.sourceLine?.takeIf { it > 0 }
-                    val displayLine = location?.let { "line/row $it" } ?: "line/row unknown"
-                    val reason = problems.joinToString("; ")
-                    skipped.add(SkippedImportRecord(question.id, quiz.id, location, reason))
-                    warnings.add(
-                        ImportWarning(
-                            message = "Skipped question '${question.id.ifBlank { "#${index + 1}" }}' in quiz '${quiz.title}' at $displayLine: $reason",
-                            details = "quizId=${quiz.id}; questionId=${question.id}; line=${location ?: "unknown"}",
-                            affectedId = question.id
-                        )
-                    )
-                    null
+        val sanitizedQuizzes =
+            bundle.quizzes.map { quiz ->
+                if (!allowUnboundQuizzes && quiz.bookId !in bookIds) {
+                    warnings.add(ImportWarning("Quiz '${quiz.title}' refers to unknown book ID '${quiz.bookId}'", affectedId = quiz.id))
                 }
+
+                val seenQuestionIds = mutableSetOf<String>()
+                val validQuestions =
+                    quiz.questions.mapIndexedNotNull { index, question ->
+                        val problems = questionProblems(question, seenQuestionIds)
+                        if (problems.isEmpty()) {
+                            seenQuestionIds.add(question.id)
+                            question
+                        } else {
+                            val location = question.sourceLine?.takeIf { it > 0 }
+                            val displayLine = location?.let { "line/row $it" } ?: "line/row unknown"
+                            val reason = problems.joinToString("; ")
+                            skipped.add(SkippedImportRecord(question.id, quiz.id, location, reason))
+                            warnings.add(
+                                ImportWarning(
+                                    message = "Skipped question '${question.id.ifBlank { "#${index + 1}" }}' in quiz '${quiz.title}' at $displayLine: $reason",
+                                    details = "quizId=${quiz.id}; questionId=${question.id}; line=${location ?: "unknown"}",
+                                    affectedId = question.id,
+                                ),
+                            )
+                            null
+                        }
+                    }
+                quiz.copy(questions = validQuestions)
             }
-            quiz.copy(questions = validQuestions)
-        }
 
         val sanitizedBundle = bundle.copy(quizzes = sanitizedQuizzes)
         return ValidationResult(
             isValid = true,
             warnings = warnings,
             sanitizedBundle = sanitizedBundle,
-            skippedRecords = skipped
+            skippedRecords = skipped,
         )
     }
 
-    private fun questionProblems(question: QuestionDto, seenQuestionIds: Set<String>): List<String> {
+    private fun questionProblems(
+        question: QuestionDto,
+        seenQuestionIds: Set<String>,
+    ): List<String> {
         val problems = mutableListOf<String>()
         if (question.id.isBlank()) problems.add("blank question ID")
         if (question.id.isNotBlank() && question.id in seenQuestionIds) problems.add("duplicate question ID in same quiz")

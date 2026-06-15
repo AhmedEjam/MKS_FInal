@@ -95,13 +95,21 @@ class QuizQuestionsViewModel @Inject constructor(
         _questionIdsWithAssets,
         _quizSummary
     ) { params ->
+        @Suppress("UNCHECKED_CAST")
         val quiz = params[0] as QuizEntity?
+        @Suppress("UNCHECKED_CAST")
         val questions = params[1] as List<QuestionEntity>
+        @Suppress("UNCHECKED_CAST")
         val query = params[2] as String
+        @Suppress("UNCHECKED_CAST")
         val vis = params[3] as VisibilityState
+        @Suppress("UNCHECKED_CAST")
         val loading = params[4] as Boolean
+        @Suppress("UNCHECKED_CAST")
         val selected = params[5] as Set<Long>
+        @Suppress("UNCHECKED_CAST")
         val assetIds = params[6] as Set<Long>
+        @Suppress("UNCHECKED_CAST")
         val summary = params[7] as QuizKnowledgeSummary?
 
         val validation = questions.associate { it.id to QuestionValidator.validate(it) }

@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-
 android {
     namespace = "com.ahmedyejam.mks.core.data"
     compileSdk = 35
@@ -19,7 +18,7 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:network"))
     implementation(libs.kotlinx.coroutines.core)
-    
+
     // Preferences
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.room.runtime)
@@ -28,11 +27,11 @@ dependencies {
     implementation(libs.poi)
     implementation(libs.poi.ooxml)
     implementation(libs.zip4j)
-    
+
     // Serialization
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.moshi.kotlin)
-    
+    implementation(libs.moshi)
+
     // Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.okhttp)

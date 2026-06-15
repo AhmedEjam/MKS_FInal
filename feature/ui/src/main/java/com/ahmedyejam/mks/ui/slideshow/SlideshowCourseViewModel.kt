@@ -21,6 +21,7 @@ import com.ahmedyejam.mks.data.model.SlideGenerationConfig
 import com.ahmedyejam.mks.data.importer.parser.TextSlideParser
 import com.ahmedyejam.mks.data.importer.parser.TextParseMode
 import com.ahmedyejam.mks.di.AppModule
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -75,6 +76,7 @@ class SlideshowCourseViewModel @Inject constructor(
 
     private val reviewedSlideIds = mutableSetOf<Long>()
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun loadCourse(id: Long) {
         if (courseId == id && loadJob?.isActive == true) return
         courseId = id
@@ -118,6 +120,7 @@ class SlideshowCourseViewModel @Inject constructor(
     }
 
     // A helper method since getSlideshowCourseById is a suspend function
+    @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun fetchCourseAndObserve(id: Long) {
         val course = knowledgeRepository.getSlideshowCourseById(id)
         knowledgeRepository.getSlidesByCourseId(id).flatMapLatest { slides ->

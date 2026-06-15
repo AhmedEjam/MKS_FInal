@@ -7,10 +7,10 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.ahmedyejam.mks.data.importer.model.ImportFormat
+import com.ahmedyejam.mks.data.importer.repository.ImportLibraryManager
 import com.ahmedyejam.mks.data.local.FileManager
 import com.ahmedyejam.mks.data.local.MksDatabase
 import com.ahmedyejam.mks.data.local.entity.QuestionType
-import com.ahmedyejam.mks.data.importer.repository.ImportLibraryManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -42,41 +42,43 @@ class XlsxImportTest {
     }
 
     @Test
-    fun import_xlsxFixture_createsExpectedQuizAndQuestions() = runBlocking {
-        val uri = copyFixtureToCache("sample_import.xlsx")
+    fun import_xlsxFixture_createsExpectedQuizAndQuestions() =
+        runBlocking {
+            val uri = copyFixtureToCache("sample_import.xlsx")
 
-        val result = importManager.import(uri)
+            val result = importManager.import(uri)
 
-        assertTrue("XLSX import should succeed", result.success)
-        assertEquals(ImportFormat.XLSX, result.detectedFormat)
-        assertEquals(1, result.importedBooksCount)
-        assertEquals(1, result.importedQuizzesCount)
-        assertEquals(2, result.importedQuestionsCount)
+            assertTrue("XLSX import should succeed", result.success)
+            assertEquals(ImportFormat.XLSX, result.detectedFormat)
+            assertEquals(1, result.importedBooksCount)
+            assertEquals(1, result.importedQuizzesCount)
+            assertEquals(2, result.importedQuestionsCount)
 
-        val books = db.bookDao().getAllBooksFlow().first()
-        assertEquals(1, books.size)
-        assertEquals("sample_import.xlsx", books.first().title)
+            val books = db.bookDao().getAllBooksFlow().first()
+            assertEquals(1, books.size)
+            assertEquals("sample_import.xlsx", books.first().title)
 
-        val quizzes = db.quizDao().getAllQuizzesFlow().first()
-        assertEquals(1, quizzes.size)
-        assertEquals("sample_import.xlsx", quizzes.first().title)
+            val quizzes = db.quizDao().getAllQuizzesFlow().first()
+            assertEquals(1, quizzes.size)
+            assertEquals("sample_import.xlsx", quizzes.first().title)
 
-        val questions = db.questionDao().getQuestionsByQuizId(quizzes.first().id).first()
-            .sortedBy { it.text }
-        assertEquals(2, questions.size)
+            val questions =
+                db.questionDao().getQuestionsByQuizId(quizzes.first().id).first()
+                    .sortedBy { it.text }
+            assertEquals(2, questions.size)
 
-        val capitalQuestion = questions.first { it.text == "Capital of France?" }
-        assertEquals(QuestionType.SINGLE_CHOICE, capitalQuestion.type)
-        assertEquals(listOf("Paris", "London", "Rome"), capitalQuestion.options)
-        assertEquals(listOf(0), capitalQuestion.correctAnswers)
-        assertEquals(listOf("geo", "europe"), capitalQuestion.categories)
+            val capitalQuestion = questions.first { it.text == "Capital of France?" }
+            assertEquals(QuestionType.SINGLE_CHOICE, capitalQuestion.type)
+            assertEquals(listOf("Paris", "London", "Rome"), capitalQuestion.options)
+            assertEquals(listOf(0), capitalQuestion.correctAnswers)
+            assertEquals(listOf("geo", "europe"), capitalQuestion.categories)
 
-        val primesQuestion = questions.first { it.text == "Select prime numbers" }
-        assertEquals(QuestionType.MULTIPLE_CHOICE, primesQuestion.type)
-        assertEquals(listOf("2", "4", "5"), primesQuestion.options)
-        assertEquals(listOf(0, 2), primesQuestion.correctAnswers)
-        assertEquals(listOf("math"), primesQuestion.categories)
-    }
+            val primesQuestion = questions.first { it.text == "Select prime numbers" }
+            assertEquals(QuestionType.MULTIPLE_CHOICE, primesQuestion.type)
+            assertEquals(listOf("2", "4", "5"), primesQuestion.options)
+            assertEquals(listOf(0, 2), primesQuestion.correctAnswers)
+            assertEquals(listOf("math"), primesQuestion.categories)
+        }
 
     private fun copyFixtureToCache(assetName: String): Uri {
         val fixture = File(context.cacheDir, assetName)

@@ -4,13 +4,11 @@ import com.ahmedyejam.mks.data.importer.model.ParsedOption
 import com.ahmedyejam.mks.data.importer.model.ParsedQuestion
 import com.ahmedyejam.mks.data.local.entity.QuestionType
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.Types
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
 class JsonQuestionParser(
-    private val imageExtractor: GenericImageExtractor
+    private val imageExtractor: GenericImageExtractor,
 ) {
-    private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+    private val moshi = Moshi.Builder().build()
 
     fun parse(text: String): List<ParsedQuestion> {
         val trimmed = text.trim()
@@ -19,7 +17,9 @@ class JsonQuestionParser(
 
         return when (parsed) {
             is List<*> -> parseList(parsed)
-            is Map<*, *> -> parseMap(parsed as Map<String, Any>)
+            is Map<*, *> ->
+                @Suppress("UNCHECKED_CAST")
+                parseMap(parsed as Map<String, Any>)
             else -> emptyList()
         }
     }
@@ -28,6 +28,7 @@ class JsonQuestionParser(
         val result = mutableListOf<ParsedQuestion>()
         list.forEachIndexed { index, item ->
             if (item is Map<*, *>) {
+                @Suppress("UNCHECKED_CAST")
                 result.add(parseSingle(item as Map<String, Any>, index + 1))
             }
         }
@@ -46,20 +47,25 @@ class JsonQuestionParser(
         return emptyList()
     }
 
-    private fun parseSingle(map: Map<String, Any>, line: Int): ParsedQuestion {
+    private fun parseSingle(
+        map: Map<String, Any>,
+        line: Int,
+    ): ParsedQuestion {
         val stem = (map["stem"] ?: map["question"] ?: map["q"] ?: map["text"] ?: "").toString()
         val optionsRaw = map["options"]
-        
+
         val options = mutableListOf<ParsedOption>()
         if (optionsRaw is List<*>) {
             optionsRaw.forEachIndexed { i, opt ->
                 val optText = if (opt is Map<*, *>) opt["text"] ?: opt["label"] ?: opt["t"] else opt
                 val isCorrect = if (opt is Map<*, *>) opt["correct"] == true else false
-                options.add(ParsedOption(
-                    id = "opt_${(65 + i).toChar()}",
-                    text = optText.toString().trim(),
-                    marked = isCorrect
-                ))
+                options.add(
+                    ParsedOption(
+                        id = "opt_${(65 + i).toChar()}",
+                        text = optText.toString().trim(),
+                        marked = isCorrect,
+                    ),
+                )
             }
         } else {
             // Fallback to A, B, C... fields
@@ -76,10 +82,10 @@ class JsonQuestionParser(
 
         val answerRaw = (map["answer"] ?: map["correctAnswer"] ?: map["correct"] ?: "").toString()
         val correctIds = resolveCorrect(answerRaw, options)
-        
+
         val imageSource = (map["imageDataUrl"] ?: map["image"] ?: map["imageUrl"] ?: map["photo"] ?: map["img"] ?: "").toString()
         val resolvedImage = if (imageSource.isNotBlank()) imageExtractor.extractFromText(imageSource) else null
-        
+
         val stemImage = imageExtractor.extractFromText(stem)
 
         return ParsedQuestion(
@@ -94,14 +100,17 @@ class JsonQuestionParser(
             imageDataUrl = (resolvedImage ?: stemImage)?.imageDataUrl,
             imageSource = (resolvedImage ?: stemImage)?.imageSource ?: if (!imageSource.startsWith("data:")) imageSource else "",
             sourceLine = line,
-            type = if (correctIds.size > 1) QuestionType.MULTIPLE_CHOICE else QuestionType.SINGLE_CHOICE
+            type = if (correctIds.size > 1) QuestionType.MULTIPLE_CHOICE else QuestionType.SINGLE_CHOICE,
         )
     }
 
-    private fun resolveCorrect(answerRaw: String, options: List<ParsedOption>): List<String> {
+    private fun resolveCorrect(
+        answerRaw: String,
+        options: List<ParsedOption>,
+    ): List<String> {
         val result = mutableSetOf<String>()
         val trimmedAnswer = answerRaw.trim()
-        
+
         if (options.isEmpty()) return emptyList()
 
         // 1. Exact textual match against option text
@@ -124,11 +133,12 @@ class JsonQuestionParser(
 
         // 3. Multi-answer match (e.g. "A, B" or "A;B")
         if (result.isEmpty()) {
-            val parts = trimmedAnswer.uppercase()
-                .split(Regex("[,;\\s]+"))
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-            
+            val parts =
+                trimmedAnswer.uppercase()
+                    .split(Regex("[,;\\s]+"))
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+
             parts.forEach { part ->
                 options.forEach { opt ->
                     val letter = opt.id.removePrefix("opt_")
@@ -145,7 +155,7 @@ class JsonQuestionParser(
                 if (opt.marked) result.add(opt.id)
             }
         }
-        
+
         // 5. Smart fallback for letters contained in answer text (Word boundaries)
         if (result.isEmpty() && answerRaw.isNotBlank()) {
             val upperAnswer = answerRaw.uppercase()

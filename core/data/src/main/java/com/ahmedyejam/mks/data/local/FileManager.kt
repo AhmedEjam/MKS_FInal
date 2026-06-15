@@ -1,21 +1,20 @@
 package com.ahmedyejam.mks.data.local
 
 import android.content.Context
-import android.net.Uri
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.util.Base64
+import com.ahmedyejam.mks.data.network.RemoteAssetFetcher
+import com.ahmedyejam.mks.data.network.RemoteAssetPolicy
+import com.ahmedyejam.mks.util.MksLogger
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.UUID
-import com.ahmedyejam.mks.data.network.RemoteAssetFetcher
-import com.ahmedyejam.mks.data.network.RemoteAssetPolicy
-import com.ahmedyejam.mks.util.MksLogger
 
 class FileManager(private val context: Context) {
-
     private val remoteAssetFetcher by lazy { RemoteAssetFetcher() }
 
     companion object {
@@ -28,7 +27,7 @@ class FileManager(private val context: Context) {
 
     data class ImageSaveResult(
         val path: String? = null,
-        val error: String? = null
+        val error: String? = null,
     )
 
     data class AssetFileSaveResult(
@@ -36,29 +35,30 @@ class FileManager(private val context: Context) {
         val mimeType: String? = null,
         val fileName: String? = null,
         val fileSizeBytes: Long? = null,
-        val error: String? = null
+        val error: String? = null,
     )
 
     private data class NormalizedImageResult(
         val bytes: ByteArray? = null,
-        val error: String? = null
+        val error: String? = null,
     )
-    
+
     fun getContext(): Context = context
-    
+
     fun saveBase64AsImage(base64String: String): String? {
         return saveBase64AsImageDetailed(base64String).path
     }
 
     fun saveBase64AsImageDetailed(base64String: String): ImageSaveResult {
         if (base64String.isBlank()) return ImageSaveResult(error = "Image data is empty.")
-        
+
         return try {
-            val pureBase64 = if (base64String.contains(",")) {
-                base64String.substring(base64String.indexOf(",") + 1)
-            } else {
-                base64String
-            }
+            val pureBase64 =
+                if (base64String.contains(",")) {
+                    base64String.substring(base64String.indexOf(",") + 1)
+                } else {
+                    base64String
+                }
 
             val estimatedBytes = ((pureBase64.length.toLong() * 3L) / 4L)
             if (estimatedBytes > MAX_IMAGE_INPUT_BYTES) {
@@ -76,7 +76,10 @@ class FileManager(private val context: Context) {
         return saveImageDetailed(base64String).path
     }
 
-    fun copyAssetUriToInternalStorage(uriString: String, originalName: String? = null): AssetFileSaveResult {
+    fun copyAssetUriToInternalStorage(
+        uriString: String,
+        originalName: String? = null,
+    ): AssetFileSaveResult {
         if (uriString.isBlank()) return AssetFileSaveResult(error = "Asset URI is empty.")
         return try {
             val uri = Uri.parse(uriString)
@@ -86,26 +89,29 @@ class FileManager(private val context: Context) {
             }
 
             val mimeType = context.contentResolver.getType(uri)
-            val safeName = sanitizeAssetFileName(
-                originalName?.takeIf { it.isNotBlank() }
-                    ?: uri.lastPathSegment
-                    ?: "asset"
-            )
-            val extension = safeName.substringAfterLast('.', missingDelimiterValue = "bin")
-                .takeIf { it.isNotBlank() }
-                ?: "bin"
+            val safeName =
+                sanitizeAssetFileName(
+                    originalName?.takeIf { it.isNotBlank() }
+                        ?: uri.lastPathSegment
+                        ?: "asset",
+                )
+            val extension =
+                safeName.substringAfterLast('.', missingDelimiterValue = "bin")
+                    .takeIf { it.isNotBlank() }
+                    ?: "bin"
             val fileName = "asset_${UUID.randomUUID()}.$extension"
             val target = File(getQuestionAssetsDir(), fileName).canonicalFile
 
             context.contentResolver.openInputStream(uri)?.use { input ->
-                val bytes = readBytesWithLimit(input, MAX_ASSET_INPUT_BYTES)
-                    ?: return AssetFileSaveResult(error = "Asset exceeds ${MAX_ASSET_INPUT_BYTES / (1024 * 1024)} MB input limit.")
+                val bytes =
+                    readBytesWithLimit(input, MAX_ASSET_INPUT_BYTES)
+                        ?: return AssetFileSaveResult(error = "Asset exceeds ${MAX_ASSET_INPUT_BYTES / (1024 * 1024)} MB input limit.")
                 FileOutputStream(target).use { output -> output.write(bytes) }
                 return AssetFileSaveResult(
                     path = target.absolutePath,
                     mimeType = mimeType,
                     fileName = safeName,
-                    fileSizeBytes = bytes.size.toLong()
+                    fileSizeBytes = bytes.size.toLong(),
                 )
             }
             AssetFileSaveResult(error = "Unable to open asset URI.")
@@ -168,17 +174,25 @@ class FileManager(private val context: Context) {
         return saveBase64AsImageDetailed(base64String)
     }
 
-    fun saveImage(bytes: ByteArray, extension: String = "webp"): String? {
+    fun saveImage(
+        bytes: ByteArray,
+        extension: String = "webp",
+    ): String? {
         return saveImageDetailed(bytes, extension).path
     }
 
-    fun saveImageDetailed(bytes: ByteArray, extension: String = "webp"): ImageSaveResult {
+    fun saveImageDetailed(
+        bytes: ByteArray,
+        extension: String = "webp",
+    ): ImageSaveResult {
         return try {
             val normalized = normalizeImageBytes(bytes)
-            val finalBytes = normalized.bytes
-                ?: return ImageSaveResult(error = normalized.error ?: "Image normalization failed.")
-            val path = writeNormalizedImage(finalBytes)
-                ?: return ImageSaveResult(error = "Failed to persist normalized image.")
+            val finalBytes =
+                normalized.bytes
+                    ?: return ImageSaveResult(error = normalized.error ?: "Image normalization failed.")
+            val path =
+                writeNormalizedImage(finalBytes)
+                    ?: return ImageSaveResult(error = "Failed to persist normalized image.")
             ImageSaveResult(path = path)
         } catch (e: Exception) {
             MksLogger.w("FileManager", "Image operation failed", e)
@@ -186,20 +200,24 @@ class FileManager(private val context: Context) {
         }
     }
 
-    suspend fun downloadAndSaveImage(url: String, policy: RemoteAssetPolicy = RemoteAssetPolicy.Default): String? {
+    suspend fun downloadAndSaveImage(
+        url: String,
+        policy: RemoteAssetPolicy = RemoteAssetPolicy.Default,
+    ): String? {
         return downloadAndSaveImageDetailed(url, policy).path
     }
 
     suspend fun downloadAndSaveImageDetailed(
         url: String,
-        policy: RemoteAssetPolicy = RemoteAssetPolicy.Default
+        policy: RemoteAssetPolicy = RemoteAssetPolicy.Default,
     ): ImageSaveResult {
         if (!isHttpOrHttpsUrl(url)) return ImageSaveResult(error = "Only HTTP(S) image URLs are supported.")
 
         val fetched = remoteAssetFetcher.fetch(url, policy.copy(maxBytes = MAX_IMAGE_INPUT_BYTES.toLong()))
-        val bytes = fetched.bytes ?: return ImageSaveResult(
-            error = fetched.error ?: fetched.warning ?: "Remote image was not downloaded."
-        )
+        val bytes =
+            fetched.bytes ?: return ImageSaveResult(
+                error = fetched.error ?: fetched.warning ?: "Remote image was not downloaded.",
+            )
         val saved = saveImageDetailed(bytes)
         return if (saved.path != null && fetched.warning != null) {
             saved.copy(error = fetched.warning)
@@ -208,14 +226,21 @@ class FileManager(private val context: Context) {
         }
     }
 
-    fun saveImage(inputStream: java.io.InputStream, originalName: String? = null): String? {
+    fun saveImage(
+        inputStream: java.io.InputStream,
+        originalName: String? = null,
+    ): String? {
         return saveImageDetailed(inputStream, originalName).path
     }
 
-    fun saveImageDetailed(inputStream: java.io.InputStream, originalName: String? = null): ImageSaveResult {
+    fun saveImageDetailed(
+        inputStream: java.io.InputStream,
+        originalName: String? = null,
+    ): ImageSaveResult {
         return try {
-            val bytes = readBytesWithLimit(inputStream, MAX_IMAGE_INPUT_BYTES)
-                ?: return ImageSaveResult(error = "Image exceeds ${MAX_IMAGE_INPUT_BYTES / (1024 * 1024)} MB input limit.")
+            val bytes =
+                readBytesWithLimit(inputStream, MAX_IMAGE_INPUT_BYTES)
+                    ?: return ImageSaveResult(error = "Image exceeds ${MAX_IMAGE_INPUT_BYTES / (1024 * 1024)} MB input limit.")
             saveImageDetailed(bytes)
         } catch (e: Exception) {
             MksLogger.w("FileManager", "Image operation failed", e)
@@ -259,7 +284,7 @@ class FileManager(private val context: Context) {
         if (path.isNullOrBlank()) return null
         // Security check: only allow files from internal images directory
         if (!isPathInsideImagesDir(path)) return null
-        
+
         val file = File(path)
         return if (file.exists()) file else null
     }
@@ -267,26 +292,27 @@ class FileManager(private val context: Context) {
     fun getBase64Image(path: String?): String {
         if (path.isNullOrBlank()) return ""
         if (!isPathInsideImagesDir(path)) return ""
-        
+
         return try {
             val file = File(path)
             if (!file.exists()) return ""
-            
+
             val bytes = file.readBytes()
-            val mimeType = when (file.extension.lowercase()) {
-                "png" -> "image/png"
-                "jpg", "jpeg" -> "image/jpeg"
-                "webp" -> "image/webp"
-                else -> "image/webp"
-            }
-            
+            val mimeType =
+                when (file.extension.lowercase()) {
+                    "png" -> "image/png"
+                    "jpg", "jpeg" -> "image/jpeg"
+                    "webp" -> "image/webp"
+                    else -> "image/webp"
+                }
+
             "data:$mimeType;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
         } catch (e: Exception) {
             MksLogger.w("FileManager", "Image operation failed", e)
             ""
         }
     }
-    
+
     fun deleteImage(path: String?) {
         if (path.isNullOrBlank()) return
         // SECURITY: Only allow deleting files within our images directory
@@ -306,9 +332,10 @@ class FileManager(private val context: Context) {
             return NormalizedImageResult(error = "Image exceeds ${MAX_IMAGE_INPUT_BYTES / (1024 * 1024)} MB input limit.")
         }
 
-        val bounds = BitmapFactory.Options().apply {
-            inJustDecodeBounds = true
-        }
+        val bounds =
+            BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
         val sourceWidth = bounds.outWidth
         val sourceHeight = bounds.outHeight
@@ -321,13 +348,15 @@ class FileManager(private val context: Context) {
             return NormalizedImageResult(error = "Invalid image dimensions.")
         }
 
-        val decodeOptions = BitmapFactory.Options().apply {
-            inPreferredConfig = Bitmap.Config.ARGB_8888
-            inSampleSize = calculateInSampleSize(sourceWidth, sourceHeight, sourcePixels)
-        }
+        val decodeOptions =
+            BitmapFactory.Options().apply {
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+                inSampleSize = calculateInSampleSize(sourceWidth, sourceHeight, sourcePixels)
+            }
 
-        val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
-            ?: return NormalizedImageResult(error = "Failed to decode image.")
+        val decoded =
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
+                ?: return NormalizedImageResult(error = "Failed to decode image.")
         val scaled = scaleBitmapIfNeeded(decoded)
         if (scaled !== decoded) {
             decoded.recycle()
@@ -335,11 +364,12 @@ class FileManager(private val context: Context) {
 
         return try {
             ByteArrayOutputStream().use { output ->
-                val format = if (scaled.hasAlpha()) {
-                    Bitmap.CompressFormat.WEBP_LOSSLESS
-                } else {
-                    Bitmap.CompressFormat.WEBP_LOSSY
-                }
+                val format =
+                    if (scaled.hasAlpha()) {
+                        Bitmap.CompressFormat.WEBP_LOSSLESS
+                    } else {
+                        Bitmap.CompressFormat.WEBP_LOSSY
+                    }
                 if (!scaled.compress(format, IMAGE_QUALITY, output)) {
                     return NormalizedImageResult(error = "Failed to compress normalized image.")
                 }
@@ -359,7 +389,10 @@ class FileManager(private val context: Context) {
         return file.absolutePath
     }
 
-    private fun readBytesWithLimit(inputStream: InputStream, maxBytes: Int): ByteArray? {
+    private fun readBytesWithLimit(
+        inputStream: InputStream,
+        maxBytes: Int,
+    ): ByteArray? {
         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
         var totalRead = 0
         val output = ByteArrayOutputStream()
@@ -375,7 +408,11 @@ class FileManager(private val context: Context) {
         return output.toByteArray()
     }
 
-    private fun calculateInSampleSize(width: Int, height: Int, totalPixels: Long): Int {
+    private fun calculateInSampleSize(
+        width: Int,
+        height: Int,
+        totalPixels: Long,
+    ): Int {
         var sampleSize = 1
         while (
             width / sampleSize > MAX_IMAGE_DIMENSION ||

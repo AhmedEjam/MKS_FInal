@@ -31,4 +31,8 @@ subprojects {
         android.set(true)
         outputToConsole.set(true)
     }
+
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.add("-Amoshi.generateAdapter.kapt=false")
+    }
 }

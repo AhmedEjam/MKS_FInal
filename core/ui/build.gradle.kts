@@ -1,6 +1,7 @@
 plugins {
     id("org.jetbrains.kotlin.android")
     alias(libs.plugins.android.library)
+    alias(libs.plugins.google.devtools.ksp)
     alias(libs.plugins.kotlin.compose)
 }
 android {
@@ -32,6 +33,9 @@ dependencies {
     
     // Coil for Images
     implementation(libs.coil.compose)
+
+    implementation(libs.moshi)
+    ksp(libs.moshi.kotlin.codegen)
     
     // Testing
     testImplementation(libs.junit)

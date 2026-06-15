@@ -28,8 +28,11 @@ import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 
 class LibraryMapper {
-
-    fun mapToBookEntity(dto: BookDto, workspaceId: Long, coverPath: String?): BookEntity {
+    fun mapToBookEntity(
+        dto: BookDto,
+        workspaceId: Long,
+        coverPath: String?,
+    ): BookEntity {
         return BookEntity(
             workspaceId = workspaceId,
             externalId = dto.id,
@@ -40,11 +43,15 @@ class LibraryMapper {
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
             contentUpdatedAt = dto.contentUpdatedAt ?: System.currentTimeMillis(),
-            lastStudiedAt = dto.lastStudiedAt ?: 0
+            lastStudiedAt = dto.lastStudiedAt ?: 0,
         )
     }
 
-    fun mapToQuizEntity(dto: QuizDto, localBookId: Long, coverPath: String?): QuizEntity {
+    fun mapToQuizEntity(
+        dto: QuizDto,
+        localBookId: Long,
+        coverPath: String?,
+    ): QuizEntity {
         return QuizEntity(
             externalId = dto.id,
             bookId = localBookId,
@@ -56,24 +63,30 @@ class LibraryMapper {
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
             contentUpdatedAt = dto.contentUpdatedAt ?: System.currentTimeMillis(),
-            lastStudiedAt = dto.lastStudiedAt ?: 0
+            lastStudiedAt = dto.lastStudiedAt ?: 0,
         )
     }
 
-    fun mapToQuestionEntity(dto: QuestionDto, localQuizId: Long, imagePath: String?): QuestionEntity {
+    fun mapToQuestionEntity(
+        dto: QuestionDto,
+        localQuizId: Long,
+        imagePath: String?,
+    ): QuestionEntity {
         val type = if (dto.answerMode == "multiple") QuestionType.MULTIPLE_CHOICE else QuestionType.SINGLE_CHOICE
         val options = dto.options.map { it.text }
-        val correctAnswers = dto.correct.mapNotNull { correctId ->
-            dto.options.indexOfFirst { it.id == correctId }.takeIf { it != -1 }
-        }
+        val correctAnswers =
+            dto.correct.mapNotNull { correctId ->
+                dto.options.indexOfFirst { it.id == correctId }.takeIf { it != -1 }
+            }
 
         // Sanitize imageSource to never store raw Base64 blocks
         val rawSource = dto.imageSource.ifBlank { dto.imageDataUrl }
-        val sanitizedSource = if ((rawSource.startsWith("data:")) || (rawSource.length > 1000)) {
-            null
-        } else {
-            rawSource
-        }
+        val sanitizedSource =
+            if ((rawSource.startsWith("data:")) || (rawSource.length > 1000)) {
+                null
+            } else {
+                rawSource
+            }
 
         // Sanitize imageName to prevent path injection
         val sanitizedImageName = dto.imageName.takeIf { !it.startsWith("/") }
@@ -95,23 +108,30 @@ class LibraryMapper {
             additionalInfo = dto.additionalInfo,
             sourceBookId = dto.sourceBookId,
             sourceQuizId = dto.sourceQuizId,
-            sourceQuestionId = dto.sourceQuestionId
+            sourceQuestionId = dto.sourceQuestionId,
         )
     }
 
-    fun mapToSessionEntity(dto: SessionDto, localQuizId: Long, questionIdMap: Map<String, Long>): SessionEntity {
+    fun mapToSessionEntity(
+        dto: SessionDto,
+        localQuizId: Long,
+        questionIdMap: Map<String, Long>,
+    ): SessionEntity {
         // Map answer indices from external IDs to local indices
-        val mappedAnswers = dto.answers.mapNotNull { (qExtId, optIndices) ->
-            questionIdMap[qExtId]?.let { it to optIndices }
-        }.toMap()
+        val mappedAnswers =
+            dto.answers.mapNotNull { (qExtId, optIndices) ->
+                questionIdMap[qExtId]?.let { it to optIndices }
+            }.toMap()
 
-        val mappedDroppedOptions = dto.droppedOptions?.mapNotNull { (qExtId, optIndices) ->
-            questionIdMap[qExtId]?.let { it to optIndices }
-        }?.toMap() ?: emptyMap()
+        val mappedDroppedOptions =
+            dto.droppedOptions?.mapNotNull { (qExtId, optIndices) ->
+                questionIdMap[qExtId]?.let { it to optIndices }
+            }?.toMap() ?: emptyMap()
 
-        val mappedVisibleOptionsCount = dto.visibleOptionsCount?.mapNotNull { (qExtId, count) ->
-            questionIdMap[qExtId]?.let { it to count }
-        }?.toMap() ?: emptyMap()
+        val mappedVisibleOptionsCount =
+            dto.visibleOptionsCount?.mapNotNull { (qExtId, count) ->
+                questionIdMap[qExtId]?.let { it to count }
+            }?.toMap() ?: emptyMap()
 
         return SessionEntity(
             quizId = localQuizId,
@@ -135,7 +155,7 @@ class LibraryMapper {
             rangeTo = dto.rangeTo ?: -1,
             includeFilters = dto.includeFilters ?: emptyList(),
             droppedOptions = mappedDroppedOptions,
-            visibleOptionsCount = mappedVisibleOptionsCount
+            visibleOptionsCount = mappedVisibleOptionsCount,
         )
     }
 
@@ -144,11 +164,14 @@ class LibraryMapper {
             name = dto.name,
             emoji = dto.emoji,
             color = dto.color,
-            isPinned = dto.isPinned
+            isPinned = dto.isPinned,
         )
     }
 
-    fun mapToBookDto(entity: BookEntity, workspaceExternalId: String? = null): BookDto {
+    fun mapToBookDto(
+        entity: BookEntity,
+        workspaceExternalId: String? = null,
+    ): BookDto {
         return BookDto(
             id = entity.externalId,
             workspaceExternalId = workspaceExternalId,
@@ -159,11 +182,15 @@ class LibraryMapper {
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
             contentUpdatedAt = entity.contentUpdatedAt,
-            lastStudiedAt = entity.lastStudiedAt
+            lastStudiedAt = entity.lastStudiedAt,
         )
     }
 
-    fun mapToQuizDto(entity: QuizEntity, questions: List<QuestionEntity>, bookExternalId: String = ""): QuizDto {
+    fun mapToQuizDto(
+        entity: QuizEntity,
+        questions: List<QuestionEntity>,
+        bookExternalId: String = "",
+    ): QuizDto {
         return QuizDto(
             id = entity.externalId,
             storageKey = entity.category,
@@ -176,7 +203,7 @@ class LibraryMapper {
             contentUpdatedAt = entity.contentUpdatedAt,
             updatedAt = entity.updatedAt,
             lastStudiedAt = entity.lastStudiedAt,
-            questions = questions.map { mapToQuestionDto(it) }
+            questions = questions.map { mapToQuestionDto(it) },
         )
     }
 
@@ -197,24 +224,31 @@ class LibraryMapper {
             sourceQuizId = entity.sourceQuizId ?: "",
             sourceQuestionId = entity.sourceQuestionId ?: "",
             sourceBookId = entity.sourceBookId ?: "",
-            additionalInfo = entity.additionalInfo ?: ""
+            additionalInfo = entity.additionalInfo ?: "",
         )
     }
 
-    fun mapToSessionDto(entity: SessionEntity, quizExternalId: String, questions: List<QuestionEntity>): SessionDto {
+    fun mapToSessionDto(
+        entity: SessionEntity,
+        quizExternalId: String,
+        questions: List<QuestionEntity>,
+    ): SessionDto {
         val questionIdMap = questions.associateBy({ it.id }) { it.externalId }
 
-        val mappedAnswers = entity.answers.mapNotNull { (qId, optIndices) ->
-            questionIdMap[qId]?.let { it to optIndices }
-        }.toMap()
+        val mappedAnswers =
+            entity.answers.mapNotNull { (qId, optIndices) ->
+                questionIdMap[qId]?.let { it to optIndices }
+            }.toMap()
 
-        val mappedDroppedOptions = entity.droppedOptions.mapNotNull { (qId, optIndices) ->
-            questionIdMap[qId]?.let { it to optIndices }
-        }.toMap()
+        val mappedDroppedOptions =
+            entity.droppedOptions.mapNotNull { (qId, optIndices) ->
+                questionIdMap[qId]?.let { it to optIndices }
+            }.toMap()
 
-        val mappedVisibleOptionsCount = entity.visibleOptionsCount.mapNotNull { (qId, count) ->
-            questionIdMap[qId]?.let { it to count }
-        }.toMap()
+        val mappedVisibleOptionsCount =
+            entity.visibleOptionsCount.mapNotNull { (qId, count) ->
+                questionIdMap[qId]?.let { it to count }
+            }.toMap()
 
         return SessionDto(
             id = "session_${entity.id}",
@@ -240,7 +274,7 @@ class LibraryMapper {
             rangeTo = entity.rangeTo,
             includeFilters = entity.includeFilters,
             droppedOptions = mappedDroppedOptions,
-            visibleOptionsCount = mappedVisibleOptionsCount
+            visibleOptionsCount = mappedVisibleOptionsCount,
         )
     }
 
@@ -249,14 +283,18 @@ class LibraryMapper {
             name = entity.name,
             emoji = entity.emoji,
             color = entity.color,
-            isPinned = entity.isPinned
+            isPinned = entity.isPinned,
         )
     }
 
     // Knowledge Bank Mappings
 
     @Suppress("unused")
-    fun mapToFlashcardDeckEntity(dto: FlashcardDeckDto, localBookId: Long, coverPath: String?): FlashcardDeckEntity {
+    fun mapToFlashcardDeckEntity(
+        dto: FlashcardDeckDto,
+        localBookId: Long,
+        coverPath: String?,
+    ): FlashcardDeckEntity {
         return FlashcardDeckEntity(
             externalId = dto.id,
             bookId = localBookId,
@@ -266,12 +304,16 @@ class LibraryMapper {
             coverImage = coverPath,
             isPinned = dto.isPinned,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
-            updatedAt = dto.updatedAt ?: System.currentTimeMillis()
+            updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
         )
     }
 
     @Suppress("unused")
-    fun mapToFlashcardEntity(dto: FlashcardDto, localDeckId: Long, imagePath: String?): FlashcardEntity {
+    fun mapToFlashcardEntity(
+        dto: FlashcardDto,
+        localDeckId: Long,
+        imagePath: String?,
+    ): FlashcardEntity {
         return FlashcardEntity(
             externalId = dto.id,
             deckId = localDeckId,
@@ -282,12 +324,16 @@ class LibraryMapper {
             tags = dto.tags,
             orderIndex = dto.orderIndex,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
-            updatedAt = dto.updatedAt ?: System.currentTimeMillis()
+            updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
         )
     }
 
     @Suppress("unused")
-    fun mapToSlideshowCourseEntity(dto: SlideshowCourseDto, localBookId: Long, coverPath: String?): SlideshowCourseEntity {
+    fun mapToSlideshowCourseEntity(
+        dto: SlideshowCourseDto,
+        localBookId: Long,
+        coverPath: String?,
+    ): SlideshowCourseEntity {
         return SlideshowCourseEntity(
             externalId = dto.id,
             bookId = localBookId,
@@ -297,12 +343,16 @@ class LibraryMapper {
             isPinned = dto.isPinned,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
-            lastEditedAt = dto.updatedAt ?: System.currentTimeMillis()
+            lastEditedAt = dto.updatedAt ?: System.currentTimeMillis(),
         )
     }
 
     @Suppress("unused")
-    fun mapToCourseSlideEntity(dto: CourseSlideDto, localCourseId: Long, imagePath: String?): CourseSlideEntity {
+    fun mapToCourseSlideEntity(
+        dto: CourseSlideDto,
+        localCourseId: Long,
+        imagePath: String?,
+    ): CourseSlideEntity {
         return CourseSlideEntity(
             externalId = dto.id,
             courseId = localCourseId,
@@ -313,14 +363,14 @@ class LibraryMapper {
             orderIndex = dto.orderIndex,
             isCompleted = dto.isCompleted,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
-            updatedAt = dto.updatedAt ?: System.currentTimeMillis()
+            updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
         )
     }
 
     @Suppress("unused")
     fun mapToNoteBlueprintEntity(
         dto: NoteBlueprintDto,
-        localCollectionId: Long
+        localCollectionId: Long,
     ): NoteBlueprintEntity {
         return NoteBlueprintEntity(
             externalId = dto.id,
@@ -333,24 +383,30 @@ class LibraryMapper {
             blueprintMode = dto.mode,
             reviewStatus = dto.reviewStatus,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
-            updatedAt = dto.updatedAt ?: System.currentTimeMillis()
+            updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
         )
     }
 
     @Suppress("unused")
-    fun mapToPromptDeckEntity(dto: PromptDeckDto, localBookId: Long): PromptDeckEntity {
+    fun mapToPromptDeckEntity(
+        dto: PromptDeckDto,
+        localBookId: Long,
+    ): PromptDeckEntity {
         return PromptDeckEntity(
             bookId = localBookId,
             title = dto.title,
             description = dto.description,
             tags = dto.tags,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
-            updatedAt = dto.updatedAt ?: System.currentTimeMillis()
+            updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
         )
     }
 
     @Suppress("unused")
-    fun mapToPromptCardEntity(dto: PromptCardDto, localDeckId: Long): PromptCardEntity {
+    fun mapToPromptCardEntity(
+        dto: PromptCardDto,
+        localDeckId: Long,
+    ): PromptCardEntity {
         return PromptCardEntity(
             deckId = localDeckId,
             title = dto.title,
@@ -359,11 +415,15 @@ class LibraryMapper {
             outputType = dto.outputType,
             sortOrder = dto.sortOrder,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
-            updatedAt = dto.updatedAt ?: System.currentTimeMillis()
+            updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
         )
     }
 
-    fun mapToFlashcardDeckDto(entity: FlashcardDeckEntity, cards: List<FlashcardEntity>, bookExternalId: String): FlashcardDeckDto {
+    fun mapToFlashcardDeckDto(
+        entity: FlashcardDeckEntity,
+        cards: List<FlashcardEntity>,
+        bookExternalId: String,
+    ): FlashcardDeckDto {
         return FlashcardDeckDto(
             id = entity.externalId,
             bookId = bookExternalId,
@@ -374,7 +434,7 @@ class LibraryMapper {
             isPinned = entity.isPinned,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
-            cards = cards.map { mapToFlashcardDto(it) }
+            cards = cards.map { mapToFlashcardDto(it) },
         )
     }
 
@@ -389,11 +449,15 @@ class LibraryMapper {
             orderIndex = entity.orderIndex,
             sourceQuestionId = entity.sourceQuestionId?.toString(),
             createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt
+            updatedAt = entity.updatedAt,
         )
     }
 
-    fun mapToSlideshowCourseDto(entity: SlideshowCourseEntity, slides: List<CourseSlideEntity>, bookExternalId: String): SlideshowCourseDto {
+    fun mapToSlideshowCourseDto(
+        entity: SlideshowCourseEntity,
+        slides: List<CourseSlideEntity>,
+        bookExternalId: String,
+    ): SlideshowCourseDto {
         return SlideshowCourseDto(
             id = entity.externalId,
             bookId = bookExternalId,
@@ -403,7 +467,7 @@ class LibraryMapper {
             isPinned = entity.isPinned,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
-            slides = slides.map { mapToCourseSlideDto(it) }
+            slides = slides.map { mapToCourseSlideDto(it) },
         )
     }
 
@@ -418,11 +482,14 @@ class LibraryMapper {
             isCompleted = entity.isCompleted,
             sourceQuestionId = entity.sourceQuestionId?.toString(),
             createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt
+            updatedAt = entity.updatedAt,
         )
     }
 
-    fun mapToNoteBlueprintDto(entity: NoteBlueprintEntity, bookExternalId: String): NoteBlueprintDto {
+    fun mapToNoteBlueprintDto(
+        entity: NoteBlueprintEntity,
+        bookExternalId: String,
+    ): NoteBlueprintDto {
         return NoteBlueprintDto(
             id = entity.externalId,
             bookId = bookExternalId,
@@ -435,11 +502,15 @@ class LibraryMapper {
             reviewStatus = entity.reviewStatus,
             sourceQuestionId = entity.sourceQuestionId?.toString(),
             createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt
+            updatedAt = entity.updatedAt,
         )
     }
 
-    fun mapToPromptDeckDto(entity: PromptDeckEntity, cards: List<PromptCardEntity>, bookExternalId: String): PromptDeckDto {
+    fun mapToPromptDeckDto(
+        entity: PromptDeckEntity,
+        cards: List<PromptCardEntity>,
+        bookExternalId: String,
+    ): PromptDeckDto {
         return PromptDeckDto(
             id = "prompt-deck-${entity.id}",
             bookId = bookExternalId,
@@ -448,7 +519,7 @@ class LibraryMapper {
             tags = entity.tags,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
-            cards = cards.map { mapToPromptCardDto(it) }
+            cards = cards.map { mapToPromptCardDto(it) },
         )
     }
 
@@ -461,7 +532,7 @@ class LibraryMapper {
             outputType = entity.outputType,
             sortOrder = entity.sortOrder,
             createdAt = entity.createdAt,
-            updatedAt = entity.updatedAt
+            updatedAt = entity.updatedAt,
         )
     }
 }

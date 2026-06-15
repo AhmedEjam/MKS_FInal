@@ -10,22 +10,23 @@ import kotlin.math.min
 
 data class SheetImageResolution(
     val addressImages: Map<String, String> = emptyMap(),
-    val rowImages: Map<Int, String> = emptyMap()
+    val rowImages: Map<Int, String> = emptyMap(),
 )
 
 class XlsxImageResolver {
-
     companion object {
         private const val MAX_ENTRY_SIZE = 20 * 1024 * 1024L // 20 MB
-        private val DISPIMG_REGEX = Regex(
-            """(?:_xlfn\.)?DISPIMG\(\s*(?:N\s*)?(?:\"|')?([^,\"'&)<>\s]+)(?:\"|')?""",
-            RegexOption.IGNORE_CASE
-        )
+        private val DISPIMG_REGEX =
+            Regex(
+                """(?:_xlfn\.)?DISPIMG\(\s*(?:N\s*)?(?:\"|')?([^,\"'&)<>\s]+)(?:\"|')?""",
+                RegexOption.IGNORE_CASE,
+            )
     }
 
-    private val dbf = DocumentBuilderFactory.newInstance().apply {
-        isNamespaceAware = true
-    }
+    private val dbf =
+        DocumentBuilderFactory.newInstance().apply {
+            isNamespaceAware = true
+        }
 
     fun extractDispImgId(formula: String): String? {
         val match = DISPIMG_REGEX.find(formula)
@@ -61,7 +62,7 @@ class XlsxImageResolver {
     fun resolveSheetFormulaImages(
         zipFile: ZipFile,
         sheetName: String,
-        cellImagePathMap: Map<String, String>
+        cellImagePathMap: Map<String, String>,
     ): Map<String, String> {
         val sheetPath = getSheetPath(zipFile, sheetName) ?: return emptyMap()
         val sheetBytes = readEntry(zipFile, sheetPath) ?: return emptyMap()
@@ -93,7 +94,7 @@ class XlsxImageResolver {
     fun resolveSheetImages(
         zipFile: ZipFile,
         sheetName: String,
-        cellImagePathMap: Map<String, String>
+        cellImagePathMap: Map<String, String>,
     ): SheetImageResolution {
         val anchored = resolveAnchoredSheetImages(zipFile, sheetName)
         val formulaImages = resolveSheetFormulaImages(zipFile, sheetName, cellImagePathMap)
@@ -105,11 +106,14 @@ class XlsxImageResolver {
         }
         return SheetImageResolution(
             addressImages = mergedAddressImages,
-            rowImages = anchored.rowImages
+            rowImages = anchored.rowImages,
         )
     }
 
-    private fun resolveAnchoredSheetImages(zipFile: ZipFile, sheetName: String): SheetImageResolution {
+    private fun resolveAnchoredSheetImages(
+        zipFile: ZipFile,
+        sheetName: String,
+    ): SheetImageResolution {
         val sheetPath = getSheetPath(zipFile, sheetName) ?: return SheetImageResolution()
         val sheetBytes = readEntry(zipFile, sheetPath) ?: return SheetImageResolution()
         val sheetRelsBytes = readEntry(zipFile, buildRelsPath(sheetPath)) ?: return SheetImageResolution()
@@ -142,7 +146,7 @@ class XlsxImageResolver {
         drawingPath: String,
         pathCache: MutableMap<String, String>,
         addressImages: MutableMap<String, String>,
-        rowImages: MutableMap<Int, String>
+        rowImages: MutableMap<Int, String>,
     ) {
         val drawingBytes = readEntry(zipFile, drawingPath) ?: return
         val drawingRelsBytes = readEntry(zipFile, buildRelsPath(drawingPath)) ?: return
@@ -163,7 +167,7 @@ class XlsxImageResolver {
         zipFile: ZipFile,
         pathCache: MutableMap<String, String>,
         addressImages: MutableMap<String, String>,
-        rowImages: MutableMap<Int, String>
+        rowImages: MutableMap<Int, String>,
     ) {
         val anchorNodes = drawingDoc.getElementsByTagNameNS("*", localName)
         for (i in 0 until anchorNodes.length) {
@@ -205,30 +209,39 @@ class XlsxImageResolver {
         return element.getAttribute("r:embed").ifBlank {
             element.getAttributeNS(
                 "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-                "embed"
+                "embed",
             )
         }.ifBlank {
             element.getAttribute("r:id")
         }.ifBlank {
             element.getAttributeNS(
                 "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-                "id"
+                "id",
             )
         }.trim().takeIf { it.isNotEmpty() }
     }
 
-    private fun childInt(parent: Element, localName: String): Int? {
+    private fun childInt(
+        parent: Element,
+        localName: String,
+    ): Int? {
         val value = parent.getElementsByTagNameNS("*", localName).item(0)?.textContent?.trim()
         return value?.toIntOrNull()
     }
 
-    private fun readImageAsDataUrl(zipFile: ZipFile, zipPath: String): String? {
+    private fun readImageAsDataUrl(
+        zipFile: ZipFile,
+        zipPath: String,
+    ): String? {
         val bytes = readEntry(zipFile, zipPath) ?: return null
         val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
         return "data:${getImageMimeType(zipPath)};base64,$base64"
     }
 
-    private fun readEntry(zipFile: ZipFile, name: String): ByteArray? {
+    private fun readEntry(
+        zipFile: ZipFile,
+        name: String,
+    ): ByteArray? {
         return try {
             zipFile.getEntry(name)?.let { entry ->
                 if (entry.size > MAX_ENTRY_SIZE) {
@@ -245,7 +258,10 @@ class XlsxImageResolver {
         return dbf.newDocumentBuilder().parse(bytes.inputStream())
     }
 
-    private fun parseRelationships(relsBytes: ByteArray, basePath: String): Map<String, String> {
+    private fun parseRelationships(
+        relsBytes: ByteArray,
+        basePath: String,
+    ): Map<String, String> {
         val map = mutableMapOf<String, String>()
         try {
             val doc = parseXml(relsBytes)
@@ -263,7 +279,10 @@ class XlsxImageResolver {
         return map
     }
 
-    private fun resolveZipPath(basePath: String, target: String): String {
+    private fun resolveZipPath(
+        basePath: String,
+        target: String,
+    ): String {
         if (target.startsWith("/")) {
             return target.trimStart('/')
         }
@@ -290,7 +309,10 @@ class XlsxImageResolver {
         }
     }
 
-    private fun getSheetPath(zipFile: ZipFile, sheetName: String): String? {
+    private fun getSheetPath(
+        zipFile: ZipFile,
+        sheetName: String,
+    ): String? {
         val workbookXml = readEntry(zipFile, "xl/workbook.xml") ?: return null
         val relsXml = readEntry(zipFile, "xl/_rels/workbook.xml.rels") ?: return null
         val relMap = parseRelationships(relsXml, "xl/workbook.xml")
@@ -301,10 +323,11 @@ class XlsxImageResolver {
             for (i in 0 until sheetNodes.length) {
                 val sheet = sheetNodes.item(i) as? Element ?: continue
                 if (sheet.getAttribute("name") == sheetName) {
-                    val relId = sheet.getAttributeNS(
-                        "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-                        "id"
-                    ).ifEmpty { sheet.getAttribute("r:id") }.trim()
+                    val relId =
+                        sheet.getAttributeNS(
+                            "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+                            "id",
+                        ).ifEmpty { sheet.getAttribute("r:id") }.trim()
                     return relMap[relId]
                 }
             }
@@ -314,7 +337,10 @@ class XlsxImageResolver {
         }
     }
 
-    private fun toCellRef(zeroBasedCol: Int, oneBasedRow: Int): String {
+    private fun toCellRef(
+        zeroBasedCol: Int,
+        oneBasedRow: Int,
+    ): String {
         var col = zeroBasedCol + 1
         val builder = StringBuilder()
         while (col > 0) {

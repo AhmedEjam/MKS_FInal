@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Article
+import androidx.compose.material.icons.automirrored.rounded.FactCheck
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -578,7 +581,7 @@ private fun BookVisual(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.MenuBook,
+                    imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                     contentDescription = null,
                     tint = colors.primary.copy(alpha = 0.6f),
                     modifier = Modifier.size(42.dp)
@@ -713,9 +716,9 @@ private fun QuizVisual(
             val defaultIcon = when(quiz.iconName) {
                 "flashcard" -> Icons.Rounded.Style
                 "slideshow" -> Icons.Rounded.Slideshow
-                "note" -> Icons.Rounded.Article
+                "note" -> Icons.AutoMirrored.Rounded.Article
                 "prompt" -> Icons.Rounded.AutoAwesome
-                else -> Icons.Rounded.FactCheck
+                else -> Icons.AutoMirrored.Rounded.FactCheck
             }
             Icon(
                 imageVector = defaultIcon,
@@ -873,7 +876,7 @@ fun BookOptionsSheet(
                         )
                     } else {
                         Icon(
-                            Icons.Rounded.MenuBook,
+                            Icons.AutoMirrored.Rounded.MenuBook,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -1006,7 +1009,7 @@ fun QuizOptionsSheet(
                         )
                     } else {
                         Icon(
-                            Icons.Rounded.FactCheck,
+                            Icons.AutoMirrored.Rounded.FactCheck,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSecondaryContainer
                         )

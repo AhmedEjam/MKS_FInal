@@ -1,11 +1,9 @@
 plugins {
     id("org.jetbrains.kotlin.android")
     alias(libs.plugins.android.library)
-    // alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.dagger.hilt.android)
     alias(libs.plugins.google.devtools.ksp)
 }
-
-apply(plugin = "com.google.dagger.hilt.android")
 
 android {
     namespace = "com.ahmedyejam.mks.core.network"
@@ -16,10 +14,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
+ksp {
+    arg("moshi.generateAdapter.kapt", "false")
+}
 dependencies {
     implementation(project(":core:model"))
     implementation(libs.okhttp)
-    implementation(libs.moshi.kotlin)
+    implementation(libs.moshi)
+    ksp(libs.moshi.kotlin.codegen)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 

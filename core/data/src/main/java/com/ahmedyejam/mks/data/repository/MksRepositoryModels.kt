@@ -31,7 +31,7 @@ data class KnowledgeSummary(
     val fixedMistakes: Int = 0,
     val mistakesDueForReview: Int = 0,
     val pendingMistakesForReview: Int = 0,
-    val reviewSchedulesDue: Int = 0
+    val reviewSchedulesDue: Int = 0,
 )
 
 data class BookKnowledgeSummary(
@@ -54,7 +54,7 @@ data class BookKnowledgeSummary(
     val promptRuns: Int = 0,
     val savedPromptOutputs: Int = 0,
     val openMistakes: Int = 0,
-    val reviewSchedulesDue: Int = 0
+    val reviewSchedulesDue: Int = 0,
 )
 
 data class QuizKnowledgeSummary(
@@ -66,7 +66,7 @@ data class QuizKnowledgeSummary(
     val missedQuestions: Int = 0,
     val questionsWithNotes: Int = 0,
     val questionsWithAssets: Int = 0,
-    val questionsWithSources: Int = 0
+    val questionsWithSources: Int = 0,
 )
 
 data class BookStudyBundle(
@@ -80,7 +80,7 @@ data class BookStudyBundle(
     val promptDecks: List<PromptDeckEntity> = emptyList(),
     val sourceDocuments: List<SourceDocumentEntity> = emptyList(),
     val mistakes: List<MistakeLogEntryEntity> = emptyList(),
-    val questionAssets: List<QuestionAssetEntity> = emptyList()
+    val questionAssets: List<QuestionAssetEntity> = emptyList(),
 ) {
     val questions: List<QuestionEntity>
         get() = quizzes.flatMap { quiz -> questionsByQuiz[quiz.id].orEmpty() }

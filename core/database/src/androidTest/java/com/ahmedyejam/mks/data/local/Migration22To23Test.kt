@@ -1,10 +1,8 @@
 package com.ahmedyejam.mks.data.local
 
 import androidx.room.testing.MigrationTestHelper
-import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.ahmedyejam.mks.data.local.MksMigrations
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -14,29 +12,32 @@ import java.io.IOException
 
 @RunWith(AndroidJUnit4::class)
 class Migration22To23Test {
-    private val TEST_DB = "migration-test"
+    private val testDb = "migration-test"
 
     @get:Rule
-    val helper: MigrationTestHelper = MigrationTestHelper(
-        InstrumentationRegistry.getInstrumentation(),
-        MksDatabase::class.java
-    )
+    val helper: MigrationTestHelper =
+        MigrationTestHelper(
+            InstrumentationRegistry.getInstrumentation(),
+            MksDatabase::class.java,
+        )
 
     @Test
     @Throws(IOException::class)
     fun migrate22To23() {
-        var db = helper.createDatabase(TEST_DB, 22)
+        var db = helper.createDatabase(testDb, 22)
 
         // Insert a book in version 22
-        db.execSQL("""
+        db.execSQL(
+            """
             INSERT INTO books (externalId, title, description, createdAt, updatedAt, contentUpdatedAt, lastStudiedAt, lastEditedAt, isPinned, isSystem, fields, questionCount, answeredCount, totalAttempts, completionPercentage, accuracyPercentage)
             VALUES ('book_22', 'Test Book 22', 'Desc 22', 1000, 2000, 3000, 0, 4000, 0, 0, '[]', 0, 0, 0, 0.0, 0.0)
-        """)
+        """,
+        )
 
         db.close()
 
         // Re-open with migration to 23
-        db = helper.runMigrationsAndValidate(TEST_DB, 23, true, MksMigrations.MIGRATION_22_23)
+        db = helper.runMigrationsAndValidate(testDb, 23, true, MksMigrations.MIGRATION_22_23)
 
         // Check if workspaces table exists and has a default entry
         db.query("SELECT * FROM workspaces").use { cursor ->

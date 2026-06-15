@@ -17,5 +17,5 @@ data class ImportPreviewDto(
     val skippedRecordsCount: Int = 0,
     val hasAssets: Boolean,
     val warnings: List<ImportWarning> = emptyList(),
-    val errors: List<ImportError> = emptyList()
+    val errors: List<ImportError> = emptyList(),
 )

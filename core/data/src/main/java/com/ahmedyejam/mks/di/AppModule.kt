@@ -3,44 +3,27 @@ package com.ahmedyejam.mks.di
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ahmedyejam.mks.data.focus.FocusManager
-import com.ahmedyejam.mks.data.importer.mapping.LibraryMapper
-import com.ahmedyejam.mks.data.importer.repository.ImportLibraryManager
 import com.ahmedyejam.mks.data.local.MksDatabase
 import com.ahmedyejam.mks.data.local.MksMigrations
-import com.ahmedyejam.mks.data.local.WorkspaceDefaults
-import com.ahmedyejam.mks.data.local.entity.BookEntity
-import com.ahmedyejam.mks.data.local.entity.QuestionEntity
-import com.ahmedyejam.mks.data.local.entity.QuestionType
-import com.ahmedyejam.mks.data.local.entity.QuizEntity
-import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
-import com.ahmedyejam.mks.data.repository.ExportManager
-
 import com.ahmedyejam.mks.data.review.ReviewRepository
-import com.ahmedyejam.mks.data.search.GlobalSearchRepository
-import com.ahmedyejam.mks.util.MksLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 class AppModule(val context: Context) {
-    
     val database: MksDatabase by lazy {
         Room.databaseBuilder(
             context,
             MksDatabase::class.java,
-            MksDatabase.DATABASE_NAME
+            MksDatabase.DATABASE_NAME,
         )
-        .addMigrations(*MksMigrations.ALL)
-        .addCallback(object : RoomDatabase.Callback() {
-
-        })
-        .build()
+            .addMigrations(*MksMigrations.ALL)
+            .addCallback(
+                object : RoomDatabase.Callback() {
+                },
+            )
+            .build()
     }
 
     val reviewRepository: ReviewRepository by lazy {
@@ -49,7 +32,7 @@ class AppModule(val context: Context) {
             database.noteBlueprintDao(),
             database.mistakeLogDao(),
             database.questionDao(),
-            database.courseSlideDao()
+            database.courseSlideDao(),
         )
     }
 
@@ -57,19 +40,19 @@ class AppModule(val context: Context) {
         com.ahmedyejam.mks.data.preview.DeletePreviewService(
             database.bookDao(),
             database.quizDao(),
-            database.questionDao()
+            database.questionDao(),
         )
     }
 
     val categoryMergePreviewService: com.ahmedyejam.mks.data.preview.CategoryMergePreviewService by lazy {
         com.ahmedyejam.mks.data.preview.CategoryMergePreviewService(
-            database.questionCategoryDao()
+            database.questionCategoryDao(),
         )
     }
 
     val clearMarksPreviewService: com.ahmedyejam.mks.data.preview.ClearMarksPreviewService by lazy {
         com.ahmedyejam.mks.data.preview.ClearMarksPreviewService(
-            database.questionDao()
+            database.questionDao(),
         )
     }
 
@@ -82,7 +65,7 @@ class AppModule(val context: Context) {
             database.flashcardDao(),
             database.courseSlideDao(),
             database.sourceDocumentDao(),
-            database.questionAssetDao()
+            database.questionAssetDao(),
         )
     }
 
@@ -99,6 +82,4 @@ class AppModule(val context: Context) {
     }
 
     val applicationScope = CoroutineScope(Dispatchers.Default)
-
-
 }

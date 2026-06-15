@@ -12,41 +12,44 @@ import java.io.IOException
 
 @RunWith(AndroidJUnit4::class)
 class Migration23To24Test {
-    private val TEST_DB = "migration-23-24-test"
+    private val testDb = "migration-23-24-test"
 
     @get:Rule
-    val helper: MigrationTestHelper = MigrationTestHelper(
-        InstrumentationRegistry.getInstrumentation(),
-        MksDatabase::class.java,
-    )
+    val helper: MigrationTestHelper =
+        MigrationTestHelper(
+            InstrumentationRegistry.getInstrumentation(),
+            MksDatabase::class.java,
+        )
 
     @Test
     @Throws(IOException::class)
     fun migrate23To24_stabilizesDefaultWorkspaceAndRepairsBookOwnership() {
-        var db = helper.createDatabase(TEST_DB, 23)
+        var db = helper.createDatabase(testDb, 23)
 
         db.execSQL(
             """
             INSERT INTO workspaces (externalId, name, description, isDefault, createdAt, updatedAt, deletedAt)
             VALUES ('legacy-generated-id', 'Default Workspace', 'Auto-generated default workspace', 1, 1000, 1000, NULL)
-            """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
             INSERT INTO books (workspaceId, externalId, title, description, iconName, coverImage, createdAt, updatedAt, contentUpdatedAt, lastStudiedAt, lastEditedAt, isPinned, isSystem, fields, questionCount, answeredCount, totalAttempts, completionPercentage, accuracyPercentage)
             VALUES (999, 'book_legacy', 'Legacy Book', '', NULL, NULL, 1000, 1000, 1000, 0, 1000, 0, 0, '[]', 0, 0, 0, 0.0, 0.0)
-            """.trimIndent()
+            """.trimIndent(),
         )
         db.close()
 
-        db = helper.runMigrationsAndValidate(TEST_DB, 24, true, MksMigrations.MIGRATION_23_24)
+        db = helper.runMigrationsAndValidate(testDb, 24, true, MksMigrations.MIGRATION_23_24)
 
-        val workspaceId = db.query(
-            "SELECT id FROM workspaces WHERE externalId = '${WorkspaceDefaults.DEFAULT_EXTERNAL_ID}' AND isDefault = 1 AND deletedAt IS NULL"
-        ).use { cursor ->
-            assertTrue("Stable default workspace should exist", cursor.moveToFirst())
-            cursor.getLong(0)
-        }
+        val workspaceId =
+            db.query(
+                "SELECT id FROM workspaces WHERE externalId = '${WorkspaceDefaults.DEFAULT_EXTERNAL_ID}' " +
+                    "AND isDefault = 1 AND deletedAt IS NULL",
+            ).use { cursor ->
+                assertTrue("Stable default workspace should exist", cursor.moveToFirst())
+                cursor.getLong(0)
+            }
 
         db.query("SELECT COUNT(*) FROM workspaces WHERE isDefault = 1").use { cursor ->
             assertTrue(cursor.moveToFirst())

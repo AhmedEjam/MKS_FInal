@@ -10,8 +10,11 @@ import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
 class MksApplication : Application(), ImageLoaderFactory {
-    
     lateinit var appModule: AppModule
+
+    companion object {
+        private const val MEMORY_CACHE_PERCENT = 0.25
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -23,7 +26,7 @@ class MksApplication : Application(), ImageLoaderFactory {
             .memoryCache {
                 MemoryCache.Builder(this)
                     // Set memory cache to 25% of available RAM for maximum smoothness
-                    .maxSizePercent(0.25)
+                    .maxSizePercent(MEMORY_CACHE_PERCENT)
                     .strongReferencesEnabled(enable = true)
                     .build()
             }

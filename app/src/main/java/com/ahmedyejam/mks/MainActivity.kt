@@ -3,12 +3,10 @@ package com.ahmedyejam.mks
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import androidx.core.content.IntentCompat
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -16,14 +14,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.core.content.IntentCompat
+import androidx.core.os.LocaleListCompat
 import androidx.navigation.compose.rememberNavController
 import com.ahmedyejam.mks.ui.MksNavHost
 import com.ahmedyejam.mks.ui.theme.MKSTheme
-
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
-import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -32,7 +30,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         handleIntent(intent)
 
         val appModule = (application as MksApplication).appModule
@@ -63,7 +61,8 @@ class MainActivity : AppCompatActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     val navController = rememberNavController()
-                    val showWelcomeOnStartup by appModule.dataStoreManager.showWelcomeOnStartup.collectAsState(initial = initialShowWelcome)
+                    val showWelcomeOnStartup by appModule.dataStoreManager.showWelcomeOnStartup
+                        .collectAsState(initial = initialShowWelcome)
                     val sharedUrisByState by sharedUris.collectAsState()
 
                     MksNavHost(

@@ -9,8 +9,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.List
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,7 +36,7 @@ import kotlinx.coroutines.launch
 
 enum class QuizTab(val title: String, val icon: ImageVector) {
     SESSIONS("Sessions", Icons.Rounded.History),
-    BROWSE("Browse", Icons.Rounded.List)
+    BROWSE("Browse", Icons.AutoMirrored.Rounded.List)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

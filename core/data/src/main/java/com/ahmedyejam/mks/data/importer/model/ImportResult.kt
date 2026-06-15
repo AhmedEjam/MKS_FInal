@@ -7,13 +7,13 @@ enum class ImportFormat {
     CSV_TSV,
     TEXT,
     HTML,
-    UNKNOWN
+    UNKNOWN,
 }
 
 enum class MergeStrategy {
     SKIP_EXISTING, // Only add new, ignore if exists by externalId
     OVERWRITE_EXISTING, // Add new and update existing by externalId
-    DUPLICATE // Always add as new, ignoring externalId checks
+    DUPLICATE, // Always add as new, ignoring externalId checks
 }
 
 data class ImportResult(
@@ -35,17 +35,17 @@ data class ImportResult(
     val warnings: List<ImportWarning> = emptyList(),
     val errors: List<ImportError> = emptyList(),
     val durationMillis: Long = 0,
-    val partiallyImported: Boolean = false
+    val partiallyImported: Boolean = false,
 )
 
 data class ImportWarning(
     val message: String,
     val details: String? = null,
-    val affectedId: String? = null
+    val affectedId: String? = null,
 )
 
 data class ImportError(
     val message: String,
     val exception: Throwable? = null,
-    val details: String? = null
+    val details: String? = null,
 )

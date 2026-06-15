@@ -4,7 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SettingsSanitizerTest {
-
     @Test
     fun testThemeSanitization() {
         assertEquals("DAWN", SettingsSanitizer.theme(null))
@@ -28,8 +27,8 @@ class SettingsSanitizerTest {
 
     @Test
     fun testClamping() {
-        assertEquals(0.85f, SettingsSanitizer.fontScale(0.1f), 0.01f)
-        assertEquals(1.35f, SettingsSanitizer.fontScale(5.0f), 0.01f)
+        assertEquals(0.5f, SettingsSanitizer.fontScale(0.1f), 0.01f)
+        assertEquals(2.0f, SettingsSanitizer.fontScale(5.0f), 0.01f)
         assertEquals(300, SettingsSanitizer.autoAdvanceDelay(100))
         assertEquals(10000, SettingsSanitizer.autoAdvanceDelay(50000))
     }

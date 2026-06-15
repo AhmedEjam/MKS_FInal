@@ -28,11 +28,12 @@ class XlsxLibraryCompiler(private val context: Context) {
     private val imageExtractor = GenericImageExtractor()
 
     private fun prepareTempFile(uri: Uri): java.io.File? {
-        val extension = getFileName(uri)
-            ?.substringAfterLast('.', "xlsx")
-            ?.lowercase()
-            ?.takeIf { it.isNotBlank() }
-            ?: "xlsx"
+        val extension =
+            getFileName(uri)
+                ?.substringAfterLast('.', "xlsx")
+                ?.lowercase()
+                ?.takeIf { it.isNotBlank() }
+                ?: "xlsx"
         val file = java.io.File(context.cacheDir, "import_lib_${System.currentTimeMillis()}.$extension")
         return try {
             context.contentResolver.openInputStream(uri)?.use { input ->
@@ -74,7 +75,12 @@ class XlsxLibraryCompiler(private val context: Context) {
                     val scanLimit = minOf(sheet.lastRowNum, 10)
                     for (i in 0..scanLimit) {
                         val row = sheet.getRow(i) ?: continue
-                        val cells = extractRowCells(row, row.lastCellNum.toInt().coerceAtLeast(0).coerceAtMost(ImportLimits.MAX_XLSX_COLUMNS), formatter)
+                        val cells =
+                            extractRowCells(
+                                row,
+                                row.lastCellNum.toInt().coerceAtLeast(0).coerceAtMost(ImportLimits.MAX_XLSX_COLUMNS),
+                                formatter,
+                            )
                         val score = headerMapper.calculateRowScore(cells)
                         if (score > maxScore) {
                             maxScore = score
@@ -91,13 +97,14 @@ class XlsxLibraryCompiler(private val context: Context) {
                     val mapping = headerMapper.mapHeaders(headerCells)
                     val optionCols = headerMapper.guessOptionColumns(headerCells, mapping)
                     val sheetImages = xlsxResolver.resolveSheetImages(zipFile, sheetName, cellImagePathMap)
-                    val parser = SpreadsheetQuestionParser(
-                        mapping = mapping,
-                        optionCols = optionCols,
-                        sheetAddressImages = sheetImages.addressImages,
-                        sheetRowImages = sheetImages.rowImages,
-                        imageExtractor = imageExtractor,
-                    )
+                    val parser =
+                        SpreadsheetQuestionParser(
+                            mapping = mapping,
+                            optionCols = optionCols,
+                            sheetAddressImages = sheetImages.addressImages,
+                            sheetRowImages = sheetImages.rowImages,
+                            imageExtractor = imageExtractor,
+                        )
 
                     for (i in (bestRowIdx + 1)..sheet.lastRowNum) {
                         val row = sheet.getRow(i) ?: continue
@@ -105,8 +112,9 @@ class XlsxLibraryCompiler(private val context: Context) {
                         val parsedQuestion = parser.parseRow(cells, i + 1) ?: continue
                         if (parsedQuestion.stem.isBlank() && parsedQuestion.options.isEmpty()) continue
 
-                        val deterministicId = parsedQuestion.externalId ?: 
-                            ImportLibraryManager.generateDeterministicId(parsedQuestion.stem, parsedQuestion.options.map { it.text })
+                        val deterministicId =
+                            parsedQuestion.externalId
+                                ?: ImportLibraryManager.generateDeterministicId(parsedQuestion.stem, parsedQuestion.options.map { it.text })
 
                         questions.add(
                             QuestionDto(
@@ -122,8 +130,8 @@ class XlsxLibraryCompiler(private val context: Context) {
                                 categories = parsedQuestion.categories,
                                 answerMode = if (parsedQuestion.correctAnswers.size > 1) "multiple" else "single",
                                 additionalInfo = parsedQuestion.additionalInfo.orEmpty(),
-                                sourceLine = parsedQuestion.sourceLine.takeIf { it > 0 }
-                            )
+                                sourceLine = parsedQuestion.sourceLine.takeIf { it > 0 },
+                            ),
                         )
                     }
                 }
@@ -138,14 +146,15 @@ class XlsxLibraryCompiler(private val context: Context) {
 
         return LibraryBundleDto(
             books = listOf(BookDto(id = bookId, title = fileName)),
-            quizzes = listOf(
-                QuizDto(
-                    id = quizId,
-                    bookId = bookId,
-                    title = fileName,
-                    questions = questions
-                )
-            )
+            quizzes =
+                listOf(
+                    QuizDto(
+                        id = quizId,
+                        bookId = bookId,
+                        title = fileName,
+                        questions = questions,
+                    ),
+                ),
         )
     }
 
@@ -167,14 +176,20 @@ class XlsxLibraryCompiler(private val context: Context) {
         formatter: DataFormatter,
     ): String {
         return try {
-            if (cell.cellType == CellType.FORMULA) fallbackFormulaText(cell, formatter)
-            else formatter.formatCellValue(cell)
+            if (cell.cellType == CellType.FORMULA) {
+                fallbackFormulaText(cell, formatter)
+            } else {
+                formatter.formatCellValue(cell)
+            }
         } catch (_: Exception) {
             fallbackFormulaText(cell, formatter)
         }
     }
 
-    private fun fallbackFormulaText(cell: Cell, formatter: DataFormatter): String {
+    private fun fallbackFormulaText(
+        cell: Cell,
+        formatter: DataFormatter,
+    ): String {
         if (cell.cellType != CellType.FORMULA) {
             return runCatching { formatter.formatCellValue(cell) }.getOrElse { cell.toString() }
         }
@@ -182,11 +197,12 @@ class XlsxLibraryCompiler(private val context: Context) {
         return try {
             when (cell.cachedFormulaResultType) {
                 CellType.STRING -> cell.richStringCellValue?.string.orEmpty()
-                CellType.NUMERIC -> formatter.formatRawCellContents(
-                    cell.numericCellValue,
-                    cell.cellStyle.dataFormat.toInt(),
-                    cell.cellStyle.dataFormatString
-                )
+                CellType.NUMERIC ->
+                    formatter.formatRawCellContents(
+                        cell.numericCellValue,
+                        cell.cellStyle.dataFormat.toInt(),
+                        cell.cellStyle.dataFormatString,
+                    )
                 CellType.BOOLEAN -> cell.booleanCellValue.toString()
                 CellType.BLANK -> ""
                 else -> "=" + cell.cellFormula.orEmpty()
@@ -196,7 +212,10 @@ class XlsxLibraryCompiler(private val context: Context) {
         }
     }
 
-    private fun detectStableColumnCount(sheet: org.apache.poi.ss.usermodel.Sheet, headerRowIdx: Int): Int {
+    private fun detectStableColumnCount(
+        sheet: org.apache.poi.ss.usermodel.Sheet,
+        headerRowIdx: Int,
+    ): Int {
         var maxColumns = 0
         val scanEnd = minOf(sheet.lastRowNum, headerRowIdx + 40)
         for (rowIndex in 0..scanEnd) {

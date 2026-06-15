@@ -7,9 +7,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.FactCheck
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Quiz
-import androidx.compose.material.icons.rounded.FactCheck
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -83,7 +83,7 @@ fun CategoryChip(
                 Text(emoji)
             } else if (!hasEmoji) {
                 Icon(
-                    Icons.Rounded.FactCheck,
+                    Icons.AutoMirrored.Rounded.FactCheck,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
                     tint = contentColor

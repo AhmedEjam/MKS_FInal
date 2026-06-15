@@ -11,11 +11,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
-import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -66,7 +66,7 @@ fun LibraryFabMenu(
                         },
                         modifier = Modifier.padding(bottom = 8.dp)
                     ) {
-                        FabActionRow(Icons.Rounded.MenuBook, stringResource(R.string.new_book))
+                        FabActionRow(Icons.AutoMirrored.Rounded.MenuBook, stringResource(R.string.new_book))
                     }
                 }
 

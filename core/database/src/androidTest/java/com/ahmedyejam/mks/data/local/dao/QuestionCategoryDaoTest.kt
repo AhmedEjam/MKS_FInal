@@ -34,26 +34,28 @@ class QuestionCategoryDaoTest {
     }
 
     @Test
-    fun getQuestionsByCategoryUsesNormalizedJoinTable() = runBlocking {
-        val bookId = db.bookDao().insertBook(BookEntity(externalId = "book", title = "Book"))
-        val quizId = db.quizDao().insertQuiz(QuizEntity(externalId = "quiz", bookId = bookId, title = "Quiz"))
-        val questionId = db.questionDao().insertQuestion(
-            QuestionEntity(
-                externalId = "q1",
-                quizId = quizId,
-                text = "Question",
-                type = QuestionType.SINGLE_CHOICE,
-                options = listOf("A", "B"),
-                correctAnswers = listOf(0),
-                categories = listOf("renal")
-            )
-        )
+    fun getQuestionsByCategoryUsesNormalizedJoinTable() =
+        runBlocking {
+            val bookId = db.bookDao().insertBook(BookEntity(externalId = "book", title = "Book"))
+            val quizId = db.quizDao().insertQuiz(QuizEntity(externalId = "quiz", bookId = bookId, title = "Quiz"))
+            val questionId =
+                db.questionDao().insertQuestion(
+                    QuestionEntity(
+                        externalId = "q1",
+                        quizId = quizId,
+                        text = "Question",
+                        type = QuestionType.SINGLE_CHOICE,
+                        options = listOf("A", "B"),
+                        correctAnswers = listOf(0),
+                        categories = listOf("renal"),
+                    ),
+                )
 
-        db.questionCategoryDao().insertCategories(listOf(QuestionCategoryEntity(questionId, "renal")))
+            db.questionCategoryDao().insertCategories(listOf(QuestionCategoryEntity(questionId, "renal")))
 
-        val questions = db.questionCategoryDao().getQuestionsByCategoryFlow("renal").first()
+            val questions = db.questionCategoryDao().getQuestionsByCategoryFlow("renal").first()
 
-        assertEquals(1, questions.size)
-        assertEquals(questionId, questions.single().id)
-    }
+            assertEquals(1, questions.size)
+            assertEquals(questionId, questions.single().id)
+        }
 }

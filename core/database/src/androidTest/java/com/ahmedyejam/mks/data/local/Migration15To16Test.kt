@@ -22,18 +22,25 @@ class Migration15To16Test {
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.deleteDatabase(TEST_DB)
-        helper = FrameworkSQLiteOpenHelperFactory().create(
-            SupportSQLiteOpenHelper.Configuration.builder(context)
-                .name(TEST_DB)
-                .callback(object : SupportSQLiteOpenHelper.Callback(15) {
-                    override fun onCreate(db: SupportSQLiteDatabase) {
-                        createMinimalVersion15Schema(db)
-                    }
+        helper =
+            FrameworkSQLiteOpenHelperFactory().create(
+                SupportSQLiteOpenHelper.Configuration.builder(context)
+                    .name(TEST_DB)
+                    .callback(
+                        object : SupportSQLiteOpenHelper.Callback(15) {
+                            override fun onCreate(db: SupportSQLiteDatabase) {
+                                createMinimalVersion15Schema(db)
+                            }
 
-                    override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
-                })
-                .build()
-        )
+                            override fun onUpgrade(
+                                db: SupportSQLiteDatabase,
+                                oldVersion: Int,
+                                newVersion: Int,
+                            ) = Unit
+                        },
+                    )
+                    .build(),
+            )
         db = helper.writableDatabase
     }
 
@@ -96,7 +103,7 @@ class Migration15To16Test {
                 updatedAt INTEGER NOT NULL,
                 lastEditedAt INTEGER NOT NULL
             )
-            """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
@@ -117,7 +124,7 @@ class Migration15To16Test {
                 updatedAt INTEGER NOT NULL,
                 FOREIGN KEY(bookId) REFERENCES books(id) ON DELETE CASCADE
             )
-            """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
@@ -140,7 +147,7 @@ class Migration15To16Test {
                 updatedAt INTEGER NOT NULL,
                 FOREIGN KEY(quizId) REFERENCES quizzes(id) ON DELETE CASCADE
             )
-            """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
@@ -163,7 +170,7 @@ class Migration15To16Test {
                 lastEditedAt INTEGER NOT NULL,
                 FOREIGN KEY(bookId) REFERENCES books(id) ON DELETE CASCADE
             )
-            """.trimIndent()
+            """.trimIndent(),
         )
         db.execSQL(
             """
@@ -185,7 +192,7 @@ class Migration15To16Test {
                 updatedAt INTEGER NOT NULL,
                 FOREIGN KEY(deckId) REFERENCES flashcard_decks(id) ON DELETE CASCADE
             )
-            """.trimIndent()
+            """.trimIndent(),
         )
     }
 
@@ -201,15 +208,25 @@ class Migration15To16Test {
         }
     }
 
-    private fun assertColumnExists(tableName: String, columnName: String) {
+    private fun assertColumnExists(
+        tableName: String,
+        columnName: String,
+    ) {
         assertTrue("Expected column $tableName.$columnName", columnCount(tableName, columnName) >= 1)
     }
 
-    private fun assertColumnCount(tableName: String, columnName: String, expectedCount: Int) {
+    private fun assertColumnCount(
+        tableName: String,
+        columnName: String,
+        expectedCount: Int,
+    ) {
         assertEquals("Unexpected duplicate count for $tableName.$columnName", expectedCount, columnCount(tableName, columnName))
     }
 
-    private fun columnCount(tableName: String, columnName: String): Int {
+    private fun columnCount(
+        tableName: String,
+        columnName: String,
+    ): Int {
         var count = 0
         db.query("PRAGMA table_info($tableName)").use { cursor ->
             val nameIndex = cursor.getColumnIndex("name")

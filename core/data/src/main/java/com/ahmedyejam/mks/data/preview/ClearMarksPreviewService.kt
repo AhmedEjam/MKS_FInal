@@ -5,7 +5,7 @@ import com.ahmedyejam.mks.data.simulation.ChangeSimulationResult
 import com.ahmedyejam.mks.data.simulation.SimulatedItem
 
 class ClearMarksPreviewService(
-    private val questionDao: QuestionDao
+    private val questionDao: QuestionDao,
 ) {
     suspend fun previewClearMarksForQuiz(quizId: Long): ChangeSimulationResult {
         val questions = questionDao.getMarkedQuestionsByQuiz(quizId)
@@ -13,7 +13,7 @@ class ClearMarksPreviewService(
             title = "Clear Marked Questions",
             summary = "This will clear marks from ${questions.size} questions in this quiz.",
             affectedQuestions = questions.size,
-            updatedItems = questions.map { SimulatedItem(it.id.toString(), "Question", it.text.take(80), reason = it.markReason) }
+            updatedItems = questions.map { SimulatedItem(it.id.toString(), "Question", it.text.take(80), reason = it.markReason) },
         )
     }
 }

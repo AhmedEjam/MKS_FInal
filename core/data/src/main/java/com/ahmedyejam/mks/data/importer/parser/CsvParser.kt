@@ -1,22 +1,24 @@
 package com.ahmedyejam.mks.data.importer.parser
 
 class CsvParser {
-    
-    fun parse(content: String, delimiter: Char? = null): List<List<String>> {
+    fun parse(
+        content: String,
+        delimiter: Char? = null,
+    ): List<List<String>> {
         if (content.isBlank()) return emptyList()
-        
+
         val sep = delimiter ?: inferDelimiter(content)
         val result = mutableListOf<List<String>>()
         val currentLine = mutableListOf<String>()
         val currentValue = StringBuilder()
-        
+
         var inQuotes = false
         var justClosedQuote = false
         var i = 0
-        
+
         while (i < content.length) {
             val char = content[i]
-            
+
             when {
                 char == '"' -> {
                     if (inQuotes && i + 1 < content.length && content[i + 1] == '"') {
@@ -73,7 +75,7 @@ class CsvParser {
             }
             i++
         }
-        
+
         // Handle last value and line if not ended with newline
         if (currentValue.isNotEmpty() || currentLine.isNotEmpty()) {
             currentLine.add(currentValue.toString().trim())
@@ -81,27 +83,30 @@ class CsvParser {
                 result.add(ArrayList(currentLine))
             }
         }
-        
+
         return result
     }
 
     private fun inferDelimiter(content: String): Char {
         val testDelimiters = listOf(',', '\t', ';')
         val lines = content.lineSequence().filter { it.isNotBlank() }.toList()
-        
+
         if (lines.isEmpty()) return ','
-        
+
         return testDelimiters
             .map { delimiter -> buildDelimiterScore(delimiter, lines.map { line -> countFields(line, delimiter) }) }
             .maxWithOrNull(
                 compareBy<DelimiterScore> { it.supportingRows }
                     .thenBy { it.modeFrequency }
                     .thenBy { it.modeFieldCount }
-                    .thenByDescending { it.varianceScore }
+                    .thenByDescending { it.varianceScore },
             )?.delimiter ?: ','
     }
 
-    private fun countFields(line: String, delimiter: Char): Int {
+    private fun countFields(
+        line: String,
+        delimiter: Char,
+    ): Int {
         var count = 1
         var inQuotes = false
         var justClosedQuote = false
@@ -148,7 +153,7 @@ class CsvParser {
 
     private fun buildDelimiterScore(
         delimiter: Char,
-        counts: List<Int>
+        counts: List<Int>,
     ): DelimiterScore {
         val supportingCounts = counts.filter { it > 1 }
         if (supportingCounts.isEmpty()) {
@@ -157,14 +162,15 @@ class CsvParser {
                 supportingRows = 0,
                 modeFrequency = 0,
                 modeFieldCount = 0,
-                varianceScore = Double.NEGATIVE_INFINITY
+                varianceScore = Double.NEGATIVE_INFINITY,
             )
         }
 
         val grouped = supportingCounts.groupingBy { it }.eachCount()
-        val modeFieldCount = grouped.maxWithOrNull(
-            compareBy<Map.Entry<Int, Int>> { it.value }.thenBy { it.key }
-        )?.key ?: 0
+        val modeFieldCount =
+            grouped.maxWithOrNull(
+                compareBy<Map.Entry<Int, Int>> { it.value }.thenBy { it.key },
+            )?.key ?: 0
         val modeFrequency = grouped[modeFieldCount] ?: 0
         val avg = supportingCounts.average()
         val variance = supportingCounts.map { (it - avg) * (it - avg) }.sum() / supportingCounts.size
@@ -174,7 +180,7 @@ class CsvParser {
             supportingRows = supportingCounts.size,
             modeFrequency = modeFrequency,
             modeFieldCount = modeFieldCount,
-            varianceScore = -variance
+            varianceScore = -variance,
         )
     }
 
@@ -183,6 +189,6 @@ class CsvParser {
         val supportingRows: Int,
         val modeFrequency: Int,
         val modeFieldCount: Int,
-        val varianceScore: Double
+        val varianceScore: Double,
     )
 }

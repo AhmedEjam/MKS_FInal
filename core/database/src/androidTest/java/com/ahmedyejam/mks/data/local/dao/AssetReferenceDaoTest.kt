@@ -29,18 +29,19 @@ class AssetReferenceDaoTest {
     }
 
     @Test
-    fun countReferencesTracksSharedAssetOwners() = runBlocking {
-        db.assetReferenceDao().insertReferences(
-            listOf(
-                AssetReferenceEntity(path = "/data/user/0/app/files/images/shared.webp", ownerType = "question", ownerId = 1),
-                AssetReferenceEntity(path = "/data/user/0/app/files/images/shared.webp", ownerType = "flashcard", ownerId = 2)
+    fun countReferencesTracksSharedAssetOwners() =
+        runBlocking {
+            db.assetReferenceDao().insertReferences(
+                listOf(
+                    AssetReferenceEntity(path = "/data/user/0/app/files/images/shared.webp", ownerType = "question", ownerId = 1),
+                    AssetReferenceEntity(path = "/data/user/0/app/files/images/shared.webp", ownerType = "flashcard", ownerId = 2),
+                ),
             )
-        )
 
-        assertEquals(2, db.assetReferenceDao().countReferencesForPath("/data/user/0/app/files/images/shared.webp"))
+            assertEquals(2, db.assetReferenceDao().countReferencesForPath("/data/user/0/app/files/images/shared.webp"))
 
-        db.assetReferenceDao().deleteReferencesForOwner("flashcard", 2)
+            db.assetReferenceDao().deleteReferencesForOwner("flashcard", 2)
 
-        assertEquals(1, db.assetReferenceDao().countReferencesForPath("/data/user/0/app/files/images/shared.webp"))
-    }
+            assertEquals(1, db.assetReferenceDao().countReferencesForPath("/data/user/0/app/files/images/shared.webp"))
+        }
 }

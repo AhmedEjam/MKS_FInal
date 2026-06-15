@@ -9,10 +9,8 @@ data class AssetReferenceRepairResult(
     val missingFiles: Int,
     val orphanedReferences: Int,
     val deletedReferences: Int,
-    val deletedFiles: Int
+    val deletedFiles: Int,
 )
-
-
 
 class AssetReferenceAuditService constructor(
     private val assetReferenceDao: AssetReferenceDao,
@@ -22,30 +20,31 @@ class AssetReferenceAuditService constructor(
     private val flashcardDao: FlashcardDao,
     private val courseSlideDao: CourseSlideDao,
     private val sourceDocumentDao: SourceDocumentDao,
-    private val questionAssetDao: QuestionAssetDao
+    private val questionAssetDao: QuestionAssetDao,
 ) {
     suspend fun audit(): AssetReferenceRepairResult {
         val references = assetReferenceDao.getAllReferences()
         var missingFiles = 0
         var orphanedReferences = 0
-        
+
         references.forEach { ref: AssetReferenceEntity ->
             if (!File(ref.path).exists()) {
                 missingFiles++
             }
             // Check if owner still exists
-            val ownerExists = when (ref.ownerType) {
-                "book" -> bookDao.getBookById(ref.ownerId) != null
-                "quiz" -> quizDao.getQuizById(ref.ownerId) != null
-                "question" -> questionDao.getQuestionById(ref.ownerId) != null
-                "flashcard_deck" -> true // Assuming deck ID is correct for now
-                "flashcard" -> flashcardDao.getFlashcardById(ref.ownerId) != null
-                "slideshow_course" -> true
-                "course_slide" -> true
-                "source_document" -> sourceDocumentDao.getSourceById(ref.ownerId) != null
-                "question_asset" -> questionAssetDao.getAssetById(ref.ownerId) != null
-                else -> false
-            }
+            val ownerExists =
+                when (ref.ownerType) {
+                    "book" -> bookDao.getBookById(ref.ownerId) != null
+                    "quiz" -> quizDao.getQuizById(ref.ownerId) != null
+                    "question" -> questionDao.getQuestionById(ref.ownerId) != null
+                    "flashcard_deck" -> true // Assuming deck ID is correct for now
+                    "flashcard" -> flashcardDao.getFlashcardById(ref.ownerId) != null
+                    "slideshow_course" -> true
+                    "course_slide" -> true
+                    "source_document" -> sourceDocumentDao.getSourceById(ref.ownerId) != null
+                    "question_asset" -> questionAssetDao.getAssetById(ref.ownerId) != null
+                    else -> false
+                }
             if (!ownerExists) {
                 orphanedReferences++
             }
@@ -56,7 +55,7 @@ class AssetReferenceAuditService constructor(
             missingFiles = missingFiles,
             orphanedReferences = orphanedReferences,
             deletedReferences = 0,
-            deletedFiles = 0
+            deletedFiles = 0,
         )
     }
 }

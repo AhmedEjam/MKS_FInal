@@ -1,8 +1,8 @@
 package com.ahmedyejam.mks.data.preview
 
 import com.ahmedyejam.mks.data.local.dao.BookDao
-import com.ahmedyejam.mks.data.local.dao.QuizDao
 import com.ahmedyejam.mks.data.local.dao.QuestionDao
+import com.ahmedyejam.mks.data.local.dao.QuizDao
 import com.ahmedyejam.mks.data.simulation.ChangeSimulationResult
 import com.ahmedyejam.mks.data.simulation.SimulatedItem
 import kotlinx.coroutines.flow.first
@@ -10,9 +10,8 @@ import kotlinx.coroutines.flow.first
 class DeletePreviewService(
     private val bookDao: BookDao,
     private val quizDao: QuizDao,
-    private val questionDao: QuestionDao
+    private val questionDao: QuestionDao,
 ) {
-
     suspend fun previewBookDeletion(bookId: Long): ChangeSimulationResult {
         val book = bookDao.getBookById(bookId) ?: return emptyResult("Delete Book")
         val quizzes = quizDao.getQuizzesByBookId(bookId).first()
@@ -24,8 +23,9 @@ class DeletePreviewService(
             affectedBooks = 1,
             affectedQuizzes = quizzes.size,
             affectedQuestions = questionCount,
-            deletedItems = listOf(SimulatedItem(bookId.toString(), "Book", book.title)) + 
-                quizzes.map { SimulatedItem(it.id.toString(), "Quiz", it.title) }
+            deletedItems =
+                listOf(SimulatedItem(bookId.toString(), "Book", book.title)) +
+                    quizzes.map { SimulatedItem(it.id.toString(), "Quiz", it.title) },
         )
     }
 
@@ -38,7 +38,7 @@ class DeletePreviewService(
             summary = "This will delete the quiz and $questionCount questions.",
             affectedQuizzes = 1,
             affectedQuestions = questionCount,
-            deletedItems = listOf(SimulatedItem(quizId.toString(), "Quiz", quiz.title))
+            deletedItems = listOf(SimulatedItem(quizId.toString(), "Quiz", quiz.title)),
         )
     }
 

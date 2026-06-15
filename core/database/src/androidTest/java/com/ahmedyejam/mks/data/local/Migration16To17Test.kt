@@ -21,25 +21,32 @@ class Migration16To17Test {
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.deleteDatabase(TEST_DB)
-        helper = FrameworkSQLiteOpenHelperFactory().create(
-            SupportSQLiteOpenHelper.Configuration.builder(context)
-                .name(TEST_DB)
-                .callback(object : SupportSQLiteOpenHelper.Callback(16) {
-                    override fun onCreate(db: SupportSQLiteDatabase) {
-                        db.execSQL(
-                            """
-                            CREATE TABLE IF NOT EXISTS flashcards (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                                sourceQuestionId INTEGER
-                            )
-                            """.trimIndent()
-                        )
-                    }
+        helper =
+            FrameworkSQLiteOpenHelperFactory().create(
+                SupportSQLiteOpenHelper.Configuration.builder(context)
+                    .name(TEST_DB)
+                    .callback(
+                        object : SupportSQLiteOpenHelper.Callback(16) {
+                            override fun onCreate(db: SupportSQLiteDatabase) {
+                                db.execSQL(
+                                    """
+                                    CREATE TABLE IF NOT EXISTS flashcards (
+                                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                                        sourceQuestionId INTEGER
+                                    )
+                                    """.trimIndent(),
+                                )
+                            }
 
-                    override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
-                })
-                .build()
-        )
+                            override fun onUpgrade(
+                                db: SupportSQLiteDatabase,
+                                oldVersion: Int,
+                                newVersion: Int,
+                            ) = Unit
+                        },
+                    )
+                    .build(),
+            )
         db = helper.writableDatabase
     }
 
