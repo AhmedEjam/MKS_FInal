@@ -442,7 +442,19 @@ fun MksNavHost(
                         navController.navigate("prompt_deck/$promptId?questionId=$questionId")
                     }
                 },
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    // Prefer returning to the sessions screen for this quiz if present in backstack
+                    val poppedToSessions = navController.popBackStack("sessions/$quizId", inclusive = false)
+                    if (!poppedToSessions) {
+                        val popped = navController.popBackStack()
+                        if (!popped) {
+                            navController.navigate("library") {
+                                popUpTo("library") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                },
             ) { category ->
                 navController.navigate("category/${Uri.encode(category)}")
             }
@@ -543,7 +555,15 @@ fun MksNavHost(
                         navController.navigate("prompt_deck/$promptId?questionId=$questionId")
                     }
                 },
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    val popped = navController.popBackStack()
+                    if (!popped) {
+                        navController.navigate("library") {
+                            popUpTo("library") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                },
             )
         }
 
