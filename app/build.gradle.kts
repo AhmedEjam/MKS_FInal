@@ -9,14 +9,14 @@ plugins {
 
 android {
     namespace = "com.ahmedyejam.mks"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.ahmedyejam.mks"
         minSdk = 30
-        targetSdk = 35
-        versionCode = 3
-        versionName = "03.0"
+        targetSdk = 37
+        versionCode = 4
+        versionName = "03.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
