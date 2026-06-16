@@ -1,21 +1,20 @@
 package com.ahmedyejam.mks.ui.importer
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
-
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.importer.model.ImportFormat
-import com.ahmedyejam.mks.data.repository.QuizRepository
-import com.ahmedyejam.mks.data.importer.model.ImportResult
 import com.ahmedyejam.mks.data.importer.model.ImportPreviewDto
+import com.ahmedyejam.mks.data.importer.model.ImportResult
 import com.ahmedyejam.mks.data.importer.model.MergeStrategy
+import com.ahmedyejam.mks.data.model.MksResult
+import com.ahmedyejam.mks.data.repository.QuizRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class ImportViewModel @Inject constructor(
@@ -63,10 +62,19 @@ class ImportViewModel @Inject constructor(
                 ) { progress, message ->
                     _importState.value = ImportState.Loading(progress, message)
                 }
-                if (result?.success == true) {
-                    _importState.value = ImportState.Success(result)
-                } else {
-                    _importState.value = ImportState.Error(result?.errors?.firstOrNull()?.message ?: "Unknown error")
+
+                when (result) {
+                    is MksResult.Success -> {
+                        _importState.value = ImportState.Success(result.data)
+                    }
+
+                    is MksResult.Error -> {
+                        _importState.value = ImportState.Error(result.message)
+                    }
+
+                    null -> {
+                        _importState.value = ImportState.Error("Import manager not available")
+                    }
                 }
             } catch (e: Exception) {
                 _importState.value = ImportState.Error(e.message ?: "Critical import failure")

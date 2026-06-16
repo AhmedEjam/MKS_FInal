@@ -45,7 +45,7 @@ import com.ahmedyejam.mks.data.local.entity.StudySessionEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
 
-const val MKS_DATABASE_VERSION = 29
+const val MKS_DATABASE_VERSION = 30
 
 @Database(
     entities = [

@@ -5,11 +5,14 @@ import com.ahmedyejam.mks.data.local.dao.FlashcardDao
 import com.ahmedyejam.mks.data.local.dao.MistakeLogDao
 import com.ahmedyejam.mks.data.local.dao.NoteBlueprintDao
 import com.ahmedyejam.mks.data.local.dao.QuestionDao
-import com.ahmedyejam.mks.ui.*
+import com.ahmedyejam.mks.ui.MksRoutes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class ReviewRepository constructor(
+@Singleton
+class ReviewRepository @Inject constructor(
     private val flashcardDao: FlashcardDao,
     private val noteBlueprintDao: NoteBlueprintDao,
     private val mistakeLogDao: MistakeLogDao,

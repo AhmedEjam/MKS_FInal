@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -39,7 +38,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
@@ -48,8 +49,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -65,9 +64,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ahmedyejam.mks.core.ui.R
-import com.ahmedyejam.mks.di.AppModule
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
-import com.ahmedyejam.mks.util.MksLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -75,15 +72,14 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
-    appModule: AppModule,
     viewModel: SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
     onBack: () -> Unit,
     onGlobalSearch: () -> Unit = {},
     onReviewDashboard: () -> Unit = {},
     onDataTools: () -> Unit = {}
 ) {
-    val dataStoreManager = appModule.dataStoreManager
-    val focusManager = appModule.focusManager
+    val dataStoreManager = viewModel.dataStoreManager
+    val focusManager = viewModel.focusManager
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val tokens = LocalMksDesignTokens.current
@@ -377,12 +373,15 @@ fun SettingsScreen(
 
             val ollamaBaseUrl by dataStoreManager.ollamaBaseUrl.collectAsState(initial = "http://10.0.2.2:11434")
             val ollamaModelName by dataStoreManager.ollamaModelName.collectAsState(initial = "llama3")
+            val ollamaApiKey by dataStoreManager.ollamaApiKey.collectAsState(initial = "")
             var editOllamaBaseUrl by remember(ollamaBaseUrl) { mutableStateOf(ollamaBaseUrl) }
             var editOllamaModelName by remember(ollamaModelName) { mutableStateOf(ollamaModelName) }
+            var editOllamaApiKey by remember(ollamaApiKey) { mutableStateOf(ollamaApiKey) }
+            var isTestingOllama by remember { mutableStateOf(false) }
 
             SettingsGroup(title = "AI Integrations") {
                 Text(
-                    "Configure local LLM settings for the AI Prompt Deck. Ollama is recommended. For Android Emulators, use http://10.0.2.2:11434.",
+                    "Configure local LLM settings for the AI Prompt Deck. Ollama is recommended. For Android Emulators, use http://10.0.2.2:11434. A remote server can be reached via its http(s) URL; add an API key if it is protected by a reverse proxy.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -401,17 +400,46 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                Button(
-                    onClick = {
-                        scope.launch {
-                            dataStoreManager.setOllamaBaseUrl(editOllamaBaseUrl)
-                            dataStoreManager.setOllamaModelName(editOllamaModelName)
-                            snackbarHostState.showSnackbar("AI settings saved")
-                        }
-                    },
-                    modifier = Modifier.align(Alignment.End)
+                OutlinedTextField(
+                    value = editOllamaApiKey,
+                    onValueChange = { editOllamaApiKey = it },
+                    label = { Text("API Key (optional, for secured servers)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                 ) {
-                    Text("Save Settings")
+                    OutlinedButton(
+                        enabled = !isTestingOllama,
+                        onClick = {
+                            scope.launch {
+                                isTestingOllama = true
+                                val result = viewModel.ollamaRepository.testConnection(
+                                    baseUrl = editOllamaBaseUrl,
+                                    modelName = editOllamaModelName,
+                                    apiKey = editOllamaApiKey.takeIf { it.isNotBlank() }
+                                )
+                                isTestingOllama = false
+                                snackbarHostState.showSnackbar(result.message)
+                            }
+                        }
+                    ) {
+                        Text(if (isTestingOllama) "Testing..." else "Test Connection")
+                    }
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                dataStoreManager.setOllamaBaseUrl(editOllamaBaseUrl)
+                                dataStoreManager.setOllamaModelName(editOllamaModelName)
+                                dataStoreManager.setOllamaApiKey(editOllamaApiKey)
+                                snackbarHostState.showSnackbar("AI settings saved")
+                            }
+                        }
+                    ) {
+                        Text("Save Settings")
+                    }
                 }
             }
 

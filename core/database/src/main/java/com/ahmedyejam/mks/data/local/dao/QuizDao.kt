@@ -1,6 +1,11 @@
 package com.ahmedyejam.mks.data.local.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -94,6 +99,12 @@ interface QuizDao {
 
     @Query("SELECT COUNT(*) FROM questions WHERE deletedAt IS NULL AND quizId IN (SELECT id FROM quizzes WHERE bookId = :bookId AND deletedAt IS NULL)")
     fun getBookQuestionCount(bookId: Long): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM questions WHERE quizId IN (SELECT id FROM quizzes WHERE bookId = :bookId AND deletedAt IS NULL) AND deletedAt IS NULL")
+    suspend fun getBookQuestionCountNow(bookId: Long): Int
+
+    @Query("SELECT * FROM quizzes WHERE bookId = :bookId AND deletedAt IS NULL")
+    suspend fun getQuizzesByBookIdNow(bookId: Long): List<QuizEntity>
 
     @Query("SELECT * FROM quizzes WHERE deletedAt IS NOT NULL AND bookId IN (SELECT id FROM books WHERE workspaceId = :workspaceId)")
     fun getDeletedQuizzesByWorkspaceFlow(workspaceId: Long): Flow<List<QuizEntity>>

@@ -127,9 +127,11 @@ class TextArticleParserTest {
 
     @Test
     fun explicitLabels_allFields_parses() {
-        val text = "Title: My Note\nSummary: A brief summary\nBody: The full body content\nBullet: Point one\nBullet: Point two\nTag: kotlin\nTag: android"
+        val text =
+            "Title: My Note\nSummary: A brief summary\nBody: The full body content\nBullet: Point one\nBullet: Point two\nTag: kotlin\nTag: android"
 
-        val articles = parser.parse(text, collectionId = 1L, mode = TextArticleParseMode.EXPLICIT_LABELS)
+        val articles =
+            parser.parse(text, collectionId = 1L, mode = TextArticleParseMode.EXPLICIT_LABELS)
         assertEquals(1, articles.size)
         assertEquals("My Note", articles[0].title)
         assertEquals("A brief summary", articles[0].summary)
@@ -142,7 +144,8 @@ class TextArticleParserTest {
     fun explicitLabels_titleOnly_fallback() {
         val text = "No labels, just raw text content"
 
-        val articles = parser.parse(text, collectionId = 1L, mode = TextArticleParseMode.EXPLICIT_LABELS)
+        val articles =
+            parser.parse(text, collectionId = 1L, mode = TextArticleParseMode.EXPLICIT_LABELS)
         assertEquals(1, articles.size)
         // Fallback: takes first 50 chars + "..." as title
         assertTrue(articles[0].title.endsWith("..."))
@@ -159,7 +162,8 @@ class TextArticleParserTest {
             Body: Body 2
         """.trimIndent()
 
-        val articles = parser.parse(text, collectionId = 1L, mode = TextArticleParseMode.EXPLICIT_LABELS)
+        val articles =
+            parser.parse(text, collectionId = 1L, mode = TextArticleParseMode.EXPLICIT_LABELS)
         assertEquals(2, articles.size)
         assertEquals("Article 1", articles[0].title)
         assertEquals("Article 2", articles[1].title)
@@ -167,7 +171,8 @@ class TextArticleParserTest {
 
     @Test
     fun explicitLabels_emptyInput_returnsEmpty() {
-        val articles = parser.parse("", collectionId = 1L, mode = TextArticleParseMode.EXPLICIT_LABELS)
+        val articles =
+            parser.parse("", collectionId = 1L, mode = TextArticleParseMode.EXPLICIT_LABELS)
         assertTrue(articles.isEmpty())
     }
 }

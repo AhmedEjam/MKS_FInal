@@ -1,7 +1,5 @@
 package com.ahmedyejam.mks.ui.slideshow
 
-import androidx.hilt.navigation.compose.hiltViewModel
-
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -97,18 +95,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.ahmedyejam.mks.core.ui.R
 import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.di.AppModule
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,13 +112,12 @@ import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 fun SlideshowCourseScreen(
     courseId: Long,
     focusedSlideId: Long? = null,
-    appModule: AppModule,
     onBack: () -> Unit
 ) {
     val tokens = LocalMksDesignTokens.current
     val vm: SlideshowCourseViewModel = hiltViewModel()
 
-    val state by vm.uiState.collectAsState()
+    val state by vm.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
     BackHandler(enabled = state.isPresentationMode) {

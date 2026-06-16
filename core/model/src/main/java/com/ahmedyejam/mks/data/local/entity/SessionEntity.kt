@@ -63,5 +63,9 @@ data class SessionEntity(
     // Performance fields (v10)
     val currentStreak: Int = 0,
     val maxStreak: Int = 0,
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
+
+    // Result taxonomy (v30)
+    // Key: original index, Value: result status (CORRECT_FIRST_TRY, WRONG, CORRECTED_AFTER_REPEAT, UNANSWERED, DROPPED)
+    val resultTaxonomy: Map<Int, String> = emptyMap()
 )

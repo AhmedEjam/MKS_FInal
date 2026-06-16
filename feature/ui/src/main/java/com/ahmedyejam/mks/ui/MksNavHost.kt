@@ -16,15 +16,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.ahmedyejam.mks.data.focus.FocusManager
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.ui.booktools.AiPromptDeckListScreen
 import com.ahmedyejam.mks.ui.booktools.AiPromptDeckScreen
@@ -33,7 +29,6 @@ import com.ahmedyejam.mks.ui.booktools.BookToolsViewModel
 import com.ahmedyejam.mks.ui.booktools.ReviewBlueprintListScreen
 import com.ahmedyejam.mks.ui.booktools.ReviewBlueprintScreen
 import com.ahmedyejam.mks.ui.booktools.SlideshowCourseListScreen
-
 import com.ahmedyejam.mks.ui.category.CategoryQuestionsScreen
 import com.ahmedyejam.mks.ui.category.CategoryQuestionsViewModel
 import com.ahmedyejam.mks.ui.common.InvalidRouteScreen
@@ -71,7 +66,6 @@ import kotlinx.coroutines.launch
 fun MksNavHost(
     navController: NavHostController,
     dataStoreManager: DataStoreManager,
-    focusManager: FocusManager,
     showWelcomeOnStartup: Boolean,
     sharedUris: List<Uri>? = null,
     onConsumedSharedUris: () -> Unit = {},
@@ -375,8 +369,6 @@ fun MksNavHost(
 
         composable("settings") {
             SettingsScreen(
-                dataStoreManager = dataStoreManager,
-                focusManager = focusManager,
                 onBack = { returnToLibraryRoot() },
                 onGlobalSearch = { navController.navigate("global_search") },
                 onReviewDashboard = { navController.navigate("review_dashboard") },

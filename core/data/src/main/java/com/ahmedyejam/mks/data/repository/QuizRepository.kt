@@ -36,6 +36,7 @@ import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.model.CategoryWithMetadata
+import com.ahmedyejam.mks.data.model.MksResult
 import com.ahmedyejam.mks.data.preview.CategoryMergePreviewService
 import com.ahmedyejam.mks.data.preview.ClearMarksPreviewService
 import com.ahmedyejam.mks.data.preview.DeletePreviewService
@@ -439,7 +440,7 @@ class QuizRepository
 
         fun getCategoryQuestionCount(category: String): Flow<Int> = questionCategoryDao.getQuestionsByCategoryFlow(category).map { it.size }
 
-        private suspend fun updateQuestionsInPlace(questions: List<com.ahmedyejam.mks.data.local.entity.QuestionEntity>) {
+        private suspend fun updateQuestionsInPlace(questions: List<QuestionEntity>) {
             questionDao.updateQuestions(questions)
             questions.forEach { questionCategoryDao.replaceCategories(it.id, it.categories) }
         }
@@ -626,16 +627,20 @@ class QuizRepository
             targetQuizId: Long? = null,
             newBookTitle: String? = null,
             questions: List<ParsedQuestion>,
-        ): ImportResult? {
-            val result =
+            activeWorkspaceId: Long? = null,
+        ): MksResult<ImportResult>? {
+            val mksResult =
                 importManager?.importQuestions(
                     title = title,
                     questions = questions,
                     targetBookId = targetBookId,
                     targetQuizId = targetQuizId,
                     newBookTitle = newBookTitle,
+                    activeWorkspaceId = activeWorkspaceId,
                 )
-            if (result?.success == true) {
+
+            if (mksResult is MksResult.Success) {
+                val result = mksResult.data
                 result.affectedQuizIds.forEach { refreshQuizStats(it) }
                 for (id in result.affectedBookIds) {
                     bookRepositoryProvider.get().refreshBookStats(id)
@@ -644,7 +649,7 @@ class QuizRepository
                     refreshQuizStats(targetQuizId)
                 }
             }
-            return result
+            return mksResult
         }
 
         suspend fun getImportPreview(uri: Uri) = importManager?.getImportPreview(uri)
@@ -657,7 +662,7 @@ class QuizRepository
             allowInsecureRemoteImages: Boolean = false,
             activeWorkspaceId: Long? = null,
             onProgress: (Float, String) -> Unit = { _, _ -> },
-        ): ImportResult? {
+        ): MksResult<ImportResult>? {
             return importManager?.importLibrary(
                 uri = uri,
                 strategy = strategy,

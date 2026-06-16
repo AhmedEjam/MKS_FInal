@@ -1,12 +1,11 @@
 package com.ahmedyejam.mks.data.local
 
+import android.util.Log
 import androidx.room.TypeConverter
 import com.ahmedyejam.mks.data.local.entity.QuestionType
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import java.lang.reflect.ParameterizedType
-
-import android.util.Log
 
 class Converters {
     private val moshi = Moshi.Builder().build()
@@ -93,6 +92,8 @@ class Converters {
     private val mapIntType = Types.newParameterizedType(Map::class.java, Long::class.javaObjectType, Int::class.javaObjectType)
     private val mapIntIntType = Types.newParameterizedType(Map::class.java, Int::class.javaObjectType, Int::class.javaObjectType)
     private val mapIntListIntType = Types.newParameterizedType(Map::class.java, Int::class.javaObjectType, listIntType)
+    private val mapIntStringType =
+        Types.newParameterizedType(Map::class.java, Int::class.javaObjectType, String::class.java)
 
     @TypeConverter
     fun fromAnswersMap(value: Map<Long, List<Int>>?): String {
@@ -190,6 +191,26 @@ class Converters {
             moshi.adapter<Map<Int, List<Int>>>(mapIntListIntType).fromJson(value) ?: emptyMap()
         } catch (e: Exception) {
             Log.w("Converters", "Failed to parse int-list-int map: $value", e)
+            emptyMap()
+        }
+    }
+
+    @TypeConverter
+    fun fromIntStringMap(value: Map<Int, String>?): String {
+        return try {
+            moshi.adapter<Map<Int, String>>(mapIntStringType).toJson(value ?: emptyMap())
+        } catch (e: Exception) {
+            "{}"
+        }
+    }
+
+    @TypeConverter
+    fun toIntStringMap(value: String?): Map<Int, String> {
+        if (value.isNullOrBlank()) return emptyMap()
+        return try {
+            moshi.adapter<Map<Int, String>>(mapIntStringType).fromJson(value) ?: emptyMap()
+        } catch (e: Exception) {
+            Log.w("Converters", "Failed to parse int-string map: $value", e)
             emptyMap()
         }
     }

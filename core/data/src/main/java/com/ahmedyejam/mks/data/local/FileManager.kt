@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
+import com.ahmedyejam.mks.data.model.AssetFileSaveResult
+import com.ahmedyejam.mks.data.model.MksResult
 import com.ahmedyejam.mks.data.network.RemoteAssetFetcher
 import com.ahmedyejam.mks.data.network.RemoteAssetPolicy
 import com.ahmedyejam.mks.util.MksLogger
@@ -25,19 +27,6 @@ class FileManager(private val context: Context) {
         private const val MAX_ASSET_INPUT_BYTES = 50 * 1024 * 1024
     }
 
-    data class ImageSaveResult(
-        val path: String? = null,
-        val error: String? = null,
-    )
-
-    data class AssetFileSaveResult(
-        val path: String? = null,
-        val mimeType: String? = null,
-        val fileName: String? = null,
-        val fileSizeBytes: Long? = null,
-        val error: String? = null,
-    )
-
     private data class NormalizedImageResult(
         val bytes: ByteArray? = null,
         val error: String? = null,
@@ -46,11 +35,11 @@ class FileManager(private val context: Context) {
     fun getContext(): Context = context
 
     fun saveBase64AsImage(base64String: String): String? {
-        return saveBase64AsImageDetailed(base64String).path
+        return saveBase64AsImageDetailed(base64String).getOrNull()
     }
 
-    fun saveBase64AsImageDetailed(base64String: String): ImageSaveResult {
-        if (base64String.isBlank()) return ImageSaveResult(error = "Image data is empty.")
+    fun saveBase64AsImageDetailed(base64String: String): MksResult<String> {
+        if (base64String.isBlank()) return MksResult.Error(message = "Image data is empty.")
 
         return try {
             val pureBase64 =
@@ -62,30 +51,30 @@ class FileManager(private val context: Context) {
 
             val estimatedBytes = ((pureBase64.length.toLong() * 3L) / 4L)
             if (estimatedBytes > MAX_IMAGE_INPUT_BYTES) {
-                return ImageSaveResult(error = "Image exceeds ${MAX_IMAGE_INPUT_BYTES / (1024 * 1024)} MB input limit.")
+                return MksResult.Error(message = "Image exceeds ${MAX_IMAGE_INPUT_BYTES / (1024 * 1024)} MB input limit.")
             }
 
             val imageBytes = Base64.decode(pureBase64, Base64.DEFAULT)
             saveImageDetailed(imageBytes)
         } catch (e: Exception) {
-            ImageSaveResult(error = e.message ?: "Invalid Base64 image data.")
+            MksResult.Error(message = e.message ?: "Invalid Base64 image data.", exception = e)
         }
     }
 
     fun saveImage(base64String: String?): String? {
-        return saveImageDetailed(base64String).path
+        return saveImageDetailed(base64String).getOrNull()
     }
 
     fun copyAssetUriToInternalStorage(
         uriString: String,
         originalName: String? = null,
-    ): AssetFileSaveResult {
-        if (uriString.isBlank()) return AssetFileSaveResult(error = "Asset URI is empty.")
+    ): MksResult<AssetFileSaveResult> {
+        if (uriString.isBlank()) return MksResult.Error(message = "Asset URI is empty.")
         return try {
             val uri = Uri.parse(uriString)
             val scheme = uri.scheme?.lowercase()
             if (scheme != "content" && scheme != "file") {
-                return AssetFileSaveResult(error = "Only content:// or file:// local asset URIs can be copied.")
+                return MksResult.Error(message = "Only content:// or file:// local asset URIs can be copied.")
             }
 
             val mimeType = context.contentResolver.getType(uri)
@@ -105,19 +94,21 @@ class FileManager(private val context: Context) {
             context.contentResolver.openInputStream(uri)?.use { input ->
                 val bytes =
                     readBytesWithLimit(input, MAX_ASSET_INPUT_BYTES)
-                        ?: return AssetFileSaveResult(error = "Asset exceeds ${MAX_ASSET_INPUT_BYTES / (1024 * 1024)} MB input limit.")
+                        ?: return MksResult.Error(message = "Asset exceeds ${MAX_ASSET_INPUT_BYTES / (1024 * 1024)} MB input limit.")
                 FileOutputStream(target).use { output -> output.write(bytes) }
-                return AssetFileSaveResult(
+                return MksResult.Success(
+                    AssetFileSaveResult(
                     path = target.absolutePath,
                     mimeType = mimeType,
                     fileName = safeName,
                     fileSizeBytes = bytes.size.toLong(),
+                    )
                 )
             }
-            AssetFileSaveResult(error = "Unable to open asset URI.")
+            MksResult.Error(message = "Unable to open asset URI.")
         } catch (e: Exception) {
             MksLogger.w("FileManager", "Asset copy operation failed", e)
-            AssetFileSaveResult(error = e.message ?: "Failed to copy asset.")
+            MksResult.Error(message = e.message ?: "Failed to copy asset.", exception = e)
         }
     }
 
@@ -155,8 +146,8 @@ class FileManager(private val context: Context) {
             .take(96)
     }
 
-    fun saveImageDetailed(base64String: String?): ImageSaveResult {
-        if (base64String.isNullOrBlank()) return ImageSaveResult(error = "Image reference is empty.")
+    fun saveImageDetailed(base64String: String?): MksResult<String> {
+        if (base64String.isNullOrBlank()) return MksResult.Error(message = "Image reference is empty.")
 
         // Check if it's already a local path or a relative path
         if (base64String.startsWith("/") || base64String.startsWith("assets/")) {
@@ -164,11 +155,11 @@ class FileManager(private val context: Context) {
             if (base64String.startsWith("/")) {
                 // If it's already inside our internal images directory, it's fine
                 if (isPathInsideImagesDir(base64String)) {
-                    return ImageSaveResult(path = base64String)
+                    return MksResult.Success(base64String)
                 }
-                return ImageSaveResult(error = "Absolute image paths outside the app images directory are not allowed.")
+                return MksResult.Error(message = "Absolute image paths outside the app images directory are not allowed.")
             }
-            return ImageSaveResult(error = "Relative asset references are not accepted here.")
+            return MksResult.Error(message = "Relative asset references are not accepted here.")
         }
 
         return saveBase64AsImageDetailed(base64String)
@@ -178,25 +169,27 @@ class FileManager(private val context: Context) {
         bytes: ByteArray,
         extension: String = "webp",
     ): String? {
-        return saveImageDetailed(bytes, extension).path
+        return saveImageDetailed(bytes, extension).getOrNull()
     }
 
     fun saveImageDetailed(
         bytes: ByteArray,
         extension: String = "webp",
-    ): ImageSaveResult {
+    ): MksResult<String> {
         return try {
             val normalized = normalizeImageBytes(bytes)
             val finalBytes =
                 normalized.bytes
-                    ?: return ImageSaveResult(error = normalized.error ?: "Image normalization failed.")
+                    ?: return MksResult.Error(
+                        message = normalized.error ?: "Image normalization failed."
+                    )
             val path =
                 writeNormalizedImage(finalBytes)
-                    ?: return ImageSaveResult(error = "Failed to persist normalized image.")
-            ImageSaveResult(path = path)
+                    ?: return MksResult.Error(message = "Failed to persist normalized image.")
+            MksResult.Success(path)
         } catch (e: Exception) {
             MksLogger.w("FileManager", "Image operation failed", e)
-            ImageSaveResult(error = e.message ?: "Failed to save image.")
+            MksResult.Error(message = e.message ?: "Failed to save image.", exception = e)
         }
     }
 
@@ -204,51 +197,53 @@ class FileManager(private val context: Context) {
         url: String,
         policy: RemoteAssetPolicy = RemoteAssetPolicy.Default,
     ): String? {
-        return downloadAndSaveImageDetailed(url, policy).path
+        return downloadAndSaveImageDetailed(url, policy).getOrNull()
     }
 
     suspend fun downloadAndSaveImageDetailed(
         url: String,
         policy: RemoteAssetPolicy = RemoteAssetPolicy.Default,
-    ): ImageSaveResult {
-        if (!isHttpOrHttpsUrl(url)) return ImageSaveResult(error = "Only HTTP(S) image URLs are supported.")
+    ): MksResult<String> {
+        if (!isHttpOrHttpsUrl(url)) return MksResult.Error(message = "Only HTTP(S) image URLs are supported.")
 
         val fetched = remoteAssetFetcher.fetch(url, policy.copy(maxBytes = MAX_IMAGE_INPUT_BYTES.toLong()))
         val bytes =
-            fetched.bytes ?: return ImageSaveResult(
-                error = fetched.error ?: fetched.warning ?: "Remote image was not downloaded.",
+            fetched.bytes ?: return MksResult.Error(
+                message = fetched.error ?: fetched.warning ?: "Remote image was not downloaded.",
             )
         val saved = saveImageDetailed(bytes)
-        return if (saved.path != null && fetched.warning != null) {
-            saved.copy(error = fetched.warning)
+        return if (saved is MksResult.Success && fetched.warning != null) {
+            // In case of success with warning, we still return Success but could log the warning
+            MksLogger.w("FileManager", "Image downloaded with warning: ${fetched.warning}")
+            saved
         } else {
             saved
         }
     }
 
     fun saveImage(
-        inputStream: java.io.InputStream,
+        inputStream: InputStream,
         originalName: String? = null,
     ): String? {
-        return saveImageDetailed(inputStream, originalName).path
+        return saveImageDetailed(inputStream, originalName).getOrNull()
     }
 
     fun saveImageDetailed(
-        inputStream: java.io.InputStream,
+        inputStream: InputStream,
         originalName: String? = null,
-    ): ImageSaveResult {
+    ): MksResult<String> {
         return try {
             val bytes =
                 readBytesWithLimit(inputStream, MAX_IMAGE_INPUT_BYTES)
-                    ?: return ImageSaveResult(error = "Image exceeds ${MAX_IMAGE_INPUT_BYTES / (1024 * 1024)} MB input limit.")
+                    ?: return MksResult.Error(message = "Image exceeds ${MAX_IMAGE_INPUT_BYTES / (1024 * 1024)} MB input limit.")
             saveImageDetailed(bytes)
         } catch (e: Exception) {
             MksLogger.w("FileManager", "Image operation failed", e)
-            ImageSaveResult(error = e.message ?: "Failed to read image stream.")
+            MksResult.Error(message = e.message ?: "Failed to read image stream.", exception = e)
         }
     }
 
-    fun saveImage(uri: android.net.Uri): String? {
+    fun saveImage(uri: Uri): String? {
         return try {
             context.contentResolver.openInputStream(uri)?.use { input ->
                 saveImage(input, uri.lastPathSegment)

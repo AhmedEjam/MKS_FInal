@@ -1,5 +1,6 @@
 package com.ahmedyejam.mks.data.repository
 
+import android.database.sqlite.SQLiteConstraintException
 import com.ahmedyejam.mks.data.importer.repository.ImportLibraryManager
 import com.ahmedyejam.mks.data.local.FileManager
 import com.ahmedyejam.mks.data.local.WorkspaceDefaults
@@ -33,6 +34,7 @@ import com.ahmedyejam.mks.data.preview.CategoryMergePreviewService
 import com.ahmedyejam.mks.data.preview.ClearMarksPreviewService
 import com.ahmedyejam.mks.data.preview.DeletePreviewService
 import com.ahmedyejam.mks.data.repair.AssetReferenceAuditService
+import com.ahmedyejam.mks.util.MksLogger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -40,6 +42,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -81,7 +84,9 @@ class BookRepository
         private val categoryMergePreviewService: CategoryMergePreviewService? = null,
         private val clearMarksPreviewService: ClearMarksPreviewService? = null,
         private val assetReferenceAuditService: AssetReferenceAuditService? = null,
+        @com.ahmedyejam.mks.di.ApplicationScope private val scope: kotlinx.coroutines.CoroutineScope
     ) {
+    private val refreshJobs = java.util.concurrent.ConcurrentHashMap<Long, kotlinx.coroutines.Job>()
         fun getAllWorkspaces(): Flow<List<WorkspaceEntity>> = workspaceDao.getAllWorkspacesFlow()
 
         suspend fun getDefaultWorkspace(): WorkspaceEntity? = workspaceDao.getDefaultWorkspace()
@@ -211,30 +216,42 @@ class BookRepository
         }
 
         suspend fun insertBook(book: BookEntity): Long {
-            val workspaceId =
-                if (book.workspaceId == 0L) {
-                    getOrCreateDefaultWorkspace().id
-                } else {
-                    book.workspaceId
-                }
+            return try {
+                val workspaceId =
+                    if (book.workspaceId == 0L) {
+                        getOrCreateDefaultWorkspace().id
+                    } else {
+                        book.workspaceId
+                    }
 
-            val finalBook =
-                if (book.coverImage?.startsWith("http", ignoreCase = true) == true) {
-                    val localPath = fileManager.downloadAndSaveImage(book.coverImage!!)
-                    if (localPath != null) {
-                        book.copy(
-                            workspaceId = workspaceId,
-                            coverImage = localPath,
-                        )
+                val finalBook =
+                    if (book.coverImage?.startsWith("http", ignoreCase = true) == true) {
+                        val localPath = fileManager.downloadAndSaveImage(book.coverImage!!)
+                        if (localPath != null) {
+                            book.copy(
+                                workspaceId = workspaceId,
+                                coverImage = localPath,
+                            )
+                        } else {
+                            book.copy(workspaceId = workspaceId)
+                        }
                     } else {
                         book.copy(workspaceId = workspaceId)
                     }
-                } else {
-                    book.copy(workspaceId = workspaceId)
-                }
-            val id = bookDao.insertBook(finalBook)
-            assetRepositoryProvider.get().replaceOwnerAssetReferences("book", id, listOf(finalBook.coverImage))
-            return id
+                val id = bookDao.insertBook(finalBook)
+                assetRepositoryProvider.get()
+                    .replaceOwnerAssetReferences("book", id, listOf(finalBook.coverImage))
+                id
+            } catch (e: SQLiteConstraintException) {
+                MksLogger.e("BookRepository", "Constraint exception during insertBook", e)
+                throw Exception(
+                    "Failed to create book: Duplicate external ID or invalid workspace.",
+                    e
+                )
+            } catch (e: Exception) {
+                MksLogger.e("BookRepository", "Error during insertBook", e)
+                throw e
+            }
         }
 
         suspend fun updateBook(book: BookEntity) {
@@ -278,25 +295,27 @@ class BookRepository
         }
 
         suspend fun refreshBookStats(bookId: Long) {
-            val total = quizDao.getBookQuestionCount(bookId).first()
-            val quizzes = quizDao.getQuizzesByBookId(bookId).first()
-            val answered = quizzes.sumOf { it.answeredCount }
-            val completion = if (total == 0) 0f else answered.toFloat() / total
+            refreshJobs[bookId]?.cancel()
+            refreshJobs[bookId] = scope.launch {
+                kotlinx.coroutines.delay(300) // Debounce delay
 
-            // Weighted accuracy by attempts
-            // For simplicity and since accuracy is already cached in Quiz, we could average it,
-            // but it's better to fetch all questions for the book if possible for true accuracy.
-            // Actually, let's fetch all questions for the book to be precise.
-            val questions = questionDao.getAdaptiveQuestionsByBook(bookId, Int.MAX_VALUE)
-            val totalAttempts = questions.sumOf { it.attempts }
-            val totalCorrect = questions.sumOf { it.correctCount }
-            val accuracy = if (totalAttempts == 0) 0f else totalCorrect.toFloat() / totalAttempts
+                val total = quizDao.getBookQuestionCountNow(bookId)
+                val quizzes = quizDao.getQuizzesByBookIdNow(bookId)
+                val answered = quizzes.sumOf { it.answeredCount }
+                val completion = if (total == 0) 0f else answered.toFloat() / total
 
-            bookDao.updateQuestionCount(bookId, total)
-            bookDao.updateAnsweredCount(bookId, answered)
-            bookDao.updateTotalAttempts(bookId, totalAttempts)
-            bookDao.updateCompletionPercentage(bookId, completion)
-            bookDao.updateAccuracyPercentage(bookId, accuracy)
+                val questions = questionDao.getAdaptiveQuestionsByBook(bookId, Int.MAX_VALUE)
+                val totalAttempts = questions.sumOf { it.attempts }
+                val totalCorrect = questions.sumOf { it.correctCount }
+                val accuracy =
+                    if (totalAttempts == 0) 0f else totalCorrect.toFloat() / totalAttempts
+
+                bookDao.updateQuestionCount(bookId, total)
+                bookDao.updateAnsweredCount(bookId, answered)
+                bookDao.updateTotalAttempts(bookId, totalAttempts)
+                bookDao.updateCompletionPercentage(bookId, completion)
+                bookDao.updateAccuracyPercentage(bookId, accuracy)
+            }
         }
 
         @OptIn(ExperimentalCoroutinesApi::class)
@@ -349,5 +368,6 @@ class BookRepository
 
         fun getDeletedBooks(workspaceId: Long): Flow<List<BookEntity>> = bookDao.getDeletedBooksByWorkspaceFlow(workspaceId)
 
-        fun getQuizCompletion(quizId: Long): kotlinx.coroutines.flow.Flow<Float> = quizRepositoryProvider.get().getQuizCompletion(quizId)
+    fun getQuizCompletion(quizId: Long): Flow<Float> =
+        quizRepositoryProvider.get().getQuizCompletion(quizId)
     }

@@ -233,7 +233,7 @@ fun QuizPlayerScreen(
 
     LaunchedEffect(state.isCompleted) {
         if (state.isCompleted) {
-            onQuizFinished(state.sessionId ?: -1L, state.score, state.questions.size)
+            onQuizFinished(state.sessionId ?: -1L, state.score, state.initialQuestionCount)
         }
     }
 
@@ -926,9 +926,9 @@ fun QuizTopBar(
                 }
             }
         )
-        if (totalQuestions > 0) {
+        if (initialQuestionCount > 0) {
             LinearProgressIndicator(
-                progress = { (currentIndex + 1).toFloat() / totalQuestions },
+                progress = { ((currentIndex + 1).toFloat() / initialQuestionCount).coerceAtMost(1f) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
@@ -1111,7 +1111,7 @@ fun QuizSheetContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                items(NavigationFilter.entries) { filter ->
+                items(NavigationFilter.entries, key = { it.name }) { filter ->
                     FilterChip(
                         selected = state.navigationFilter == filter,
                         onClick = { viewModel.setNavigationFilter(filter) },
@@ -1151,7 +1151,7 @@ fun QuizSheetContent(
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    items(filteredIndices) { index ->
+                    items(filteredIndices, key = { it }) { index ->
                         val status = viewModel.getQuestionStatus(index)
                         val isMarked = state.questions[index].isMarked
 

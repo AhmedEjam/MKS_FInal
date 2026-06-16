@@ -1,17 +1,48 @@
 package com.ahmedyejam.mks.ui.quiz
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,15 +53,14 @@ import androidx.compose.ui.unit.dp
 import com.ahmedyejam.mks.core.ui.R
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.repository.QuizKnowledgeSummary
-import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
+import com.ahmedyejam.mks.ui.category.CreateFlashcardsFromSelectedDialog
 import com.ahmedyejam.mks.ui.category.DefaultTopAppBar
 import com.ahmedyejam.mks.ui.category.FilterControls
-import com.ahmedyejam.mks.ui.category.MoveQuestionsDialog
 import com.ahmedyejam.mks.ui.category.QuestionAssetsDialog
 import com.ahmedyejam.mks.ui.category.QuestionCard
 import com.ahmedyejam.mks.ui.category.SelectionTopAppBar
-import com.ahmedyejam.mks.ui.category.CreateFlashcardsFromSelectedDialog
 import com.ahmedyejam.mks.ui.scanner.EditQuestionDialog
+import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -235,13 +265,12 @@ fun QuizQuestionsScreen(
                 }
             }
         ) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding)) {
-                if (showFilters && !isSelectionMode) {
-                    FilterControls(
-                        visibility = uiState.visibility,
-                        onToggle = { viewModel.toggleVisibility(it) }
-                    )
-                } else if (showFilters && isSelectionMode) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                if (showFilters) {
                     FilterControls(
                         visibility = uiState.visibility,
                         onToggle = { viewModel.toggleVisibility(it) }
@@ -303,7 +332,11 @@ fun QuizQuestionsScreen(
                 }
             }
         ) { padding ->
-            Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+            ) {
                 if (showFilters) {
                     FilterControls(
                         visibility = uiState.visibility,
@@ -366,6 +399,7 @@ private fun QuizQuestionsList(
                     question = question,
                     visibility = uiState.visibility,
                     isSelected = uiState.selectedQuestionIds.contains(question.id),
+                    isSelectionMode = uiState.selectedQuestionIds.isNotEmpty(),
                     onToggleSelection = { onToggleSelection(question.id) },
                     onToggleMarked = { onToggleMarked(question) },
                     onImageClick = { onImageClick(it) },
@@ -387,7 +421,11 @@ private fun QuizKnowledgeSummaryCard(summary: QuizKnowledgeSummary) {
         shape = RoundedCornerShape(tokens.cardRadius),
         elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Text("Quiz summary", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 QuizSummaryChip("Questions", summary.totalQuestions, Modifier.weight(1f))
@@ -435,7 +473,9 @@ fun QuizActionDialog(
                 Text(stringResource(R.string.no_quizzes_available))
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(quizzes, key = { it.id }) { quiz ->
@@ -446,7 +486,9 @@ fun QuizActionDialog(
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(

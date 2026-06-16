@@ -1,8 +1,17 @@
 package com.ahmedyejam.mks.data.repair
 
-import com.ahmedyejam.mks.data.local.dao.*
+import com.ahmedyejam.mks.data.local.dao.AssetReferenceDao
+import com.ahmedyejam.mks.data.local.dao.BookDao
+import com.ahmedyejam.mks.data.local.dao.CourseSlideDao
+import com.ahmedyejam.mks.data.local.dao.FlashcardDao
+import com.ahmedyejam.mks.data.local.dao.QuestionAssetDao
+import com.ahmedyejam.mks.data.local.dao.QuestionDao
+import com.ahmedyejam.mks.data.local.dao.QuizDao
+import com.ahmedyejam.mks.data.local.dao.SourceDocumentDao
 import com.ahmedyejam.mks.data.local.entity.AssetReferenceEntity
 import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
 data class AssetReferenceRepairResult(
     val checkedPaths: Int,
@@ -12,7 +21,8 @@ data class AssetReferenceRepairResult(
     val deletedFiles: Int,
 )
 
-class AssetReferenceAuditService constructor(
+@Singleton
+class AssetReferenceAuditService @Inject constructor(
     private val assetReferenceDao: AssetReferenceDao,
     private val bookDao: BookDao,
     private val quizDao: QuizDao,

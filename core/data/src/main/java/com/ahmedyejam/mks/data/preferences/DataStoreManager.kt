@@ -2,15 +2,28 @@ package com.ahmedyejam.mks.data.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "mks_settings")
 
-class DataStoreManager(private val context: Context) {
+@Singleton
+class DataStoreManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
     companion object {
         private val THEME_MODE = stringPreferencesKey("theme_mode")
         private val AUTO_ADVANCE_DELAY = intPreferencesKey("auto_advance_delay")
@@ -47,6 +60,7 @@ class DataStoreManager(private val context: Context) {
 
         private val OLLAMA_BASE_URL = stringPreferencesKey("ollama_base_url")
         private val OLLAMA_MODEL_NAME = stringPreferencesKey("ollama_model_name")
+        private val OLLAMA_API_KEY = stringPreferencesKey("ollama_api_key")
     }
 
     val themeMode: Flow<String> =
@@ -92,12 +106,12 @@ class DataStoreManager(private val context: Context) {
 
     val defShuffleQuestions: Flow<Boolean> =
         context.dataStore.data.map { preferences ->
-            preferences[DEF_SHUFFLE_QUESTIONS] ?: true
+            preferences[DEF_SHUFFLE_QUESTIONS] ?: false
         }
 
     val defShuffleOptions: Flow<Boolean> =
         context.dataStore.data.map { preferences ->
-            preferences[DEF_SHUFFLE_OPTIONS] ?: true
+            preferences[DEF_SHUFFLE_OPTIONS] ?: false
         }
 
     val defRapidMode: Flow<Boolean> =
@@ -107,7 +121,7 @@ class DataStoreManager(private val context: Context) {
 
     val defRepeatWrong: Flow<Boolean> =
         context.dataStore.data.map { preferences ->
-            preferences[DEF_REPEAT_WRONG] ?: true
+            preferences[DEF_REPEAT_WRONG] ?: false
         }
 
     val defQuizTimer: Flow<Int> =
@@ -198,6 +212,11 @@ class DataStoreManager(private val context: Context) {
     val ollamaModelName: Flow<String> =
         context.dataStore.data.map { preferences ->
             preferences[OLLAMA_MODEL_NAME] ?: "llama3"
+        }.distinctUntilChanged()
+
+    val ollamaApiKey: Flow<String> =
+        context.dataStore.data.map { preferences ->
+            preferences[OLLAMA_API_KEY] ?: ""
         }.distinctUntilChanged()
 
     suspend fun setLibrarySortOption(option: String) {
@@ -317,6 +336,12 @@ class DataStoreManager(private val context: Context) {
     suspend fun setOllamaModelName(model: String) {
         context.dataStore.edit { preferences ->
             preferences[OLLAMA_MODEL_NAME] = model
+        }
+    }
+
+    suspend fun setOllamaApiKey(apiKey: String) {
+        context.dataStore.edit { preferences ->
+            preferences[OLLAMA_API_KEY] = apiKey
         }
     }
 

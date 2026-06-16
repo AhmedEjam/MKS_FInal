@@ -97,7 +97,12 @@ class TextFlashcardParserTest {
             Back
         """.trimIndent()
 
-        val cards = parser.parse(text, deckId = 1L, startIndex = 5, mode = TextParseMode.ALTERNATING_PARAGRAPHS)
+        val cards = parser.parse(
+            text,
+            deckId = 1L,
+            startIndex = 5,
+            mode = TextParseMode.ALTERNATING_PARAGRAPHS
+        )
         assertEquals(1, cards.size)
         assertEquals(5, cards[0].orderIndex)
     }

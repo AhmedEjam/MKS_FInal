@@ -1,29 +1,39 @@
 package com.ahmedyejam.mks.ui.quiz
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
-
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ahmedyejam.mks.data.focus.FocusManager
+import com.ahmedyejam.mks.data.local.entity.CategoryMetadataEntity
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
-import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.local.entity.QuestionType
+import com.ahmedyejam.mks.data.model.CategoryWithMetadata
+import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
 import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.repository.StudyRepository
-import com.ahmedyejam.mks.data.local.entity.QuestionType
-import com.ahmedyejam.mks.data.preferences.DataStoreManager
-import com.ahmedyejam.mks.data.focus.FocusManager
+import com.ahmedyejam.mks.data.validation.SessionStateValidator
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import com.ahmedyejam.mks.data.model.CategoryWithMetadata
-import com.ahmedyejam.mks.data.local.entity.CategoryMetadataEntity
-
-import com.ahmedyejam.mks.data.validation.SessionStateValidator
+import javax.inject.Inject
 
 /**
  * Represents the UI state for the Quiz screen.
@@ -127,7 +137,7 @@ enum class NavigationFilter {
 /**
  * ViewModel for the Quiz screen, managing the state and logic of a quiz session.
  *
- * @property repository The repository for accessing quiz and question data.
+ * @property quizRepository The repository for accessing quiz and question data.
  * @property dataStoreManager Manager for persistent user preferences.
  */
 @HiltViewModel
@@ -894,55 +904,13 @@ class QuizViewModel @Inject constructor(
     }
 
     private fun submitSingleChoice(originalIndex: Int, currentQuestion: QuestionEntity, currentState: QuizState) {
+        val currentIndex = currentState.currentIndex
+        val isAlreadyAnswered = currentState.questionResultsByIndex.containsKey(currentIndex)
+        if (isAlreadyAnswered) return
+
         // Merge selection and submission for Rapid Mode or Double Tap to avoid double recomposition
         val newSelection = setOf(originalIndex)
-        val isCorrect = currentQuestion.correctAnswers.toSet() == newSelection
-        val currentIndex = currentState.currentIndex
-
-        val isFirstAttempt = currentIndex < currentState.initialQuestionCount
-        val newStreak = if (isFirstAttempt) {
-            if (isCorrect) currentState.currentStreak + 1 else 0
-        } else {
-            currentState.currentStreak
-        }
-        val newMaxStreak = maxOf(currentState.maxStreak, newStreak)
-        val newScore = if (isCorrect && isFirstAttempt) currentState.score + 1 else currentState.score
-
-        _uiState.update { state ->
-            val updatedQuestions = if (!isCorrect && state.repeatWrong) {
-                state.questions + currentQuestion
-            } else {
-                state.questions
-            }
-
-            state.copy(
-                selectedOptions = newSelection,
-                isAnswered = true,
-                isCorrect = isCorrect,
-                score = newScore,
-                currentStreak = newStreak,
-                maxStreak = newMaxStreak,
-                visibleOptionsCount = state.shuffledOptions.size,
-                questionResultsByIndex = state.questionResultsByIndex + (currentIndex to isCorrect),
-                questions = updatedQuestions
-            )
-        }
-
-        // Trigger side effects (database updates, auto-advance)
-        finalizeSubmission(
-            currentQuestion = currentQuestion,
-            isCorrect = isCorrect,
-            currentIndex = currentIndex,
-            selectedOptions = newSelection,
-            sessionId = currentState.sessionId,
-            newScore = newScore,
-            newCurrentStreak = newStreak,
-            newMaxStreak = newMaxStreak,
-            initialQuestionCount = currentState.initialQuestionCount,
-            repeatWrong = currentState.repeatWrong,
-            shuffledOptionsSize = currentState.shuffledOptions.size,
-            isRapidMode = currentState.isRapidMode
-        )
+        applyAnswer(newSelection, currentQuestion, currentState)
     }
 
     /**
@@ -985,47 +953,58 @@ class QuizViewModel @Inject constructor(
             return
         }
 
-        val currentQuestion = currentState.questions[currentState.currentIndex]
-        val isCorrect = currentQuestion.correctAnswers.toSet() == currentState.selectedOptions
+        val currentIndex = currentState.currentIndex
+        val isAlreadyAnswered = currentState.questionResultsByIndex.containsKey(currentIndex)
+        if (isAlreadyAnswered) return
+
+        val currentQuestion = currentState.questions[currentIndex]
+        applyAnswer(currentState.selectedOptions, currentQuestion, currentState)
+    }
+
+    private fun applyAnswer(
+        newSelection: Set<Int>,
+        currentQuestion: QuestionEntity,
+        currentState: QuizState
+    ) {
+        val isCorrect = currentQuestion.correctAnswers.toSet() == newSelection
         val currentIndex = currentState.currentIndex
 
         val isFirstAttempt = currentIndex < currentState.initialQuestionCount
-        val isAlreadyAnswered = currentState.sessionId?.let { _ ->
-            currentState.questionResultsByIndex.containsKey(currentIndex)
-        } ?: false
-
-        val newStreak = if (isFirstAttempt && !isAlreadyAnswered) {
+        val newStreak = if (isFirstAttempt) {
             if (isCorrect) currentState.currentStreak + 1 else 0
         } else {
             currentState.currentStreak
         }
         val newMaxStreak = maxOf(currentState.maxStreak, newStreak)
-        val newScore = if (isCorrect && isFirstAttempt && !isAlreadyAnswered) currentState.score + 1 else currentState.score
+        val newScore =
+            if (isCorrect && isFirstAttempt) currentState.score + 1 else currentState.score
 
-        _uiState.update {
-            val updatedQuestions = if (!isCorrect && it.repeatWrong) {
-                it.questions + currentQuestion
+        _uiState.update { state ->
+            val updatedQuestions = if (!isCorrect && state.repeatWrong) {
+                state.questions + currentQuestion
             } else {
-                it.questions
+                state.questions
             }
 
-            it.copy(
+            state.copy(
+                selectedOptions = newSelection,
                 isAnswered = true,
                 isCorrect = isCorrect,
                 score = newScore,
                 currentStreak = newStreak,
                 maxStreak = newMaxStreak,
-                visibleOptionsCount = it.shuffledOptions.size, // Show all on answer
-                questionResultsByIndex = it.questionResultsByIndex + (currentIndex to isCorrect),
+                visibleOptionsCount = state.shuffledOptions.size,
+                questionResultsByIndex = state.questionResultsByIndex + (currentIndex to isCorrect),
                 questions = updatedQuestions
             )
         }
 
+        // Trigger side effects (database updates, auto-advance)
         finalizeSubmission(
             currentQuestion = currentQuestion,
             isCorrect = isCorrect,
             currentIndex = currentIndex,
-            selectedOptions = currentState.selectedOptions,
+            selectedOptions = newSelection,
             sessionId = currentState.sessionId,
             newScore = newScore,
             newCurrentStreak = newStreak,
@@ -1054,8 +1033,14 @@ class QuizViewModel @Inject constructor(
         isRapidMode: Boolean
     ) {
         val timeSpent = System.currentTimeMillis() - questionStartTime
+        val isFirstAttempt = currentIndex < initialQuestionCount
+
         viewModelScope.launch {
-            studyRepository.updateQuestionMetrics(currentQuestion.id, isCorrect, timeSpent)
+            // Only update long-term metrics on first attempt to avoid inflation
+            if (isFirstAttempt) {
+                studyRepository.updateQuestionMetrics(currentQuestion.id, isCorrect, timeSpent)
+            }
+
             if (!isCorrect) {
                 val quiz = quizRepository.getQuizById(currentQuestion.quizId)
                 val selectedText = selectedOptions.asSequence().sorted().mapNotNull { currentQuestion.options.getOrNull(it) }.joinToString(", ").ifBlank { selectedOptions.joinToString(",") }
@@ -1074,29 +1059,47 @@ class QuizViewModel @Inject constructor(
             sessionId?.let { sId ->
                 val session = quizRepository.getSessionById(sId)
                 session?.let { currentSession ->
-                    val isFirstAttempt = currentIndex < initialQuestionCount
                     val newIncorrectCount = if (!isCorrect && isFirstAttempt) currentSession.incorrectCount + 1 else currentSession.incorrectCount
                     
                     // Update session answers map (by ID)
                     val updatedAnswersById = currentSession.answers.toMutableMap()
-                    // Bug 3.3 Fix: Always update answers map to keep latest answer for summary
+                    // Always update answers map to keep latest answer for summary
                     updatedAnswersById[currentQuestion.id] = selectedOptions.toList()
                     
                     // Update session answers map (by Index)
-                    val updatedAnswersByIndex = session.answersByIndex.toMutableMap()
+                    val updatedAnswersByIndex = currentSession.answersByIndex.toMutableMap()
                     updatedAnswersByIndex[currentIndex] = selectedOptions.toList()
-                    
-                    val updatedVisible = session.visibleOptionsCountByIndex.toMutableMap()
+
+                    val updatedVisible = currentSession.visibleOptionsCountByIndex.toMutableMap()
                     updatedVisible[currentIndex] = shuffledOptionsSize
                     
                     val updatedQuestionIds = if (!isCorrect && repeatWrong) {
-                        session.questionIds + currentQuestion.id
+                        currentSession.questionIds + currentQuestion.id
                     } else {
-                        session.questionIds
+                        currentSession.questionIds
+                    }
+
+                    // Update result taxonomy
+                    val updatedTaxonomy = currentSession.resultTaxonomy.toMutableMap()
+                    if (isFirstAttempt) {
+                        updatedTaxonomy[currentIndex] =
+                            if (isCorrect) "CORRECT_FIRST_TRY" else "WRONG"
+                    } else {
+                        // For repeats, find the original index this question belongs to
+                        // This is a simplification: assuming the original indices are 0..initialQuestionCount-1
+                        // and repeats are appended. We need to find which original index we are repeating.
+                        // In a simple sequence, we could track the original index, but here we can try to find the last 
+                        // WRONG entry for this question ID.
+                        val originalIndex = currentSession.questionIds.take(initialQuestionCount)
+                            .indexOf(currentQuestion.id)
+
+                        if (originalIndex != -1 && isCorrect && updatedTaxonomy[originalIndex] == "WRONG") {
+                            updatedTaxonomy[originalIndex] = "CORRECTED_AFTER_REPEAT"
+                        }
                     }
 
                     quizRepository.updateSession(
-                        session.copy(
+                        currentSession.copy(
                             score = newScore,
                             currentStreak = newCurrentStreak,
                             maxStreak = newMaxStreak,
@@ -1105,6 +1108,7 @@ class QuizViewModel @Inject constructor(
                             answersByIndex = updatedAnswersByIndex,
                             visibleOptionsCountByIndex = updatedVisible,
                             questionIds = updatedQuestionIds,
+                            resultTaxonomy = updatedTaxonomy,
                             lastModifiedAt = System.currentTimeMillis()
                         )
                     )

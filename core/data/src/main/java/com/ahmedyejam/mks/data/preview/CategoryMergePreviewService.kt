@@ -3,8 +3,11 @@ package com.ahmedyejam.mks.data.preview
 import com.ahmedyejam.mks.data.local.dao.QuestionCategoryDao
 import com.ahmedyejam.mks.data.simulation.ChangeSimulationResult
 import com.ahmedyejam.mks.data.simulation.SimulatedItem
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class CategoryMergePreviewService(
+@Singleton
+class CategoryMergePreviewService @Inject constructor(
     private val questionCategoryDao: QuestionCategoryDao,
 ) {
     suspend fun previewMerge(

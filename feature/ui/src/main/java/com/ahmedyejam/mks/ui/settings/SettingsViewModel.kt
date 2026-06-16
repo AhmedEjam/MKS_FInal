@@ -1,12 +1,12 @@
 package com.ahmedyejam.mks.ui.settings
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ahmedyejam.mks.data.repository.ExportManager
-import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
-import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
+import com.ahmedyejam.mks.data.focus.FocusManager
+import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.ExportManager
+import com.ahmedyejam.mks.data.repository.OllamaRepository
 import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.repository.WorkspaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,7 +22,10 @@ class SettingsViewModel @Inject constructor(
     private val exportManager: ExportManager,
     private val workspaceRepository: WorkspaceRepository,
     private val quizRepository: QuizRepository,
-    private val assetRepository: AssetRepository
+    private val assetRepository: AssetRepository,
+    val ollamaRepository: OllamaRepository,
+    val dataStoreManager: DataStoreManager,
+    val focusManager: FocusManager
 ) : ViewModel() {
 
     private val _isExporting = MutableStateFlow(false)

@@ -995,6 +995,12 @@ object MksMigrations {
         }
     }
 
+    val MIGRATION_29_30 = object : Migration(29, 30) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `sessions` ADD COLUMN `resultTaxonomy` TEXT NOT NULL DEFAULT '{}'")
+        }
+    }
+
     val ALL = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -1023,6 +1029,7 @@ object MksMigrations {
         MIGRATION_25_26,
         MIGRATION_26_27,
         MIGRATION_27_28,
-        MIGRATION_28_29
+        MIGRATION_28_29,
+        MIGRATION_29_30
     )
 }

@@ -5,8 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import com.ahmedyejam.mks.util.MksLogger
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class FocusManager(private val context: Context) {
+@Singleton
+class FocusManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private var previousFilter: Int = NotificationManager.INTERRUPTION_FILTER_ALL
 

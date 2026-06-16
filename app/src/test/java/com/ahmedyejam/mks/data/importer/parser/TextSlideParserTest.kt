@@ -2,7 +2,6 @@ package com.ahmedyejam.mks.data.importer.parser
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -208,7 +207,12 @@ class TextSlideParserTest {
             Body 3
         """.trimIndent()
 
-        val slides = parser.parse(text, courseId = 1L, startIndex = 10, mode = TextParseMode.ALTERNATING_PARAGRAPHS)
+        val slides = parser.parse(
+            text,
+            courseId = 1L,
+            startIndex = 10,
+            mode = TextParseMode.ALTERNATING_PARAGRAPHS
+        )
         assertEquals(3, slides.size)
         assertEquals(10, slides[0].orderIndex)
         assertEquals(11, slides[1].orderIndex)

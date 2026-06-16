@@ -1,28 +1,26 @@
 package com.ahmedyejam.mks.ui.flashcard
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
-
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.importer.parser.TextFlashcardParser
-import com.ahmedyejam.mks.data.repository.BookRepository
-import com.ahmedyejam.mks.data.repository.KnowledgeRepository
-import com.ahmedyejam.mks.data.repository.AssetRepository
-import com.ahmedyejam.mks.data.repository.QuizRepository
-import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
 import com.ahmedyejam.mks.data.model.FlashcardGenerationConfig
-import com.ahmedyejam.mks.di.AppModule
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.BookRepository
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
+import com.ahmedyejam.mks.data.repository.StudyRepository
+import com.ahmedyejam.mks.di.ApplicationScope
 import com.ahmedyejam.mks.util.MksLogger
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 const val FLASHCARD_RATING_AGAIN = "again"
 const val FLASHCARD_RATING_GOOD = "good"
@@ -49,7 +47,7 @@ data class FlashcardDeckUiState(
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class FlashcardDeckViewModel @Inject constructor(
-    private val appModule: AppModule,
+    @ApplicationScope private val applicationScope: kotlinx.coroutines.CoroutineScope,
     private val bookRepository: BookRepository,
     private val knowledgeRepository: KnowledgeRepository,
     private val assetRepository: AssetRepository,
@@ -182,8 +180,8 @@ class FlashcardDeckViewModel @Inject constructor(
         } catch (_: Exception) {
             ""
         }
-        
-        appModule.applicationScope.launch {
+
+        applicationScope.launch {
             studyRepository.getLearningSessionById(sessionId)?.let { session ->
                 studyRepository.updateLearningSession(session.copy(stateJson = json))
             }
@@ -218,8 +216,8 @@ class FlashcardDeckViewModel @Inject constructor(
         } catch (_: Exception) {
             ""
         }
-        
-        appModule.applicationScope.launch {
+
+        applicationScope.launch {
             studyRepository.getLearningSessionById(sessionId)?.let { session ->
                 studyRepository.updateLearningSession(session.copy(stateJson = json, isCompleted = true))
                 studyRepository.completeLearningSession(sessionId)

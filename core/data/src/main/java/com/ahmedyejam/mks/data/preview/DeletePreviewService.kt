@@ -6,8 +6,11 @@ import com.ahmedyejam.mks.data.local.dao.QuizDao
 import com.ahmedyejam.mks.data.simulation.ChangeSimulationResult
 import com.ahmedyejam.mks.data.simulation.SimulatedItem
 import kotlinx.coroutines.flow.first
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class DeletePreviewService(
+@Singleton
+class DeletePreviewService @Inject constructor(
     private val bookDao: BookDao,
     private val quizDao: QuizDao,
     private val questionDao: QuestionDao,

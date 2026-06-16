@@ -64,12 +64,18 @@ class SourceDetectorTest {
 
     @Test
     fun detectMode_htmlContent_returnsHtml() {
-        assertEquals(ImportMode.HTML, detector.detectMode("file.txt", "<html><body>Test</body></html>"))
+        assertEquals(
+            ImportMode.HTML,
+            detector.detectMode("file.txt", "<html><body>Test</body></html>")
+        )
     }
 
     @Test
     fun detectMode_htmlScript_returnsHtml() {
-        assertEquals(ImportMode.HTML, detector.detectMode("file.txt", "<script>alert('hi')</script>"))
+        assertEquals(
+            ImportMode.HTML,
+            detector.detectMode("file.txt", "<script>alert('hi')</script>")
+        )
     }
 
     @Test
@@ -93,11 +99,11 @@ class SourceDetectorTest {
     @Test
     fun detectMode_tabularTsv_returnsSpreadsheet() {
         val tsvContent = "question\tanswer\texplanation\n" +
-            "What is 1+1?\t2\tBasic math\n" +
-            "What is 2+2?\t4\tAddition\n" +
-            "What is 3+3?\t6\tAddition\n" +
-            "What is 4+4?\t8\tAddition\n" +
-            "What is 5+5?\t10\tAddition"
+                "What is 1+1?\t2\tBasic math\n" +
+                "What is 2+2?\t4\tAddition\n" +
+                "What is 3+3?\t6\tAddition\n" +
+                "What is 4+4?\t8\tAddition\n" +
+                "What is 5+5?\t10\tAddition"
         assertEquals(ImportMode.SPREADSHEET, detector.detectMode("file.txt", tsvContent))
     }
 
@@ -128,7 +134,10 @@ class SourceDetectorTest {
     @Test
     fun detectMode_xlsxExtension_overridesJsonContent() {
         // Extension should take priority for spreadsheet formats
-        assertEquals(ImportMode.SPREADSHEET, detector.detectMode("data.xlsx", "[{\"question\": \"test\"}]"))
+        assertEquals(
+            ImportMode.SPREADSHEET,
+            detector.detectMode("data.xlsx", "[{\"question\": \"test\"}]")
+        )
     }
 
     @Test

@@ -1,20 +1,47 @@
 package com.ahmedyejam.mks.ui.trash
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.ahmedyejam.mks.data.local.entity.*
+import com.ahmedyejam.mks.data.local.entity.BookEntity
+import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
+import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
+import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
+import com.ahmedyejam.mks.data.local.entity.QuizEntity
+import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 import com.ahmedyejam.mks.ui.library.LibraryViewModel
 
 enum class TrashTab(val title: String) {
@@ -58,7 +85,7 @@ fun TrashBinDialog(
                     edgePadding = 0.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    TrashTab.values().forEach { tab ->
+                    TrashTab.entries.forEach { tab ->
                         Tab(
                             selected = selectedTab == tab,
                             onClick = { selectedTab = tab },
@@ -82,7 +109,7 @@ fun TrashBinDialog(
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    items(deletedBooks) { book ->
+                                    items(deletedBooks, key = { it.id }) { book ->
                                         TrashItemRow(
                                             title = book.title,
                                             description = book.description,
@@ -101,7 +128,7 @@ fun TrashBinDialog(
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    items(deletedQuizzes) { quiz ->
+                                    items(deletedQuizzes, key = { it.id }) { quiz ->
                                         TrashItemRow(
                                             title = quiz.title,
                                             description = quiz.description,
@@ -120,7 +147,7 @@ fun TrashBinDialog(
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    items(deletedDecks) { deck ->
+                                    items(deletedDecks, key = { it.id }) { deck ->
                                         TrashItemRow(
                                             title = deck.title,
                                             description = deck.description,
@@ -139,7 +166,7 @@ fun TrashBinDialog(
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    items(deletedSlideshows) { course ->
+                                    items(deletedSlideshows, key = { it.id }) { course ->
                                         TrashItemRow(
                                             title = course.title,
                                             description = course.description,
@@ -158,7 +185,7 @@ fun TrashBinDialog(
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    items(deletedNotes) { note ->
+                                    items(deletedNotes, key = { it.id }) { note ->
                                         TrashItemRow(
                                             title = note.title,
                                             description = note.summary,
@@ -177,7 +204,7 @@ fun TrashBinDialog(
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    items(deletedPrompts) { deck ->
+                                    items(deletedPrompts, key = { it.id }) { deck ->
                                         TrashItemRow(
                                             title = deck.title,
                                             description = deck.description,

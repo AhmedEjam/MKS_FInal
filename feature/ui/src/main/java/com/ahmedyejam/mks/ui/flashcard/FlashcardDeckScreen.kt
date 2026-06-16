@@ -1,7 +1,5 @@
 package com.ahmedyejam.mks.ui.flashcard
 
-import androidx.hilt.navigation.compose.hiltViewModel
-
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -79,16 +77,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
 import com.ahmedyejam.mks.data.model.FlashcardGenerationConfig
-import com.ahmedyejam.mks.di.AppModule
 import com.ahmedyejam.mks.ui.quiz.CompilerDialog
 import com.ahmedyejam.mks.ui.quiz.CompilerViewModel
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
@@ -98,7 +94,6 @@ import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 fun FlashcardDeckScreen(
     deckId: Long,
     focusedCardId: Long? = null,
-    appModule: AppModule,
     onBack: () -> Unit
 ) {
     val tokens = LocalMksDesignTokens.current
@@ -106,7 +101,8 @@ fun FlashcardDeckScreen(
 
     val compilerViewModel: CompilerViewModel = hiltViewModel()
 
-    val state by vm.uiState.collectAsState()
+    val state by vm.uiState.collectAsStateWithLifecycle()
+    val elapsed by vm.elapsedSeconds.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
     BackHandler(enabled = state.isStudyMode) {

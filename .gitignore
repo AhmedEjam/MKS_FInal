@@ -48,13 +48,18 @@ app/src/main/java/**/.artifacts/
 .artifacts/
 .junie/
 archive/
-*.patch
-duplications_report.txt
-build_env.txt
 
 # Keep Room schemas under version control.
 !app/schemas/
 !app/schemas/**
+
+# Legacy scripts and generated reports
+*.py
+*.patch
+*.sh
+*.kt
+*.txt
+scripts/legacy/
 
 # Specific large or temp folders
 .gradle_home/

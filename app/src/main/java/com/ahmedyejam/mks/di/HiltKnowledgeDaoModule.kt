@@ -1,5 +1,6 @@
 package com.ahmedyejam.mks.di
 
+import com.ahmedyejam.mks.data.local.MksDatabase
 import com.ahmedyejam.mks.data.local.dao.CourseSlideDao
 import com.ahmedyejam.mks.data.local.dao.KnowledgeStudySessionDao
 import com.ahmedyejam.mks.data.local.dao.NoteBlueprintDao
@@ -21,61 +22,61 @@ import javax.inject.Singleton
 object HiltKnowledgeDaoModule {
     @Provides
     @Singleton
-    fun provideSlideshowCourseDao(appModule: AppModule): SlideshowCourseDao {
-        return appModule.database.slideshowCourseDao()
+    fun provideSlideshowCourseDao(database: MksDatabase): SlideshowCourseDao {
+        return database.slideshowCourseDao()
     }
 
     @Provides
     @Singleton
-    fun provideCourseSlideDao(appModule: AppModule): CourseSlideDao {
-        return appModule.database.courseSlideDao()
+    fun provideCourseSlideDao(database: MksDatabase): CourseSlideDao {
+        return database.courseSlideDao()
     }
 
     @Provides
     @Singleton
-    fun provideNoteBlueprintDao(appModule: AppModule): NoteBlueprintDao {
-        return appModule.database.noteBlueprintDao()
+    fun provideNoteBlueprintDao(database: MksDatabase): NoteBlueprintDao {
+        return database.noteBlueprintDao()
     }
 
     @Provides
     @Singleton
-    fun provideNoteCollectionDao(appModule: AppModule): NoteCollectionDao {
-        return appModule.database.noteCollectionDao()
+    fun provideNoteCollectionDao(database: MksDatabase): NoteCollectionDao {
+        return database.noteCollectionDao()
     }
 
     @Provides
     @Singleton
-    fun providePromptDao(appModule: AppModule): PromptDao {
-        return appModule.database.promptDao()
+    fun providePromptDao(database: MksDatabase): PromptDao {
+        return database.promptDao()
     }
 
     @Provides
     @Singleton
-    fun providePromptDeckDao(appModule: AppModule): PromptDeckDao {
-        return appModule.database.promptDeckDao()
+    fun providePromptDeckDao(database: MksDatabase): PromptDeckDao {
+        return database.promptDeckDao()
     }
 
     @Provides
     @Singleton
-    fun providePromptCardDao(appModule: AppModule): PromptCardDao {
-        return appModule.database.promptCardDao()
+    fun providePromptCardDao(database: MksDatabase): PromptCardDao {
+        return database.promptCardDao()
     }
 
     @Provides
     @Singleton
-    fun providePromptRunDao(appModule: AppModule): PromptRunDao {
-        return appModule.database.promptRunDao()
+    fun providePromptRunDao(database: MksDatabase): PromptRunDao {
+        return database.promptRunDao()
     }
 
     @Provides
     @Singleton
-    fun provideKnowledgeStudySessionDao(appModule: AppModule): KnowledgeStudySessionDao {
-        return appModule.database.knowledgeStudySessionDao()
+    fun provideKnowledgeStudySessionDao(database: MksDatabase): KnowledgeStudySessionDao {
+        return database.knowledgeStudySessionDao()
     }
 
     @Provides
     @Singleton
-    fun provideStudySessionDao(appModule: AppModule): StudySessionDao {
-        return appModule.database.studySessionDao()
+    fun provideStudySessionDao(database: MksDatabase): StudySessionDao {
+        return database.studySessionDao()
     }
 }

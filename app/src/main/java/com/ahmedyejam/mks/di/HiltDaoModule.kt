@@ -1,5 +1,6 @@
 package com.ahmedyejam.mks.di
 
+import com.ahmedyejam.mks.data.local.MksDatabase
 import com.ahmedyejam.mks.data.local.dao.BookDao
 import com.ahmedyejam.mks.data.local.dao.CategoryMetadataDao
 import com.ahmedyejam.mks.data.local.dao.QuestionCategoryDao
@@ -17,37 +18,37 @@ import javax.inject.Singleton
 object HiltDaoModule {
     @Provides
     @Singleton
-    fun provideBookDao(appModule: AppModule): BookDao {
-        return appModule.database.bookDao()
+    fun provideBookDao(database: MksDatabase): BookDao {
+        return database.bookDao()
     }
 
     @Provides
     @Singleton
-    fun provideQuizDao(appModule: AppModule): QuizDao {
-        return appModule.database.quizDao()
+    fun provideQuizDao(database: MksDatabase): QuizDao {
+        return database.quizDao()
     }
 
     @Provides
     @Singleton
-    fun provideQuestionDao(appModule: AppModule): QuestionDao {
-        return appModule.database.questionDao()
+    fun provideQuestionDao(database: MksDatabase): QuestionDao {
+        return database.questionDao()
     }
 
     @Provides
     @Singleton
-    fun provideSessionDao(appModule: AppModule): SessionDao {
-        return appModule.database.sessionDao()
+    fun provideSessionDao(database: MksDatabase): SessionDao {
+        return database.sessionDao()
     }
 
     @Provides
     @Singleton
-    fun provideCategoryMetadataDao(appModule: AppModule): CategoryMetadataDao {
-        return appModule.database.categoryMetadataDao()
+    fun provideCategoryMetadataDao(database: MksDatabase): CategoryMetadataDao {
+        return database.categoryMetadataDao()
     }
 
     @Provides
     @Singleton
-    fun provideQuestionCategoryDao(appModule: AppModule): QuestionCategoryDao {
-        return appModule.database.questionCategoryDao()
+    fun provideQuestionCategoryDao(database: MksDatabase): QuestionCategoryDao {
+        return database.questionCategoryDao()
     }
 }

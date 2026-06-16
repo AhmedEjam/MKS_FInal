@@ -1,17 +1,19 @@
 package com.ahmedyejam.mks.ui.summary
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
-
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
-import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
-import kotlinx.coroutines.flow.*
+import com.ahmedyejam.mks.data.repository.QuizRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 enum class ReviewFilter {
     ALL, CORRECT, WRONG, UNANSWERED, DROPPED, WITH_EXPLANATION
@@ -70,17 +72,36 @@ class SummaryViewModel @Inject constructor(
                         correctAnswers = emptyList(),
                     )
                 }
-                
-                // Calculate category performance using full history (answersByIndex)
+
+                // Calculate category performance using taxonomy (v30+) or fallback to full history
                 val catStats = mutableMapOf<String, Pair<Int, Int>>()
-                session.questionIds.forEachIndexed { index, id ->
-                    val q = allQuestionsInQuiz.find { it.id == id } ?: return@forEachIndexed
-                    val userAnswers = session.answersByIndex[index]
-                    if (userAnswers != null) {
-                        val isCorrect = q.correctAnswers.toSet() == userAnswers.toSet()
+
+                if (session.resultTaxonomy.isNotEmpty()) {
+                    // Modern taxonomy-based calculation
+                    session.resultTaxonomy.forEach { (index, status) ->
+                        val id = session.questionIds.getOrNull(index) ?: return@forEach
+                        val q = allQuestionsInQuiz.find { it.id == id } ?: return@forEach
+
+                        val isCorrect =
+                            status == "CORRECT_FIRST_TRY" || status == "CORRECTED_AFTER_REPEAT"
                         q.categories.forEach { cat ->
                             val current = catStats.getOrDefault(cat, 0 to 0)
-                            catStats[cat] = (current.first + (if (isCorrect) 1 else 0)) to (current.second + 1)
+                            catStats[cat] =
+                                (current.first + (if (isCorrect) 1 else 0)) to (current.second + 1)
+                        }
+                    }
+                } else {
+                    // Fallback for legacy sessions (pre-v30)
+                    session.questionIds.forEachIndexed { index, id ->
+                        val q = allQuestionsInQuiz.find { it.id == id } ?: return@forEachIndexed
+                        val userAnswers = session.answersByIndex[index]
+                        if (userAnswers != null) {
+                            val isCorrect = q.correctAnswers.toSet() == userAnswers.toSet()
+                            q.categories.forEach { cat ->
+                                val current = catStats.getOrDefault(cat, 0 to 0)
+                                catStats[cat] =
+                                    (current.first + (if (isCorrect) 1 else 0)) to (current.second + 1)
+                            }
                         }
                     }
                 }

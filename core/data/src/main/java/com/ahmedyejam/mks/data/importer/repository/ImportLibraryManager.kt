@@ -5,11 +5,30 @@ import android.net.Uri
 import androidx.core.net.toUri
 import androidx.room.withTransaction
 import com.ahmedyejam.mks.data.importer.detector.ImportFormatDetector
-import com.ahmedyejam.mks.data.importer.dto.*
+import com.ahmedyejam.mks.data.importer.dto.BookDto
+import com.ahmedyejam.mks.data.importer.dto.LibraryBundleDto
+import com.ahmedyejam.mks.data.importer.dto.ManifestDto
+import com.ahmedyejam.mks.data.importer.dto.OptionDto
+import com.ahmedyejam.mks.data.importer.dto.QuestionDto
+import com.ahmedyejam.mks.data.importer.dto.QuizDto
 import com.ahmedyejam.mks.data.importer.mapping.LibraryMapper
-import com.ahmedyejam.mks.data.importer.model.*
+import com.ahmedyejam.mks.data.importer.model.ImportError
+import com.ahmedyejam.mks.data.importer.model.ImportFormat
+import com.ahmedyejam.mks.data.importer.model.ImportPreviewDto
+import com.ahmedyejam.mks.data.importer.model.ImportResult
+import com.ahmedyejam.mks.data.importer.model.ImportWarning
+import com.ahmedyejam.mks.data.importer.model.MergeStrategy
+import com.ahmedyejam.mks.data.importer.model.ParsedQuestion
 import com.ahmedyejam.mks.data.importer.normalization.BundleNormalizer
-import com.ahmedyejam.mks.data.importer.parser.*
+import com.ahmedyejam.mks.data.importer.parser.CsvParser
+import com.ahmedyejam.mks.data.importer.parser.GenericImageExtractor
+import com.ahmedyejam.mks.data.importer.parser.HtmlQuestionParser
+import com.ahmedyejam.mks.data.importer.parser.JsonLibraryParser
+import com.ahmedyejam.mks.data.importer.parser.JsonQuestionParser
+import com.ahmedyejam.mks.data.importer.parser.SpreadsheetHeaderMapper
+import com.ahmedyejam.mks.data.importer.parser.SpreadsheetQuestionParser
+import com.ahmedyejam.mks.data.importer.parser.TextQuestionParser
+import com.ahmedyejam.mks.data.importer.parser.ZipLibraryParser
 import com.ahmedyejam.mks.data.importer.security.ImportLimits
 import com.ahmedyejam.mks.data.importer.validation.ImportValidator
 import com.ahmedyejam.mks.data.importer.xlsx.XlsxLibraryCompiler
@@ -19,6 +38,7 @@ import com.ahmedyejam.mks.data.local.WorkspaceDefaults
 import com.ahmedyejam.mks.data.local.entity.BookEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
+import com.ahmedyejam.mks.data.model.MksResult
 import com.ahmedyejam.mks.data.network.RemoteAssetPolicy
 import com.ahmedyejam.mks.util.readTextWithLimit
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +47,7 @@ import java.io.File
 import java.security.MessageDigest
 import java.util.UUID
 
-class ImportLibraryManager constructor(
+class ImportLibraryManager(
     private val context: Context,
     private val database: MksDatabase,
     private val fileManager: FileManager,
@@ -273,18 +293,14 @@ class ImportLibraryManager constructor(
         allowInsecureRemoteImages: Boolean = false,
         activeWorkspaceId: Long? = null,
         onProgress: (Float, String) -> Unit = { _, _ -> },
-    ): ImportResult =
+    ): MksResult<ImportResult> =
         withContext(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
             onProgress(0.05f, "Detecting format...")
             val format = formatDetector.detectFormat(uri)
 
             if (format == ImportFormat.UNKNOWN) {
-                return@withContext ImportResult(
-                    success = false,
-                    detectedFormat = format,
-                    errors = listOf(ImportError("Unsupported file format")),
-                )
+                return@withContext MksResult.Error(message = "Unsupported file format")
             }
 
             var zipResult: ZipLibraryParser.ZipResult? = null
@@ -341,12 +357,11 @@ class ImportLibraryManager constructor(
                         activeWorkspaceId = activeWorkspaceId,
                     )
 
-                return@withContext result
+                return@withContext MksResult.Success(result)
             } catch (e: Exception) {
-                return@withContext ImportResult(
-                    success = false,
-                    detectedFormat = format,
-                    errors = listOf(ImportError("Import failed: ${e.message}", e)),
+                return@withContext MksResult.Error(
+                    message = "Import failed: ${e.message}",
+                    exception = e
                 )
             } finally {
                 zipResult?.rootDir?.deleteRecursively()
@@ -359,8 +374,9 @@ class ImportLibraryManager constructor(
         targetBookId: Long? = null,
         targetQuizId: Long? = null,
         newBookTitle: String? = null,
+        activeWorkspaceId: Long? = null,
         onProgress: (Float, String) -> Unit = { _, _ -> },
-    ): ImportResult =
+    ): MksResult<ImportResult> =
         withContext(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
             val bundle =
@@ -371,16 +387,25 @@ class ImportLibraryManager constructor(
                     includeBook = targetBookId == null && targetQuizId == null,
                 )
 
-            executeImportPipeline(
-                bundle = bundle,
-                assetsDir = null,
-                format = ImportFormat.TEXT,
-                strategy = MergeStrategy.SKIP_EXISTING,
-                targetBookId = targetBookId,
-                targetQuizId = targetQuizId,
-                startTime = startTime,
-                onProgress = onProgress,
-            )
+            try {
+                val result = executeImportPipeline(
+                    bundle = bundle,
+                    assetsDir = null,
+                    format = ImportFormat.TEXT,
+                    strategy = MergeStrategy.SKIP_EXISTING,
+                    targetBookId = targetBookId,
+                    targetQuizId = targetQuizId,
+                    startTime = startTime,
+                    onProgress = onProgress,
+                    activeWorkspaceId = activeWorkspaceId,
+                )
+                MksResult.Success(result)
+            } catch (e: Exception) {
+                MksResult.Error(
+                    message = "Questions import failed: ${e.message}",
+                    exception = e
+                )
+            }
         }
 
     private fun wrapQuestionsToBundle(
@@ -561,7 +586,7 @@ class ImportLibraryManager constructor(
             normalizedBundle.books.forEach { bookDto ->
                 try {
                     val targetWorkspaceId =
-                        activeWorkspaceId ?: bookDto.workspaceExternalId
+                        activeWorkspaceId?.takeIf { it > 0 } ?: bookDto.workspaceExternalId
                             ?.let { workspaceDao.getWorkspaceByExternalId(it)?.id }
                             ?: defaultWorkspaceId
                     val existingBook = bookDao.getBookByExternalIdInWorkspace(bookDto.id, targetWorkspaceId)
@@ -833,9 +858,9 @@ class ImportLibraryManager constructor(
         if (assetRef.startsWith("data:")) {
             val saved = fileManager.saveBase64AsImageDetailed(assetRef)
             return ResolvedImageResult(
-                path = saved.path,
-                warning = saved.error,
-                importedLocally = saved.path != null,
+                path = saved.getOrNull(),
+                warning = saved.exceptionOrNull()?.message,
+                importedLocally = saved.isSuccess,
             )
         }
 
@@ -850,9 +875,9 @@ class ImportLibraryManager constructor(
                 matchedFile.inputStream().use { input ->
                     val saved = fileManager.saveImageDetailed(input, matchedFile.name)
                     return ResolvedImageResult(
-                        path = saved.path,
-                        warning = saved.error,
-                        importedLocally = saved.path != null,
+                        path = saved.getOrNull(),
+                        warning = saved.exceptionOrNull()?.message,
+                        importedLocally = saved.isSuccess,
                     )
                 }
             }
@@ -868,9 +893,9 @@ class ImportLibraryManager constructor(
                         manifestFile.inputStream().use { input ->
                             val saved = fileManager.saveImageDetailed(input, manifestFile.name)
                             return ResolvedImageResult(
-                                path = saved.path,
-                                warning = saved.error,
-                                importedLocally = saved.path != null,
+                                path = saved.getOrNull(),
+                                warning = saved.exceptionOrNull()?.message,
+                                importedLocally = saved.isSuccess,
                             )
                         }
                     }
@@ -911,9 +936,9 @@ class ImportLibraryManager constructor(
                 matchedFile.inputStream().use { input ->
                     val saved = fileManager.saveImageDetailed(input, matchedFile.name)
                     return ResolvedImageResult(
-                        path = saved.path,
-                        warning = saved.error,
-                        importedLocally = saved.path != null,
+                        path = saved.getOrNull(),
+                        warning = saved.exceptionOrNull()?.message,
+                        importedLocally = saved.isSuccess,
                     )
                 }
             }
@@ -927,12 +952,17 @@ class ImportLibraryManager constructor(
                     assetRef,
                     if (allowInsecureRemoteImages) RemoteAssetPolicy.UserAllowedPlainHttp else RemoteAssetPolicy.Default,
                 )
-            if (localImage.path != null) {
-                return ResolvedImageResult(path = localImage.path, warning = localImage.error, importedLocally = true)
+            if (localImage is MksResult.Success) {
+                return ResolvedImageResult(
+                    path = localImage.data,
+                    warning = null,
+                    importedLocally = true
+                )
             }
             if (remoteScheme == "http" && !allowInsecureRemoteImages) {
                 return ResolvedImageResult(
-                    warning = localImage.error ?: "Plain HTTP image URL was skipped until the user allows insecure image downloads.",
+                    warning = localImage.exceptionOrNull()?.message
+                        ?: "Plain HTTP image URL was skipped until the user allows insecure image downloads.",
                     importedLocally = false,
                 )
             }
@@ -940,7 +970,7 @@ class ImportLibraryManager constructor(
             return ResolvedImageResult(
                 path = assetRef,
                 warning =
-                    localImage.error?.let { "Kept remote URL instead of importing locally: $it" }
+                    localImage.exceptionOrNull()?.message?.let { "Kept remote URL instead of importing locally: $it" }
                         ?: "Kept remote URL instead of importing locally.",
                 importedLocally = false,
             )
@@ -949,14 +979,20 @@ class ImportLibraryManager constructor(
         // Final attempt as base64 or other string-based image if not already tried
         // SECURITY: FileManager.saveImage handles absolute path validation
         val saved = fileManager.saveImageDetailed(assetRef)
-        if (saved.path != null) {
-            return ResolvedImageResult(path = saved.path, importedLocally = true)
+        if (saved is MksResult.Success) {
+            return ResolvedImageResult(path = saved.data, importedLocally = true)
         }
 
         return if (assetRef.contains(",") || assetRef.length < 255) {
-            ResolvedImageResult(warning = saved.error ?: "Unsupported inline image data.")
+            ResolvedImageResult(
+                warning = saved.exceptionOrNull()?.message ?: "Unsupported inline image data."
+            )
         } else {
-            ResolvedImageResult(path = assetRef, warning = saved.error, importedLocally = false)
+            ResolvedImageResult(
+                path = assetRef,
+                warning = saved.exceptionOrNull()?.message,
+                importedLocally = false
+            )
         }
     }
 

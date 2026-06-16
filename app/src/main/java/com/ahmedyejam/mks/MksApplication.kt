@@ -5,20 +5,30 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
-import com.ahmedyejam.mks.di.AppModule
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
 class MksApplication : Application(), ImageLoaderFactory {
-    lateinit var appModule: AppModule
-
-    companion object {
-        private const val MEMORY_CACHE_PERCENT = 0.25
-    }
 
     override fun onCreate() {
         super.onCreate()
-        appModule = AppModule(this)
+        setupCrashHandler()
+    }
+
+    private fun setupCrashHandler() {
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            com.ahmedyejam.mks.util.MksLogger.e(
+                "MksApplication",
+                "Uncaught exception in thread ${thread.name}",
+                throwable
+            )
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
+    }
+
+    companion object {
+        private const val MEMORY_CACHE_PERCENT = 0.25
     }
 
     override fun newImageLoader(): ImageLoader {

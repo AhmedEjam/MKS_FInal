@@ -36,15 +36,13 @@ import com.ahmedyejam.mks.data.local.entity.QuestionAssetType
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
-import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
-import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
+import com.ahmedyejam.mks.data.model.MksResult
 import com.ahmedyejam.mks.data.preview.CategoryMergePreviewService
 import com.ahmedyejam.mks.data.preview.ClearMarksPreviewService
 import com.ahmedyejam.mks.data.preview.DeletePreviewService
 import com.ahmedyejam.mks.data.repair.AssetReferenceAuditService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -426,10 +424,11 @@ class AssetRepository
             }
 
             if (trimmedLocal != null && (trimmedLocal.startsWith("content://") || trimmedLocal.startsWith("file://"))) {
-                val copied = fileManager.copyAssetUriToInternalStorage(trimmedLocal, asset.fileName)
-                copied.path?.let { copiedPath ->
+                val result = fileManager.copyAssetUriToInternalStorage(trimmedLocal, asset.fileName)
+                if (result is MksResult.Success) {
+                    val copied = result.data
                     return asset.copy(
-                        localPath = copiedPath,
+                        localPath = copied.path,
                         mimeType = asset.mimeType ?: copied.mimeType,
                         fileName = asset.fileName ?: copied.fileName,
                         fileSizeBytes = asset.fileSizeBytes ?: copied.fileSizeBytes,
@@ -451,9 +450,10 @@ class AssetRepository
                 return source.copy(localPath = null, externalUrl = trimmedUrl ?: trimmedLocal, updatedAt = now)
             }
             if (trimmedLocal != null && (trimmedLocal.startsWith("content://") || trimmedLocal.startsWith("file://"))) {
-                val copied = fileManager.copyAssetUriToInternalStorage(trimmedLocal, source.title)
-                copied.path?.let { copiedPath ->
-                    return source.copy(localPath = copiedPath, updatedAt = now)
+                val result = fileManager.copyAssetUriToInternalStorage(trimmedLocal, source.title)
+                if (result is MksResult.Success) {
+                    val copied = result.data
+                    return source.copy(localPath = copied.path, updatedAt = now)
                 }
             }
             return source.copy(localPath = trimmedLocal, externalUrl = trimmedUrl, updatedAt = now)
@@ -614,7 +614,7 @@ class AssetRepository
                 json.removePrefix("[").removeSuffix("]").split(",").mapNotNull { it.trim().toLongOrNull() }
             }
 
-        suspend fun updateQuestion(question: com.ahmedyejam.mks.data.local.entity.QuestionEntity) = questionDao.updateQuestion(question)
+    suspend fun updateQuestion(question: QuestionEntity) = questionDao.updateQuestion(question)
 
         suspend fun getOrCreateDefaultWorkspace(): com.ahmedyejam.mks.data.local.entity.WorkspaceEntity {
             val workspace = workspaceDao.getDefaultWorkspace()

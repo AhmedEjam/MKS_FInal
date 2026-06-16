@@ -1,18 +1,9 @@
 package com.ahmedyejam.mks.ui.booktools
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
-
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.BlueprintMode
-import com.ahmedyejam.mks.data.repository.BookRepository
-import com.ahmedyejam.mks.data.repository.KnowledgeRepository
-import com.ahmedyejam.mks.data.repository.AssetRepository
-import com.ahmedyejam.mks.data.repository.QuizRepository
-import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.local.entity.BlueprintReviewStatus
 import com.ahmedyejam.mks.data.local.entity.BookEntity
 import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
@@ -23,21 +14,28 @@ import com.ahmedyejam.mks.data.local.entity.PromptCardEntity
 import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
 import com.ahmedyejam.mks.data.local.entity.PromptOutputType
 import com.ahmedyejam.mks.data.local.entity.PromptRunEntity
-import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.local.entity.QuestionAssetEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentTypes
-import com.ahmedyejam.mks.ui.library.components.QuizCreationFilters
-import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
-import com.ahmedyejam.mks.data.repository.OllamaRepository
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
+import com.ahmedyejam.mks.data.repository.BookRepository
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.OllamaRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.repository.SortOption
+import com.ahmedyejam.mks.data.repository.StudyRepository
+import com.ahmedyejam.mks.ui.library.components.QuizCreationFilters
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 private fun String.escapeJsonValue(): String = buildString {
     this@escapeJsonValue.forEach { ch ->
@@ -616,18 +614,21 @@ class BookToolsViewModel @Inject constructor(
                     "QUIZ" -> "Quiz generator"
                     "FLASHCARDS" -> "Flashcard generator"
                     "BLUEPRINT" -> "Blueprint maker"
+                    "EXPLAIN" -> "Explain & Teach"
                     else -> "Template Prompt"
                 }
                 val promptText = when (templateType) {
                     "QUIZ" -> "<system_role>You are an expert test creator and medical educator.</system_role>\n<instructions>Analyze the provided material and generate 3 to 5 high-quality, challenging multiple-choice questions.\nEnsure that:\n1. The stem is clinically relevant or focuses on key conceptual understanding.\n2. There are 4-5 plausible options.\n3. The correct answer is unambiguously correct.\n4. A detailed rationale/explanation is provided for why the correct answer is right and why the distractors are wrong.\nOutput strictly in JSON format as an array of objects with keys: \"question\", \"options\" (array of strings), \"answer\" (string), \"explanation\" (string).</instructions>\n<material>\n{material}\n</material>"
                     "FLASHCARDS" -> "<system_role>You are an expert learning designer.</system_role>\n<instructions>Convert the core concepts from the provided material into concise, high-yield spaced-repetition flashcards.\nFollow these rules:\n1. Make the front of the card a clear, unambiguous question or cloze deletion.\n2. Keep the back of the card concise and to the point.\n3. Provide an optional brief hint to aid recall.\nOutput strictly in JSON format as an array of objects with keys: \"front\", \"back\", \"hint\".</instructions>\n<material>\n{material}\n</material>"
                     "BLUEPRINT" -> "<system_role>You are an expert technical writer and educator.</system_role>\n<instructions>Synthesize the provided material into a highly structured, comprehensive, yet easy-to-digest study blueprint.\nFormat the output in Markdown with the following sections:\n- **Core Summary**: A brief 2-3 sentence overview.\n- **Key Concepts**: Bulleted list of the most important takeaways.\n- **Detailed Breakdown**: A structured analysis with subheadings.\n- **Common Pitfalls / Mistakes to Avoid**: What students usually get wrong about this.\n- **Review Cues**: Short questions to test memory.</instructions>\n<material>\n{material}\n</material>"
+                    "EXPLAIN" -> "<system_role>You are an expert tutor in {relevant_speciality}.</system_role>\n<instructions>Please explain the following question part: {part_to_explain}.\n\nHere is the full question context:\n{question}</instructions>"
                     else -> ""
                 }
                 val outputType = when (templateType) {
                     "QUIZ" -> PromptOutputType.QUIZ
                     "FLASHCARDS" -> PromptOutputType.FLASHCARDS
                     "BLUEPRINT" -> PromptOutputType.BLUEPRINT
+                    "EXPLAIN" -> PromptOutputType.NOTE
                     else -> PromptOutputType.OTHER
                 }
                 val variablesJson = extractVariables(promptText).joinToString(prefix = "[", postfix = "]") { "\"${it.escapeJsonValue()}\"" }
@@ -738,11 +739,20 @@ class BookToolsViewModel @Inject constructor(
             try {
                 val baseUrl = dataStoreManager.ollamaBaseUrl.first()
                 val model = dataStoreManager.ollamaModelName.first()
+                val apiKey = dataStoreManager.ollamaApiKey.first().takeIf { it.isNotBlank() }
                 
                 val systemPrompt = "You are an expert educational AI assistant inside the MKS knowledge-bank app. Generate high-quality, structured output exactly as requested by the user's prompt. Do NOT include conversational filler, greetings, or explanations unless explicitly requested."
                 
                 var accumulatedResponse = ""
-                ollamaRepository.generateCompletionStream(baseUrl, model, prompt, systemPrompt, null, images.takeIf { it.isNotEmpty() })
+                ollamaRepository.generateCompletionStream(
+                    baseUrl,
+                    model,
+                    prompt,
+                    systemPrompt,
+                    null,
+                    images.takeIf { it.isNotEmpty() },
+                    apiKey
+                )
                     .collect { chunk ->
                         accumulatedResponse += chunk
                         onUpdate(accumulatedResponse)
@@ -829,7 +839,8 @@ class BookToolsViewModel @Inject constructor(
     }
 
     fun extractVariables(text: String): List<String> =
-        Regex("""\{[^}]+\}|\[[^\]]+\]|\([^)]+\)""").findAll(text).map { it.value }.distinct().toList()
+        Regex("""\{[^}]+\}|\[[^]]+\]|\([^)]+\)""").findAll(text).map { it.value }.distinct()
+            .toList()
 
     fun createFlashcardDeckFromMarkedQuestions(bookId: Long, title: String) {
         viewModelScope.launch {
@@ -890,7 +901,12 @@ class BookToolsViewModel @Inject constructor(
     fun createBlueprintFromQuestions(bookId: Long, title: String, questionIds: List<Long>) {
         viewModelScope.launch {
             try {
-                knowledgeRepository.createBlueprintFromQuestions(bookId, title, questionIds, com.ahmedyejam.mks.data.local.entity.BlueprintMode.SIMPLE_NOTE)
+                knowledgeRepository.createBlueprintFromQuestions(
+                    bookId,
+                    title,
+                    questionIds,
+                    BlueprintMode.SIMPLE_NOTE
+                )
                 _uiState.value = _uiState.value.copy(successMessage = "Note blueprint generated")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = "Failed to generate note blueprint: ${e.message}")

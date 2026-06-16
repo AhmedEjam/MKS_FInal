@@ -9,22 +9,38 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.content.IntentCompat
 import androidx.core.os.LocaleListCompat
 import androidx.navigation.compose.rememberNavController
+import com.ahmedyejam.mks.data.error.GlobalErrorHandler
+import com.ahmedyejam.mks.data.focus.FocusManager
+import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.ui.MksNavHost
 import com.ahmedyejam.mks.ui.theme.MKSTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+    @Inject
+    lateinit var dataStoreManager: DataStoreManager
+
+    @Inject
+    lateinit var focusManager: FocusManager
+
+    @Inject
+    lateinit var globalErrorHandler: GlobalErrorHandler
+
     private val _sharedUris = MutableStateFlow<List<Uri>?>(null)
     val sharedUris = _sharedUris.asStateFlow()
 
@@ -33,17 +49,13 @@ class MainActivity : AppCompatActivity() {
 
         handleIntent(intent)
 
-        val appModule = (application as MksApplication).appModule
-        val initialLanguage = "en"
-        val initialShowWelcome = true
-
         enableEdgeToEdge()
 
         setContent {
-            val themeMode by appModule.dataStoreManager.themeMode.collectAsState(initial = "DAWN")
-            val fontScale by appModule.dataStoreManager.fontScale.collectAsState(initial = 1.0f)
-            val uiDensity by appModule.dataStoreManager.uiDensity.collectAsState(initial = 1.0f)
-            val language by appModule.dataStoreManager.language.collectAsState(initial = initialLanguage)
+            val themeMode by dataStoreManager.themeMode.collectAsState(initial = "DAWN")
+            val fontScale by dataStoreManager.fontScale.collectAsState(initial = 1.0f)
+            val uiDensity by dataStoreManager.uiDensity.collectAsState(initial = 1.0f)
+            val language by dataStoreManager.language.collectAsState(initial = "en")
 
             LaunchedEffect(language) {
                 if (AppCompatDelegate.getApplicationLocales().toLanguageTags() != language) {
@@ -56,21 +68,31 @@ class MainActivity : AppCompatActivity() {
                 fontScale = fontScale,
                 uiDensity = uiDensity,
             ) {
+                val snackbarHostState = remember { SnackbarHostState() }
+
+                LaunchedEffect(Unit) {
+                    globalErrorHandler.errorFlow.collect { error ->
+                        snackbarHostState.showSnackbar(error.message)
+                    }
+                }
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     val navController = rememberNavController()
-                    val showWelcomeOnStartup by appModule.dataStoreManager.showWelcomeOnStartup
-                        .collectAsState(initial = initialShowWelcome)
+                    val showWelcomeOnStartup by dataStoreManager.showWelcomeOnStartup
+                        .collectAsState(initial = true)
                     val sharedUrisByState by sharedUris.collectAsState()
 
                     MksNavHost(
                         navController = navController,
-                        appModule = appModule,
+                        dataStoreManager = dataStoreManager,
                         showWelcomeOnStartup = showWelcomeOnStartup,
                         sharedUris = sharedUrisByState,
                     ) { _sharedUris.value = null }
+
+                    SnackbarHost(hostState = snackbarHostState)
                 }
             }
         }

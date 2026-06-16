@@ -1,35 +1,33 @@
 package com.ahmedyejam.mks.ui.slideshow
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
-
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ahmedyejam.mks.data.importer.parser.TextParseMode
+import com.ahmedyejam.mks.data.importer.parser.TextSlideParser
 import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
-import com.ahmedyejam.mks.data.repository.BookRepository
-import com.ahmedyejam.mks.data.repository.KnowledgeRepository
-import com.ahmedyejam.mks.data.repository.AssetRepository
-import com.ahmedyejam.mks.data.repository.QuizRepository
-import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.data.repository.SortOption
-import com.ahmedyejam.mks.util.MksLogger
 import com.ahmedyejam.mks.data.model.SlideGenerationConfig
-import com.ahmedyejam.mks.data.importer.parser.TextSlideParser
-import com.ahmedyejam.mks.data.importer.parser.TextParseMode
-import com.ahmedyejam.mks.di.AppModule
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.BookRepository
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
+import com.ahmedyejam.mks.data.repository.SortOption
+import com.ahmedyejam.mks.data.repository.StudyRepository
+import com.ahmedyejam.mks.di.ApplicationScope
+import com.ahmedyejam.mks.util.MksLogger
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
+import javax.inject.Inject
 
 data class SlideshowCourseUiState(
     val course: SlideshowCourseEntity? = null,
@@ -50,7 +48,8 @@ data class SlideshowCourseUiState(
 
 @HiltViewModel
 class SlideshowCourseViewModel @Inject constructor(
-    appModule: AppModule,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context,
+    @ApplicationScope private val applicationScope: kotlinx.coroutines.CoroutineScope,
     private val bookRepository: BookRepository,
     private val knowledgeRepository: KnowledgeRepository,
     private val assetRepository: AssetRepository,
@@ -62,7 +61,6 @@ class SlideshowCourseViewModel @Inject constructor(
     private var courseId: Long? = null
     private var loadJob: Job? = null
 
-    private val appModule = appModule
     private val moshi = com.squareup.moshi.Moshi.Builder().build()
     private val sessionStateAdapter = moshi.adapter(com.ahmedyejam.mks.data.model.LearningSessionState::class.java)
 
@@ -220,8 +218,8 @@ class SlideshowCourseViewModel @Inject constructor(
         } catch (e: Exception) {
             ""
         }
-        
-        appModule.applicationScope.launch {
+
+        applicationScope.launch {
             studyRepository.getLearningSessionById(sessionId)?.let { session ->
                 studyRepository.updateLearningSession(session.copy(stateJson = json))
             }
@@ -254,8 +252,8 @@ class SlideshowCourseViewModel @Inject constructor(
         } catch (e: Exception) {
             ""
         }
-        
-        appModule.applicationScope.launch {
+
+        applicationScope.launch {
             studyRepository.getLearningSessionById(sessionId)?.let { session ->
                 studyRepository.updateLearningSession(session.copy(stateJson = json, isCompleted = true))
                 studyRepository.completeLearningSession(sessionId)
@@ -461,7 +459,7 @@ class SlideshowCourseViewModel @Inject constructor(
 
     fun importFromPptx(uri: android.net.Uri) {
         val course = _uiState.value.course ?: return
-        val context = appModule.context
+        val context = appContext
         _uiState.value = _uiState.value.copy(isLoading = true)
         viewModelScope.launch {
             runCatching {

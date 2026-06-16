@@ -51,7 +51,6 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.SmartToy
-import androidx.compose.material.icons.rounded.Source
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -60,8 +59,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -112,7 +111,6 @@ import com.ahmedyejam.mks.data.local.entity.PromptOutputType
 import com.ahmedyejam.mks.data.local.entity.PromptRunEntity
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentTypes
 import com.ahmedyejam.mks.data.repository.BookKnowledgeSummary
 import com.ahmedyejam.mks.ui.components.EntityEditDialog
@@ -700,7 +698,7 @@ fun BookNotesScreen(bookId: Long, viewModel: BookToolsViewModel, onBack: () -> U
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
-                            .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable)
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
@@ -729,7 +727,9 @@ fun BookNotesScreen(bookId: Long, viewModel: BookToolsViewModel, onBack: () -> U
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(end = 16.dp)
                 ) {
-                    items(QuestionComponent.entries.toTypedArray()) { component ->
+                    items(
+                        QuestionComponent.entries.toTypedArray(),
+                        key = { it.name }) { component ->
                         FilterChip(
                             selected = component in visibleComponents,
                             onClick = {
@@ -951,6 +951,18 @@ fun AiPromptDeckScreen(
                                 showCreateOptions = false
                             }
                         )
+                        DropdownMenuItem(
+                            text = { Text("Template: Explain & Teach") },
+                            onClick = {
+                                state.promptDeck?.let {
+                                    viewModel.createTemplatePromptCard(
+                                        it.id,
+                                        "EXPLAIN"
+                                    )
+                                }
+                                showCreateOptions = false
+                            }
+                        )
                     }
                 }
             }
@@ -1074,7 +1086,7 @@ fun AiPromptDeckScreen(
 
                     if (variables.isNotEmpty()) {
                         item { Text("Variables", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
-                        items(variables) { variable ->
+                        items(variables, key = { it }) { variable ->
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedTextField(
                                     value = values[variable].orEmpty(),
@@ -1567,7 +1579,10 @@ private fun PromptRunItem(run: PromptRunEntity) {
     } }
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.layout.ExperimentalLayoutApi::class
+)
 @Composable
 fun EntitySelectorDialog(
     state: BookToolsUiState,
@@ -1601,7 +1616,9 @@ fun EntitySelectorDialog(
                     }
                 }
                 LazyColumn(
-                    modifier = Modifier.weight(1f).padding(top = 8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     when (selectedTab) {
@@ -1609,15 +1626,18 @@ fun EntitySelectorDialog(
                             if (state.allNotes.isEmpty()) {
                                 item { Text("No notes available.") }
                             } else {
-                                items(state.allNotes) { note ->
+                                items(state.allNotes, key = { it.id }) { note ->
                                     val previewText = "Title: ${note.title}\n\n${note.body}"
                                     val itemId = "Note_${note.id}"
                                     val isSelected = selectedItems.containsKey(itemId)
                                     Card(
-                                        modifier = Modifier.fillMaxWidth().clickable {
-                                            if (isSelected) selectedItems.remove(itemId) else selectedItems[itemId] = previewText to null
-                                        },
-                                        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                if (isSelected) selectedItems.remove(itemId) else selectedItems[itemId] =
+                                                    previewText to null
+                                            },
+                                        colors = CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                                     ) {
                                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                             androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[itemId] = previewText to null else selectedItems.remove(itemId) })
@@ -1634,7 +1654,7 @@ fun EntitySelectorDialog(
                             if (state.allSources.isEmpty()) {
                                 item { Text("No sources available.") }
                             } else {
-                                items(state.allSources) { source ->
+                                items(state.allSources, key = { it.id }) { source ->
                                     val previewText = buildString {
                                         append("Title: ${source.title}\nType: ${source.sourceType}\nDetails:\n${source.description.orEmpty()}")
                                         if (!source.localPath.isNullOrBlank()) append("\nAttached File: ${source.localPath}")
@@ -1643,10 +1663,13 @@ fun EntitySelectorDialog(
                                     val itemId = "Source_${source.id}"
                                     val isSelected = selectedItems.containsKey(itemId)
                                     Card(
-                                        modifier = Modifier.fillMaxWidth().clickable {
-                                            if (isSelected) selectedItems.remove(itemId) else selectedItems[itemId] = previewText to source
-                                        },
-                                        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                if (isSelected) selectedItems.remove(itemId) else selectedItems[itemId] =
+                                                    previewText to source
+                                            },
+                                        colors = CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                                     ) {
                                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                             androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[itemId] = previewText to source else selectedItems.remove(itemId) })
@@ -1661,7 +1684,7 @@ fun EntitySelectorDialog(
                         }
                         2 -> {
                             item {
-                                androidx.compose.material3.ExposedDropdownMenuBox(
+                                ExposedDropdownMenuBox(
                                     expanded = quizExpanded,
                                     onExpandedChange = { quizExpanded = it }
                                 ) {
@@ -1669,21 +1692,27 @@ fun EntitySelectorDialog(
                                         value = state.quizzes.find { it.id == selectedQuizId }?.title ?: "All Quizzes",
                                         onValueChange = {},
                                         readOnly = true,
-                                        trailingIcon = { androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = quizExpanded) },
-                                        colors = androidx.compose.material3.ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+                                        trailingIcon = {
+                                            ExposedDropdownMenuDefaults.TrailingIcon(
+                                                expanded = quizExpanded
+                                            )
+                                        },
+                                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                                        modifier = Modifier
+                                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                                            .fillMaxWidth(),
                                         label = { Text("Select Quiz") }
                                     )
                                     ExposedDropdownMenu(
                                         expanded = quizExpanded,
                                         onDismissRequest = { quizExpanded = false }
                                     ) {
-                                        androidx.compose.material3.DropdownMenuItem(
+                                        DropdownMenuItem(
                                             text = { Text("All Quizzes") },
                                             onClick = { selectedQuizId = null; quizExpanded = false }
                                         )
                                         state.quizzes.forEach { quiz ->
-                                            androidx.compose.material3.DropdownMenuItem(
+                                            DropdownMenuItem(
                                                 text = { Text(quiz.title) },
                                                 onClick = { selectedQuizId = quiz.id; quizExpanded = false }
                                             )
@@ -1696,7 +1725,7 @@ fun EntitySelectorDialog(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     componentOptions.forEach { comp ->
-                                        androidx.compose.material3.FilterChip(
+                                        FilterChip(
                                             selected = selectedComponents[comp] == true,
                                             onClick = { selectedComponents[comp] = !(selectedComponents[comp] ?: false) },
                                             label = { Text(comp) }
@@ -1710,7 +1739,7 @@ fun EntitySelectorDialog(
                             if (filteredQuestions.isEmpty()) {
                                 item { Text("No questions available.") }
                             } else {
-                                items(filteredQuestions) { question ->
+                                items(filteredQuestions, key = { it.id }) { question ->
                                     val builder = StringBuilder()
                                     if (selectedComponents["Stem"] == true) builder.append("Question: ${question.text}\n")
                                     if (selectedComponents["Options"] == true && question.options.isNotEmpty()) {
@@ -1735,10 +1764,13 @@ fun EntitySelectorDialog(
                                         val itemId = "Question_${question.id}"
                                         val isSelected = selectedItems.containsKey(itemId)
                                         Card(
-                                            modifier = Modifier.fillMaxWidth().clickable {
-                                                if (isSelected) selectedItems.remove(itemId) else selectedItems[itemId] = previewText to null
-                                            },
-                                            colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    if (isSelected) selectedItems.remove(itemId) else selectedItems[itemId] =
+                                                        previewText to null
+                                                },
+                                            colors = CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                                         ) {
                                             Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                                 androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[itemId] = previewText to null else selectedItems.remove(itemId) })

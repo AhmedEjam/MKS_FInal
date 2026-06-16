@@ -926,3 +926,8 @@ Edit `SpreadsheetHeaderMapper.aliases` to add field names:
 ```
 
 Update `scoreHeaderRow()` scoring if needed (e.g., +5 for critical fields).
+
+## AI Agent Tools (MCP)
+
+To enhance Gemini's capabilities with external tools (GitHub, Figma, custom servers), follow the
+instructions in [GEMINI.md](file:///Users/ahmedy.ajam/Android MKS/GEMINI.md).

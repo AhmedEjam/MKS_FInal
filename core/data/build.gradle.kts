@@ -1,6 +1,8 @@
 plugins {
     id("org.jetbrains.kotlin.android")
     alias(libs.plugins.android.library)
+    alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.google.devtools.ksp)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -35,12 +37,12 @@ dependencies {
     // Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.okhttp)
+
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 }
 
 kotlin {
     jvmToolchain(11)
-}
-
-dependencies {
-    implementation("javax.inject:javax.inject:1")
 }

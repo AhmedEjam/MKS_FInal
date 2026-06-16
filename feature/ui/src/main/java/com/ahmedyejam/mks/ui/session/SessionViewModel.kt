@@ -1,24 +1,24 @@
 package com.ahmedyejam.mks.ui.session
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
-
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
+import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.repository.StudyRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class SessionViewModel @Inject constructor(
     private val quizRepository: QuizRepository,
-    private val studyRepository: StudyRepository
+    private val studyRepository: StudyRepository,
+    private val dataStoreManager: DataStoreManager
 ) : ViewModel() {
 
     private val _sessions = MutableStateFlow<List<SessionEntity>>(emptyList())
@@ -104,6 +104,28 @@ class SessionViewModel @Inject constructor(
             )
             val id = quizRepository.insertSession(session)
             onCreated(id)
+        }
+    }
+
+    fun saveDefaultSessionSettings(
+        filters: Set<String>,
+        shuffleQ: Boolean,
+        shuffleO: Boolean,
+        rapid: Boolean,
+        repeatWrong: Boolean,
+        quizTimer: Int,
+        qTimer: Int
+    ) {
+        viewModelScope.launch {
+            dataStoreManager.saveDefaultSessionSettings(
+                filters = filters,
+                shuffleQ = shuffleQ,
+                shuffleO = shuffleO,
+                rapid = rapid,
+                repeatWrong = repeatWrong,
+                quizTimer = quizTimer,
+                qTimer = qTimer
+            )
         }
     }
 }

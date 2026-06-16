@@ -22,32 +22,32 @@ import javax.inject.Singleton
 object HiltUtilityDaoModule {
     @Provides
     @Singleton
-    fun provideAssetReferenceDao(appModule: AppModule): AssetReferenceDao {
-        return appModule.database.assetReferenceDao()
+    fun provideAssetReferenceDao(database: MksDatabase): AssetReferenceDao {
+        return database.assetReferenceDao()
     }
 
     @Provides
     @Singleton
-    fun provideQuestionAssetDao(appModule: AppModule): QuestionAssetDao {
-        return appModule.database.questionAssetDao()
+    fun provideQuestionAssetDao(database: MksDatabase): QuestionAssetDao {
+        return database.questionAssetDao()
     }
 
     @Provides
     @Singleton
-    fun provideSourceDocumentDao(appModule: AppModule): SourceDocumentDao {
-        return appModule.database.sourceDocumentDao()
+    fun provideSourceDocumentDao(database: MksDatabase): SourceDocumentDao {
+        return database.sourceDocumentDao()
     }
 
     @Provides
     @Singleton
-    fun provideGlobalSearchDao(appModule: AppModule): GlobalSearchDao {
-        return appModule.database.globalSearchDao()
+    fun provideGlobalSearchDao(database: MksDatabase): GlobalSearchDao {
+        return database.globalSearchDao()
     }
 
     @Provides
     @Singleton
-    fun provideAnnotationDao(appModule: AppModule): AnnotationDao {
-        return appModule.database.annotationDao()
+    fun provideAnnotationDao(database: MksDatabase): AnnotationDao {
+        return database.annotationDao()
     }
 
     @Provides

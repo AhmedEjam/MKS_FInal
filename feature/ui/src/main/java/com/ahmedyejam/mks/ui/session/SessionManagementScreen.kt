@@ -1,17 +1,27 @@
 package com.ahmedyejam.mks.ui.session
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,13 +30,40 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -36,7 +73,8 @@ import com.ahmedyejam.mks.core.ui.R
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 /**
  * Screen for managing quiz sessions.
@@ -58,25 +96,45 @@ fun SessionManagementScreen(
     onSessionSelected: (Long, Boolean) -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
     val sessions by viewModel.sessions.collectAsState()
     val quizQuestionCounts by viewModel.quizQuestionCounts.collectAsState()
     var showNewLabelDialog by rememberSaveable { mutableStateOf(false) }
     var sessionPendingDelete by remember { mutableStateOf<SessionEntity?>(null) }
+
+    val defIncludeFilters by dataStoreManager.defIncludeFilters.collectAsState(initial = emptySet())
+    val defShuffleQuestions by dataStoreManager.defShuffleQuestions.collectAsState(initial = false)
+    val defShuffleOptions by dataStoreManager.defShuffleOptions.collectAsState(initial = false)
+    val defRapidMode by dataStoreManager.defRapidMode.collectAsState(initial = false)
+    val defRepeatWrong by dataStoreManager.defRepeatWrong.collectAsState(initial = false)
+    val defQuizTimer by dataStoreManager.defQuizTimer.collectAsState(initial = 0)
+    val defQuestionTimer by dataStoreManager.defQuestionTimer.collectAsState(initial = 0)
 
     LaunchedEffect(quizId) {
         viewModel.loadSessions(quizId)
     }
 
     if (isEmbedded) {
-        SessionManagementContent(
-            sessions = sessions,
-            quizQuestionCounts = quizQuestionCounts,
-            quizId = quizId,
-            onSessionSelected = onSessionSelected,
-            onDeleteSession = { sessionPendingDelete = it },
-            onAddSession = { showNewLabelDialog = true }
-        )
+        Scaffold(
+            floatingActionButton = {
+                FloatingActionButton(onClick = { showNewLabelDialog = true }) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = stringResource(R.string.start_new_session_title)
+                    )
+                }
+            }
+        ) { padding ->
+            Box(Modifier.padding(padding)) {
+                SessionManagementContent(
+                    sessions = sessions,
+                    quizQuestionCounts = quizQuestionCounts,
+                    quizId = quizId,
+                    onSessionSelected = onSessionSelected,
+                    onDeleteSession = { sessionPendingDelete = it },
+                    onAddSession = { showNewLabelDialog = true }
+                )
+            }
+        }
     } else {
         Scaffold(
             topBar = {
@@ -131,14 +189,6 @@ fun SessionManagementScreen(
     if (showNewLabelDialog) {
         val totalQuestions = quizQuestionCounts[quizId] ?: 0
         
-        val defIncludeFilters by dataStoreManager.defIncludeFilters.collectAsState(initial = emptySet())
-        val defShuffleQuestions by dataStoreManager.defShuffleQuestions.collectAsState(initial = true)
-        val defShuffleOptions by dataStoreManager.defShuffleOptions.collectAsState(initial = true)
-        val defRapidMode by dataStoreManager.defRapidMode.collectAsState(initial = false)
-        val defRepeatWrong by dataStoreManager.defRepeatWrong.collectAsState(initial = true)
-        val defQuizTimer by dataStoreManager.defQuizTimer.collectAsState(initial = 0)
-        val defQuestionTimer by dataStoreManager.defQuestionTimer.collectAsState(initial = 0)
-
         StartSessionDialog(
             totalQuestions = totalQuestions,
             defaultIncludeFilters = defIncludeFilters,
@@ -151,17 +201,15 @@ fun SessionManagementScreen(
             onDismiss = { showNewLabelDialog = false },
             onConfirm = { config, saveDefaults ->
                 if (saveDefaults) {
-                    scope.launch {
-                        dataStoreManager.saveDefaultSessionSettings(
-                            filters = config.includeFilters.toSet(),
-                            shuffleQ = config.shuffleQuestions,
-                            shuffleO = config.shuffleOptions,
-                            rapid = config.rapidMode,
-                            repeatWrong = config.repeatWrong,
-                            quizTimer = config.quizTimerSeconds,
-                            qTimer = config.questionTimerSeconds
-                        )
-                    }
+                    viewModel.saveDefaultSessionSettings(
+                        filters = config.includeFilters.toSet(),
+                        shuffleQ = config.shuffleQuestions,
+                        shuffleO = config.shuffleOptions,
+                        rapid = config.rapidMode,
+                        repeatWrong = config.repeatWrong,
+                        quizTimer = config.quizTimerSeconds,
+                        qTimer = config.questionTimerSeconds
+                    )
                 }
                 viewModel.createSession(
                     quizId = quizId,
@@ -209,7 +257,7 @@ private fun SessionManagementContent(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 80.dp, top = 12.dp)
             ) {
-                items(sessions) { session ->
+                items(sessions, key = { it.id }) { session ->
                     SessionItem(
                         session = session,
                         totalQuestions = quizQuestionCounts[quizId] ?: 0,
@@ -707,7 +755,11 @@ private fun SessionEmptyStateCard(onClick: () -> Unit) {
                 color = colors.primary.copy(alpha = 0.10f),
                 contentColor = colors.primary
             ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.padding(14.dp).size(30.dp))
+                Icon(
+                    Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier
+                        .padding(14.dp)
+                        .size(30.dp)
+                )
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(stringResource(R.string.no_sessions_found), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
