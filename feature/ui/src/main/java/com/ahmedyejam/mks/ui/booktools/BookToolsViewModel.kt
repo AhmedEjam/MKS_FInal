@@ -267,7 +267,7 @@ class BookToolsViewModel @Inject constructor(
                 val source = SourceDocumentEntity(
                     bookId = bookId,
                     title = title.trim().ifBlank { "Untitled source" },
-                    sourceType = type.ifBlank { SourceDocumentTypes.OTHER },
+                    sourceType = type.ifBlank { SourceDocumentTypes.OTHERS },
                     description = details.takeIf { it.isNotBlank() },
                     externalUrl = url.takeIf { it.isNotBlank() && (it.startsWith("http") || it.startsWith("content://")) },
                     localPath = url.takeIf { it.isNotBlank() && !(it.startsWith("http") || it.startsWith("content://")) }

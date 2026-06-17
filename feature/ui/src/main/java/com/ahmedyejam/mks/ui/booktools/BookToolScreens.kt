@@ -10,6 +10,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -31,16 +33,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.AudioFile
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.NoteAlt
 import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.rounded.PushPin
@@ -51,7 +59,10 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.SmartToy
+import androidx.compose.material.icons.rounded.Source
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.TableChart
+import androidx.compose.material.icons.rounded.VideoLabel
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BottomAppBar
@@ -566,7 +577,12 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(editedBody, { editedBody = it }, modifier = Modifier.fillMaxWidth(), minLines = 8, label = { Text("Article body") })
                         Spacer(Modifier.height(16.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             if (note != null) {
                                 FilledTonalButton(onClick = { viewModel.updateNote(note.copy(body = editedBody)) }) { Text("Save") }
                                 FilledTonalButton(onClick = { viewModel.recordNoteReview(note) }) { Text("Mark reviewed") }
@@ -1169,17 +1185,17 @@ fun AiPromptDeckScreen(
                                 minLines = 5,
                                 label = { Text("AI generated output") }
                             )
-                            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-                            androidx.compose.foundation.layout.FlowRow(
+                            @OptIn(ExperimentalLayoutApi::class)
+                            (FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 FilledTonalButton(onClick = { viewModel.recordPromptCardRun(selectedCard, values.toMap(), renderedPrompt, outputText.takeIf { it.isNotBlank() }) }) { Text("Save run") }
                                 FilledTonalButton(onClick = { viewModel.savePromptOutputAsNote(selectedCard, outputText, "$editTitle note") }, enabled = outputText.isNotBlank()) { Text("To note") }
-                            }
-                            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-                            androidx.compose.foundation.layout.FlowRow(
+                            })
+                            @OptIn(ExperimentalLayoutApi::class)
+                            (FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.fillMaxWidth()
@@ -1187,7 +1203,7 @@ fun AiPromptDeckScreen(
                                 FilledTonalButton(onClick = { viewModel.savePromptOutputAsBlueprint(selectedCard, outputText, "$editTitle article") }, enabled = outputText.isNotBlank()) { Text("To article") }
                                 FilledTonalButton(onClick = { viewModel.savePromptOutputAsFlashcards(selectedCard, outputText, "$editTitle flashcards") }, enabled = outputText.isNotBlank()) { Text("To flashcards") }
                                 FilledTonalButton(onClick = { viewModel.savePromptOutputAsQuiz(selectedCard, outputText, "$editTitle quiz") }, enabled = outputText.isNotBlank()) { Text("To quiz") }
-                            }
+                            })
                         } }
                     }
                     if (state.promptRuns.filter { it.promptCardId == selectedCard.id }.isNotEmpty()) {
@@ -1410,11 +1426,19 @@ fun ArticleCreateDialog(
         onDismissRequest = onDismiss,
         title = { Text("Article") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 OutlinedTextField(title, { title = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(body, { body = it }, label = { Text("Body") }, modifier = Modifier.fillMaxWidth(), minLines = 4)
                 OutlinedTextField(mode, { mode = it }, label = { Text("Mode") }, modifier = Modifier.fillMaxWidth())
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                @OptIn(ExperimentalLayoutApi::class)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     onMarked?.let { FilledTonalButton(onClick = it) { Text("From marked") } }
                     onMissed?.let { FilledTonalButton(onClick = it) { Text("From missed") } }
                 }
@@ -1426,11 +1450,26 @@ fun ArticleCreateDialog(
 }
 
 @Composable
+fun getSourceIcon(type: String): ImageVector {
+    return when (type) {
+        SourceDocumentTypes.BOOK -> Icons.AutoMirrored.Rounded.MenuBook
+        SourceDocumentTypes.PDF -> Icons.Rounded.PictureAsPdf
+        SourceDocumentTypes.DOCUMENT -> Icons.Rounded.Description
+        SourceDocumentTypes.IMAGE -> Icons.Rounded.Image
+        SourceDocumentTypes.VIDEO -> Icons.Rounded.Movie
+        SourceDocumentTypes.AUDIO -> Icons.Rounded.AudioFile
+        SourceDocumentTypes.TABLESHEET -> Icons.Rounded.TableChart
+        SourceDocumentTypes.POWERPOINT -> Icons.Rounded.VideoLabel
+        else -> Icons.Rounded.Source
+    }
+}
+
+@Composable
 fun SourceDocumentDialog(
     title: String,
     confirmLabel: String,
     initialTitle: String = "",
-    initialType: String = SourceDocumentTypes.OTHER,
+    initialType: String = SourceDocumentTypes.OTHERS,
     initialDetails: String = "",
     initialUrl: String = "",
     onDismiss: () -> Unit,
@@ -1440,6 +1479,16 @@ fun SourceDocumentDialog(
     var sourceType by remember { mutableStateOf(initialType) }
     var details by remember { mutableStateOf(initialDetails) }
     var url by remember { mutableStateOf(initialUrl) }
+    var typeManuallyChanged by remember { mutableStateOf(false) }
+
+    LaunchedEffect(url) {
+        if (!typeManuallyChanged && url.isNotBlank()) {
+            val detected = SourceDocumentTypes.detectType(url)
+            if (detected != sourceType) {
+                sourceType = detected
+            }
+        }
+    }
 
     val context = androidx.compose.ui.platform.LocalContext.current
     val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -1464,10 +1513,46 @@ fun SourceDocumentDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(sourceTitle, { sourceTitle = it }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(sourceType, { sourceType = it }, label = { Text("Type") }, modifier = Modifier.fillMaxWidth())
+
+                var expanded by remember { mutableStateOf(false) }
+                @OptIn(ExperimentalMaterial3Api::class)
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = sourceType,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Type") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        SourceDocumentTypes.all.forEach { type ->
+                            DropdownMenuItem(
+                                text = { Text(type) },
+                                onClick = {
+                                    sourceType = type
+                                    typeManuallyChanged = true
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = url,
-                    onValueChange = { url = it },
+                    onValueChange = {
+                        url = it
+                    },
                     label = { Text("URL or Path") },
                     modifier = Modifier.fillMaxWidth(),
                     trailingIcon = {
@@ -1581,7 +1666,7 @@ private fun PromptRunItem(run: PromptRunEntity) {
 
 @OptIn(
     ExperimentalMaterial3Api::class,
-    androidx.compose.foundation.layout.ExperimentalLayoutApi::class
+    ExperimentalLayoutApi::class
 )
 @Composable
 fun EntitySelectorDialog(
@@ -1721,7 +1806,7 @@ fun EntitySelectorDialog(
                                 }
                             }
                             item {
-                                androidx.compose.foundation.layout.FlowRow(
+                                FlowRow(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     componentOptions.forEach { comp ->

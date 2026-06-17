@@ -15,8 +15,8 @@ android {
         applicationId = "com.ahmedyejam.mks"
         minSdk = 30
         targetSdk = 37
-        versionCode = 4
-        versionName = "03.1"
+        versionCode = 5
+        versionName = "03.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -99,12 +99,12 @@ dependencies {
     implementation(libs.poi)
     implementation(libs.poi.ooxml)
     implementation(libs.zip4j)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.11.0")
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)
-    testImplementation("io.mockk:mockk:1.14.9")
+    testImplementation("io.mockk:mockk:1.14.11")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

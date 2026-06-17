@@ -5,29 +5,41 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
-
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
-# Kotlin serialization / import DTOs used for portable bundle parsing.
+# --- General Attributes ---
+# Retain metadata for reflection and generic type resolution
 -keepattributes RuntimeVisibleAnnotations,RuntimeInvisibleAnnotations,Signature,InnerClasses,EnclosingMethod
--keep class com.ahmedyejam.mks.data.importer.dto.** { *; }
--keepclassmembers class com.ahmedyejam.mks.data.importer.dto.** { *; }
 
-# Room and Moshi publish consumer rules, but keep generated adapter metadata stable.
+# --- AndroidX / Safety ---
+# Keep classes and members annotated with @Keep
+-keep @androidx.annotation.Keep class * {*;}
+-keepclasseswithmembers class * {
+    @androidx.annotation.Keep <methods>;
+}
+-keepclasseswithmembers class * {
+    @androidx.annotation.Keep <fields>;
+}
+
+# --- Data Layer (MKS Specific) ---
+# Protect the entire data layer as requested (Broad rule for safety)
+# This prevents obfuscation issues with Room entities, DTOs, and repositories.
+-keep class com.ahmedyejam.mks.data.** { *; }
+
+# --- Kotlin Serialization ---
+# Keep serializable classes and their companion objects to ensure stable JSON parsing
+-keep @kotlinx.serialization.Serializable class * { *; }
+-keepclassmembers class * {
+    @kotlinx.serialization.Serializable *;
+}
+
+# --- Room & Moshi ---
+# While libraries publish consumer rules, these ensure stability in complex R8 configurations
 -keep class **JsonAdapter { *; }
 -keep class **JsonAdapterKt { *; }
+-keep class * extends androidx.room.RoomDatabase
+-keep class * extends androidx.room.Entity
+-keep class * implements androidx.room.Dao
 
+# --- Third Party Fixes / Dontwarns ---
 # Apache POI may reference optional XML/security backends depending on workbook contents.
 -dontwarn org.apache.xmlbeans.**
 -dontwarn org.bouncycastle.**

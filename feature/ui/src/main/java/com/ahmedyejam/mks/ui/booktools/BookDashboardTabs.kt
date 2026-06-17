@@ -265,7 +265,7 @@ fun SourcesTab(
                 BookToolListItem(
                     title = source.title,
                     subtitle = "${source.sourceType} - ${source.description.orEmpty()}",
-                    icon = Icons.Rounded.Source,
+                    icon = getSourceIcon(source.sourceType),
                     onClick = { 
                         try {
                             val uriStr = source.externalUrl?.takeIf { it.isNotBlank() } ?: source.localPath?.takeIf { it.isNotBlank() }

@@ -1,34 +1,40 @@
 package com.ahmedyejam.mks.ui.quiz
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
-
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.AnnotationColorLabel
-import com.ahmedyejam.mks.data.repository.KnowledgeRepository
-import com.ahmedyejam.mks.data.repository.AssetRepository
-import com.ahmedyejam.mks.data.repository.QuizRepository
-import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.local.entity.AnnotationEntity
 import com.ahmedyejam.mks.data.local.entity.AnnotationOwnerType
-import com.ahmedyejam.mks.data.local.entity.QuestionAssetEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
-import com.ahmedyejam.mks.data.local.entity.SourceDocumentTypes
-import com.ahmedyejam.mks.data.local.entity.QuestionAssetType
 import com.ahmedyejam.mks.data.local.entity.BlueprintMode
+import com.ahmedyejam.mks.data.local.entity.QuestionAssetEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionAssetType
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
+import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
+import com.ahmedyejam.mks.data.local.entity.SourceDocumentTypes
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
 import com.ahmedyejam.mks.data.repository.QuizKnowledgeSummary
-import com.ahmedyejam.mks.ui.category.VisibilityState
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-
-import com.ahmedyejam.mks.data.validation.QuestionValidator
+import com.ahmedyejam.mks.data.repository.QuizRepository
+import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.validation.QuestionValidationResult
+import com.ahmedyejam.mks.data.validation.QuestionValidator
+import com.ahmedyejam.mks.ui.category.VisibilityState
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class QuizQuestionsUiState(
     val quiz: QuizEntity? = null,
@@ -311,7 +317,7 @@ class QuizQuestionsViewModel @Inject constructor(
     fun createSourceAndAddQuestionAsset(asset: QuestionAssetEntity, source: SourceDocumentEntity) {
         viewModelScope.launch {
             val preparedSource = source.copy(
-                sourceType = source.sourceType.ifBlank { SourceDocumentTypes.OTHER },
+                sourceType = source.sourceType.ifBlank { SourceDocumentTypes.OTHERS },
                 bookId = source.bookId ?: asset.bookId
             )
             assetRepository.createSourceDocumentAndQuestionAsset(preparedSource, asset.copy(assetType = QuestionAssetType.SOURCE_REFERENCE))
