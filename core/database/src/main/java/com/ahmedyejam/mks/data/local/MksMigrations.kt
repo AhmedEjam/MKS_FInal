@@ -997,7 +997,12 @@ object MksMigrations {
 
     val MIGRATION_29_30 = object : Migration(29, 30) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("ALTER TABLE `sessions` ADD COLUMN `resultTaxonomy` TEXT NOT NULL DEFAULT '{}'")
+            MksDatabase.addColumnIfMissing(
+                db,
+                "sessions",
+                "resultTaxonomy",
+                "TEXT NOT NULL DEFAULT '{}'"
+            )
         }
     }
 

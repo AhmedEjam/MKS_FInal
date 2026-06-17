@@ -116,6 +116,7 @@ abstract class MksDatabase : RoomDatabase() {
         val MIGRATION_26_27 = MksMigrations.MIGRATION_26_27
         val MIGRATION_27_28 = MksMigrations.MIGRATION_27_28
         val MIGRATION_28_29 = MksMigrations.MIGRATION_28_29
+        val MIGRATION_29_30 = MksMigrations.MIGRATION_29_30
 
         fun addColumnIfMissing(
             db: androidx.sqlite.db.SupportSQLiteDatabase,

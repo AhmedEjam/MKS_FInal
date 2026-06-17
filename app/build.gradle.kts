@@ -22,7 +22,7 @@ android {
 
         javaCompileOptions {
             annotationProcessorOptions {
-                arguments += mapOf("moshi.generateAdapter.kapt" to "false")
+                arguments += mapOf()
             }
         }
     }
@@ -54,7 +54,6 @@ hilt {
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.incremental", "true")
-    arg("moshi.generateAdapter.kapt", "false")
 }
 
 dependencies {

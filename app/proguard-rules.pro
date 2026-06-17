@@ -51,3 +51,17 @@
 -dontwarn java.awt.**
 -dontwarn javax.xml.stream.**
 -dontwarn org.osgi.framework.**
+
+# Apache POI & Aalto XML
+-keep class com.fasterxml.aalto.** { *; }
+-keep class javax.xml.stream.** { *; }
+-keep class org.apache.poi.** { *; }
+-keep interface org.apache.poi.** { *; }
+-keep class org.apache.xmlbeans.** { *; }
+-keep interface org.apache.xmlbeans.** { *; }
+-keep class schemaorg_apache_xmlbeans.** { *; }
+
+# Preserve ServiceLoader files for POI providers
+-keepclassmembers class * {
+    *** *Service(...);
+}

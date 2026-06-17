@@ -28,10 +28,6 @@ hilt {
     enableAggregatingTask = true
 }
 
-ksp {
-    arg("moshi.generateAdapter.kapt", "false")
-}
-
 kotlin {
     jvmToolchain(11)
 }
@@ -64,6 +60,7 @@ dependencies {
     
     implementation(libs.poi)
     implementation(libs.poi.ooxml)
+    implementation(libs.aalto.xml)
     implementation(libs.accompanist.permissions)
     implementation(libs.androidx.navigation.compose)
     

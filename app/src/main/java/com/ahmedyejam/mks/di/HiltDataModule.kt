@@ -35,6 +35,7 @@ object HiltDataModule {
             MksDatabase.DATABASE_NAME,
         )
             .addMigrations(*MksMigrations.ALL)
+            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             .addCallback(
                 object : RoomDatabase.Callback() {
                 },

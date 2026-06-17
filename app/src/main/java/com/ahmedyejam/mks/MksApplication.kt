@@ -12,6 +12,7 @@ class MksApplication : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        com.ahmedyejam.mks.data.importer.xlsx.PoiInitializer.init()
         setupCrashHandler()
     }
 

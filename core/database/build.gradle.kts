@@ -20,7 +20,6 @@ android {
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.incremental", "true")
-    arg("moshi.generateAdapter.kapt", "false")
 }
 dependencies {
     implementation(libs.androidx.room.runtime)

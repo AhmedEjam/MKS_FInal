@@ -14,9 +14,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
-ksp {
-    arg("moshi.generateAdapter.kapt", "false")
-}
 dependencies {
     implementation(project(":core:model"))
     implementation(libs.okhttp)

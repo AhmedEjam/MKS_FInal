@@ -16,9 +16,6 @@ android {
         buildConfig = true
     }
 }
-ksp {
-    arg("moshi.generateAdapter.kapt", "false")
-}
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.room.runtime)

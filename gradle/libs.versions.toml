@@ -47,6 +47,7 @@ material = "1.4.+"
 playServicesMlkitTextRecognition = "19.0.1"
 poi = "5.5.1"
 zip4j = "2.11.5"
+aalto = "1.4.0"
 
 [libraries]
 kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlinReflect" }
@@ -102,6 +103,7 @@ play-services-mlkit-text-recognition = { group = "com.google.android.gms", name 
 poi = { group = "org.apache.poi", name = "poi", version.ref = "poi" }
 poi-ooxml = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poi" }
 zip4j = { group = "net.lingala.zip4j", name = "zip4j", version.ref = "zip4j" }
+aalto-xml = { group = "com.fasterxml", name = "aalto-xml", version.ref = "aalto" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 [plugins]
