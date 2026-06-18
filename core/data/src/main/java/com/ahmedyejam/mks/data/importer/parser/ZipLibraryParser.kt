@@ -2,6 +2,7 @@ package com.ahmedyejam.mks.data.importer.parser
 
 import android.content.Context
 import com.ahmedyejam.mks.data.exchange.v7.MksExchangeV7Archive
+import com.ahmedyejam.mks.data.exchange.v7.MksExchangeV7Paths
 import com.ahmedyejam.mks.data.importer.dto.LibraryBundleDto
 import com.ahmedyejam.mks.data.importer.dto.ManifestDto
 import com.ahmedyejam.mks.data.importer.security.ImportLimits
@@ -49,7 +50,7 @@ class ZipLibraryParser(
 
             ZipFile(tempZipFile).use { zipFile ->
                 if (zipFile.isEncrypted) {
-                    zipFile.setPassword("mks_secure_bundle_2024".toCharArray())
+                    zipFile.setPassword(MksExchangeV7Paths.provideInternalSystemKey().toCharArray())
 
                     // Pre-extraction validation and individual file extraction.
                     var totalBytes = 0L

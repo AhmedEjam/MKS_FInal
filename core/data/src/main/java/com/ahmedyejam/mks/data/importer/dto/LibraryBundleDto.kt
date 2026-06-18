@@ -7,7 +7,12 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
 
 @Serializable
 data class LibraryBundleDto(
@@ -24,6 +29,71 @@ data class LibraryBundleDto(
     val progress: Map<String, JsonElement>? = null,
     val sessions: List<SessionDto>? = null,
     val categories: List<CategoryMetadataDto> = emptyList(),
+
+    // Supplemental Data
+    val sourceDocuments: List<SourceDocumentDto> = emptyList(),
+    val questionAssets: List<QuestionAssetDto> = emptyList(),
+    val annotations: List<AnnotationDto> = emptyList(),
+)
+
+@Serializable
+data class SourceDocumentDto(
+    val id: Long? = null,
+    val bookId: String? = null,
+    val title: String,
+    val sourceType: String = "OTHER",
+    val author: String? = null,
+    val edition: String? = null,
+    val year: String? = null,
+    val publisher: String? = null,
+    val localPath: String? = null,
+    val externalUrl: String? = null,
+    val description: String? = null,
+    val createdAt: Long? = null,
+    val updatedAt: Long? = null,
+    val deletedAt: Long? = null,
+)
+
+@Serializable
+data class QuestionAssetDto(
+    val id: Long? = null,
+    val bookId: String? = null,
+    val quizId: String? = null,
+    val questionId: String? = null,
+    val assetType: String,
+    val title: String,
+    val description: String? = null,
+    val localPath: String? = null,
+    val externalUrl: String? = null,
+    val mimeType: String? = null,
+    val fileName: String? = null,
+    val fileSizeBytes: Long? = null,
+    val textContent: String? = null,
+    val sourceDocumentId: Long? = null,
+    val sourcePage: String? = null,
+    val sourceQuote: String? = null,
+    val sortOrder: Int = 0,
+    val isPinned: Boolean = false,
+    val isPrimary: Boolean = false,
+    val createdAt: Long? = null,
+    val updatedAt: Long? = null,
+    val deletedAt: Long? = null,
+)
+
+@Serializable
+data class AnnotationDto(
+    val id: Long? = null,
+    val workspaceId: Long? = null,
+    val bookId: String? = null,
+    val ownerType: String,
+    val ownerId: String? = null, // External ID of the owner
+    val selectedText: String? = null,
+    val noteBody: String? = null,
+    val colorLabel: String = "YELLOW",
+    val positionDataJson: String? = null,
+    val createdAt: Long? = null,
+    val updatedAt: Long? = null,
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -37,6 +107,7 @@ data class FlashcardDeckDto(
     val isPinned: Boolean = false,
     val createdAt: Long? = null,
     val updatedAt: Long? = null,
+    val deletedAt: Long? = null,
     val cards: List<FlashcardDto> = emptyList(),
 )
 
@@ -52,6 +123,7 @@ data class FlashcardDto(
     val sourceQuestionId: String? = null,
     val createdAt: Long? = null,
     val updatedAt: Long? = null,
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -64,6 +136,7 @@ data class SlideshowCourseDto(
     val isPinned: Boolean = false,
     val createdAt: Long? = null,
     val updatedAt: Long? = null,
+    val deletedAt: Long? = null,
     val slides: List<CourseSlideDto> = emptyList(),
 )
 
@@ -79,6 +152,7 @@ data class CourseSlideDto(
     val sourceQuestionId: String? = null,
     val createdAt: Long? = null,
     val updatedAt: Long? = null,
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -95,6 +169,7 @@ data class NoteBlueprintDto(
     val sourceQuestionId: String? = null,
     val createdAt: Long? = null,
     val updatedAt: Long? = null,
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -106,6 +181,7 @@ data class PromptDeckDto(
     val tags: List<String> = emptyList(),
     val createdAt: Long? = null,
     val updatedAt: Long? = null,
+    val deletedAt: Long? = null,
     val cards: List<PromptCardDto> = emptyList(),
 )
 
@@ -119,6 +195,7 @@ data class PromptCardDto(
     val sortOrder: Int = 0,
     val createdAt: Long? = null,
     val updatedAt: Long? = null,
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -152,6 +229,7 @@ data class BookDto(
     val contentUpdatedAt: Long? = null,
     val updatedAt: Long? = null,
     val lastStudiedAt: Long? = null,
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -167,6 +245,7 @@ data class QuizDto(
     val contentUpdatedAt: Long? = null,
     val updatedAt: Long? = null,
     val lastStudiedAt: Long? = null,
+    val deletedAt: Long? = null,
     val questions: List<QuestionDto> = emptyList(),
 )
 
@@ -191,6 +270,13 @@ data class QuestionDto(
     val additionalInfo: String = "",
     /** Best-effort origin line/row number used for import preview and skip reports. */
     val sourceLine: Int? = null,
+
+    // SRS & Data Fidelity Extensions
+    val difficulty: String? = null,
+    val reviewCount: Int = 0,
+    val lastReviewedAt: Long = 0,
+    val dueAt: Long = 0,
+    val deletedAt: Long? = null,
 )
 
 @Serializable
@@ -271,9 +357,7 @@ object AssetsSerializer : KSerializer<Map<String, String>> {
 
     override fun deserialize(decoder: Decoder): Map<String, String> {
         val input = decoder as? JsonDecoder ?: return delegate.deserialize(decoder)
-        val element = input.decodeJsonElement()
-
-        return when (element) {
+        return when (val element = input.decodeJsonElement()) {
             is JsonObject -> {
                 input.json.decodeFromJsonElement(delegate, element)
             }

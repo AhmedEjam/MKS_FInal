@@ -61,7 +61,7 @@ class JsonQuestionParser(
                 val isCorrect = if (opt is Map<*, *>) opt["correct"] == true else false
                 options.add(
                     ParsedOption(
-                        id = "opt_${(65 + i).toChar()}",
+                        id = "opt_$i",
                         text = optText.toString().trim(),
                         marked = isCorrect,
                     ),
@@ -75,7 +75,7 @@ class JsonQuestionParser(
                 val valUpper = map[letter]
                 val text = (valLower ?: valUpper)?.toString() ?: ""
                 if (text.isNotBlank()) {
-                    options.add(ParsedOption(id = "opt_$letter", text = text.trim()))
+                    options.add(ParsedOption(id = "opt_$i", text = text.trim()))
                 }
             }
         }

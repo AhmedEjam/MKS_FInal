@@ -1,11 +1,22 @@
 package com.ahmedyejam.mks.data.exchange.v7
 
+import com.ahmedyejam.mks.data.importer.dto.AnnotationDto
 import com.ahmedyejam.mks.data.importer.dto.BookDto
 import com.ahmedyejam.mks.data.importer.dto.CategoryMetadataDto
+import com.ahmedyejam.mks.data.importer.dto.CourseSlideDto
+import com.ahmedyejam.mks.data.importer.dto.FlashcardDeckDto
+import com.ahmedyejam.mks.data.importer.dto.FlashcardDto
+import com.ahmedyejam.mks.data.importer.dto.KnowledgeStudySessionDto
 import com.ahmedyejam.mks.data.importer.dto.LibraryBundleDto
+import com.ahmedyejam.mks.data.importer.dto.NoteBlueprintDto
 import com.ahmedyejam.mks.data.importer.dto.OptionDto
+import com.ahmedyejam.mks.data.importer.dto.PromptCardDto
+import com.ahmedyejam.mks.data.importer.dto.PromptDeckDto
+import com.ahmedyejam.mks.data.importer.dto.QuestionAssetDto
 import com.ahmedyejam.mks.data.importer.dto.QuestionDto
 import com.ahmedyejam.mks.data.importer.dto.QuizDto
+import com.ahmedyejam.mks.data.importer.dto.SlideshowCourseDto
+import com.ahmedyejam.mks.data.importer.dto.SourceDocumentDto
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -66,8 +77,47 @@ object MksExchangeV7Archive {
         val quizzes = readList(rootDir, MksExchangeV7Paths.QUIZZES, MksExchangeV7Quiz.serializer())
         val questions = readList(rootDir, MksExchangeV7Paths.QUESTIONS, MksExchangeV7Question.serializer())
         val questionCategories = readList(rootDir, MksExchangeV7Paths.QUESTION_CATEGORIES, MksExchangeV7QuestionCategory.serializer())
+        val v7FlashcardDecks = readList(
+            rootDir,
+            MksExchangeV7Paths.FLASHCARD_DECKS,
+            MksExchangeV7FlashcardDeck.serializer()
+        )
+        val v7Flashcards =
+            readList(rootDir, MksExchangeV7Paths.FLASHCARDS, MksExchangeV7Flashcard.serializer())
+        val v7Slideshows = readList(
+            rootDir,
+            MksExchangeV7Paths.SLIDESHOWS,
+            MksExchangeV7SlideshowCourse.serializer()
+        )
+        val v7Slides =
+            readList(rootDir, MksExchangeV7Paths.SLIDES, MksExchangeV7CourseSlide.serializer())
+        val v7Notes =
+            readList(rootDir, MksExchangeV7Paths.NOTES, MksExchangeV7NoteBlueprint.serializer())
+        val v7PromptDecks =
+            readList(rootDir, MksExchangeV7Paths.PROMPT_DECKS, MksExchangeV7PromptDeck.serializer())
+        val v7PromptCards =
+            readList(rootDir, MksExchangeV7Paths.PROMPT_CARDS, MksExchangeV7PromptCard.serializer())
+        val v7StudySessions = readList(
+            rootDir,
+            MksExchangeV7Paths.STUDY_SESSIONS,
+            MksExchangeV7StudySession.serializer()
+        )
+        val v7SourceDocs = readList(
+            rootDir,
+            MksExchangeV7Paths.SOURCE_DOCUMENTS,
+            MksExchangeV7SourceDocument.serializer()
+        )
+        val v7QuestionAssets = readList(
+            rootDir,
+            MksExchangeV7Paths.QUESTION_ASSETS,
+            MksExchangeV7QuestionAsset.serializer()
+        )
+        val v7Annotations =
+            readList(rootDir, MksExchangeV7Paths.ANNOTATIONS, MksExchangeV7Annotation.serializer())
 
         val bookExternalById = books.associateBy({ it.id }) { it.externalId }
+        val quizExternalById = quizzes.associateBy({ it.id }) { it.externalId }
+        val questionExternalById = questions.associateBy({ it.id }) { it.externalId }
         val questionsByQuizId = questions.groupBy { it.quizId }
         val categoriesByQuestionId = questionCategories.groupBy { it.questionId }
         val defaultWorkspaceExternalId =
@@ -87,6 +137,7 @@ object MksExchangeV7Archive {
                     contentUpdatedAt = book.contentUpdatedAt.takeIf { it > 0 },
                     updatedAt = book.updatedAt.takeIf { it > 0 },
                     lastStudiedAt = book.lastStudiedAt.takeIf { it > 0 },
+                    deletedAt = book.deletedAt,
                 )
             }
 
@@ -103,8 +154,13 @@ object MksExchangeV7Archive {
                         QuestionDto(
                             id = question.externalId,
                             stem = question.text,
-                            options = question.options.mapIndexed { index, text -> OptionDto(id = index.toString(), text = text) },
-                            correct = question.correctAnswers.map { it.toString() },
+                            options = question.options.mapIndexed { index, text ->
+                                OptionDto(
+                                    id = "opt_$index",
+                                    text = text
+                                )
+                            },
+                            correct = question.correctAnswers.map { "opt_$it" },
                             explanation = question.explanation.orEmpty(),
                             hint = question.hint.orEmpty(),
                             reference = question.reference.orEmpty(),
@@ -118,6 +174,11 @@ object MksExchangeV7Archive {
                             sourceBookId = question.sourceBookId.orEmpty(),
                             droppedAt = question.droppedAt ?: 0,
                             additionalInfo = question.additionalInfo.orEmpty(),
+                            difficulty = question.difficulty,
+                            dueAt = question.dueAt,
+                            reviewCount = question.attempts,
+                            lastReviewedAt = question.lastStudiedAt,
+                            deletedAt = question.deletedAt,
                         )
                     }
 
@@ -133,6 +194,7 @@ object MksExchangeV7Archive {
                     contentUpdatedAt = quiz.contentUpdatedAt.takeIf { it > 0 },
                     updatedAt = quiz.updatedAt.takeIf { it > 0 },
                     lastStudiedAt = quiz.lastStudiedAt.takeIf { it > 0 },
+                    deletedAt = quiz.deletedAt,
                     questions = quizQuestions,
                 )
             }
@@ -145,12 +207,213 @@ object MksExchangeV7Archive {
                 .map { CategoryMetadataDto(name = it) }
                 .toList()
 
+        val flashcardDecks =
+            v7FlashcardDecks.map { deck ->
+                FlashcardDeckDto(
+                    id = deck.externalId,
+                    bookId = bookExternalById[deck.bookId] ?: deck.bookId.toString(),
+                    title = deck.title,
+                    description = deck.description,
+                    iconName = deck.iconName,
+                    coverImage = deck.coverImage,
+                    isPinned = deck.isPinned,
+                    createdAt = deck.createdAt.takeIf { it > 0 },
+                    updatedAt = deck.updatedAt.takeIf { it > 0 },
+                    deletedAt = deck.deletedAt,
+                    cards =
+                        v7Flashcards.filter { it.deckId == deck.id }.map { card ->
+                            FlashcardDto(
+                                id = card.externalId,
+                                frontText = card.frontText,
+                                backText = card.backText,
+                                hint = card.hint,
+                                imagePath = card.imagePath,
+                                tags = card.tags,
+                                orderIndex = card.orderIndex,
+                                createdAt = card.createdAt.takeIf { it > 0 },
+                                updatedAt = card.updatedAt.takeIf { it > 0 },
+                                deletedAt = card.deletedAt,
+                            )
+                        },
+                )
+            }
+
+        val slideshowCourses =
+            v7Slideshows.map { course ->
+                SlideshowCourseDto(
+                    id = course.externalId,
+                    bookId = bookExternalById[course.bookId] ?: course.bookId.toString(),
+                    title = course.title,
+                    description = course.description,
+                    coverImage = course.coverImage,
+                    isPinned = course.isPinned,
+                    createdAt = course.createdAt.takeIf { it > 0 },
+                    updatedAt = course.updatedAt.takeIf { it > 0 },
+                    deletedAt = course.deletedAt,
+                    slides =
+                        v7Slides.filter { it.courseId == course.id }.map { slide ->
+                            CourseSlideDto(
+                                id = slide.externalId,
+                                title = slide.title,
+                                body = slide.body,
+                                speakerNotes = slide.speakerNotes,
+                                imagePath = slide.imagePath,
+                                orderIndex = slide.orderIndex,
+                                isCompleted = slide.isCompleted,
+                                createdAt = slide.createdAt.takeIf { it > 0 },
+                                updatedAt = slide.updatedAt.takeIf { it > 0 },
+                                deletedAt = slide.deletedAt,
+                            )
+                        },
+                )
+            }
+
+        val noteBlueprints =
+            v7Notes.map { note ->
+                NoteBlueprintDto(
+                    id = note.externalId,
+                    bookId = bookExternalById[note.bookId] ?: note.bookId.toString(),
+                    title = note.title,
+                    summary = note.summary,
+                    body = note.body,
+                    bulletPoints = note.bulletPoints,
+                    tags = note.tags,
+                    mode = note.mode,
+                    reviewStatus = note.reviewStatus,
+                    createdAt = note.createdAt.takeIf { it > 0 },
+                    updatedAt = note.updatedAt.takeIf { it > 0 },
+                    deletedAt = note.deletedAt,
+                )
+            }
+
+        val promptDecks =
+            v7PromptDecks.map { deck ->
+                PromptDeckDto(
+                    id = deck.externalId,
+                    bookId = bookExternalById[deck.bookId] ?: deck.bookId.toString(),
+                    title = deck.title,
+                    description = deck.description,
+                    tags = deck.tags,
+                    createdAt = deck.createdAt.takeIf { it > 0 },
+                    updatedAt = deck.updatedAt.takeIf { it > 0 },
+                    deletedAt = deck.deletedAt,
+                    cards =
+                        v7PromptCards.filter { it.deckId == deck.id }.map { card ->
+                            PromptCardDto(
+                                id = card.externalId,
+                                title = card.title,
+                                promptText = card.promptText,
+                                variablesJson = card.variablesJson,
+                                outputType = card.outputType,
+                                sortOrder = card.sortOrder,
+                                createdAt = card.createdAt.takeIf { it > 0 },
+                                updatedAt = card.updatedAt.takeIf { it > 0 },
+                                deletedAt = card.deletedAt,
+                            )
+                        },
+                )
+            }
+
+        val studySessions =
+            v7StudySessions.map { session ->
+                KnowledgeStudySessionDto(
+                    id = session.externalId,
+                    bookId = bookExternalById[session.bookId] ?: session.bookId.toString(),
+                    contentId = session.contentId,
+                    type = session.type,
+                    progress = session.progress,
+                    isCompleted = session.isCompleted,
+                    lastAccessedAt = session.lastAccessedAt.takeIf { it > 0 },
+                )
+            }
+
+        val sourceDocumentDtos =
+            v7SourceDocs.map { doc ->
+                SourceDocumentDto(
+                    id = doc.id,
+                    bookId = doc.bookId?.let { bookExternalById[it] },
+                    title = doc.title,
+                    sourceType = doc.sourceType,
+                    author = doc.author,
+                    edition = doc.edition,
+                    year = doc.year,
+                    publisher = doc.publisher,
+                    localPath = doc.localPath,
+                    externalUrl = doc.externalUrl,
+                    description = doc.description,
+                    createdAt = doc.createdAt.takeIf { it > 0 },
+                    updatedAt = doc.updatedAt.takeIf { it > 0 },
+                    deletedAt = doc.deletedAt,
+                )
+            }
+
+        val questionAssetDtos =
+            v7QuestionAssets.map { asset ->
+                QuestionAssetDto(
+                    id = asset.id,
+                    bookId = bookExternalById[asset.bookId],
+                    quizId = quizExternalById[asset.quizId],
+                    questionId = questionExternalById[asset.questionId],
+                    assetType = asset.assetType,
+                    title = asset.title,
+                    description = asset.description,
+                    localPath = asset.localPath,
+                    externalUrl = asset.externalUrl,
+                    mimeType = asset.mimeType,
+                    fileName = asset.fileName,
+                    fileSizeBytes = asset.fileSizeBytes,
+                    textContent = asset.textContent,
+                    sourceDocumentId = asset.sourceDocumentId,
+                    sourcePage = asset.sourcePage,
+                    sourceQuote = asset.sourceQuote,
+                    sortOrder = asset.sortOrder,
+                    isPinned = asset.isPinned,
+                    isPrimary = asset.isPrimary,
+                    createdAt = asset.createdAt.takeIf { it > 0 },
+                    updatedAt = asset.updatedAt.takeIf { it > 0 },
+                    deletedAt = asset.deletedAt,
+                )
+            }
+
+        val annotationDtos =
+            v7Annotations.map { ann ->
+                val ownerExtId =
+                    when (ann.ownerType.uppercase()) {
+                        "BOOK" -> bookExternalById[ann.ownerId]
+                        "QUIZ" -> quizExternalById[ann.ownerId]
+                        "QUESTION" -> questionExternalById[ann.ownerId]
+                        else -> null
+                    }
+                AnnotationDto(
+                    id = ann.id,
+                    workspaceId = ann.workspaceId,
+                    bookId = bookExternalById[ann.bookId],
+                    ownerType = ann.ownerType,
+                    ownerId = ownerExtId,
+                    selectedText = ann.selectedText,
+                    noteBody = ann.noteBody,
+                    colorLabel = ann.colorLabel,
+                    positionDataJson = ann.positionDataJson,
+                    createdAt = ann.createdAt.takeIf { it > 0 },
+                    updatedAt = ann.updatedAt.takeIf { it > 0 },
+                    deletedAt = ann.deletedAt,
+                )
+            }
+
         return LibraryBundleDto(
             schema = MksExchangeV7Paths.SCHEMA_VERSION,
             kind = "schema7-exchange-bridge",
             exportedAt = System.currentTimeMillis(),
             books = bookDtos,
             quizzes = quizDtos,
+            flashcardDecks = flashcardDecks,
+            slideshowCourses = slideshowCourses,
+            noteBlueprints = noteBlueprints,
+            promptDecks = promptDecks,
+            studySessions = studySessions,
+            sourceDocuments = sourceDocumentDtos,
+            questionAssets = questionAssetDtos,
+            annotations = annotationDtos,
             categories = categoryDtos,
         )
     }
@@ -171,7 +434,10 @@ object MksExchangeV7Archive {
                 }
             val tempZipFile = File.createTempFile("mks_schema7_enc_", ".zip", tempDir.parentFile)
             try {
-                ZipFile(tempZipFile, "mks_secure_bundle_2024".toCharArray()).use { zip ->
+                ZipFile(
+                    tempZipFile,
+                    MksExchangeV7Paths.provideInternalSystemKey().toCharArray()
+                ).use { zip ->
                     tempDir.walkTopDown()
                         .filter { it.isFile }
                         .sortedBy { it.relativeTo(tempDir).invariantSeparatorsPath }
@@ -215,6 +481,17 @@ object MksExchangeV7Archive {
 
         val bookIdByExternalId = bundle.books.mapIndexed { index, book -> book.id to (index + 1L) }.toMap()
         val quizIdByExternalId = bundle.quizzes.mapIndexed { index, quiz -> quiz.id to (index + 1L) }.toMap()
+
+        fun localBookId(
+            externalId: String?,
+            fallback: Long? = null,
+        ): Long? = externalId?.let { bookIdByExternalId[it] } ?: fallback
+
+        fun localQuizId(
+            externalId: String?,
+            fallback: Long? = null,
+        ): Long? = externalId?.let { quizIdByExternalId[it] } ?: fallback
+
         val mediaPayloads = mutableListOf<MediaPayload>()
         val missingMedia = mutableListOf<String>()
 
@@ -250,18 +527,20 @@ object MksExchangeV7Archive {
                     contentUpdatedAt = book.contentUpdatedAt ?: now,
                     lastStudiedAt = book.lastStudiedAt ?: 0L,
                     lastEditedAt = book.updatedAt ?: now,
+                    deletedAt = book.deletedAt,
                 )
             }
 
         val quizzes =
-            bundle.quizzes.map { quiz ->
+            bundle.quizzes.mapNotNull { quiz ->
+                val bookLocalId = localBookId(quiz.bookId) ?: return@mapNotNull null
                 val quizLocalId = quizIdByExternalId[quiz.id] ?: 0L
                 val quizMedia = payloadFor(quiz.coverImage, "quiz", quiz.id, quizLocalId, "quiz_${quiz.id}.bin")
                 quizMedia?.let { mediaPayloads += it }
                 MksExchangeV7Quiz(
                     id = quizLocalId,
                     externalId = quiz.id,
-                    bookId = bookIdByExternalId[quiz.bookId] ?: 0L,
+                    bookId = bookLocalId,
                     title = quiz.title,
                     description = quiz.note,
                     category = quiz.storageKey,
@@ -273,6 +552,7 @@ object MksExchangeV7Archive {
                     lastStudiedAt = quiz.lastStudiedAt ?: 0L,
                     lastEditedAt = quiz.updatedAt ?: now,
                     questionCount = quiz.questions.size,
+                    deletedAt = quiz.deletedAt,
                 )
             }
 
@@ -283,7 +563,17 @@ object MksExchangeV7Archive {
             val quizLocalId = quizIdByExternalId[quiz.id] ?: 0L
             quiz.questions.forEach { question ->
                 val localQuestionId = nextQuestionId++
-                val correctAnswers = question.correct.mapNotNull { it.toIntOrNull() }
+                val correctAnswers = question.correct.mapNotNull { id ->
+                    if (id.startsWith("opt_")) {
+                        val suffix = id.removePrefix("opt_")
+                        suffix.toIntOrNull()?.let { return@mapNotNull it }
+                        if (suffix.length == 1 && suffix[0] in 'A'..'Z') return@mapNotNull suffix[0] - 'A'
+                        if (suffix.length == 1 && suffix[0] in 'a'..'z') return@mapNotNull suffix[0] - 'a'
+                    }
+                    if (id.length == 1 && id[0] in 'A'..'Z') return@mapNotNull id[0] - 'A'
+                    if (id.length == 1 && id[0] in 'a'..'z') return@mapNotNull id[0] - 'a'
+                    id.toIntOrNull()
+                }
                 val imageSource = question.imageDataUrl.takeIf { it.isNotBlank() } ?: question.imageSource.takeIf { it.isNotBlank() }
                 val imagePayload =
                     payloadFor(
@@ -322,6 +612,11 @@ object MksExchangeV7Archive {
                         createdAt = now,
                         updatedAt = now,
                         lastEditedAt = now,
+                        difficulty = question.difficulty,
+                        dueAt = question.dueAt,
+                        attempts = question.reviewCount,
+                        lastStudiedAt = question.lastReviewedAt,
+                        deletedAt = question.deletedAt,
                     )
                 question.categories.asSequence().filter { it.isNotBlank() }.distinct()
                     .forEach { category ->
@@ -332,15 +627,191 @@ object MksExchangeV7Archive {
 
         val questionIdByExternalId = questions.associateBy({ it.externalId }) { it.id }
 
-        fun localBookId(
-            externalId: String?,
-            fallback: Long? = null,
-        ): Long = externalId?.let { bookIdByExternalId[it] } ?: fallback ?: 0L
+        val flashcardDecks = mutableListOf<MksExchangeV7FlashcardDeck>()
+        val flashcards = mutableListOf<MksExchangeV7Flashcard>()
+        var nextFlashcardDeckId = 1L
+        var nextFlashcardId = 1L
+        bundle.flashcardDecks.forEach { deck ->
+            val bookLocalId = localBookId(deck.bookId) ?: return@forEach
+            val deckLocalId = nextFlashcardDeckId++
+            val deckMedia = payloadFor(
+                deck.coverImage,
+                "flashcard_deck",
+                deck.id,
+                deckLocalId,
+                "deck_${deck.id}.bin"
+            )
+            deckMedia?.let { mediaPayloads += it }
+            flashcardDecks +=
+                MksExchangeV7FlashcardDeck(
+                    id = deckLocalId,
+                    externalId = deck.id,
+                    bookId = bookLocalId,
+                    title = deck.title,
+                    description = deck.description,
+                    iconName = deck.iconName,
+                    coverImage = deckMedia?.manifestFile?.archivePath ?: deck.coverImage,
+                    isPinned = deck.isPinned,
+                    createdAt = deck.createdAt ?: now,
+                    updatedAt = deck.updatedAt ?: now,
+                    deletedAt = deck.deletedAt,
+                )
+            deck.cards.forEach { card ->
+                val cardLocalId = nextFlashcardId++
+                val cardMedia = payloadFor(
+                    card.imagePath,
+                    "flashcard",
+                    card.id,
+                    cardLocalId,
+                    "card_${card.id}.bin"
+                )
+                cardMedia?.let { mediaPayloads += it }
+                flashcards +=
+                    MksExchangeV7Flashcard(
+                        id = cardLocalId,
+                        externalId = card.id,
+                        deckId = deckLocalId,
+                        frontText = card.frontText,
+                        backText = card.backText,
+                        hint = card.hint,
+                        imagePath = cardMedia?.manifestFile?.archivePath ?: card.imagePath,
+                        tags = card.tags,
+                        orderIndex = card.orderIndex,
+                        createdAt = card.createdAt ?: now,
+                        updatedAt = card.updatedAt ?: now,
+                        deletedAt = card.deletedAt,
+                    )
+            }
+        }
 
-        fun localQuizId(
-            externalId: String?,
-            fallback: Long? = null,
-        ): Long = externalId?.let { quizIdByExternalId[it] } ?: fallback ?: 0L
+        val slideshowCourses = mutableListOf<MksExchangeV7SlideshowCourse>()
+        val courseSlides = mutableListOf<MksExchangeV7CourseSlide>()
+        var nextSlideshowId = 1L
+        var nextSlideId = 1L
+        bundle.slideshowCourses.forEach { course ->
+            val bookLocalId = localBookId(course.bookId) ?: return@forEach
+            val courseLocalId = nextSlideshowId++
+            val courseMedia = payloadFor(
+                course.coverImage,
+                "slideshow",
+                course.id,
+                courseLocalId,
+                "course_${course.id}.bin"
+            )
+            courseMedia?.let { mediaPayloads += it }
+            slideshowCourses +=
+                MksExchangeV7SlideshowCourse(
+                    id = courseLocalId,
+                    externalId = course.id,
+                    bookId = bookLocalId,
+                    title = course.title,
+                    description = course.description,
+                    coverImage = courseMedia?.manifestFile?.archivePath ?: course.coverImage,
+                    isPinned = course.isPinned,
+                    createdAt = course.createdAt ?: now,
+                    updatedAt = course.updatedAt ?: now,
+                    deletedAt = course.deletedAt,
+                )
+            course.slides.forEach { slide ->
+                val slideLocalId = nextSlideId++
+                val slideMedia = payloadFor(
+                    slide.imagePath,
+                    "slide",
+                    slide.id,
+                    slideLocalId,
+                    "slide_${slide.id}.bin"
+                )
+                slideMedia?.let { mediaPayloads += it }
+                courseSlides +=
+                    MksExchangeV7CourseSlide(
+                        id = slideLocalId,
+                        externalId = slide.id,
+                        courseId = courseLocalId,
+                        title = slide.title,
+                        body = slide.body,
+                        speakerNotes = slide.speakerNotes,
+                        imagePath = slideMedia?.manifestFile?.archivePath ?: slide.imagePath,
+                        orderIndex = slide.orderIndex,
+                        isCompleted = slide.isCompleted,
+                        createdAt = slide.createdAt ?: now,
+                        updatedAt = slide.updatedAt ?: now,
+                        deletedAt = slide.deletedAt,
+                    )
+            }
+        }
+
+        val noteBlueprints =
+            bundle.noteBlueprints.mapNotNull { note ->
+                val bookLocalId = localBookId(note.bookId) ?: return@mapNotNull null
+                MksExchangeV7NoteBlueprint(
+                    id = nextQuestionId++, // Using nextQuestionId as a generic counter for notes
+                    externalId = note.id,
+                    bookId = bookLocalId,
+                    title = note.title,
+                    summary = note.summary,
+                    body = note.body,
+                    bulletPoints = note.bulletPoints,
+                    tags = note.tags,
+                    mode = note.mode,
+                    reviewStatus = note.reviewStatus,
+                    createdAt = note.createdAt ?: now,
+                    updatedAt = note.updatedAt ?: now,
+                    deletedAt = note.deletedAt,
+                )
+            }
+
+        val promptDecks = mutableListOf<MksExchangeV7PromptDeck>()
+        val promptCards = mutableListOf<MksExchangeV7PromptCard>()
+        var nextPromptDeckId = 1L
+        var nextPromptCardId = 1L
+        bundle.promptDecks.forEach { deck ->
+            val bookLocalId = localBookId(deck.bookId) ?: return@forEach
+            val deckLocalId = nextPromptDeckId++
+            promptDecks +=
+                MksExchangeV7PromptDeck(
+                    id = deckLocalId,
+                    externalId = deck.id,
+                    bookId = bookLocalId,
+                    title = deck.title,
+                    description = deck.description,
+                    tags = deck.tags,
+                    createdAt = deck.createdAt ?: now,
+                    updatedAt = deck.updatedAt ?: now,
+                    deletedAt = deck.deletedAt,
+                )
+            deck.cards.forEach { card ->
+                val cardLocalId = nextPromptCardId++
+                promptCards +=
+                    MksExchangeV7PromptCard(
+                        id = cardLocalId,
+                        externalId = card.id,
+                        deckId = deckLocalId,
+                        title = card.title,
+                        promptText = card.promptText,
+                        variablesJson = card.variablesJson,
+                        outputType = card.outputType,
+                        sortOrder = card.sortOrder,
+                        createdAt = card.createdAt ?: now,
+                        updatedAt = card.updatedAt ?: now,
+                        deletedAt = card.deletedAt,
+                    )
+            }
+        }
+
+        val studySessions =
+            bundle.studySessions.mapNotNull { session ->
+                val bookLocalId = localBookId(session.bookId) ?: return@mapNotNull null
+                MksExchangeV7StudySession(
+                    id = nextQuestionId++,
+                    externalId = session.id,
+                    bookId = bookLocalId,
+                    contentId = session.contentId,
+                    type = session.type,
+                    progress = session.progress,
+                    isCompleted = session.isCompleted,
+                    lastAccessedAt = session.lastAccessedAt ?: 0L,
+                )
+            }
 
         fun localQuestionId(
             externalId: String?,
@@ -351,7 +822,7 @@ object MksExchangeV7Archive {
             ownerType: String,
             ownerExternalId: String?,
             fallback: Long,
-        ): Long =
+        ): Long? =
             when (ownerType.uppercase()) {
                 "BOOK" -> localBookId(ownerExternalId, fallback)
                 "QUIZ" -> localQuizId(ownerExternalId, fallback)
@@ -361,7 +832,7 @@ object MksExchangeV7Archive {
 
         val sourceDocuments =
             supplemental.sourceDocuments.map { source ->
-                val bookLocalId = localBookId(source.bookExternalId, source.bookId)
+                val bookLocalId = localBookId(source.bookExternalId, source.bookId) ?: 0L
                 val sourcePayload =
                     payloadFor(
                         source.localPath,
@@ -373,7 +844,7 @@ object MksExchangeV7Archive {
                 sourcePayload?.let { mediaPayloads += it }
                 MksExchangeV7SourceDocument(
                     id = source.id,
-                    bookId = bookLocalId.takeIf { it > 0 },
+                    bookId = bookLocalId.takeIf { it > 0L },
                     title = source.title,
                     sourceType = source.sourceType,
                     author = source.author,
@@ -391,9 +862,10 @@ object MksExchangeV7Archive {
 
         val questionAssets =
             supplemental.questionAssets.map { asset ->
-                val bookLocalId = localBookId(asset.bookExternalId, asset.bookId)
-                val quizLocalId = localQuizId(asset.quizExternalId, asset.quizId)
-                val questionLocalId = localQuestionId(asset.questionExternalId, asset.questionId)
+                val bookLocalId = localBookId(asset.bookExternalId, asset.bookId) ?: 0L
+                val quizLocalId = localQuizId(asset.quizExternalId, asset.quizId) ?: 0L
+                val questionLocalId =
+                    localQuestionId(asset.questionExternalId, asset.questionId) ?: 0L
                 val assetPayload =
                     payloadFor(
                         asset.localPath,
@@ -432,8 +904,12 @@ object MksExchangeV7Archive {
 
         val annotations =
             supplemental.annotations.map { annotation ->
-                val bookLocalId = localBookId(annotation.bookExternalId, annotation.bookId)
-                val ownerLocalId = localOwnerId(annotation.ownerType, annotation.ownerExternalId, annotation.ownerId)
+                val bookLocalId = localBookId(annotation.bookExternalId, annotation.bookId) ?: 0L
+                val ownerLocalId = localOwnerId(
+                    annotation.ownerType,
+                    annotation.ownerExternalId,
+                    annotation.ownerId
+                ) ?: 0L
                 MksExchangeV7Annotation(
                     id = annotation.id,
                     workspaceId = annotation.workspaceId.takeIf { it > 0 } ?: 1L,
@@ -456,7 +932,11 @@ object MksExchangeV7Archive {
                     id = reference.id,
                     path = reference.path,
                     ownerType = reference.ownerType,
-                    ownerId = localOwnerId(reference.ownerType, reference.ownerExternalId, reference.ownerId),
+                    ownerId = localOwnerId(
+                        reference.ownerType,
+                        reference.ownerExternalId,
+                        reference.ownerId
+                    ) ?: 0L,
                     createdAt = reference.createdAt,
                     deletedAt = reference.deletedAt,
                 )
@@ -512,6 +992,14 @@ object MksExchangeV7Archive {
                 MksExchangeV7Paths.QUIZZES,
                 MksExchangeV7Paths.QUESTIONS,
                 MksExchangeV7Paths.QUESTION_CATEGORIES,
+                MksExchangeV7Paths.FLASHCARD_DECKS,
+                MksExchangeV7Paths.FLASHCARDS,
+                MksExchangeV7Paths.SLIDESHOWS,
+                MksExchangeV7Paths.SLIDES,
+                MksExchangeV7Paths.NOTES,
+                MksExchangeV7Paths.PROMPT_DECKS,
+                MksExchangeV7Paths.PROMPT_CARDS,
+                MksExchangeV7Paths.STUDY_SESSIONS,
                 MksExchangeV7Paths.ASSET_REFERENCES,
                 MksExchangeV7Paths.QUESTION_ASSETS,
                 MksExchangeV7Paths.SOURCE_DOCUMENTS,
@@ -551,6 +1039,14 @@ object MksExchangeV7Archive {
                         quizzes = quizzes.size,
                         questions = questions.size,
                         questionCategories = questionCategories.size,
+                        flashcardDecks = flashcardDecks.size,
+                        flashcards = flashcards.size,
+                        slideshows = slideshowCourses.size,
+                        slides = courseSlides.size,
+                        notes = noteBlueprints.size,
+                        promptDecks = promptDecks.size,
+                        promptCards = promptCards.size,
+                        studySessions = studySessions.size,
                         assetReferences = assetReferences.size,
                         questionAssets = questionAssets.size,
                         sourceDocuments = sourceDocuments.size,
@@ -571,6 +1067,54 @@ object MksExchangeV7Archive {
             MksExchangeV7Paths.QUESTION_CATEGORIES,
             questionCategories,
             ListSerializer(MksExchangeV7QuestionCategory.serializer()),
+        )
+        writeJson(
+            rootDir,
+            MksExchangeV7Paths.FLASHCARD_DECKS,
+            flashcardDecks,
+            ListSerializer(MksExchangeV7FlashcardDeck.serializer())
+        )
+        writeJson(
+            rootDir,
+            MksExchangeV7Paths.FLASHCARDS,
+            flashcards,
+            ListSerializer(MksExchangeV7Flashcard.serializer())
+        )
+        writeJson(
+            rootDir,
+            MksExchangeV7Paths.SLIDESHOWS,
+            slideshowCourses,
+            ListSerializer(MksExchangeV7SlideshowCourse.serializer())
+        )
+        writeJson(
+            rootDir,
+            MksExchangeV7Paths.SLIDES,
+            courseSlides,
+            ListSerializer(MksExchangeV7CourseSlide.serializer())
+        )
+        writeJson(
+            rootDir,
+            MksExchangeV7Paths.NOTES,
+            noteBlueprints,
+            ListSerializer(MksExchangeV7NoteBlueprint.serializer())
+        )
+        writeJson(
+            rootDir,
+            MksExchangeV7Paths.PROMPT_DECKS,
+            promptDecks,
+            ListSerializer(MksExchangeV7PromptDeck.serializer())
+        )
+        writeJson(
+            rootDir,
+            MksExchangeV7Paths.PROMPT_CARDS,
+            promptCards,
+            ListSerializer(MksExchangeV7PromptCard.serializer())
+        )
+        writeJson(
+            rootDir,
+            MksExchangeV7Paths.STUDY_SESSIONS,
+            studySessions,
+            ListSerializer(MksExchangeV7StudySession.serializer())
         )
         writeJson(rootDir, MksExchangeV7Paths.ASSET_REFERENCES, assetReferences, ListSerializer(MksExchangeV7AssetReference.serializer()))
         writeJson(rootDir, MksExchangeV7Paths.QUESTION_ASSETS, questionAssets, ListSerializer(MksExchangeV7QuestionAsset.serializer()))
@@ -675,7 +1219,7 @@ object MksExchangeV7Archive {
         return runCatching { json.decodeFromString(ListSerializer(serializer), file.readText()) }.getOrElse { emptyList() }
     }
 
-    private fun <T> writeJson(
+    fun <T> writeJson(
         rootDir: File,
         relativePath: String,
         value: T,

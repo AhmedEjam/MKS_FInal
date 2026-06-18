@@ -92,11 +92,7 @@ class SpreadsheetQuestionParser(
     }
 
     private fun generateOptionId(index: Int): String {
-        return if (index < 26) {
-            "opt_${('A'.code + index).toChar()}"
-        } else {
-            "opt_${index + 1}"
-        }
+        return "opt_$index"
     }
 
     private fun resolveImage(

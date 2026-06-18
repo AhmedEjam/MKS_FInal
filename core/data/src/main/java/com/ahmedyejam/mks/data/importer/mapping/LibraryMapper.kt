@@ -1,5 +1,6 @@
 package com.ahmedyejam.mks.data.importer.mapping
 
+import com.ahmedyejam.mks.data.importer.dto.AnnotationDto
 import com.ahmedyejam.mks.data.importer.dto.BookDto
 import com.ahmedyejam.mks.data.importer.dto.CategoryMetadataDto
 import com.ahmedyejam.mks.data.importer.dto.CourseSlideDto
@@ -9,10 +10,13 @@ import com.ahmedyejam.mks.data.importer.dto.NoteBlueprintDto
 import com.ahmedyejam.mks.data.importer.dto.OptionDto
 import com.ahmedyejam.mks.data.importer.dto.PromptCardDto
 import com.ahmedyejam.mks.data.importer.dto.PromptDeckDto
+import com.ahmedyejam.mks.data.importer.dto.QuestionAssetDto
 import com.ahmedyejam.mks.data.importer.dto.QuestionDto
 import com.ahmedyejam.mks.data.importer.dto.QuizDto
 import com.ahmedyejam.mks.data.importer.dto.SessionDto
 import com.ahmedyejam.mks.data.importer.dto.SlideshowCourseDto
+import com.ahmedyejam.mks.data.importer.dto.SourceDocumentDto
+import com.ahmedyejam.mks.data.local.entity.AnnotationEntity
 import com.ahmedyejam.mks.data.local.entity.BookEntity
 import com.ahmedyejam.mks.data.local.entity.CategoryMetadataEntity
 import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
@@ -21,11 +25,13 @@ import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
 import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
 import com.ahmedyejam.mks.data.local.entity.PromptCardEntity
 import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
+import com.ahmedyejam.mks.data.local.entity.QuestionAssetEntity
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import com.ahmedyejam.mks.data.local.entity.QuestionType
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
+import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
 
 class LibraryMapper {
     fun mapToBookEntity(
@@ -44,6 +50,7 @@ class LibraryMapper {
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
             contentUpdatedAt = dto.contentUpdatedAt ?: System.currentTimeMillis(),
             lastStudiedAt = dto.lastStudiedAt ?: 0,
+            deletedAt = dto.deletedAt,
         )
     }
 
@@ -64,6 +71,7 @@ class LibraryMapper {
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
             contentUpdatedAt = dto.contentUpdatedAt ?: System.currentTimeMillis(),
             lastStudiedAt = dto.lastStudiedAt ?: 0,
+            deletedAt = dto.deletedAt,
         )
     }
 
@@ -109,6 +117,11 @@ class LibraryMapper {
             sourceBookId = dto.sourceBookId,
             sourceQuizId = dto.sourceQuizId,
             sourceQuestionId = dto.sourceQuestionId,
+            difficulty = dto.difficulty,
+            reviewCount = dto.reviewCount,
+            lastReviewedAt = dto.lastReviewedAt,
+            dueAt = dto.dueAt,
+            deletedAt = dto.deletedAt,
         )
     }
 
@@ -183,6 +196,7 @@ class LibraryMapper {
             updatedAt = entity.updatedAt,
             contentUpdatedAt = entity.contentUpdatedAt,
             lastStudiedAt = entity.lastStudiedAt,
+            deletedAt = entity.deletedAt,
         )
     }
 
@@ -203,6 +217,7 @@ class LibraryMapper {
             contentUpdatedAt = entity.contentUpdatedAt,
             updatedAt = entity.updatedAt,
             lastStudiedAt = entity.lastStudiedAt,
+            deletedAt = entity.deletedAt,
             questions = questions.map { mapToQuestionDto(it) },
         )
     }
@@ -225,6 +240,11 @@ class LibraryMapper {
             sourceQuestionId = entity.sourceQuestionId ?: "",
             sourceBookId = entity.sourceBookId ?: "",
             additionalInfo = entity.additionalInfo ?: "",
+            difficulty = entity.difficulty,
+            reviewCount = entity.reviewCount,
+            lastReviewedAt = entity.lastReviewedAt,
+            dueAt = entity.dueAt,
+            deletedAt = entity.deletedAt,
         )
     }
 
@@ -305,6 +325,7 @@ class LibraryMapper {
             isPinned = dto.isPinned,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
+            deletedAt = dto.deletedAt,
         )
     }
 
@@ -325,6 +346,7 @@ class LibraryMapper {
             orderIndex = dto.orderIndex,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
+            deletedAt = dto.deletedAt,
         )
     }
 
@@ -344,6 +366,7 @@ class LibraryMapper {
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
             lastEditedAt = dto.updatedAt ?: System.currentTimeMillis(),
+            deletedAt = dto.deletedAt,
         )
     }
 
@@ -364,6 +387,7 @@ class LibraryMapper {
             isCompleted = dto.isCompleted,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
+            deletedAt = dto.deletedAt,
         )
     }
 
@@ -384,6 +408,7 @@ class LibraryMapper {
             reviewStatus = dto.reviewStatus,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
+            deletedAt = dto.deletedAt,
         )
     }
 
@@ -399,6 +424,7 @@ class LibraryMapper {
             tags = dto.tags,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
+            deletedAt = dto.deletedAt,
         )
     }
 
@@ -416,6 +442,7 @@ class LibraryMapper {
             sortOrder = dto.sortOrder,
             createdAt = dto.createdAt ?: System.currentTimeMillis(),
             updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
+            deletedAt = dto.deletedAt,
         )
     }
 
@@ -434,6 +461,7 @@ class LibraryMapper {
             isPinned = entity.isPinned,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            deletedAt = entity.deletedAt,
             cards = cards.map { mapToFlashcardDto(it) },
         )
     }
@@ -450,6 +478,7 @@ class LibraryMapper {
             sourceQuestionId = entity.sourceQuestionId?.toString(),
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            deletedAt = entity.deletedAt,
         )
     }
 
@@ -467,6 +496,7 @@ class LibraryMapper {
             isPinned = entity.isPinned,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            deletedAt = entity.deletedAt,
             slides = slides.map { mapToCourseSlideDto(it) },
         )
     }
@@ -483,6 +513,7 @@ class LibraryMapper {
             sourceQuestionId = entity.sourceQuestionId?.toString(),
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            deletedAt = entity.deletedAt,
         )
     }
 
@@ -503,6 +534,7 @@ class LibraryMapper {
             sourceQuestionId = entity.sourceQuestionId?.toString(),
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            deletedAt = entity.deletedAt,
         )
     }
 
@@ -519,6 +551,7 @@ class LibraryMapper {
             tags = entity.tags,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            deletedAt = entity.deletedAt,
             cards = cards.map { mapToPromptCardDto(it) },
         )
     }
@@ -533,6 +566,83 @@ class LibraryMapper {
             sortOrder = entity.sortOrder,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
+            deletedAt = entity.deletedAt,
+        )
+    }
+
+    fun mapToSourceDocumentEntity(
+        dto: SourceDocumentDto,
+        localBookId: Long?,
+        localPath: String?,
+    ): SourceDocumentEntity {
+        return SourceDocumentEntity(
+            bookId = localBookId,
+            title = dto.title,
+            sourceType = dto.sourceType,
+            author = dto.author,
+            edition = dto.edition,
+            year = dto.year,
+            publisher = dto.publisher,
+            localPath = localPath ?: dto.localPath,
+            externalUrl = dto.externalUrl,
+            description = dto.description,
+            createdAt = dto.createdAt ?: System.currentTimeMillis(),
+            updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
+            deletedAt = dto.deletedAt,
+        )
+    }
+
+    fun mapToQuestionAssetEntity(
+        dto: QuestionAssetDto,
+        localBookId: Long,
+        localQuizId: Long,
+        localQuestionId: Long,
+        localPath: String?,
+        sourceDocumentId: Long?,
+    ): QuestionAssetEntity {
+        return QuestionAssetEntity(
+            bookId = localBookId,
+            quizId = localQuizId,
+            questionId = localQuestionId,
+            assetType = dto.assetType,
+            title = dto.title,
+            description = dto.description,
+            localPath = localPath ?: dto.localPath,
+            externalUrl = dto.externalUrl,
+            mimeType = dto.mimeType,
+            fileName = dto.fileName,
+            fileSizeBytes = dto.fileSizeBytes ?: 0L,
+            textContent = dto.textContent,
+            sourceDocumentId = sourceDocumentId,
+            sourcePage = dto.sourcePage,
+            sourceQuote = dto.sourceQuote,
+            sortOrder = dto.sortOrder,
+            isPinned = dto.isPinned,
+            isPrimary = dto.isPrimary,
+            createdAt = dto.createdAt ?: System.currentTimeMillis(),
+            updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
+            deletedAt = dto.deletedAt,
+        )
+    }
+
+    fun mapToAnnotationEntity(
+        dto: AnnotationDto,
+        workspaceId: Long,
+        localBookId: Long,
+        ownerId: Long,
+    ): AnnotationEntity {
+        return AnnotationEntity(
+            workspaceId = workspaceId,
+            bookId = localBookId,
+            ownerType = dto.ownerType,
+            ownerId = ownerId,
+            selectedText = dto.selectedText,
+            noteBody = dto.noteBody,
+            colorLabel = dto.colorLabel,
+            positionDataJson = dto.positionDataJson,
+            createdAt = dto.createdAt ?: System.currentTimeMillis(),
+            updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
+            deletedAt = dto.deletedAt,
         )
     }
 }

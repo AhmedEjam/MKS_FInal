@@ -48,6 +48,7 @@ class XlsxLibraryCompiler(private val context: Context) {
     }
 
     fun compile(uri: Uri): LibraryBundleDto {
+        PoiInitializer.init()
         val file = prepareTempFile(uri) ?: throw IllegalStateException("Could not create temporary file")
         val questions = mutableListOf<QuestionDto>()
         val fileName = getFileName(uri) ?: uri.lastPathSegment ?: "Imported XLSX"

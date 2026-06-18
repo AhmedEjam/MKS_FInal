@@ -36,6 +36,7 @@ import com.ahmedyejam.mks.data.local.FileManager
 import com.ahmedyejam.mks.data.local.MksDatabase
 import com.ahmedyejam.mks.data.local.WorkspaceDefaults
 import com.ahmedyejam.mks.data.local.entity.BookEntity
+import com.ahmedyejam.mks.data.local.entity.KnowledgeStudySessionEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
 import com.ahmedyejam.mks.data.model.MksResult
@@ -542,6 +543,10 @@ class ImportLibraryManager(
             var updatedQuestionsCount = 0
             var sessionsCount = 0
             val updatedSessionsCount = 0
+            var flashcardsCount = 0
+            var slidesCount = 0
+            var notesCount = 0
+            var promptsCount = 0
             var imagesCount = 0
             var skippedRecordsCount = validation.skippedRecordsCount
             val warnings = validation.warnings.toMutableList()
@@ -563,7 +568,11 @@ class ImportLibraryManager(
                 normalizedBundle.categories.size +
                     normalizedBundle.books.size +
                     normalizedBundle.quizzes.size +
-                    (normalizedBundle.sessions?.size ?: 0)
+                        (normalizedBundle.sessions?.size ?: 0) +
+                        normalizedBundle.flashcardDecks.size +
+                        normalizedBundle.slideshowCourses.size +
+                        normalizedBundle.noteBlueprints.size +
+                        normalizedBundle.promptDecks.size
             var currentStep = 0
 
             fun updateProgress(label: String) {
@@ -820,6 +829,245 @@ class ImportLibraryManager(
                 updateProgress("Importing sessions...")
             }
 
+            // Knowledge Bank - Flashcards
+            val flashcardDeckIdMap = mutableMapOf<String, Long>()
+            normalizedBundle.flashcardDecks.forEach { deckDto ->
+                try {
+                    val localBookId = bookIdMap[deckDto.bookId] ?: return@forEach
+                    val cover = resolveImagePath(
+                        deckDto.coverImage,
+                        assetsDir,
+                        rootDir,
+                        manifest,
+                        allowInsecureRemoteImages
+                    )
+                    val deckEntity =
+                        mapper.mapToFlashcardDeckEntity(deckDto, localBookId, cover.path)
+                    val deckId = database.flashcardDeckDao().insertFlashcardDeck(deckEntity)
+                    flashcardDeckIdMap[deckDto.id] = deckId
+                    if (cover.importedLocally) imagesCount++
+                    replaceOwnerAssetReferences("flashcard_deck", deckId, listOf(cover.path))
+
+                    deckDto.cards.forEach { cardDto ->
+                        val img = resolveImagePath(
+                            cardDto.imagePath,
+                            assetsDir,
+                            rootDir,
+                            manifest,
+                            allowInsecureRemoteImages
+                        )
+                        val cardEntity = mapper.mapToFlashcardEntity(cardDto, deckId, img.path)
+                        database.flashcardDao().insertFlashcard(cardEntity)
+                        flashcardsCount++
+                        if (img.importedLocally) imagesCount++
+                    }
+                } catch (e: Exception) {
+                    warnings.add(
+                        ImportWarning(
+                            "Failed to import flashcard deck ${deckDto.title}",
+                            e.message
+                        )
+                    )
+                }
+                updateProgress("Importing flashcards: ${deckDto.title}")
+            }
+
+            // Knowledge Bank - Slideshows
+            val slideshowIdMap = mutableMapOf<String, Long>()
+            normalizedBundle.slideshowCourses.forEach { courseDto ->
+                try {
+                    val localBookId = bookIdMap[courseDto.bookId] ?: return@forEach
+                    val cover = resolveImagePath(
+                        courseDto.coverImage,
+                        assetsDir,
+                        rootDir,
+                        manifest,
+                        allowInsecureRemoteImages
+                    )
+                    val courseEntity =
+                        mapper.mapToSlideshowCourseEntity(courseDto, localBookId, cover.path)
+                    val courseId = database.slideshowCourseDao().insertCourse(courseEntity)
+                    slideshowIdMap[courseDto.id] = courseId
+                    if (cover.importedLocally) imagesCount++
+                    replaceOwnerAssetReferences("slideshow", courseId, listOf(cover.path))
+
+                    courseDto.slides.forEach { slideDto ->
+                        val img = resolveImagePath(
+                            slideDto.imagePath,
+                            assetsDir,
+                            rootDir,
+                            manifest,
+                            allowInsecureRemoteImages
+                        )
+                        val slideEntity =
+                            mapper.mapToCourseSlideEntity(slideDto, courseId, img.path)
+                        val slideId = database.courseSlideDao().insertSlide(slideEntity)
+                        slidesCount++
+                        if (img.importedLocally) imagesCount++
+                        replaceOwnerAssetReferences("slide", slideId, listOf(img.path))
+                    }
+                } catch (e: Exception) {
+                    warnings.add(
+                        ImportWarning(
+                            "Failed to import slideshow ${courseDto.title}",
+                            e.message
+                        )
+                    )
+                }
+                updateProgress("Importing slideshow: ${courseDto.title}")
+            }
+
+            // Knowledge Bank - Notes
+            val noteIdMap = mutableMapOf<String, Long>()
+            normalizedBundle.noteBlueprints.forEach { noteDto ->
+                try {
+                    val localBookId = bookIdMap[noteDto.bookId] ?: return@forEach
+                    val entity = mapper.mapToNoteBlueprintEntity(noteDto, localBookId)
+                    val noteId = database.noteBlueprintDao().insertNote(entity)
+                    noteIdMap[noteDto.id] = noteId
+                    notesCount++
+                } catch (e: Exception) {
+                    warnings.add(ImportWarning("Failed to import note ${noteDto.title}", e.message))
+                }
+                updateProgress("Importing note: ${noteDto.title}")
+            }
+
+            // Knowledge Bank - Prompts
+            val promptDeckIdMap = mutableMapOf<String, Long>()
+            normalizedBundle.promptDecks.forEach { deckDto ->
+                try {
+                    val localBookId = bookIdMap[deckDto.bookId] ?: return@forEach
+                    val deckEntity = mapper.mapToPromptDeckEntity(deckDto, localBookId)
+                    val deckId = database.promptDeckDao().insertDeck(deckEntity)
+                    promptDeckIdMap[deckDto.id] = deckId
+
+                    deckDto.cards.forEach { cardDto ->
+                        val cardEntity = mapper.mapToPromptCardEntity(cardDto, deckId)
+                        database.promptCardDao().insertCard(cardEntity)
+                        promptsCount++
+                    }
+                } catch (e: Exception) {
+                    warnings.add(
+                        ImportWarning(
+                            "Failed to import prompt deck ${deckDto.title}",
+                            e.message
+                        )
+                    )
+                }
+                updateProgress("Importing prompt deck: ${deckDto.title}")
+            }
+
+            // Knowledge Bank - Study Sessions
+            normalizedBundle.studySessions.forEach { sessionDto ->
+                try {
+                    val targetId = when (sessionDto.type) {
+                        "FLASHCARD_DECK" -> flashcardDeckIdMap[sessionDto.contentId]
+                        "SLIDESHOW" -> slideshowIdMap[sessionDto.contentId]
+                        "NOTE" -> noteIdMap[sessionDto.contentId]
+                        "PROMPT" -> promptDeckIdMap[sessionDto.contentId]
+                        else -> null
+                    } ?: return@forEach
+
+                    val entity = KnowledgeStudySessionEntity(
+                        targetType = sessionDto.type,
+                        targetId = targetId,
+                        isCompleted = sessionDto.isCompleted,
+                        updatedAt = sessionDto.lastAccessedAt ?: System.currentTimeMillis(),
+                        createdAt = System.currentTimeMillis(),
+                        stateJson = "{}"
+                    )
+                    database.knowledgeStudySessionDao().insertSession(entity)
+                } catch (_: Exception) {
+                }
+            }
+
+            // Source Documents
+            val sourceDocIdMap = mutableMapOf<Long, Long>()
+            normalizedBundle.sourceDocuments.forEach { docDto ->
+                try {
+                    val localBookId = docDto.bookId?.let { bookIdMap[it] }
+                    val resolvedDoc = resolveImagePath(
+                        docDto.localPath,
+                        assetsDir,
+                        rootDir,
+                        manifest,
+                        allowInsecureRemoteImages
+                    )
+                    val entity =
+                        mapper.mapToSourceDocumentEntity(docDto, localBookId, resolvedDoc.path)
+                    val newId = database.sourceDocumentDao().insertSource(entity)
+                    docDto.id?.let { sourceDocIdMap[it] = newId }
+                    if (resolvedDoc.importedLocally) imagesCount++
+                } catch (e: Exception) {
+                    warnings.add(
+                        ImportWarning(
+                            "Failed to import source document ${docDto.title}",
+                            e.message
+                        )
+                    )
+                }
+            }
+
+            // Question Assets
+            normalizedBundle.questionAssets.forEach { assetDto ->
+                try {
+                    val localBookId = assetDto.bookId?.let { bookIdMap[it] } ?: return@forEach
+                    val localQuizId = assetDto.quizId?.let { quizIdMap[it] } ?: return@forEach
+                    val localQuestionId =
+                        assetDto.questionId?.let { questionIdMap[it] } ?: return@forEach
+                    val sourceDocId = assetDto.sourceDocumentId?.let { sourceDocIdMap[it] }
+
+                    val resolvedAsset = resolveImagePath(
+                        assetDto.localPath,
+                        assetsDir,
+                        rootDir,
+                        manifest,
+                        allowInsecureRemoteImages
+                    )
+                    val entity = mapper.mapToQuestionAssetEntity(
+                        assetDto,
+                        localBookId,
+                        localQuizId,
+                        localQuestionId,
+                        resolvedAsset.path,
+                        sourceDocId
+                    )
+                    database.questionAssetDao().insertAsset(entity)
+                    if (resolvedAsset.importedLocally) imagesCount++
+                } catch (e: Exception) {
+                    warnings.add(
+                        ImportWarning(
+                            "Failed to import question asset ${assetDto.title}",
+                            e.message
+                        )
+                    )
+                }
+            }
+
+            // Annotations
+            normalizedBundle.annotations.forEach { annDto ->
+                try {
+                    val localBookId = annDto.bookId?.let { bookIdMap[it] } ?: return@forEach
+                    val localOwnerId =
+                        when (annDto.ownerType.uppercase()) {
+                            "BOOK" -> localBookId
+                            "QUIZ" -> annDto.ownerId?.let { quizIdMap[it] }
+                            "QUESTION" -> annDto.ownerId?.let { questionIdMap[it] }
+                            else -> null
+                        } ?: return@forEach
+
+                    val entity = mapper.mapToAnnotationEntity(
+                        annDto,
+                        defaultWorkspaceId,
+                        localBookId,
+                        localOwnerId
+                    )
+                    database.annotationDao().insertAnnotation(entity)
+                } catch (e: Exception) {
+                    warnings.add(ImportWarning("Failed to import annotation", e.message))
+                }
+            }
+
             onProgress(1.0f, "Import complete")
 
             ImportResult(
@@ -834,6 +1082,10 @@ class ImportLibraryManager(
                 updatedQuestionsCount = updatedQuestionsCount,
                 importedSessionsCount = sessionsCount,
                 updatedSessionsCount = updatedSessionsCount,
+                importedFlashcardsCount = flashcardsCount,
+                importedSlidesCount = slidesCount,
+                importedNotesCount = notesCount,
+                importedPromptsCount = promptsCount,
                 importedImagesCount = imagesCount,
                 skippedRecordsCount = skippedRecordsCount,
                 affectedBookIds = affectedBookIds.toList(),
