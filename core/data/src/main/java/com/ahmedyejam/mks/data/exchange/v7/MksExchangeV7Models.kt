@@ -76,6 +76,7 @@ data class MksExchangeV7Counts(
     val flashcards: Int = 0,
     val slideshows: Int = 0,
     val slides: Int = 0,
+    val noteCollections: Int = 0,
     val notes: Int = 0,
     val promptDecks: Int = 0,
     val promptCards: Int = 0,
@@ -337,10 +338,27 @@ data class MksExchangeV7CourseSlide(
 )
 
 @Serializable
-data class MksExchangeV7NoteBlueprint(
+data class MksExchangeV7NoteCollection(
     val id: Long = 0,
     val externalId: String,
     val bookId: Long = 0,
+    val title: String,
+    val description: String? = null,
+    val iconName: String? = null,
+    val coverImage: String? = null,
+    val tags: List<String> = emptyList(),
+    val isPinned: Boolean = false,
+    val isSystem: Boolean = false,
+    val createdAt: Long = 0,
+    val updatedAt: Long = 0,
+    val deletedAt: Long? = null,
+)
+
+@Serializable
+data class MksExchangeV7NoteBlueprint(
+    val id: Long = 0,
+    val externalId: String,
+    val collectionId: Long = 0,
     val title: String,
     val summary: String? = null,
     val body: String,
@@ -391,6 +409,7 @@ data class MksExchangeV7StudySession(
     val progress: Float = 0f,
     val isCompleted: Boolean = false,
     val lastAccessedAt: Long = 0,
+    val stateJson: String? = null,
 )
 
 @Serializable

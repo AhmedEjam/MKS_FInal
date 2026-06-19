@@ -1,1 +1,0 @@
-PASS: Stage 4 final fixture has schema-7 manifest, media_manifest, media payload, and matching sha256

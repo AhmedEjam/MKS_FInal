@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ahmedyejam.mks.core.ui.R
@@ -114,7 +115,11 @@ fun CategoryChip(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = category.questionCount.toString(),
+                        text = pluralStringResource(
+                            R.plurals.qs_count,
+                            category.questionCount,
+                            category.questionCount
+                        ),
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         color = contentColor,

@@ -547,6 +547,9 @@ class ImportLibraryManager(
             var slidesCount = 0
             var notesCount = 0
             var promptsCount = 0
+            var sourceDocsCount = 0
+            var questionAssetsCount = 0
+            var annotationsCount = 0
             var imagesCount = 0
             var skippedRecordsCount = validation.skippedRecordsCount
             val warnings = validation.warnings.toMutableList()
@@ -572,7 +575,10 @@ class ImportLibraryManager(
                         normalizedBundle.flashcardDecks.size +
                         normalizedBundle.slideshowCourses.size +
                         normalizedBundle.noteBlueprints.size +
-                        normalizedBundle.promptDecks.size
+                        normalizedBundle.promptDecks.size +
+                        normalizedBundle.sourceDocuments.size +
+                        normalizedBundle.questionAssets.size +
+                        normalizedBundle.annotations.size
             var currentStep = 0
 
             fun updateProgress(label: String) {
@@ -857,9 +863,10 @@ class ImportLibraryManager(
                             allowInsecureRemoteImages
                         )
                         val cardEntity = mapper.mapToFlashcardEntity(cardDto, deckId, img.path)
-                        database.flashcardDao().insertFlashcard(cardEntity)
+                        val cardId = database.flashcardDao().insertFlashcard(cardEntity)
                         flashcardsCount++
                         if (img.importedLocally) imagesCount++
+                        replaceOwnerAssetReferences("flashcard", cardId, listOf(img.path))
                     }
                 } catch (e: Exception) {
                     warnings.add(
@@ -921,7 +928,7 @@ class ImportLibraryManager(
             val noteIdMap = mutableMapOf<String, Long>()
             normalizedBundle.noteBlueprints.forEach { noteDto ->
                 try {
-                    val localBookId = bookIdMap[noteDto.bookId] ?: return@forEach
+                    val localBookId = bookIdMap[noteDto.collectionId] ?: return@forEach
                     val entity = mapper.mapToNoteBlueprintEntity(noteDto, localBookId)
                     val noteId = database.noteBlueprintDao().insertNote(entity)
                     noteIdMap[noteDto.id] = noteId
@@ -974,7 +981,7 @@ class ImportLibraryManager(
                         isCompleted = sessionDto.isCompleted,
                         updatedAt = sessionDto.lastAccessedAt ?: System.currentTimeMillis(),
                         createdAt = System.currentTimeMillis(),
-                        stateJson = "{}"
+                        stateJson = sessionDto.stateJson ?: "{}"
                     )
                     database.knowledgeStudySessionDao().insertSession(entity)
                 } catch (_: Exception) {
@@ -997,7 +1004,9 @@ class ImportLibraryManager(
                         mapper.mapToSourceDocumentEntity(docDto, localBookId, resolvedDoc.path)
                     val newId = database.sourceDocumentDao().insertSource(entity)
                     docDto.id?.let { sourceDocIdMap[it] = newId }
+                    sourceDocsCount++
                     if (resolvedDoc.importedLocally) imagesCount++
+                    replaceOwnerAssetReferences("source_document", newId, listOf(resolvedDoc.path))
                 } catch (e: Exception) {
                     warnings.add(
                         ImportWarning(
@@ -1006,6 +1015,7 @@ class ImportLibraryManager(
                         )
                     )
                 }
+                updateProgress("Importing source document: ${docDto.title}")
             }
 
             // Question Assets
@@ -1032,8 +1042,14 @@ class ImportLibraryManager(
                         resolvedAsset.path,
                         sourceDocId
                     )
-                    database.questionAssetDao().insertAsset(entity)
+                    val assetId = database.questionAssetDao().insertAsset(entity)
+                    questionAssetsCount++
                     if (resolvedAsset.importedLocally) imagesCount++
+                    replaceOwnerAssetReferences(
+                        "question_asset",
+                        assetId,
+                        listOf(resolvedAsset.path)
+                    )
                 } catch (e: Exception) {
                     warnings.add(
                         ImportWarning(
@@ -1042,6 +1058,7 @@ class ImportLibraryManager(
                         )
                     )
                 }
+                updateProgress("Importing question asset: ${assetDto.title}")
             }
 
             // Annotations
@@ -1053,6 +1070,9 @@ class ImportLibraryManager(
                             "BOOK" -> localBookId
                             "QUIZ" -> annDto.ownerId?.let { quizIdMap[it] }
                             "QUESTION" -> annDto.ownerId?.let { questionIdMap[it] }
+                            "SOURCE_DOCUMENT" -> annDto.ownerId?.let {
+                                sourceDocIdMap[it.toLongOrNull() ?: -1L]
+                            }
                             else -> null
                         } ?: return@forEach
 
@@ -1063,9 +1083,11 @@ class ImportLibraryManager(
                         localOwnerId
                     )
                     database.annotationDao().insertAnnotation(entity)
+                    annotationsCount++
                 } catch (e: Exception) {
                     warnings.add(ImportWarning("Failed to import annotation", e.message))
                 }
+                updateProgress("Importing annotation")
             }
 
             onProgress(1.0f, "Import complete")
@@ -1086,6 +1108,9 @@ class ImportLibraryManager(
                 importedSlidesCount = slidesCount,
                 importedNotesCount = notesCount,
                 importedPromptsCount = promptsCount,
+                importedSourceDocumentsCount = sourceDocsCount,
+                importedQuestionAssetsCount = questionAssetsCount,
+                importedAnnotationsCount = annotationsCount,
                 importedImagesCount = imagesCount,
                 skippedRecordsCount = skippedRecordsCount,
                 affectedBookIds = affectedBookIds.toList(),
@@ -1093,8 +1118,56 @@ class ImportLibraryManager(
                 warnings = warnings,
                 durationMillis = System.currentTimeMillis() - startTime,
                 partiallyImported = skippedRecordsCount > 0,
-            )
+            ).also {
+                // Post-import recalculation of stats
+                affectedBookIds.forEach { bookId ->
+                    refreshBookStats(bookId)
+                }
+                affectedQuizIds.forEach { quizId ->
+                    refreshQuizStats(quizId)
+                }
+            }
         }
+    }
+
+    private suspend fun refreshBookStats(bookId: Long) {
+        val bookDao = database.bookDao()
+        val quizDao = database.quizDao()
+        val questionDao = database.questionDao()
+        val total = quizDao.getBookQuestionCountNow(bookId)
+        val quizzes = quizDao.getQuizzesByBookIdNow(bookId)
+        val answered = quizzes.sumOf { it.answeredCount }
+        val completion = if (total == 0) 0f else answered.toFloat() / total
+
+        val questions = questionDao.getAdaptiveQuestionsByBook(bookId, Int.MAX_VALUE)
+        val totalAttempts = questions.sumOf { it.attempts }
+        val totalCorrect = questions.sumOf { it.correctCount }
+        val accuracy = if (totalAttempts == 0) 0f else totalCorrect.toFloat() / totalAttempts
+
+        bookDao.updateQuestionCount(bookId, total)
+        bookDao.updateAnsweredCount(bookId, answered)
+        bookDao.updateTotalAttempts(bookId, totalAttempts)
+        bookDao.updateCompletionPercentage(bookId, completion)
+        bookDao.updateAccuracyPercentage(bookId, accuracy)
+    }
+
+    private suspend fun refreshQuizStats(quizId: Long) {
+        val quizDao = database.quizDao()
+        val questionDao = database.questionDao()
+        val total = questionDao.getQuestionsByQuizIdNow(quizId).size
+        val questions = questionDao.getQuestionsByQuizIdNow(quizId)
+        val answered = questions.count { it.attempts > 0 }
+        val completion = if (total == 0) 0f else answered.toFloat() / total
+
+        val totalAttempts = questions.sumOf { it.attempts }
+        val totalCorrect = questions.sumOf { it.correctCount }
+        val accuracy = if (totalAttempts == 0) 0f else totalCorrect.toFloat() / totalAttempts
+
+        quizDao.updateQuestionCount(quizId, total)
+        quizDao.updateAnsweredCount(quizId, answered)
+        quizDao.updateTotalAttempts(quizId, totalAttempts)
+        quizDao.updateCompletionPercentage(quizId, completion)
+        quizDao.updateAccuracyPercentage(quizId, accuracy)
     }
 
     private suspend fun resolveImagePath(

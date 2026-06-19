@@ -23,6 +23,7 @@ data class LibraryBundleDto(
     val quizzes: List<QuizDto> = emptyList(),
     val flashcardDecks: List<FlashcardDeckDto> = emptyList(),
     val slideshowCourses: List<SlideshowCourseDto> = emptyList(),
+    val noteCollections: List<NoteCollectionDto> = emptyList(),
     val noteBlueprints: List<NoteBlueprintDto> = emptyList(),
     val promptDecks: List<PromptDeckDto> = emptyList(),
     val studySessions: List<KnowledgeStudySessionDto> = emptyList(),
@@ -156,9 +157,25 @@ data class CourseSlideDto(
 )
 
 @Serializable
-data class NoteBlueprintDto(
+data class NoteCollectionDto(
     val id: String,
     val bookId: String,
+    val title: String,
+    val description: String? = null,
+    val iconName: String? = null,
+    val coverImage: String? = null,
+    val tags: List<String> = emptyList(),
+    val isPinned: Boolean = false,
+    val isSystem: Boolean = false,
+    val createdAt: Long? = null,
+    val updatedAt: Long? = null,
+    val deletedAt: Long? = null,
+)
+
+@Serializable
+data class NoteBlueprintDto(
+    val id: String,
+    val collectionId: String, // References NoteCollectionDto.id
     val title: String,
     val summary: String? = null,
     val body: String,
@@ -207,6 +224,7 @@ data class KnowledgeStudySessionDto(
     val progress: Float = 0f,
     val isCompleted: Boolean = false,
     val lastAccessedAt: Long? = null,
+    val stateJson: String? = null,
 )
 
 @Serializable

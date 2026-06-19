@@ -7,6 +7,7 @@ import com.ahmedyejam.mks.data.importer.dto.CourseSlideDto
 import com.ahmedyejam.mks.data.importer.dto.FlashcardDeckDto
 import com.ahmedyejam.mks.data.importer.dto.FlashcardDto
 import com.ahmedyejam.mks.data.importer.dto.NoteBlueprintDto
+import com.ahmedyejam.mks.data.importer.dto.NoteCollectionDto
 import com.ahmedyejam.mks.data.importer.dto.OptionDto
 import com.ahmedyejam.mks.data.importer.dto.PromptCardDto
 import com.ahmedyejam.mks.data.importer.dto.PromptDeckDto
@@ -392,6 +393,28 @@ class LibraryMapper {
     }
 
     @Suppress("unused")
+    fun mapToNoteCollectionEntity(
+        dto: NoteCollectionDto,
+        localBookId: Long,
+        coverPath: String?,
+    ): NoteCollectionEntity {
+        return NoteCollectionEntity(
+            externalId = dto.id,
+            bookId = localBookId,
+            title = dto.title,
+            description = dto.description,
+            iconName = dto.iconName,
+            coverImage = coverPath,
+            tags = dto.tags,
+            isPinned = dto.isPinned,
+            isSystem = dto.isSystem,
+            createdAt = dto.createdAt ?: System.currentTimeMillis(),
+            updatedAt = dto.updatedAt ?: System.currentTimeMillis(),
+            deletedAt = dto.deletedAt,
+        )
+    }
+
+    @Suppress("unused")
     fun mapToNoteBlueprintEntity(
         dto: NoteBlueprintDto,
         localCollectionId: Long,
@@ -519,11 +542,11 @@ class LibraryMapper {
 
     fun mapToNoteBlueprintDto(
         entity: NoteBlueprintEntity,
-        bookExternalId: String,
+        collectionExternalId: String,
     ): NoteBlueprintDto {
         return NoteBlueprintDto(
             id = entity.externalId,
-            bookId = bookExternalId,
+            collectionId = collectionExternalId,
             title = entity.title,
             summary = entity.summary,
             body = entity.body,
@@ -532,6 +555,26 @@ class LibraryMapper {
             mode = entity.blueprintMode,
             reviewStatus = entity.reviewStatus,
             sourceQuestionId = entity.sourceQuestionId?.toString(),
+            createdAt = entity.createdAt,
+            updatedAt = entity.updatedAt,
+            deletedAt = entity.deletedAt,
+        )
+    }
+
+    fun mapToNoteCollectionDto(
+        entity: NoteCollectionEntity,
+        bookExternalId: String,
+    ): NoteCollectionDto {
+        return NoteCollectionDto(
+            id = entity.externalId,
+            bookId = bookExternalId,
+            title = entity.title,
+            description = entity.description,
+            iconName = entity.iconName,
+            coverImage = entity.coverImage,
+            tags = entity.tags,
+            isPinned = entity.isPinned,
+            isSystem = entity.isSystem,
             createdAt = entity.createdAt,
             updatedAt = entity.updatedAt,
             deletedAt = entity.deletedAt,

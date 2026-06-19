@@ -72,8 +72,14 @@
     <string name="unknown_error">Unknown error</string>
     <string name="error_title">Error</string>
     <string name="continue_learning">CONTINUE LEARNING</string>
-    <string name="questions_count">%1$d Questions</string>
-    <string name="qs_count">%1$d Qs</string>
+    <plurals name="questions_count">
+        <item quantity="one">%1$d Question</item>
+        <item quantity="other">%1$d Questions</item>
+    </plurals>
+    <plurals name="qs_count">
+        <item quantity="one">%1$d Q</item>
+        <item quantity="other">%1$d Qs</item>
+    </plurals>
     <string name="show_info_stats">Show Info &amp; Stats</string>
     <string name="edit">Edit</string>
     <string name="delete">Delete</string>

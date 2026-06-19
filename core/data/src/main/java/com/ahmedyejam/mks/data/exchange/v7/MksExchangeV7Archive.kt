@@ -9,6 +9,7 @@ import com.ahmedyejam.mks.data.importer.dto.FlashcardDto
 import com.ahmedyejam.mks.data.importer.dto.KnowledgeStudySessionDto
 import com.ahmedyejam.mks.data.importer.dto.LibraryBundleDto
 import com.ahmedyejam.mks.data.importer.dto.NoteBlueprintDto
+import com.ahmedyejam.mks.data.importer.dto.NoteCollectionDto
 import com.ahmedyejam.mks.data.importer.dto.OptionDto
 import com.ahmedyejam.mks.data.importer.dto.PromptCardDto
 import com.ahmedyejam.mks.data.importer.dto.PromptDeckDto
@@ -91,6 +92,11 @@ object MksExchangeV7Archive {
         )
         val v7Slides =
             readList(rootDir, MksExchangeV7Paths.SLIDES, MksExchangeV7CourseSlide.serializer())
+        val v7NoteCollections = readList(
+            rootDir,
+            MksExchangeV7Paths.NOTES.replace("notes.json", "note_collections.json"),
+            MksExchangeV7NoteCollection.serializer()
+        )
         val v7Notes =
             readList(rootDir, MksExchangeV7Paths.NOTES, MksExchangeV7NoteBlueprint.serializer())
         val v7PromptDecks =
@@ -118,6 +124,8 @@ object MksExchangeV7Archive {
         val bookExternalById = books.associateBy({ it.id }) { it.externalId }
         val quizExternalById = quizzes.associateBy({ it.id }) { it.externalId }
         val questionExternalById = questions.associateBy({ it.id }) { it.externalId }
+        val sourceDocExternalById = v7SourceDocs.associateBy({ it.id }) { it.id.toString() }
+        val noteCollectionExternalById = v7NoteCollections.associateBy({ it.id }) { it.externalId }
         val questionsByQuizId = questions.groupBy { it.quizId }
         val categoriesByQuestionId = questionCategories.groupBy { it.questionId }
         val defaultWorkspaceExternalId =
@@ -268,11 +276,30 @@ object MksExchangeV7Archive {
                 )
             }
 
+        val noteCollections =
+            v7NoteCollections.map { coll ->
+                NoteCollectionDto(
+                    id = coll.externalId,
+                    bookId = bookExternalById[coll.bookId] ?: coll.bookId.toString(),
+                    title = coll.title,
+                    description = coll.description,
+                    iconName = coll.iconName,
+                    coverImage = coll.coverImage,
+                    tags = coll.tags,
+                    isPinned = coll.isPinned,
+                    isSystem = coll.isSystem,
+                    createdAt = coll.createdAt.takeIf { it > 0 },
+                    updatedAt = coll.updatedAt.takeIf { it > 0 },
+                    deletedAt = coll.deletedAt,
+                )
+            }
+
         val noteBlueprints =
             v7Notes.map { note ->
                 NoteBlueprintDto(
                     id = note.externalId,
-                    bookId = bookExternalById[note.bookId] ?: note.bookId.toString(),
+                    collectionId = noteCollectionExternalById[note.collectionId]
+                        ?: note.collectionId.toString(),
                     title = note.title,
                     summary = note.summary,
                     body = note.body,
@@ -324,6 +351,7 @@ object MksExchangeV7Archive {
                     progress = session.progress,
                     isCompleted = session.isCompleted,
                     lastAccessedAt = session.lastAccessedAt.takeIf { it > 0 },
+                    stateJson = session.stateJson,
                 )
             }
 
@@ -382,6 +410,7 @@ object MksExchangeV7Archive {
                         "BOOK" -> bookExternalById[ann.ownerId]
                         "QUIZ" -> quizExternalById[ann.ownerId]
                         "QUESTION" -> questionExternalById[ann.ownerId]
+                        "SOURCE_DOCUMENT" -> sourceDocExternalById[ann.ownerId]
                         else -> null
                     }
                 AnnotationDto(
@@ -408,6 +437,7 @@ object MksExchangeV7Archive {
             quizzes = quizDtos,
             flashcardDecks = flashcardDecks,
             slideshowCourses = slideshowCourses,
+            noteCollections = noteCollections,
             noteBlueprints = noteBlueprints,
             promptDecks = promptDecks,
             studySessions = studySessions,
@@ -742,7 +772,7 @@ object MksExchangeV7Archive {
 
         val noteBlueprints =
             bundle.noteBlueprints.mapNotNull { note ->
-                val bookLocalId = localBookId(note.bookId) ?: return@mapNotNull null
+                val bookLocalId = localBookId(note.collectionId) ?: return@mapNotNull null
                 MksExchangeV7NoteBlueprint(
                     id = nextQuestionId++, // Using nextQuestionId as a generic counter for notes
                     externalId = note.id,
@@ -810,6 +840,7 @@ object MksExchangeV7Archive {
                     progress = session.progress,
                     isCompleted = session.isCompleted,
                     lastAccessedAt = session.lastAccessedAt ?: 0L,
+                    stateJson = session.stateJson,
                 )
             }
 

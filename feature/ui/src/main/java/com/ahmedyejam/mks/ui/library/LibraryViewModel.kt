@@ -1,19 +1,10 @@
 package com.ahmedyejam.mks.ui.library
 
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
-
 
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.local.entity.BookEntity
-import com.ahmedyejam.mks.data.repository.BookRepository
-import com.ahmedyejam.mks.data.repository.WorkspaceRepository
-import com.ahmedyejam.mks.data.repository.KnowledgeRepository
-import com.ahmedyejam.mks.data.repository.AssetRepository
-import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.local.entity.CategoryMetadataEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
 import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
@@ -25,7 +16,13 @@ import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.model.CategoryWithMetadata
 import com.ahmedyejam.mks.data.model.ExportResult
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
+import com.ahmedyejam.mks.data.repository.AssetRepository
+import com.ahmedyejam.mks.data.repository.BookRepository
+import com.ahmedyejam.mks.data.repository.KnowledgeRepository
+import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.repository.SortOption
+import com.ahmedyejam.mks.data.repository.WorkspaceRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -42,6 +39,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
 sealed class LibraryUiEvent {
     data class ShowSnackbar(val message: String) : LibraryUiEvent()
@@ -80,7 +78,7 @@ class LibraryViewModel @Inject constructor(
     val isSearching = _isSearching.asStateFlow()
 
     val currentWorkspaceId = dataStoreManager.currentWorkspaceId
-        .map { storedId -> storedId ?: assetRepository.getOrCreateDefaultWorkspace().id }
+        .map { storedId -> storedId ?: workspaceRepository.getOrCreateDefaultWorkspace().id }
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0L)
 
     val sortBy = dataStoreManager.librarySortOption
@@ -514,7 +512,8 @@ class LibraryViewModel @Inject constructor(
                 workspaceRepository.deleteWorkspace(workspace)
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Workspace deleted"))
                 if (currentWorkspaceId.value == workspace.id) {
-                    val defaultWs = workspaceRepository.getDefaultWorkspace() ?: assetRepository.getOrCreateDefaultWorkspace()
+                    val defaultWs = workspaceRepository.getDefaultWorkspace()
+                        ?: workspaceRepository.getOrCreateDefaultWorkspace()
                     selectWorkspace(defaultWs.id)
                 }
             } catch (e: Exception) {

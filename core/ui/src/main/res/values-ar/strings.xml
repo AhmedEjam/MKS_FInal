@@ -72,8 +72,22 @@
     <string name="unknown_error">خطأ غير معروف</string>
     <string name="error_title">خطأ</string>
     <string name="continue_learning">مواصلة التعلم</string>
-    <string name="questions_count">%1$d أسئلة</string>
-    <string name="qs_count">%1$d س</string>
+    <plurals name="questions_count">
+        <item quantity="zero">لا توجد أسئلة</item>
+        <item quantity="one">سؤال واحد</item>
+        <item quantity="two">سؤالان</item>
+        <item quantity="few">%1$d أسئلة</item>
+        <item quantity="many">%1$d سؤالاً</item>
+        <item quantity="other">%1$d سؤال</item>
+    </plurals>
+    <plurals name="qs_count">
+        <item quantity="zero">لا يوجد</item>
+        <item quantity="one">سؤال</item>
+        <item quantity="two">سؤالان</item>
+        <item quantity="few">%1$d س</item>
+        <item quantity="many">%1$d س</item>
+        <item quantity="other">%1$d س</item>
+    </plurals>
     <string name="show_info_stats">إظهار المعلومات والإحصائيات</string>
     <string name="edit">تعديل</string>
     <string name="delete">حذف</string>

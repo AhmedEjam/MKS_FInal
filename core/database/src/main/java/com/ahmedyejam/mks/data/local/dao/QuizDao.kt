@@ -70,6 +70,9 @@ interface QuizDao {
     @Query("UPDATE quizzes SET questionCount = (SELECT COUNT(*) FROM questions WHERE quizId = :quizId AND deletedAt IS NULL) WHERE id = :quizId")
     suspend fun refreshQuestionCount(quizId: Long)
 
+    @Query("UPDATE quizzes SET questionCount = :count WHERE id = :quizId")
+    suspend fun updateQuestionCount(quizId: Long, count: Int)
+
     @Query("UPDATE quizzes SET completionPercentage = :percentage WHERE id = :quizId")
     suspend fun updateCompletionPercentage(quizId: Long, percentage: Float)
 
