@@ -442,11 +442,7 @@ fun CategoryPreviewCard(
                     color = colors.onSurface
                 )
                 Text(
-                    text = pluralStringResource(
-                        R.plurals.questions_count,
-                        category.questionCount,
-                        category.questionCount
-                    ),
+                    text = "${category.questionCount} Q",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = tint
@@ -577,7 +573,7 @@ private fun QuestionCountPill(count: Int) {
         contentColor = colors.primary
     ) {
         Text(
-            text = pluralStringResource(R.plurals.questions_count, count, count),
+            text = "$count Q",
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
             fontWeight = FontWeight.SemiBold,
@@ -957,11 +953,7 @@ fun BookOptionsSheet(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = book.title, style = MaterialTheme.typography.titleLarge)
                     Text(
-                        text = pluralStringResource(
-                            R.plurals.questions_count,
-                            book.questionCount,
-                            book.questionCount
-                        ),
+                        text = "${book.questionCount} Q",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1096,11 +1088,7 @@ fun QuizOptionsSheet(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = quiz.title, style = MaterialTheme.typography.titleLarge)
                     Text(
-                        text = pluralStringResource(
-                            R.plurals.questions_count,
-                            quiz.questionCount,
-                            quiz.questionCount
-                        ),
+                        text = "${quiz.questionCount} Q",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

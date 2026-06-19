@@ -156,6 +156,7 @@
     <string name="hint_label">تلميح</string>
     <string name="reference_label">المرجع</string>
     <string name="info_label">معلومات</string>
+    <string name="additional_info_label">معلومات إضافية</string>
     <string name="marked_only_label">المحددة فقط</string>
     <string name="selected_count_title">تم تحديد %1$d</string>
     <string name="search_questions_placeholder">ابحث في الأسئلة…</string>
@@ -183,6 +184,7 @@
     <string name="remember_settings">تذكر هذه الإعدادات</string>
     <string name="last_active_prefix">آخر نشاط: %1$s</string>
     <string name="completed_badge">مكتمل</string>
+    <string name="score_pill">النتيجة: %1$d%%</string>
 
     <!-- Quiz Player -->
     <string name="drop_question_title">إسقاط السؤال؟</string>

@@ -148,6 +148,7 @@
     <string name="hint_label">Hint</string>
     <string name="reference_label">Reference</string>
     <string name="info_label">Info</string>
+    <string name="additional_info_label">Additional Info</string>
     <string name="marked_only_label">Marked Only</string>
     <string name="selected_count_title">%1$d Selected</string>
     <string name="search_questions_placeholder">Search questions…</string>
@@ -175,6 +176,7 @@
     <string name="remember_settings">Remember these settings</string>
     <string name="last_active_prefix">Last active: %1$s</string>
     <string name="completed_badge">COMPLETED</string>
+    <string name="score_pill">Score: %1$d%%</string>
 
     <!-- Quiz Player -->
     <string name="drop_question_title">Drop Question?</string>

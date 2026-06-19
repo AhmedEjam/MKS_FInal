@@ -492,6 +492,7 @@ fun MappingEditorDialog(
     val imageLabel = stringResource(R.string.image_label)
     val categoriesLabel = stringResource(R.string.categories_label)
     val referenceLabel = stringResource(R.string.reference_label)
+    val additionalInfoLabel = stringResource(R.string.additional_info_label)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -522,7 +523,8 @@ fun MappingEditorDialog(
                     "hint" to hintLabel,
                     "image" to imageLabel,
                     "categories" to categoriesLabel,
-                    "reference" to referenceLabel
+                    "reference" to referenceLabel,
+                    "additional" to additionalInfoLabel
                 )
 
                 items(fields, key = { it.first }) { (key, label) ->

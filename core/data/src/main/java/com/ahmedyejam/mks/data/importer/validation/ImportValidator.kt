@@ -33,7 +33,13 @@ class ImportValidator {
             warnings.add(ImportWarning("Schema version ${bundle.schema} is not officially supported, but import will proceed."))
         }
 
-        val validKinds = listOf("book-bundle", "library-bundle", "quiz-bundle", "full-library")
+        val validKinds = listOf(
+            "book-bundle",
+            "library-bundle",
+            "quiz-bundle",
+            "full-library",
+            "schema7-exchange-bridge"
+        )
         if (bundle.kind !in validKinds) {
             warnings.add(ImportWarning("Unexpected bundle kind: ${bundle.kind}"))
         }

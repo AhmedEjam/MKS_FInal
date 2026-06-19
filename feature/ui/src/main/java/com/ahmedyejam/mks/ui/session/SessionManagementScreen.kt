@@ -43,7 +43,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -603,14 +602,14 @@ fun SessionItem(
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(58.dp)) {
                     CircularProgressIndicator(
-                        progress = { accuracy / 100f },
+                        progress = { progress },
                         modifier = Modifier.fillMaxSize(),
                         strokeWidth = 5.dp,
                         color = colors.primary,
                         trackColor = colors.surfaceVariant.copy(alpha = 0.55f)
                     )
                     Text(
-                        text = "$accuracy%",
+                        text = "${(progress * 100).toInt()}%",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = colors.primary
@@ -618,12 +617,31 @@ fun SessionItem(
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = session.label,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = session.label,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = correctColor.copy(alpha = 0.12f),
+                            contentColor = correctColor
+                        ) {
+                            Text(
+                                text = stringResource(R.string.score_pill, accuracy),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = stringResource(R.string.last_active_prefix, dateFormat.format(Date(session.lastModifiedAt))),
                         style = MaterialTheme.typography.bodySmall,
@@ -651,18 +669,6 @@ fun SessionItem(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(7.dp)
-                    .clip(CircleShape),
-                color = colors.primary,
-                trackColor = colors.primaryContainer.copy(alpha = 0.35f)
-            )
 
             Spacer(modifier = Modifier.height(14.dp))
 
