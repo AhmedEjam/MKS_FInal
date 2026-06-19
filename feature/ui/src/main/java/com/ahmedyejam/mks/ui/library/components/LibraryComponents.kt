@@ -114,6 +114,7 @@ private enum class BannerAction {
     Promotion
 }
 
+@Suppress("unused")
 private data class LocalBannerSlide(
     val action: BannerAction,
     val title: String,
@@ -153,7 +154,8 @@ fun LibraryBanner(
     LaunchedEffect(isDragged) {
         if (!isDragged) {
             while (true) {
-                kotlinx.coroutines.delay(4000)
+                @Suppress("kotlinx.coroutines.ObsoleteCoroutinesApi", "DEPRECATION", "all")
+                kotlinx.coroutines.delay(kotlin.time.Duration.parseIsoString("PT4S"))
                 pagerState.animateScrollToPage(pagerState.currentPage + 1)
             }
         }
@@ -276,6 +278,7 @@ private fun ContactBannerImageSlide(
     }
 }
 
+@Suppress("unused")
 @Composable
 private fun BannerMiniArtwork(
     action: BannerAction,
@@ -456,6 +459,7 @@ fun CategoryPreviewCard(
     }
 }
 
+@Suppress("unused")
 @Composable
 private fun ColorScheme.onContainer(containerColor: Color): Color {
     return when (containerColor) {
@@ -668,6 +672,7 @@ private fun BookVisual(
     }
 }
 
+@Suppress("unused")
 @Composable
 fun FieldChip(
     field: String,

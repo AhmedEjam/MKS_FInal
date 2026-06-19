@@ -24,6 +24,7 @@ import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
 import com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity
+import com.ahmedyejam.mks.data.local.entity.NoteCollectionEntity
 import com.ahmedyejam.mks.data.local.entity.PromptCardEntity
 import com.ahmedyejam.mks.data.local.entity.PromptDeckEntity
 import com.ahmedyejam.mks.data.local.entity.QuestionAssetEntity
@@ -561,6 +562,7 @@ class LibraryMapper {
         )
     }
 
+    @Suppress("unused")
     fun mapToNoteCollectionDto(
         entity: NoteCollectionEntity,
         bookExternalId: String,

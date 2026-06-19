@@ -366,6 +366,7 @@ class ImportLibraryManager(
                 )
             } finally {
                 zipResult?.rootDir?.deleteRecursively()
+                cleanupStaleImportCache()
             }
         }
 

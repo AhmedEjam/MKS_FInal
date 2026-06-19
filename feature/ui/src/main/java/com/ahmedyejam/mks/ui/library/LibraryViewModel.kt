@@ -201,6 +201,7 @@ class LibraryViewModel @Inject constructor(
         _searchQuery.value = query
     }
 
+    @Suppress("unused")
     fun selectCategory(name: String) {
         _selectedCategory.value = name
     }
@@ -343,6 +344,7 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    @Suppress("unused")
     fun insertQuiz(quiz: QuizEntity, coverUri: String? = null) {
         viewModelScope.launch {
             try {
@@ -383,6 +385,7 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch { quizRepository.createQuizFromCategory(category, title, bookId) }
     }
 
+    @Suppress("unused")
     fun createNewQuiz(
         bookId: Long,
         title: String,

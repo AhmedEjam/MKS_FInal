@@ -511,6 +511,8 @@ object MksExchangeV7Archive {
 
         val bookIdByExternalId = bundle.books.mapIndexed { index, book -> book.id to (index + 1L) }.toMap()
         val quizIdByExternalId = bundle.quizzes.mapIndexed { index, quiz -> quiz.id to (index + 1L) }.toMap()
+        val noteCollectionIdByExternalId =
+            bundle.noteCollections.mapIndexed { index, coll -> coll.id to (index + 1L) }.toMap()
 
         fun localBookId(
             externalId: String?,
@@ -772,11 +774,12 @@ object MksExchangeV7Archive {
 
         val noteBlueprints =
             bundle.noteBlueprints.mapNotNull { note ->
-                val bookLocalId = localBookId(note.collectionId) ?: return@mapNotNull null
+                val collLocalId =
+                    noteCollectionIdByExternalId[note.collectionId] ?: return@mapNotNull null
                 MksExchangeV7NoteBlueprint(
                     id = nextQuestionId++, // Using nextQuestionId as a generic counter for notes
                     externalId = note.id,
-                    bookId = bookLocalId,
+                    collectionId = collLocalId,
                     title = note.title,
                     summary = note.summary,
                     body = note.body,
@@ -896,7 +899,7 @@ object MksExchangeV7Archive {
                 val bookLocalId = localBookId(asset.bookExternalId, asset.bookId) ?: 0L
                 val quizLocalId = localQuizId(asset.quizExternalId, asset.quizId) ?: 0L
                 val questionLocalId =
-                    localQuestionId(asset.questionExternalId, asset.questionId) ?: 0L
+                    localQuestionId(asset.questionExternalId, asset.questionId)
                 val assetPayload =
                     payloadFor(
                         asset.localPath,
