@@ -2,7 +2,8 @@ package com.ahmedyejam.mks.data.repository
 
 import android.util.Log
 import com.ahmedyejam.mks.data.model.OllamaRequest
-import com.ahmedyejam.mks.data.model.OllamaResponse
+import com.ahmedyejam.mks.data.model.OllamaRequestJsonAdapter
+import com.ahmedyejam.mks.data.model.OllamaResponseJsonAdapter
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -61,8 +62,8 @@ class OllamaRepository @Inject constructor() {
     private val moshi = Moshi.Builder()
         .build()
 
-    private val requestAdapter = moshi.adapter(OllamaRequest::class.java)
-    private val responseAdapter = moshi.adapter(OllamaResponse::class.java)
+    private val requestAdapter = OllamaRequestJsonAdapter(moshi)
+    private val responseAdapter = OllamaResponseJsonAdapter(moshi)
 
     private fun normalizeBaseUrl(baseUrl: String): String {
         val formatted =

@@ -1,6 +1,8 @@
 package com.ahmedyejam.mks.ui.booktools
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -26,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -91,12 +94,12 @@ fun QuizzesTab(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(quizzes, key = { it.id }) { quiz ->
-                BookToolListItem(
-                    title = quiz.title,
-                    subtitle = quiz.description ?: "Quiz",
-                    icon = Icons.AutoMirrored.Rounded.FactCheck,
+                com.ahmedyejam.mks.ui.library.components.QuizItem(
+                    quiz = quiz,
                     onClick = { onOpenQuiz(quiz.id) },
-                    onDelete = { onQuizLongClick(quiz) }
+                    onLongClick = { onQuizLongClick(quiz) },
+                    viewMode = "LIST",
+                    showCover = true
                 )
             }
         }
@@ -298,9 +301,36 @@ private fun EmptyTabContent(title: String, body: String, icon: ImageVector) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(icon, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-        Spacer(Modifier.height(16.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .blur(24.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        androidx.compose.foundation.shape.CircleShape
+                    )
+            )
+            Icon(
+                icon,
+                null,
+                modifier = Modifier.size(56.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        Spacer(Modifier.height(24.dp))
+        Text(
+            title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            body,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }

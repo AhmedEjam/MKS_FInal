@@ -42,6 +42,7 @@ import com.ahmedyejam.mks.data.preview.ClearMarksPreviewService
 import com.ahmedyejam.mks.data.preview.DeletePreviewService
 import com.ahmedyejam.mks.data.repair.AssetReferenceAuditService
 import com.ahmedyejam.mks.data.simulation.ChangeSimulationResult
+import com.ahmedyejam.mks.util.MksLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -255,13 +256,25 @@ class QuizRepository
         }
 
         suspend fun insertQuestions(questions: List<QuestionEntity>): List<Long> {
+            val TAG = "QuizRepository"
+            MksLogger.i(
+                TAG,
+                "Inserting ${questions.size} questions for quiz ${questions.firstOrNull()?.quizId}"
+            )
             val now = System.currentTimeMillis()
             val updatedQuestions =
                 questions.map { question ->
                     val finalQuestion =
                         if (question.imagePath?.startsWith("http", ignoreCase = true) == true) {
+                            MksLogger.i(TAG, "Downloading image: ${question.imagePath}")
                             val localPath = fileManager.downloadAndSaveImage(question.imagePath!!)
-                            if (localPath != null) question.copy(imagePath = localPath) else question
+                            if (localPath != null) {
+                                MksLogger.i(TAG, "Image saved to: $localPath")
+                                question.copy(imagePath = localPath)
+                            } else {
+                                MksLogger.w(TAG, "Failed to download image: ${question.imagePath}")
+                                question
+                            }
                         } else {
                             question
                         }
@@ -271,7 +284,9 @@ class QuizRepository
                         updatedAt = now,
                     )
                 }
+            MksLogger.i(TAG, "Persisting questions to database...")
             val ids = questionDao.insertQuestions(updatedQuestions)
+            MksLogger.i(TAG, "Successfully inserted ${ids.size} questions.")
             ids.zip(updatedQuestions).forEach { (id, question) ->
                 assetRepositoryProvider.get().syncQuestionCategories(id, question.categories)
                 assetRepositoryProvider.get().replaceOwnerAssetReferences("question", id, listOf(question.imagePath))

@@ -15,8 +15,8 @@ android {
         applicationId = "com.ahmedyejam.mks"
         minSdk = 30
         targetSdk = 37
-        versionCode = 6
-        versionName = "03.3"
+        versionCode = 8
+        versionName = "03.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -35,6 +35,18 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = signingConfigs.getByName("debug")
+        }
+
+        create("debugWithR8") {
+            initWith(getByName("debug"))
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            matchingFallbacks += listOf("debug", "release")
         }
     }
     compileOptions {

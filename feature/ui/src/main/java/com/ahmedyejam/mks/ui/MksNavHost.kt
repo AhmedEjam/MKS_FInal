@@ -70,7 +70,7 @@ fun MksNavHost(
     sharedUris: List<Uri>? = null,
     onConsumedSharedUris: () -> Unit = {},
 ) {
-    val currentThemeMode by dataStoreManager.themeMode.collectAsState(initial = "DAWN")
+    val currentThemeMode by dataStoreManager.themeMode.collectAsState(initial = "FOREST")
     val scope = rememberCoroutineScope()
     val startDestination = if (showWelcomeOnStartup) MksRoutes.WELCOME else MksRoutes.LIBRARY
     var libraryResetSignal by remember { mutableIntStateOf(0) }

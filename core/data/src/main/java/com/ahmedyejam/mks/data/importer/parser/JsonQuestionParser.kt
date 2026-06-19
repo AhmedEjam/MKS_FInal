@@ -123,9 +123,11 @@ class JsonQuestionParser(
         // 2. Exact match against option letter (A, B, C...)
         if (result.isEmpty()) {
             val upperTrimmed = trimmedAnswer.uppercase()
-            options.forEach { opt ->
+            options.forEachIndexed { index, opt ->
                 val letter = opt.id.removePrefix("opt_")
-                if (upperTrimmed == letter) {
+                val isAlphaMatch =
+                    upperTrimmed.length == 1 && upperTrimmed[0] in 'A'..'Z' && (upperTrimmed[0] - 'A') == index
+                if (upperTrimmed == letter || isAlphaMatch) {
                     result.add(opt.id)
                 }
             }
@@ -140,9 +142,15 @@ class JsonQuestionParser(
                     .filter { it.isNotEmpty() }
 
             parts.forEach { part ->
-                options.forEach { opt ->
+                options.forEachIndexed { index, opt ->
                     val letter = opt.id.removePrefix("opt_")
-                    if (part == letter || opt.text.equals(part, ignoreCase = true)) {
+                    val isAlphaMatch =
+                        part.length == 1 && part[0] in 'A'..'Z' && (part[0] - 'A') == index
+                    if (part == letter || isAlphaMatch || opt.text.equals(
+                            part,
+                            ignoreCase = true
+                        )
+                    ) {
                         result.add(opt.id)
                     }
                 }
@@ -159,17 +167,25 @@ class JsonQuestionParser(
         // 5. Smart fallback for letters contained in answer text (Word boundaries)
         if (result.isEmpty() && answerRaw.isNotBlank()) {
             val upperAnswer = answerRaw.uppercase()
-            options.forEach { opt ->
+            options.forEachIndexed { index, opt ->
                 val letter = opt.id.removePrefix("opt_")
-                if (letter.length == 1) {
-                    // Match ONLY if letter is isolated (fixes Issue 6)
-                    val regex = Regex("\\b$letter\\b")
-                    if (upperAnswer.contains(regex)) {
-                        result.add(opt.id)
-                    }
-                } else {
-                    if (upperAnswer.contains(letter)) {
-                        result.add(opt.id)
+                val alphaChar = if (index in 0..25) (65 + index).toChar().toString() else null
+
+                val matchLetters = mutableListOf<String>()
+                matchLetters.add(letter)
+                if (alphaChar != null) matchLetters.add(alphaChar)
+
+                matchLetters.forEach { matchLetter ->
+                    if (matchLetter.length == 1) {
+                        // Match ONLY if letter is isolated (fixes Issue 6)
+                        val regex = Regex("\\b$matchLetter\\b")
+                        if (upperAnswer.contains(regex)) {
+                            result.add(opt.id)
+                        }
+                    } else {
+                        if (upperAnswer.contains(matchLetter)) {
+                            result.add(opt.id)
+                        }
                     }
                 }
             }

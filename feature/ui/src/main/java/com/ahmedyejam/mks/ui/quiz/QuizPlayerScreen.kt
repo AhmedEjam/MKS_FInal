@@ -1330,6 +1330,7 @@ fun OptionItem(
             .fillMaxWidth()
             .alpha(if (isDropped) 0.5f else 1f)
             .graphicsLayer(scaleX = scale, scaleY = scale)
+            .clip(RoundedCornerShape(tokens.cardRadius))
             .combinedClickable(
                 enabled = !isAnswered && !isDropped,
                 onClick = onClick,

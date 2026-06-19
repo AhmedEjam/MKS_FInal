@@ -48,8 +48,8 @@ data class SlideshowCourseUiState(
 
 @HiltViewModel
 class SlideshowCourseViewModel @Inject constructor(
-    @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context,
-    @ApplicationScope private val applicationScope: kotlinx.coroutines.CoroutineScope,
+    @param:dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context,
+    @param:ApplicationScope private val applicationScope: kotlinx.coroutines.CoroutineScope,
     private val bookRepository: BookRepository,
     private val knowledgeRepository: KnowledgeRepository,
     private val assetRepository: AssetRepository,

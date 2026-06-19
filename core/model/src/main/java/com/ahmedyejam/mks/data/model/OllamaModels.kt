@@ -1,8 +1,10 @@
 package com.ahmedyejam.mks.data.model
 
+import androidx.annotation.Keep
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
+@Keep
 @JsonClass(generateAdapter = true)
 data class OllamaRequest(
     val model: String,
@@ -13,6 +15,7 @@ data class OllamaRequest(
     val images: List<String>? = null
 )
 
+@Keep
 @JsonClass(generateAdapter = true)
 data class OllamaResponse(
     val model: String,

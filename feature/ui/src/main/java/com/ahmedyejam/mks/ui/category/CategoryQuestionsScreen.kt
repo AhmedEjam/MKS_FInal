@@ -572,6 +572,7 @@ fun QuestionCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(tokens.cardRadius))
             .combinedClickable(
                 onClick = { if (isSelectionMode) onToggleSelection() else onEditClick() },
                 onLongClick = onToggleSelection

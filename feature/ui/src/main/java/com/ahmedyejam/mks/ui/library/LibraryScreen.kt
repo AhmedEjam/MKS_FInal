@@ -88,7 +88,7 @@ fun LibraryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val dataStoreManager = remember(context) { DataStoreManager(context) }
-    val currentThemeMode by dataStoreManager.themeMode.collectAsState(initial = "DAWN")
+    val currentThemeMode by dataStoreManager.themeMode.collectAsState(initial = "FOREST")
 
     val importState by importViewModel.importState.collectAsState()
     val workspaceId by viewModel.currentWorkspaceId.collectAsState()

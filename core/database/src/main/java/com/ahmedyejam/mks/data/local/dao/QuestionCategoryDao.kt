@@ -71,25 +71,6 @@ interface QuestionCategoryDao {
     )
     suspend fun getQuestionsByCategory(category: String): List<QuestionEntity>
 
-    @Query(
-        """
-        SELECT q.* FROM questions q
-        INNER JOIN quizzes qz ON q.quizId = qz.id
-        INNER JOIN books b ON qz.bookId = b.id
-        INNER JOIN workspaces w ON b.workspaceId = w.id
-        WHERE q.deletedAt IS NULL 
-          AND qz.deletedAt IS NULL 
-          AND b.deletedAt IS NULL 
-          AND w.deletedAt IS NULL
-          AND (qz.category = :category OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
-        ORDER BY
-            q.attempts ASC,
-            (CAST(q.correctCount AS FLOAT) / CASE WHEN q.attempts = 0 THEN 0.1 ELSE q.attempts END) ASC,
-            q.lastStudiedAt ASC
-        LIMIT :limit
-        """
-    )
-    suspend fun getAdaptiveQuestionsByCategory(category: String, limit: Int): List<QuestionEntity>
 
     @Transaction
     suspend fun replaceCategories(questionId: Long, categories: List<String>) {

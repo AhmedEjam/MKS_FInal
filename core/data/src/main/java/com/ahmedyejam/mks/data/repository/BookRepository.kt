@@ -84,7 +84,7 @@ class BookRepository
         private val categoryMergePreviewService: CategoryMergePreviewService? = null,
         private val clearMarksPreviewService: ClearMarksPreviewService? = null,
         private val assetReferenceAuditService: AssetReferenceAuditService? = null,
-        @com.ahmedyejam.mks.di.ApplicationScope private val scope: kotlinx.coroutines.CoroutineScope
+        @param:com.ahmedyejam.mks.di.ApplicationScope private val scope: kotlinx.coroutines.CoroutineScope
     ) {
     private val refreshJobs = java.util.concurrent.ConcurrentHashMap<Long, kotlinx.coroutines.Job>()
         fun getAllWorkspaces(): Flow<List<WorkspaceEntity>> = workspaceDao.getAllWorkspacesFlow()

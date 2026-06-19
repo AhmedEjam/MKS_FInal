@@ -43,20 +43,20 @@ val ForestErrorContainer = Color(0xFFFFDAD6)
 val ForestOnErrorContainer = Color(0xFF410002)
 
 // Midnight Theme — deep focus and low-glare study
-// Quiet navy / indigo instead of black + yellow.
-val MidnightPrimary = Color(0xFF8EA4D9)
-val MidnightOnPrimary = Color(0xFF0D1830)
+// Premium dark navy background (#0A0E1A), soft lavender and orange accents.
+val MidnightPrimary = Color(0xFFC3C6D7)
+val MidnightOnPrimary = Color(0xFF2C303D)
 val MidnightPrimaryContainer = Color(0xFF1D2B48)
 val MidnightOnPrimaryContainer = Color(0xFFDCE6FF)
-val MidnightSecondary = Color(0xFFB3C1D9)
-val MidnightTertiary = Color(0xFF95B1C1)
-val MidnightBackground = Color(0xFF081624)
-val MidnightSurface = Color(0xFF0E1D2E)
-val MidnightSurfaceVariant = Color(0xFF15263A)
-val MidnightOnBackground = Color(0xFFEAF1F8)
-val MidnightOnSurface = Color(0xFFEAF1F8)
-val MidnightOnSurfaceVariant = Color(0xFFC4D1DE)
-val MidnightOutline = Color(0xFF445D73)
+val MidnightSecondary = Color(0xFFD2BCFB) // Soft Lavender
+val MidnightTertiary = Color(0xFFFFB77D) // Vibrant Orange
+val MidnightBackground = Color(0xFF0A0E1A) // Deep Navy Background
+val MidnightSurface = Color(0xFF111317) // Elevated Surface
+val MidnightSurfaceVariant = Color(0xFF1A1C1F)
+val MidnightOnBackground = Color(0xFFE2E2E7)
+val MidnightOnSurface = Color(0xFFE2E2E7)
+val MidnightOnSurfaceVariant = Color(0xFFC7C6CC)
+val MidnightOutline = Color(0xFF46464C)
 val MidnightError = Color(0xFFFFB4AB)
 val MidnightErrorContainer = Color(0xFF93000A)
 val MidnightOnErrorContainer = Color(0xFFFFDAD6)

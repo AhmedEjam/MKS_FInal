@@ -180,7 +180,7 @@ fun SettingsScreen(
                 ThemeOption("PLAIN_DARK", R.string.theme_plain_dark, R.string.theme_plain_dark_desc),
                 ThemeOption("SYSTEM", R.string.theme_plain_system, R.string.theme_plain_system_desc)
             )
-            val currentThemeMode by dataStoreManager.themeMode.collectAsState(initial = "DAWN")
+            val currentThemeMode by dataStoreManager.themeMode.collectAsState(initial = "FOREST")
             val savedFontScale by dataStoreManager.fontScale.collectAsState(initial = 1.0f)
             val savedUiDensity by dataStoreManager.uiDensity.collectAsState(initial = 1.0f)
 

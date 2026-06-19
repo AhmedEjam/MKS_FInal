@@ -34,6 +34,8 @@ import com.ahmedyejam.mks.data.preview.DeletePreviewService
 import com.ahmedyejam.mks.data.repair.AssetReferenceAuditService
 import com.ahmedyejam.mks.data.seeder.MksDatabaseSeeder
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -80,8 +82,11 @@ class WorkspaceRepository
 
         suspend fun getDefaultWorkspace(): WorkspaceEntity? = workspaceDao.getDefaultWorkspace()
 
-        suspend fun getOrCreateDefaultWorkspace(): WorkspaceEntity {
-            workspaceDao.getWorkspaceByExternalId(WorkspaceDefaults.DEFAULT_EXTERNAL_ID)?.let { return it }
+    private val initializationMutex = Mutex()
+
+    suspend fun getOrCreateDefaultWorkspace(): WorkspaceEntity = initializationMutex.withLock {
+        workspaceDao.getWorkspaceByExternalId(WorkspaceDefaults.DEFAULT_EXTERNAL_ID)
+            ?.let { return@withLock it }
             workspaceDao.getDefaultWorkspace()?.let { existing ->
                 val updated =
                     existing.copy(
@@ -95,7 +100,7 @@ class WorkspaceRepository
                 workspaceDao.updateWorkspace(updated)
                 ensureWorkspaceSettings(updated.id)
                 seederProvider.get().seedDatabase(updated.id)
-                return updated
+                return@withLock updated
             }
 
             val workspaceId =
@@ -123,7 +128,6 @@ class WorkspaceRepository
             if (workspaceDao.getSettingsByWorkspaceId(workspaceId) == null) {
                 workspaceDao.insertSettings(WorkspaceSettingsEntity(workspaceId = workspaceId))
             }
-            seederProvider.get().seedDatabase(workspaceId)
         }
 
         suspend fun getWorkspaceById(id: Long): WorkspaceEntity? = workspaceDao.getWorkspaceById(id)

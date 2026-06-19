@@ -1,6 +1,5 @@
 package com.ahmedyejam.mks.ui.booktools
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -39,10 +39,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -67,6 +63,7 @@ import com.ahmedyejam.mks.ui.components.EntityEditDialog
 import com.ahmedyejam.mks.ui.library.components.CreateQuizDialog
 import com.ahmedyejam.mks.ui.review.CustomDatePickerDialog
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
+import com.ahmedyejam.mks.ui.theme.premiumGlassBackground
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,6 +83,15 @@ fun BookKnowledgeDashboardScreen(
 
     val tabs = remember { BookTab.entries.toTypedArray() }
     val pagerState = rememberPagerState(initialPage = tabs.indexOf(BookTab.QUIZZES).takeIf { it >= 0 } ?: 0) { tabs.size }
+    val tabListState = androidx.compose.foundation.lazy.rememberLazyListState(
+        initialFirstVisibleItemIndex = maxOf(
+            0,
+            (tabs.indexOf(BookTab.QUIZZES).takeIf { it >= 0 } ?: 0) - 1)
+    )
+
+    LaunchedEffect(pagerState.currentPage) {
+        tabListState.animateScrollToItem(maxOf(0, pagerState.currentPage - 1))
+    }
 
     var showCreateQuiz by remember { mutableStateOf(false) }
     var showCreateSlideshow by remember { mutableStateOf(false) }
@@ -100,45 +106,79 @@ fun BookKnowledgeDashboardScreen(
     var editingSource by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity?>(null) }
     var itemToSnooze by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.MistakeLogEntryEntity?>(null) }
 
+    var menuQuiz by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.QuizEntity?>(null) }
+    var editingQuiz by remember {
+        mutableStateOf<com.ahmedyejam.mks.data.local.entity.QuizEntity?>(
+            null
+        )
+    }
+    var showQuizEditDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(bookId) {
         viewModel.loadBook(bookId)
     }
 
     Scaffold(
         topBar = {
-            Column(
-                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-            ) {
-                TopAppBar(
-                    title = { Text(uiState.book?.title ?: "Book") },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                        }
+            TopAppBar(
+                title = { Text(uiState.book?.title ?: "Book") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
-                ScrollableTabRow(
-                    selectedTabIndex = pagerState.currentPage,
-                    edgePadding = 16.dp,
-                    divider = {},
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    indicator = { tabPositions ->
-                        if (pagerState.currentPage < tabPositions.size) {
-                            TabRowDefaults.SecondaryIndicator(
-                                Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                                color = MaterialTheme.colorScheme.primary
+            )
+        },
+        bottomBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 32.dp, end = 32.dp, bottom = 48.dp, top = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier.premiumGlassBackground(
+                        baseAlpha = 0.15f,
+                        cornerRadius = 50.dp
+                    )
+                ) {
+                    LazyRow(
+                        state = tabListState,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 8.dp,
+                            vertical = 6.dp
+                        ),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(tabs.size) { index ->
+                            val tab = tabs[index]
+                            val isSelected = pagerState.currentPage == index
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                                label = { Text(tab.title) },
+                                leadingIcon = { Icon(tab.icon, null, Modifier.size(18.dp)) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    enabled = true,
+                                    selected = isSelected,
+                                    borderColor = androidx.compose.ui.graphics.Color.Transparent,
+                                    selectedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
+                                    disabledBorderColor = androidx.compose.ui.graphics.Color.Transparent
+                                ),
+                                shape = RoundedCornerShape(percent = 50)
                             )
                         }
-                    }
-                ) {
-                    tabs.forEachIndexed { index, tab ->
-                        Tab(
-                            selected = pagerState.currentPage == index,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                            text = { Text(tab.title) },
-                            icon = { Icon(tab.icon, null, Modifier.size(20.dp)) }
-                        )
                     }
                 }
             }
@@ -158,8 +198,19 @@ fun BookKnowledgeDashboardScreen(
                             else -> {}
                         }
                     },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    modifier = Modifier.premiumGlassBackground(
+                        baseAlpha = 0.2f,
+                        cornerRadius = 50.dp
+                    ),
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(
+                        0.dp,
+                        0.dp,
+                        0.dp,
+                        0.dp
+                    )
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Create ${currentTab.title}")
                 }
@@ -192,7 +243,7 @@ fun BookKnowledgeDashboardScreen(
                     BookTab.QUIZZES -> QuizzesTab(
                         uiState.quizzes,
                         onOpenQuiz,
-                        { viewModel.deleteQuiz(it) })
+                        { menuQuiz = it })
 
                     BookTab.NOTES -> NotesTab(
                         uiState.allNotes,
@@ -399,6 +450,36 @@ fun BookKnowledgeDashboardScreen(
             editingSource = null
         }
     }
+
+    menuQuiz?.let { quiz ->
+        com.ahmedyejam.mks.ui.library.components.QuizOptionsSheet(
+            quiz = quiz,
+            onDismiss = { menuQuiz = null },
+            onPinClick = { viewModel.toggleQuizPinned(quiz) },
+            onEditClick = { editingQuiz = quiz; showQuizEditDialog = true },
+            onDeleteClick = { viewModel.deleteQuiz(quiz); menuQuiz = null }
+        )
+    }
+
+    if (showQuizEditDialog) {
+        EntityEditDialog(
+            title = stringResource(R.string.edit),
+            initialName = editingQuiz?.title ?: "",
+            initialDescription = editingQuiz?.description ?: "",
+            initialImage = editingQuiz?.coverImage ?: "",
+            titleLabel = stringResource(R.string.quiz_title_label),
+            descriptionLabel = stringResource(R.string.description_label),
+            showImage = true,
+            onDismiss = { showQuizEditDialog = false }
+        ) { title, desc, cover ->
+            editingQuiz?.let { quiz ->
+                viewModel.updateQuiz(
+                    quiz.copy(title = title, description = desc),
+                    cover.ifBlank { null })
+            }
+            showQuizEditDialog = false
+        }
+    }
 }
 
 @Composable
@@ -408,8 +489,19 @@ fun DashboardSummaryCard(summary: BookKnowledgeSummary?) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(tokens.cardRadius),
-        elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
+        colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+        border = androidx.compose.foundation.BorderStroke(
+            0.5.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
+        Box(
+            modifier = Modifier.premiumGlassBackground(
+                baseAlpha = tokens.glassAlphaHeavy,
+                cornerRadius = tokens.cardRadius
+            )
+        ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Assessment, null, tint = MaterialTheme.colorScheme.primary)
@@ -438,17 +530,44 @@ fun DashboardSummaryCard(summary: BookKnowledgeSummary?) {
                 SmallStat("Due", summary.reviewSchedulesDue.toString(), MaterialTheme.colorScheme.error)
                 SmallStat("Weak", summary.weakQuestions.toString(), MaterialTheme.colorScheme.secondary)
                 SmallStat("Marked", summary.markedQuestions.toString(), MaterialTheme.colorScheme.tertiary)
-                SmallStat("Mistakes", summary.openMistakes.toString(), MaterialTheme.colorScheme.outline)
+                SmallStat(
+                    "Mistakes",
+                    summary.openMistakes.toString(),
+                    MaterialTheme.colorScheme.onSurface
+                )
             }
+        }
         }
     }
 }
 
 @Composable
 private fun SmallStat(label: String, value: String, color: androidx.compose.ui.graphics.Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = color)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val tokens = LocalMksDesignTokens.current
+    androidx.compose.material3.Surface(
+        shape = RoundedCornerShape(tokens.chipRadius),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        border = androidx.compose.foundation.BorderStroke(
+            0.5.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+        )
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Text(
+                value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -527,17 +646,40 @@ private fun MagicActionChip(
     icon: ImageVector,
     onClick: () -> Unit
 ) {
-    FilterChip(
-        selected = true,
+    val tokens = LocalMksDesignTokens.current
+    androidx.compose.material3.Surface(
         onClick = onClick,
-        label = { Text(label) },
-        leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
-    )
+        shape = androidx.compose.foundation.shape.CircleShape,
+        color = androidx.compose.ui.graphics.Color.Transparent,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+        ),
+        modifier = Modifier.height(38.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .premiumGlassBackground(
+                    baseAlpha = tokens.glassAlphaLight,
+                    cornerRadius = 50.dp
+                )
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(icon, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
 }
 
 @Suppress("unused")
@@ -555,7 +697,7 @@ private fun ToolCard(
             .fillMaxWidth()
             .height(120.dp),
         shape = RoundedCornerShape(tokens.cardRadius),
-        elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
     ) {
         Column(

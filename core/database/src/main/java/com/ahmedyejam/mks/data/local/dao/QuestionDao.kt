@@ -44,8 +44,6 @@ interface QuestionDao {
     @Query("UPDATE questions SET deletedAt = :deletedAt, updatedAt = :deletedAt, lastEditedAt = :deletedAt WHERE id = :questionId")
     suspend fun softDeleteQuestionById(questionId: Long, deletedAt: Long)
 
-    @Query("UPDATE questions SET deletedAt = :deletedAt, updatedAt = :deletedAt, lastEditedAt = :deletedAt WHERE id IN (:ids)")
-    suspend fun softDeleteQuestionsByIds(ids: List<Long>, deletedAt: Long)
 
     @Query("UPDATE questions SET deletedAt = :deletedAt, updatedAt = :deletedAt, lastEditedAt = :deletedAt WHERE quizId = :quizId AND deletedAt IS NULL")
     suspend fun softDeleteQuestionsByQuizId(quizId: Long, deletedAt: Long)
@@ -56,17 +54,11 @@ interface QuestionDao {
     @Query("UPDATE questions SET deletedAt = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE quizId = :quizId AND deletedAt = :deletedAtFilter")
     suspend fun restoreQuestionsByQuizId(quizId: Long, updatedAt: Long, deletedAtFilter: Long)
 
-    @Query("SELECT * FROM questions WHERE id = :id LIMIT 1")
-    suspend fun getQuestionByIdIncludingDeleted(id: Long): QuestionEntity?
 
     @Delete
     suspend fun hardDeleteQuestion(question: QuestionEntity)
 
-    @Query("DELETE FROM questions WHERE id IN (:ids)")
-    suspend fun hardDeleteQuestionsByIds(ids: List<Long>)
     
-    @Query("DELETE FROM questions WHERE quizId = :quizId")
-    suspend fun hardDeleteQuestionsByQuizId(quizId: Long)
 
     @Query("""
         UPDATE questions 
@@ -105,54 +97,6 @@ interface QuestionDao {
     """)
     suspend fun getAdaptiveQuestionsByBook(bookId: Long, limit: Int): List<QuestionEntity>
 
-    @Query("""
-        SELECT q.* FROM questions q
-        INNER JOIN quizzes qz ON q.quizId = qz.id
-        INNER JOIN books b ON qz.bookId = b.id
-        INNER JOIN workspaces w ON b.workspaceId = w.id
-        WHERE q.deletedAt IS NULL 
-          AND qz.deletedAt IS NULL 
-          AND b.deletedAt IS NULL 
-          AND w.deletedAt IS NULL
-          AND (qz.category = :category OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
-        ORDER BY
-            q.attempts ASC,
-            (CAST(q.correctCount AS FLOAT) / CASE WHEN q.attempts = 0 THEN 0.1 ELSE q.attempts END) ASC,
-            q.lastStudiedAt ASC
-        LIMIT :limit
-    """)
-    suspend fun getAdaptiveQuestionsByCategory(category: String, limit: Int): List<QuestionEntity>
-
-    @Query("""
-        SELECT q.* FROM questions q
-        INNER JOIN quizzes qz ON q.quizId = qz.id
-        INNER JOIN books b ON qz.bookId = b.id
-        INNER JOIN workspaces w ON b.workspaceId = w.id
-        WHERE q.deletedAt IS NULL 
-          AND qz.deletedAt IS NULL 
-          AND b.deletedAt IS NULL 
-          AND w.deletedAt IS NULL
-          AND (qz.category = :category OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
-        ORDER BY q.id
-    """)
-    fun getQuestionsByCategoryFlow(category: String): Flow<List<QuestionEntity>>
-
-    @Query("""
-        SELECT q.* FROM questions q
-        INNER JOIN quizzes qz ON q.quizId = qz.id
-        INNER JOIN books b ON qz.bookId = b.id
-        INNER JOIN workspaces w ON b.workspaceId = w.id
-        WHERE q.deletedAt IS NULL 
-          AND qz.deletedAt IS NULL 
-          AND b.deletedAt IS NULL 
-          AND w.deletedAt IS NULL
-          AND (qz.category = :category OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
-        ORDER BY q.id
-    """)
-    suspend fun getQuestionsByCategory(category: String): List<QuestionEntity>
-
-    @Query("SELECT DISTINCT category FROM quizzes WHERE category IS NOT NULL AND deletedAt IS NULL")
-    fun getAllCategories(): Flow<List<String>>
 
     @Query(
         """
@@ -286,22 +230,6 @@ interface QuestionDao {
           AND b.deletedAt IS NULL 
           AND w.deletedAt IS NULL
           AND q.isMarked = 1 
-        ORDER BY q.markedAt DESC, q.updatedAt DESC
-    """
-    )
-    suspend fun getMarkedQuestions(): List<QuestionEntity>
-
-    @Query(
-        """
-        SELECT q.* FROM questions q
-        INNER JOIN quizzes qz ON q.quizId = qz.id
-        INNER JOIN books b ON qz.bookId = b.id
-        INNER JOIN workspaces w ON b.workspaceId = w.id
-        WHERE q.deletedAt IS NULL 
-          AND qz.deletedAt IS NULL 
-          AND b.deletedAt IS NULL 
-          AND w.deletedAt IS NULL
-          AND q.isMarked = 1 
           AND (q.markReviewAt IS NULL OR q.markReviewAt <= :now) 
         ORDER BY COALESCE(q.markReviewAt, q.markedAt, q.updatedAt) ASC 
         LIMIT :limit
@@ -312,30 +240,11 @@ interface QuestionDao {
     @Query("SELECT * FROM questions WHERE quizId = :quizId AND deletedAt IS NULL AND isMarked = 1 ORDER BY markedAt DESC, updatedAt DESC")
     suspend fun getMarkedQuestionsByQuiz(quizId: Long): List<QuestionEntity>
 
-    @Query("SELECT * FROM questions WHERE deletedAt IS NULL AND quizId IN (SELECT id FROM quizzes WHERE bookId = :bookId AND deletedAt IS NULL) AND isMarked = 1 ORDER BY markedAt DESC, updatedAt DESC")
-    suspend fun getMarkedQuestionsByBook(bookId: Long): List<QuestionEntity>
 
-    @Query(
-        """
-        SELECT q.* FROM questions q
-        INNER JOIN quizzes qz ON q.quizId = qz.id
-        INNER JOIN books b ON qz.bookId = b.id
-        INNER JOIN workspaces w ON b.workspaceId = w.id
-        WHERE q.deletedAt IS NULL 
-          AND qz.deletedAt IS NULL 
-          AND b.deletedAt IS NULL 
-          AND w.deletedAt IS NULL
-          AND q.isDropped = 1 
-        ORDER BY q.droppedAt DESC, q.updatedAt DESC
-    """
-    )
-    suspend fun getDroppedQuestions(): List<QuestionEntity>
 
     @Query("UPDATE questions SET isMarked = 0, markedAt = NULL, markReason = NULL, markReviewAt = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE quizId = :quizId AND isMarked = 1")
     suspend fun clearMarksForQuiz(quizId: Long, updatedAt: Long)
 
-    @Query("UPDATE questions SET isMarked = 0, markedAt = NULL, markReason = NULL, markReviewAt = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE deletedAt IS NULL AND quizId IN (SELECT id FROM quizzes WHERE bookId = :bookId AND deletedAt IS NULL) AND isMarked = 1")
-    suspend fun clearMarksForBook(bookId: Long, updatedAt: Long)
 
     @Query("UPDATE questions SET isMarked = 0, markedAt = NULL, markReason = NULL, markReviewAt = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE id = :questionId")
     suspend fun clearQuestionMark(questionId: Long, updatedAt: Long)
@@ -346,23 +255,6 @@ interface QuestionDao {
     @Query("UPDATE questions SET markReviewAt = :reviewAt, updatedAt = :updatedAt WHERE id = :questionId AND isMarked = 1")
     suspend fun snoozeMarkedQuestion(questionId: Long, reviewAt: Long, updatedAt: Long)
 
-    @Query(
-        """
-        SELECT q.* FROM questions q
-        INNER JOIN quizzes qz ON q.quizId = qz.id
-        INNER JOIN books b ON qz.bookId = b.id
-        INNER JOIN workspaces w ON b.workspaceId = w.id
-        WHERE q.deletedAt IS NULL 
-          AND qz.deletedAt IS NULL 
-          AND b.deletedAt IS NULL 
-          AND w.deletedAt IS NULL
-          AND q.attempts > 0 
-          AND q.correctCount < q.attempts 
-        ORDER BY q.updatedAt DESC 
-        LIMIT :limit
-    """
-    )
-    suspend fun getWeakQuestions(limit: Int = 50): List<QuestionEntity>
 
     @Query("""
         SELECT q.* FROM questions q

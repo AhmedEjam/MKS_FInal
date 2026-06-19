@@ -103,6 +103,7 @@ import com.ahmedyejam.mks.data.model.CategoryWithMetadata
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 import com.ahmedyejam.mks.ui.theme.MKSTheme
 import com.ahmedyejam.mks.ui.theme.normalizeMksThemeMode
+import com.ahmedyejam.mks.ui.theme.premiumGlassBackground
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -403,6 +404,11 @@ fun CategoryPreviewCard(
     Surface(
         modifier = modifier
             .widthIn(min = 132.dp)
+            .premiumGlassBackground(
+                baseAlpha = tokens.glassAlphaLight,
+                cornerRadius = tokens.cardRadius
+            )
+            .clip(RoundedCornerShape(tokens.cardRadius))
             .combinedClickable(
                 onClick = { onCategorySelected(category) },
                 onLongClick = {
@@ -411,17 +417,17 @@ fun CategoryPreviewCard(
                 }
             ),
         shape = RoundedCornerShape(tokens.cardRadius),
-        color = colors.surfaceVariant.copy(alpha = 0.42f),
-        border = BorderStroke(1.dp, colors.outline.copy(alpha = 0.10f)),
-        shadowElevation = if (category.isPinned) tokens.cardElevation else 0.dp
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, tint.copy(alpha = 0.20f)),
+        shadowElevation = 0.dp
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Surface(
-                modifier = Modifier.size(42.dp),
+                modifier = Modifier.size(36.dp),
                 shape = RoundedCornerShape(tokens.chipRadius),
                 color = tint.copy(alpha = 0.13f),
                 contentColor = tint
@@ -482,12 +488,19 @@ fun BookItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(tokens.cardRadius))
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = RoundedCornerShape(tokens.cardRadius),
-        colors = CardDefaults.cardColors(containerColor = colors.surface.copy(alpha = 0.96f)),
-        border = BorderStroke(1.dp, colors.outline.copy(alpha = 0.11f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        border = BorderStroke(0.5.dp, colors.outline.copy(alpha = 0.15f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
+        Box(
+            modifier = Modifier.premiumGlassBackground(
+                baseAlpha = tokens.glassAlphaHeavy,
+                cornerRadius = tokens.cardRadius
+            )
+        ) {
         if (viewMode == "GRID") {
             Column(modifier = Modifier.padding(13.dp)) {
                 BookVisual(
@@ -533,6 +546,7 @@ fun BookItem(
                     Icon(Icons.Rounded.MoreVert, contentDescription = "More", tint = colors.onSurfaceVariant)
                 }
             }
+        }
         }
     }
 }
@@ -600,9 +614,9 @@ private fun BookVisual(
                     Modifier.background(
                         Brush.linearGradient(
                             listOf(
-                                colors.primaryContainer.copy(alpha = 0.50f),
-                                colors.surface.copy(alpha = 0.88f),
-                                colors.secondaryContainer.copy(alpha = 0.26f)
+                                colors.primaryContainer.copy(alpha = 0.60f),
+                                colors.surface.copy(alpha = 0.90f),
+                                colors.secondaryContainer.copy(alpha = 0.35f)
                             )
                         )
                     )
@@ -704,12 +718,19 @@ fun QuizItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(tokens.cardRadius))
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         shape = RoundedCornerShape(tokens.cardRadius),
-        colors = CardDefaults.cardColors(containerColor = colors.surface.copy(alpha = 0.94f)),
-        border = BorderStroke(1.dp, colors.outline.copy(alpha = 0.12f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        border = BorderStroke(0.5.dp, colors.outline.copy(alpha = 0.15f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
+        Box(
+            modifier = Modifier.premiumGlassBackground(
+                baseAlpha = tokens.glassAlphaHeavy,
+                cornerRadius = tokens.cardRadius
+            )
+        ) {
         if (viewMode == "GRID") {
             Column(modifier = Modifier.padding(12.dp)) {
                 QuizVisual(
@@ -748,6 +769,7 @@ fun QuizItem(
                 }
             }
         }
+        }
     }
 }
 
@@ -758,10 +780,24 @@ private fun QuizVisual(
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme
+    val tokens = LocalMksDesignTokens.current
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
-            .background(colors.secondaryContainer.copy(alpha = 0.44f)),
+            .background(
+                if (tokens.useGradients) Brush.linearGradient(
+                    listOf(
+                        colors.secondaryContainer.copy(alpha = 0.60f),
+                        colors.surface.copy(alpha = 0.85f),
+                        colors.primaryContainer.copy(alpha = 0.20f)
+                    )
+                ) else Brush.linearGradient(
+                    listOf(
+                        colors.secondaryContainer.copy(alpha = 0.44f),
+                        colors.secondaryContainer.copy(alpha = 0.44f)
+                    )
+                )
+            ),
         contentAlignment = Alignment.Center
     ) {
         if (showCover && !quiz.coverImage.isNullOrBlank()) {

@@ -47,7 +47,7 @@ data class FlashcardDeckUiState(
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class FlashcardDeckViewModel @Inject constructor(
-    @ApplicationScope private val applicationScope: kotlinx.coroutines.CoroutineScope,
+    @param:ApplicationScope private val applicationScope: kotlinx.coroutines.CoroutineScope,
     private val bookRepository: BookRepository,
     private val knowledgeRepository: KnowledgeRepository,
     private val assetRepository: AssetRepository,

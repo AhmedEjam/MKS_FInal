@@ -193,10 +193,10 @@ private fun CategoriesSection(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(26.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.60f))
             .border(
                 1.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
                 RoundedCornerShape(26.dp),
             )
             .padding(16.dp),

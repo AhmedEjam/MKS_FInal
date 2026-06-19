@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 @Singleton
 class FocusManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private var previousFilter: Int = NotificationManager.INTERRUPTION_FILTER_ALL

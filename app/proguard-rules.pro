@@ -19,25 +19,75 @@
     @androidx.annotation.Keep <fields>;
 }
 
-# --- Data Layer (MKS Specific) ---
-# Protect the entire data layer as requested (Broad rule for safety)
-# This prevents obfuscation issues with Room entities, DTOs, and repositories.
--keep class com.ahmedyejam.mks.data.** { *; }
+# --- Enum Keep Rules (Finding ①) ---
+# Prevent R8 from removing or renaming enum members used with valueOf() or name()
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+# Explicitly keep QuestionType and its constants
+-keep enum com.ahmedyejam.mks.data.local.entity.QuestionType { *; }
 
-# --- Kotlin Serialization ---
-# Keep serializable classes and their companion objects to ensure stable JSON parsing
--keep @kotlinx.serialization.Serializable class * { *; }
--keepclassmembers class * {
-    @kotlinx.serialization.Serializable *;
+# --- Moshi Keep Rules (Finding ② & ⑤) ---
+# Keep all generated JsonAdapters and ensure reflection works for generic types
+-keep class com.ahmedyejam.mks.data.local.entity.**JsonAdapter { *; }
+-keep class com.ahmedyejam.mks.data.model.**JsonAdapter { *; }
+-keep class com.squareup.moshi.** { *; }
+-keepattributes *Annotation*, Signature, EnclosingMethod, InnerClasses
+
+# Prevent Moshi from stripping reflection-based adapter logic for generic types
+-keepclassmembers class com.squareup.moshi.Types {
+    public static *** newParameterizedType(...);
 }
 
-# --- Room & Moshi ---
-# While libraries publish consumer rules, these ensure stability in complex R8 configurations
--keep class **JsonAdapter { *; }
--keep class **JsonAdapterKt { *; }
+# Preserve names and fields of classes annotated with @JsonClass for adapter lookup
+-keep @com.squareup.moshi.JsonClass class * { *; }
+-keepclassmembers class * {
+    @com.squareup.moshi.JsonClass <init>(...);
+}
+
+# Preservation of generic signatures is vital for Moshi's reflection on List<T>
+-keep class java.util.List { *; }
+-keep class java.util.Map { *; }
+-keep class java.util.ArrayList { *; }
+-keep class java.util.HashMap { *; }
+-keep class java.util.Set { *; }
+-keep class java.util.HashSet { *; }
+
+# --- Room / Data Access (Finding ③) ---
 -keep class * extends androidx.room.RoomDatabase
--keep class * extends androidx.room.Entity
+-keep @androidx.room.Dao interface *
 -keep class * implements androidx.room.Dao
+-keep @androidx.room.Entity class *
+-keep class com.ahmedyejam.mks.data.local.MksDatabase { *; }
+-keep class com.ahmedyejam.mks.data.local.dao.** { *; }
+-keep class com.ahmedyejam.mks.data.repository.** { *; }
+-keep class com.ahmedyejam.mks.data.local.Converters { *; }
+
+# Keep Room's generated implementation classes
+-keep class *_*_Impl { *; }
+-keep class com.ahmedyejam.mks.data.local.MksDatabase_Impl { *; }
+-keep class com.ahmedyejam.mks.data.local.dao.**_Impl { *; }
+
+# Prevent Room entities from being stripped of their fields (crucial for reflection binding)
+-keepclassmembers @androidx.room.Entity class * {
+    <fields>;
+    <init>(...);
+}
+
+# --- Hilt / Dagger (Finding ④) ---
+-keep class dagger.hilt.** { *; }
+-keep class javax.inject.** { *; }
+-keep @dagger.hilt.android.AndroidEntryPoint class *
+-keep @com.google.dagger.** class *
+-keep class * {
+    @javax.inject.Inject <fields>;
+    @javax.inject.Inject <init>(...);
+}
+
+# --- Data Seeding (R8 Safety) ---
+# Ensure the seeder is preserved
+-keep class com.ahmedyejam.mks.data.seeder.** { *; }
 
 # --- Third Party Fixes / Dontwarns ---
 # Apache POI may reference optional XML/security backends depending on workbook contents.
@@ -51,6 +101,10 @@
 -dontwarn java.awt.**
 -dontwarn javax.xml.stream.**
 -dontwarn org.osgi.framework.**
+-dontwarn org.osgi.annotation.**
+-dontwarn org.codehaus.stax2.**
+-dontwarn org.apache.poi.xslf.draw.**
+-dontwarn org.apache.poi.sl.draw.**
 
 # Apache POI & Aalto XML
 -keep class com.fasterxml.aalto.** { *; }
@@ -60,6 +114,10 @@
 -keep class org.apache.xmlbeans.** { *; }
 -keep interface org.apache.xmlbeans.** { *; }
 -keep class schemaorg_apache_xmlbeans.** { *; }
+-keep class org.openxmlformats.** { *; }
+-keep interface org.openxmlformats.** { *; }
+-keep class com.microsoft.schemas.** { *; }
+-keep interface com.microsoft.schemas.** { *; }
 
 # Preserve ServiceLoader files for POI providers
 -keepclassmembers class * {
@@ -174,3 +232,12 @@
 -dontwarn org.w3c.dom.traversal.DocumentTraversal
 -dontwarn org.w3c.dom.traversal.NodeFilter
 -dontwarn org.w3c.dom.traversal.NodeIterator
+
+# --- Network / Image Loading ---
+-keep class com.ahmedyejam.mks.data.network.** { *; }
+-keep class okhttp3.** { *; }
+-dontwarn okhttp3.**
+
+# --- Apache POI / OpenXML Schemas (Missing Rules) ---
+-dontwarn org.openxmlformats.schemas.**
+-dontwarn com.microsoft.schemas.**

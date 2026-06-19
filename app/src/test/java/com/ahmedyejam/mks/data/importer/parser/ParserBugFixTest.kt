@@ -45,7 +45,7 @@ class ParserBugFixTest {
 
         assertNotNull(result)
         assertEquals(1, result!!.correctAnswers.size)
-        assertEquals("opt_A", result.correctAnswers[0])
+        assertEquals("opt_0", result.correctAnswers[0])
     }
 
     @Test
@@ -67,7 +67,7 @@ class ParserBugFixTest {
 
         assertNotNull(result)
         assertEquals(1, result!!.correctAnswers.size)
-        assertEquals("opt_B", result.correctAnswers[0])
+        assertEquals("opt_1", result.correctAnswers[0])
     }
 
     @Test
@@ -88,7 +88,7 @@ class ParserBugFixTest {
         assertEquals(1, results.size)
         val q = results[0]
 
-        assertEquals("opt_A", q.correctAnswers[0])
+        assertEquals("opt_0", q.correctAnswers[0])
 
         // Test with "A" which is a substring of "Paris"
         val json2 =
@@ -100,7 +100,7 @@ class ParserBugFixTest {
             }
             """.trimIndent()
         val results2 = parser.parse(json2)
-        assertEquals("opt_A", results2[0].correctAnswers[0])
+        assertEquals("opt_0", results2[0].correctAnswers[0])
 
         // Test with an answer that is NOT an option letter and NOT an option text
         val json3 =

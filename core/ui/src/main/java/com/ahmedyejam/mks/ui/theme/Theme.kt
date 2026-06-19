@@ -93,13 +93,22 @@ private val LavenderColorScheme = lightColorScheme(
 )
 
 fun normalizeMksThemeMode(themeMode: String?): String {
-    val mode = themeMode?.uppercase()?.trim() ?: "DAWN"
-    return if (mode in setOf("DAWN", "FOREST", "MIDNIGHT", "LAVENDER", "PLAIN_LIGHT", "PLAIN_DARK", "SYSTEM")) mode else "DAWN"
+    val mode = themeMode?.uppercase()?.trim() ?: "FOREST"
+    return if (mode in setOf(
+            "DAWN",
+            "FOREST",
+            "MIDNIGHT",
+            "LAVENDER",
+            "PLAIN_LIGHT",
+            "PLAIN_DARK",
+            "SYSTEM"
+        )
+    ) mode else "FOREST"
 }
 
 @Composable
 fun MKSTheme(
-    themeMode: String = "DAWN",
+    themeMode: String = "FOREST",
     dynamicColor: Boolean = false,
     fontScale: Float = 1.0f,
     uiDensity: Float = 1.0f,
@@ -115,7 +124,7 @@ fun MKSTheme(
         "FOREST" -> ForestColorScheme
         "MIDNIGHT" -> MidnightColorScheme
         "LAVENDER" -> LavenderColorScheme
-        else -> DawnColorScheme
+        else -> ForestColorScheme
     }
 
     val isActuallyDark = when (normalizedTheme) {

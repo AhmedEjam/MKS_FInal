@@ -532,6 +532,8 @@ class AssetRepository
 
         fun saveImage(uri: Uri): String? = fileManager.saveImage(uri)
 
+    fun saveImage(path: String?): String? = fileManager.saveImage(path)
+
         suspend fun softDeleteAnnotation(annotationId: Long) =
             annotationDao.softDeleteAnnotationById(
                 annotationId,

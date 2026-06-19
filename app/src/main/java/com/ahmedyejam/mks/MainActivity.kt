@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
 
         setContent {
-            val themeMode by dataStoreManager.themeMode.collectAsState(initial = "DAWN")
+            val themeMode by dataStoreManager.themeMode.collectAsState(initial = "FOREST")
             val fontScale by dataStoreManager.fontScale.collectAsState(initial = 1.0f)
             val uiDensity by dataStoreManager.uiDensity.collectAsState(initial = 1.0f)
             val language by dataStoreManager.language.collectAsState(initial = "en")

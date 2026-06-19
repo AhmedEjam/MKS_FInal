@@ -18,7 +18,7 @@ object MksThemeModes {
             PLAIN_LIGHT, "LIGHT" -> PLAIN_LIGHT
             PLAIN_DARK, "DARK" -> PLAIN_DARK
             SYSTEM, "PLAIN_SYSTEM" -> SYSTEM
-            else -> DAWN
+            else -> FOREST
         }
 }
 

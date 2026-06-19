@@ -6,8 +6,8 @@ import org.junit.Test
 class SettingsSanitizerTest {
     @Test
     fun testThemeSanitization() {
-        assertEquals("DAWN", SettingsSanitizer.theme(null))
-        assertEquals("DAWN", SettingsSanitizer.theme("INVALID"))
+        assertEquals("FOREST", SettingsSanitizer.theme(null))
+        assertEquals("FOREST", SettingsSanitizer.theme("INVALID"))
         assertEquals("MIDNIGHT", SettingsSanitizer.theme("midnight"))
         assertEquals("PLAIN_LIGHT", SettingsSanitizer.theme("plain_light"))
         assertEquals("PLAIN_DARK", SettingsSanitizer.theme("plain_dark"))

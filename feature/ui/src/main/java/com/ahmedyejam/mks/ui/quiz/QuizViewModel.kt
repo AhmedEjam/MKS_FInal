@@ -157,7 +157,7 @@ class QuizViewModel @Inject constructor(
     val timerState: StateFlow<TimerState> = _timerState.asStateFlow()
 
     val themeMode: StateFlow<String> = dataStoreManager.themeMode
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "DAWN")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "FOREST")
 
     private var timerJob: Job? = null
     private var autoAdvanceJob: Job? = null

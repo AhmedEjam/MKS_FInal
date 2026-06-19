@@ -918,6 +918,53 @@ class BookToolsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(error = null, successMessage = null)
     }
 
+    fun toggleQuizPinned(quiz: QuizEntity) {
+        viewModelScope.launch {
+            try {
+                val updated =
+                    quiz.copy(isPinned = !quiz.isPinned, updatedAt = System.currentTimeMillis())
+                quizRepository.updateQuiz(updated)
+                _uiState.value = _uiState.value.copy(
+                    quizzes = _uiState.value.quizzes.map { if (it.id == updated.id) updated else it }
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message)
+            }
+        }
+    }
+
+    fun updateQuiz(quiz: QuizEntity, newCoverUri: String? = null) {
+        viewModelScope.launch {
+            try {
+                val finalQuiz = when {
+                    newCoverUri?.startsWith("content://") == true -> {
+                        val savedPath =
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                assetRepository.saveImage(android.net.Uri.parse(newCoverUri))
+                            }
+                        quiz.copy(coverImage = savedPath, updatedAt = System.currentTimeMillis())
+                    }
+
+                    newCoverUri != null -> {
+                        val savedPath =
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                assetRepository.saveImage(newCoverUri)
+                            }
+                        quiz.copy(coverImage = savedPath, updatedAt = System.currentTimeMillis())
+                    }
+
+                    else -> quiz.copy(updatedAt = System.currentTimeMillis())
+                }
+                quizRepository.updateQuiz(finalQuiz)
+                _uiState.value = _uiState.value.copy(
+                    quizzes = _uiState.value.quizzes.map { if (it.id == finalQuiz.id) finalQuiz else it }
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message)
+            }
+        }
+    }
+
     fun deleteQuiz(quiz: QuizEntity) {
         viewModelScope.launch {
             try {

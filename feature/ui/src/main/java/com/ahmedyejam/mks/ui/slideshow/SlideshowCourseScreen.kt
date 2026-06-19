@@ -461,6 +461,7 @@ private fun SlideListItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(tokens.cardRadius))
             .combinedClickable(
                 onClick = { if (isSelectionMode) onToggleSelect() else onEdit() },
                 onLongClick = onToggleSelect
