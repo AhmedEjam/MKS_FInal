@@ -12,6 +12,7 @@ data class SlideGenerationConfig(
     // Speaker notes mapping
     val includeHintInSpeakerNotes: Boolean = true,
     val includeReferenceInSpeakerNotes: Boolean = false,
+    val includeAdditionalInfoInSpeakerNotes: Boolean = false,
     
     // Media
     val includeImage: Boolean = false

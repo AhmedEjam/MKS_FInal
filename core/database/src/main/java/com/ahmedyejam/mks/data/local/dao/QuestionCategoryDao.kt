@@ -23,14 +23,33 @@ interface QuestionCategoryDao {
     @Query("DELETE FROM question_categories")
     suspend fun clearAllCategories()
 
-    @Query("SELECT DISTINCT category FROM question_categories ORDER BY category")
+    @Query(
+        """
+        SELECT DISTINCT qc.category FROM question_categories qc
+        INNER JOIN questions q ON qc.questionId = q.id
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+        ORDER BY qc.category
+        """
+    )
     fun getAllQuestionCategories(): Flow<List<String>>
 
     @Query(
         """
         SELECT q.* FROM questions q
-        WHERE q.deletedAt IS NULL AND (q.quizId IN (SELECT id FROM quizzes WHERE category = :category AND deletedAt IS NULL)
-        OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND (qz.category = :category OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
         ORDER BY q.id
         """
     )
@@ -39,8 +58,14 @@ interface QuestionCategoryDao {
     @Query(
         """
         SELECT q.* FROM questions q
-        WHERE q.deletedAt IS NULL AND (q.quizId IN (SELECT id FROM quizzes WHERE category = :category AND deletedAt IS NULL)
-        OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND (qz.category = :category OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
         ORDER BY q.id
         """
     )
@@ -49,8 +74,14 @@ interface QuestionCategoryDao {
     @Query(
         """
         SELECT q.* FROM questions q
-        WHERE q.deletedAt IS NULL AND (q.quizId IN (SELECT id FROM quizzes WHERE category = :category AND deletedAt IS NULL)
-        OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND (qz.category = :category OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
         ORDER BY
             q.attempts ASC,
             (CAST(q.correctCount AS FLOAT) / CASE WHEN q.attempts = 0 THEN 0.1 ELSE q.attempts END) ASC,

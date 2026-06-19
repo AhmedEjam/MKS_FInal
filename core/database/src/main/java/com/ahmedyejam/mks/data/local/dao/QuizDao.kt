@@ -85,13 +85,32 @@ interface QuizDao {
     @Query("UPDATE quizzes SET accuracyPercentage = :percentage WHERE id = :quizId")
     suspend fun updateAccuracyPercentage(quizId: Long, percentage: Float)
 
-    @Query("SELECT * FROM quizzes WHERE deletedAt IS NULL")
+    @Query(
+        """
+        SELECT qz.* FROM quizzes qz
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+    """
+    )
     fun getAllQuizzesFlow(): Flow<List<QuizEntity>>
 
     @Query("SELECT COUNT(*) FROM quizzes WHERE deletedAt IS NULL")
     suspend fun countAll(): Int
 
-    @Query("SELECT DISTINCT category FROM quizzes WHERE category IS NOT NULL AND deletedAt IS NULL")
+    @Query(
+        """
+        SELECT DISTINCT qz.category FROM quizzes qz
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE qz.category IS NOT NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+    """
+    )
     fun getAllCategories(): Flow<List<String>>
 
     @Query("UPDATE quizzes SET category = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE category IS NOT NULL AND category != ''")

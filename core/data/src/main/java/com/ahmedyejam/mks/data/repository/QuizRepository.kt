@@ -372,6 +372,7 @@ class QuizRepository
                     question.copy(categories = question.categories.filter { it != category })
                 }
             questionDao.updateQuestions(updatedQuestions)
+            questionCategoryDao.deleteCategory(category)
 
             // 3. Delete metadata
             categoryMetadataDao.deleteMetadataByName(category)

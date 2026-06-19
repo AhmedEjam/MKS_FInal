@@ -51,7 +51,6 @@ import com.ahmedyejam.mks.data.repair.AssetReferenceAuditService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -1358,6 +1357,9 @@ class KnowledgeRepository
                     if (config.includeReferenceInSpeakerNotes && !question.reference.isNullOrBlank()) {
                         append("Reference: ${question.reference}\n")
                     }
+                    if (config.includeAdditionalInfoInSpeakerNotes && !question.additionalInfo.isNullOrBlank()) {
+                        append("Additional Info: ${question.additionalInfo}\n")
+                    }
                 }.trim()
 
             val now = System.currentTimeMillis()
@@ -1657,14 +1659,14 @@ class KnowledgeRepository
                 json.removePrefix("[").removeSuffix("]").split(",").mapNotNull { it.trim().toLongOrNull() }
             }
 
-        suspend fun insertQuiz(quiz: com.ahmedyejam.mks.data.local.entity.QuizEntity): Long = quizDao.insertQuiz(quiz)
+        suspend fun insertQuiz(quiz: QuizEntity): Long = quizDao.insertQuiz(quiz)
 
-        suspend fun insertQuestions(questions: List<com.ahmedyejam.mks.data.local.entity.QuestionEntity>) =
+        suspend fun insertQuestions(questions: List<QuestionEntity>) =
             questionDao.insertQuestions(
                 questions,
             )
 
-        suspend fun insertQuestion(question: com.ahmedyejam.mks.data.local.entity.QuestionEntity): Long =
+        suspend fun insertQuestion(question: QuestionEntity): Long =
             questionDao.insertQuestion(
                 question,
             )

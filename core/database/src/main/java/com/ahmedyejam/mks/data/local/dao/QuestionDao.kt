@@ -1,6 +1,11 @@
 package com.ahmedyejam.mks.data.local.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
 import com.ahmedyejam.mks.data.local.entity.QuestionEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -83,80 +88,225 @@ interface QuestionDao {
     )
 
     @Query("""
-        SELECT * FROM questions 
-        WHERE deletedAt IS NULL AND (:bookId = -1 OR quizId IN (SELECT id FROM quizzes WHERE bookId = :bookId AND deletedAt IS NULL))
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND (:bookId = -1 OR qz.bookId = :bookId)
         ORDER BY 
-            attempts ASC, 
-            (CAST(correctCount AS FLOAT) / CASE WHEN attempts = 0 THEN 0.1 ELSE attempts END) ASC, 
-            lastStudiedAt ASC 
+            q.attempts ASC, 
+            (CAST(q.correctCount AS FLOAT) / CASE WHEN q.attempts = 0 THEN 0.1 ELSE q.attempts END) ASC, 
+            q.lastStudiedAt ASC 
         LIMIT :limit
     """)
     suspend fun getAdaptiveQuestionsByBook(bookId: Long, limit: Int): List<QuestionEntity>
 
     @Query("""
-        SELECT * FROM questions
-        WHERE deletedAt IS NULL AND (quizId IN (SELECT id FROM quizzes WHERE category = :category AND deletedAt IS NULL)
-        OR id IN (SELECT questionId FROM question_categories WHERE category = :category))
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND (qz.category = :category OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
         ORDER BY
-            attempts ASC,
-            (CAST(correctCount AS FLOAT) / CASE WHEN attempts = 0 THEN 0.1 ELSE attempts END) ASC,
-            lastStudiedAt ASC
+            q.attempts ASC,
+            (CAST(q.correctCount AS FLOAT) / CASE WHEN q.attempts = 0 THEN 0.1 ELSE q.attempts END) ASC,
+            q.lastStudiedAt ASC
         LIMIT :limit
     """)
     suspend fun getAdaptiveQuestionsByCategory(category: String, limit: Int): List<QuestionEntity>
 
     @Query("""
-        SELECT * FROM questions
-        WHERE deletedAt IS NULL AND (quizId IN (SELECT id FROM quizzes WHERE category = :category AND deletedAt IS NULL)
-        OR id IN (SELECT questionId FROM question_categories WHERE category = :category))
-        ORDER BY id
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND (qz.category = :category OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
+        ORDER BY q.id
     """)
     fun getQuestionsByCategoryFlow(category: String): Flow<List<QuestionEntity>>
 
     @Query("""
-        SELECT * FROM questions
-        WHERE deletedAt IS NULL AND (quizId IN (SELECT id FROM quizzes WHERE category = :category AND deletedAt IS NULL)
-        OR id IN (SELECT questionId FROM question_categories WHERE category = :category))
-        ORDER BY id
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND (qz.category = :category OR q.id IN (SELECT questionId FROM question_categories WHERE category = :category))
+        ORDER BY q.id
     """)
     suspend fun getQuestionsByCategory(category: String): List<QuestionEntity>
 
     @Query("SELECT DISTINCT category FROM quizzes WHERE category IS NOT NULL AND deletedAt IS NULL")
     fun getAllCategories(): Flow<List<String>>
 
-    @Query("SELECT * FROM questions WHERE deletedAt IS NULL")
+    @Query(
+        """
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+    """
+    )
     fun getAllQuestionsFlow(): Flow<List<QuestionEntity>>
 
-    @Query("SELECT COUNT(*) FROM questions WHERE deletedAt IS NULL")
+    @Query(
+        """
+        SELECT COUNT(q.id) FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+    """
+    )
     suspend fun countAll(): Int
 
-    @Query("SELECT COUNT(*) FROM questions WHERE deletedAt IS NULL AND attempts = 0")
+    @Query(
+        """
+        SELECT COUNT(q.id) FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.attempts = 0
+    """
+    )
     suspend fun countUnanswered(): Int
 
-    @Query("SELECT COUNT(*) FROM questions WHERE deletedAt IS NULL AND notes IS NOT NULL AND TRIM(notes) != ''")
+    @Query(
+        """
+        SELECT COUNT(q.id) FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.notes IS NOT NULL AND TRIM(q.notes) != ''
+    """
+    )
     suspend fun countWithNotes(): Int
 
-    @Query("SELECT COUNT(*) FROM questions WHERE deletedAt IS NULL AND isMarked = 1")
+    @Query(
+        """
+        SELECT COUNT(q.id) FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.isMarked = 1
+    """
+    )
     suspend fun countMarked(): Int
 
-    @Query("SELECT COUNT(*) FROM questions WHERE deletedAt IS NULL AND isDropped = 1")
+    @Query(
+        """
+        SELECT COUNT(q.id) FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.isDropped = 1
+    """
+    )
     suspend fun countDropped(): Int
 
-    @Query("SELECT COUNT(*) FROM questions WHERE deletedAt IS NULL AND attempts > 0 AND (correctCount < attempts OR lastAttemptResult = 0)")
+    @Query(
+        """
+        SELECT COUNT(q.id) FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.attempts > 0 AND (q.correctCount < q.attempts OR q.lastAttemptResult = 0)
+    """
+    )
     suspend fun countMissed(): Int
 
-    @Query("SELECT COUNT(*) FROM questions WHERE deletedAt IS NULL AND attempts >= 2 AND correctCount * 2 < attempts")
+    @Query(
+        """
+        SELECT COUNT(q.id) FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.attempts >= 2 AND q.correctCount * 2 < q.attempts
+    """
+    )
     suspend fun countWeak(): Int
-
 
     @Query("UPDATE questions SET categories = '[]', updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE categories IS NOT NULL AND categories != '[]'")
     suspend fun clearAllQuestionCategories(updatedAt: Long)
 
-
-    @Query("SELECT * FROM questions WHERE deletedAt IS NULL AND isMarked = 1 ORDER BY markedAt DESC, updatedAt DESC")
+    @Query(
+        """
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.isMarked = 1 
+        ORDER BY q.markedAt DESC, q.updatedAt DESC
+    """
+    )
     suspend fun getMarkedQuestions(): List<QuestionEntity>
 
-    @Query("SELECT * FROM questions WHERE deletedAt IS NULL AND isMarked = 1 AND (markReviewAt IS NULL OR markReviewAt <= :now) ORDER BY COALESCE(markReviewAt, markedAt, updatedAt) ASC LIMIT :limit")
+    @Query(
+        """
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.isMarked = 1 
+          AND (q.markReviewAt IS NULL OR q.markReviewAt <= :now) 
+        ORDER BY COALESCE(q.markReviewAt, q.markedAt, q.updatedAt) ASC 
+        LIMIT :limit
+    """
+    )
     suspend fun getMarkedQuestionsForReview(now: Long, limit: Int = 50): List<QuestionEntity>
 
     @Query("SELECT * FROM questions WHERE quizId = :quizId AND deletedAt IS NULL AND isMarked = 1 ORDER BY markedAt DESC, updatedAt DESC")
@@ -165,7 +315,20 @@ interface QuestionDao {
     @Query("SELECT * FROM questions WHERE deletedAt IS NULL AND quizId IN (SELECT id FROM quizzes WHERE bookId = :bookId AND deletedAt IS NULL) AND isMarked = 1 ORDER BY markedAt DESC, updatedAt DESC")
     suspend fun getMarkedQuestionsByBook(bookId: Long): List<QuestionEntity>
 
-    @Query("SELECT * FROM questions WHERE deletedAt IS NULL AND isDropped = 1 ORDER BY droppedAt DESC, updatedAt DESC")
+    @Query(
+        """
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.isDropped = 1 
+        ORDER BY q.droppedAt DESC, q.updatedAt DESC
+    """
+    )
     suspend fun getDroppedQuestions(): List<QuestionEntity>
 
     @Query("UPDATE questions SET isMarked = 0, markedAt = NULL, markReason = NULL, markReviewAt = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE quizId = :quizId AND isMarked = 1")
@@ -183,27 +346,71 @@ interface QuestionDao {
     @Query("UPDATE questions SET markReviewAt = :reviewAt, updatedAt = :updatedAt WHERE id = :questionId AND isMarked = 1")
     suspend fun snoozeMarkedQuestion(questionId: Long, reviewAt: Long, updatedAt: Long)
 
-    @Query("SELECT * FROM questions WHERE deletedAt IS NULL AND attempts > 0 AND correctCount < attempts ORDER BY updatedAt DESC LIMIT :limit")
+    @Query(
+        """
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.attempts > 0 
+          AND q.correctCount < q.attempts 
+        ORDER BY q.updatedAt DESC 
+        LIMIT :limit
+    """
+    )
     suspend fun getWeakQuestions(limit: Int = 50): List<QuestionEntity>
 
     @Query("""
-        SELECT * FROM questions
-        WHERE deletedAt IS NULL AND attempts > 0
-          AND correctCount < attempts
-          AND lastStudiedAt <= :cutoff
-        ORDER BY lastStudiedAt ASC, updatedAt DESC
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.attempts > 0
+          AND q.correctCount < q.attempts
+          AND q.lastStudiedAt <= :cutoff
+        ORDER BY q.lastStudiedAt ASC, q.updatedAt DESC
         LIMIT :limit
     """)
     suspend fun getWeakQuestionsDue(cutoff: Long, limit: Int = 50): List<QuestionEntity>
 
-    @Query("SELECT * FROM questions WHERE deletedAt IS NULL AND markReviewAt IS NOT NULL AND markReviewAt <= :now ORDER BY markReviewAt ASC LIMIT :limit")
+    @Query(
+        """
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND q.markReviewAt IS NOT NULL 
+          AND q.markReviewAt <= :now 
+        ORDER BY q.markReviewAt ASC 
+        LIMIT :limit
+    """
+    )
     suspend fun getMarkedQuestionsDueForReview(now: Long, limit: Int = 50): List<QuestionEntity>
 
     @Query("""
-        SELECT * FROM questions 
-        WHERE deletedAt IS NULL AND (text LIKE '%' || :searchQuery || '%' 
-        OR explanation LIKE '%' || :searchQuery || '%'
-        OR options LIKE '%' || :searchQuery || '%')
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+          AND (q.text LIKE '%' || :searchQuery || '%' 
+               OR q.explanation LIKE '%' || :searchQuery || '%'
+               OR q.options LIKE '%' || :searchQuery || '%')
     """)
     fun searchAllQuestionsFlow(searchQuery: String): Flow<List<QuestionEntity>>
 }

@@ -105,6 +105,7 @@ import com.ahmedyejam.mks.core.ui.R
 import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
+import com.ahmedyejam.mks.data.model.SlideGenerationConfig
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -219,13 +220,15 @@ fun SlideshowCourseScreen(
             quizzes = state.quizzes,
             categories = state.categories,
             onDismiss = { showGeneratorDialog = false },
-            onConfirm = { source, sourceId, clearMarks ->
+            onConfirm = { source, sourceId, config, clearMarks ->
                 when (source) {
-                    "ALL" -> vm.generateFromBook(com.ahmedyejam.mks.data.model.SlideGenerationConfig.DEFAULT, clearMarks)
-                    "MARKED" -> vm.generateFromMarked(com.ahmedyejam.mks.data.model.SlideGenerationConfig.DEFAULT, clearMarks)
-                    "MISSED" -> vm.generateFromMissed(com.ahmedyejam.mks.data.model.SlideGenerationConfig.DEFAULT)
-                    "QUIZ" -> sourceId?.toLongOrNull()?.let { vm.generateFromQuiz(it, com.ahmedyejam.mks.data.model.SlideGenerationConfig.DEFAULT, clearMarks) }
-                    "CATEGORY" -> sourceId?.let { vm.generateFromCategory(it, com.ahmedyejam.mks.data.model.SlideGenerationConfig.DEFAULT, clearMarks) }
+                    "ALL" -> vm.generateFromBook(config, clearMarks)
+                    "MARKED" -> vm.generateFromMarked(config, clearMarks)
+                    "MISSED" -> vm.generateFromMissed(config)
+                    "QUIZ" -> sourceId?.toLongOrNull()
+                        ?.let { vm.generateFromQuiz(it, config, clearMarks) }
+
+                    "CATEGORY" -> sourceId?.let { vm.generateFromCategory(it, config, clearMarks) }
                 }
                 showGeneratorDialog = false
             }
@@ -732,11 +735,21 @@ private fun SlideGeneratorDialog(
     quizzes: List<QuizEntity>,
     categories: List<String>,
     onDismiss: () -> Unit,
-    onConfirm: (source: String, sourceId: String?, clearMarks: Boolean) -> Unit
+    onConfirm: (source: String, sourceId: String?, config: SlideGenerationConfig, clearMarks: Boolean) -> Unit
 ) {
     var source by rememberSaveable { mutableStateOf("ALL") } // ALL, MARKED, MISSED, QUIZ, CATEGORY
     var sourceId by rememberSaveable { mutableStateOf<String?>(null) }
     var clearMarks by rememberSaveable { mutableStateOf(false) }
+
+    var includeStemInTitle by rememberSaveable { mutableStateOf(true) }
+    var includeOptionsInBody by rememberSaveable { mutableStateOf(false) }
+    var includeAnswerInBody by rememberSaveable { mutableStateOf(true) }
+    var includeExplanationInBody by rememberSaveable { mutableStateOf(true) }
+
+    var includeHintInSpeakerNotes by rememberSaveable { mutableStateOf(true) }
+    var includeReferenceInSpeakerNotes by rememberSaveable { mutableStateOf(false) }
+    var includeAdditionalInfoInSpeakerNotes by rememberSaveable { mutableStateOf(false) }
+    var includeImage by rememberSaveable { mutableStateOf(false) }
 
     var expandedSource by remember { mutableStateOf(false) }
     var expandedSubSource by remember { mutableStateOf(false) }
@@ -840,6 +853,54 @@ private fun SlideGeneratorDialog(
                         Text("Clear marks after conversion")
                     }
                 }
+
+                Spacer(Modifier.height(8.dp))
+                Text("Slide Layout", fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        includeStemInTitle,
+                        { includeStemInTitle = it }); Text("Use Stem in Title")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        includeOptionsInBody,
+                        { includeOptionsInBody = it }); Text("Include Options in Body")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        includeAnswerInBody,
+                        { includeAnswerInBody = it }); Text("Include Answer in Body")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        includeExplanationInBody,
+                        { includeExplanationInBody = it }); Text("Include Explanation in Body")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        includeImage,
+                        { includeImage = it }); Text("Include Image")
+                }
+
+                Spacer(Modifier.height(8.dp))
+                Text("Speaker Notes", fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        includeHintInSpeakerNotes,
+                        { includeHintInSpeakerNotes = it }); Text("Include Hint")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        includeReferenceInSpeakerNotes,
+                        { includeReferenceInSpeakerNotes = it }); Text("Include Reference")
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        includeAdditionalInfoInSpeakerNotes,
+                        {
+                            includeAdditionalInfoInSpeakerNotes = it
+                        }); Text("Include Additional Info")
+                }
             }
         },
         confirmButton = {
@@ -847,6 +908,16 @@ private fun SlideGeneratorDialog(
                 onConfirm(
                     source,
                     sourceId,
+                    SlideGenerationConfig(
+                        includeStemInTitle = includeStemInTitle,
+                        includeOptionsInBody = includeOptionsInBody,
+                        includeAnswerInBody = includeAnswerInBody,
+                        includeExplanationInBody = includeExplanationInBody,
+                        includeHintInSpeakerNotes = includeHintInSpeakerNotes,
+                        includeReferenceInSpeakerNotes = includeReferenceInSpeakerNotes,
+                        includeAdditionalInfoInSpeakerNotes = includeAdditionalInfoInSpeakerNotes,
+                        includeImage = includeImage
+                    ),
                     clearMarks
                 )
             }) { Text("Generate") }
