@@ -97,6 +97,19 @@ interface QuizDao {
     )
     fun getAllQuizzesFlow(): Flow<List<QuizEntity>>
 
+    @Query(
+        """
+        SELECT qz.* FROM quizzes qz
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+    """
+    )
+    suspend fun getAllQuizzesNow(): List<QuizEntity>
+
+
     @Query("SELECT COUNT(*) FROM quizzes WHERE deletedAt IS NULL")
     suspend fun countAll(): Int
 

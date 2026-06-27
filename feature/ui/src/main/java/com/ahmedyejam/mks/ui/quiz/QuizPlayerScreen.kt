@@ -567,7 +567,7 @@ fun QuestionContent(
 
             itemsIndexed(
                 state.shuffledOptions,
-                key = { _, option -> option },
+                key = { index, _ -> state.optionMapping[index] },
             ) { index, option ->
                 if ((!state.isOneByOne) || (index < state.visibleOptionsCount) || state.isAnswered) {
                     val originalIndex = state.optionMapping[index]

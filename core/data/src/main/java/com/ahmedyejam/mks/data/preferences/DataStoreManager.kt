@@ -58,9 +58,15 @@ class DataStoreManager @Inject constructor(
         private val SHOW_WELCOME_ON_STARTUP = booleanPreferencesKey("show_welcome_on_startup")
         private val CURRENT_WORKSPACE_ID = longPreferencesKey("current_workspace_id")
 
-        private val OLLAMA_BASE_URL = stringPreferencesKey("ollama_base_url")
-        private val OLLAMA_MODEL_NAME = stringPreferencesKey("ollama_model_name")
-        private val OLLAMA_API_KEY = stringPreferencesKey("ollama_api_key")
+
+        // ── AI Chat/Vision provider (OpenAI-compatible) ────────────────────────
+        private val AI_PROVIDER_ID = stringPreferencesKey("ai_provider_id")
+        private val AI_BASE_URL = stringPreferencesKey("ai_base_url")
+        private val AI_API_KEY = stringPreferencesKey("ai_api_key")
+        private val AI_CHAT_MODEL = stringPreferencesKey("ai_chat_model")
+        private val AI_VISION_MODEL = stringPreferencesKey("ai_vision_model")
+        private val AI_MCQ_REVIEW_ENABLED = booleanPreferencesKey("ai_mcq_review_enabled")
+        private val AI_MCQ_EXTRACTION_MODE = stringPreferencesKey("ai_mcq_extraction_mode")
     }
 
     val themeMode: Flow<String> =
@@ -204,19 +210,50 @@ class DataStoreManager @Inject constructor(
             preferences[CURRENT_WORKSPACE_ID]?.takeIf { it > 0L }
         }.distinctUntilChanged()
 
-    val ollamaBaseUrl: Flow<String> =
+
+
+    // ── AI Chat/Vision provider ────────────────────────────────────────────────
+
+    /** Selected provider ID (matches [AI_PROVIDERS] list). Default: "ollama". */
+    val aiProviderId: Flow<String> =
         context.dataStore.data.map { preferences ->
-            preferences[OLLAMA_BASE_URL] ?: "http://10.0.2.2:11434"
+            preferences[AI_PROVIDER_ID] ?: "ollama"
         }.distinctUntilChanged()
 
-    val ollamaModelName: Flow<String> =
+    /** Base URL for the OpenAI-compatible chat/completions endpoint. */
+    val aiBaseUrl: Flow<String> =
         context.dataStore.data.map { preferences ->
-            preferences[OLLAMA_MODEL_NAME] ?: "llama3"
+            preferences[AI_BASE_URL] ?: "http://10.0.2.2:11434/v1"
         }.distinctUntilChanged()
 
-    val ollamaApiKey: Flow<String> =
+    /** Bearer API key (empty string for Ollama/local providers). */
+    val aiApiKey: Flow<String> =
         context.dataStore.data.map { preferences ->
-            preferences[OLLAMA_API_KEY] ?: ""
+            preferences[AI_API_KEY] ?: ""
+        }.distinctUntilChanged()
+
+    /** Chat/text model name (used for MCQ extraction, generation, review). */
+    val aiChatModel: Flow<String> =
+        context.dataStore.data.map { preferences ->
+            preferences[AI_CHAT_MODEL] ?: "llama3.1:latest"
+        }.distinctUntilChanged()
+
+    /** Vision model name (used for image OCR). Falls back to aiChatModel if blank. */
+    val aiVisionModel: Flow<String> =
+        context.dataStore.data.map { preferences ->
+            preferences[AI_VISION_MODEL] ?: ""
+        }.distinctUntilChanged()
+
+    /** Whether the MCQ review/enrichment pass is enabled. Default: true. */
+    val aiMcqReviewEnabled: Flow<Boolean> =
+        context.dataStore.data.map { preferences ->
+            preferences[AI_MCQ_REVIEW_ENABLED] ?: true
+        }.distinctUntilChanged()
+
+    /** Extraction mode: "full" (rich schema) or "simple" (small local LLMs). Default: "full". */
+    val aiMcqExtractionMode: Flow<String> =
+        context.dataStore.data.map { preferences ->
+            preferences[AI_MCQ_EXTRACTION_MODE] ?: "full"
         }.distinctUntilChanged()
 
     suspend fun setLibrarySortOption(option: String) {
@@ -327,21 +364,37 @@ class DataStoreManager @Inject constructor(
         }
     }
 
-    suspend fun setOllamaBaseUrl(url: String) {
-        context.dataStore.edit { preferences ->
-            preferences[OLLAMA_BASE_URL] = url
-        }
+
+
+    // ── AI Chat/Vision provider setters ───────────────────────────────────────
+
+    suspend fun setAiProviderId(id: String) {
+        context.dataStore.edit { preferences -> preferences[AI_PROVIDER_ID] = id }
     }
 
-    suspend fun setOllamaModelName(model: String) {
-        context.dataStore.edit { preferences ->
-            preferences[OLLAMA_MODEL_NAME] = model
-        }
+    suspend fun setAiBaseUrl(url: String) {
+        context.dataStore.edit { preferences -> preferences[AI_BASE_URL] = url }
     }
 
-    suspend fun setOllamaApiKey(apiKey: String) {
+    suspend fun setAiApiKey(apiKey: String) {
+        context.dataStore.edit { preferences -> preferences[AI_API_KEY] = apiKey }
+    }
+
+    suspend fun setAiChatModel(model: String) {
+        context.dataStore.edit { preferences -> preferences[AI_CHAT_MODEL] = model }
+    }
+
+    suspend fun setAiVisionModel(model: String) {
+        context.dataStore.edit { preferences -> preferences[AI_VISION_MODEL] = model }
+    }
+
+    suspend fun setAiMcqReviewEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences -> preferences[AI_MCQ_REVIEW_ENABLED] = enabled }
+    }
+
+    suspend fun setAiMcqExtractionMode(mode: String) {
         context.dataStore.edit { preferences ->
-            preferences[OLLAMA_API_KEY] = apiKey
+            preferences[AI_MCQ_EXTRACTION_MODE] = if (mode == "simple") "simple" else "full"
         }
     }
 

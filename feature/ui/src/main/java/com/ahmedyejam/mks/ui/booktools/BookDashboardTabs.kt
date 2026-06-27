@@ -61,7 +61,8 @@ enum class BookTab(val title: String, val icon: ImageVector) {
 fun DashboardTab(
     summary: BookKnowledgeSummary?,
     bookId: Long,
-    viewModel: BookToolsViewModel
+    viewModel: BookToolsViewModel,
+    onOpenAiMcqGenerator: (Long) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -73,7 +74,8 @@ fun DashboardTab(
             MagicActionsSection(
                 bookId = bookId,
                 summary = summary,
-                viewModel = viewModel
+                viewModel = viewModel,
+                onOpenAiMcqGenerator = onOpenAiMcqGenerator
             )
         }
     }
@@ -253,7 +255,8 @@ fun PromptsTab(
 fun SourcesTab(
     sources: List<SourceDocumentEntity>,
     onEdit: (SourceDocumentEntity) -> Unit,
-    onDelete: (SourceDocumentEntity) -> Unit
+    onDelete: (SourceDocumentEntity) -> Unit,
+    onLongClick: (SourceDocumentEntity) -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     if (sources.isEmpty()) {
@@ -285,7 +288,8 @@ fun SourcesTab(
                         }
                     },
                     onEdit = { onEdit(source) },
-                    onDelete = { onDelete(source) }
+                    onDelete = { onDelete(source) },
+                    onLongClick = { onLongClick(source) }
                 )
             }
         }

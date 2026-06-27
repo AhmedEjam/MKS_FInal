@@ -38,6 +38,10 @@ object MksRoutes {
     }
     fun blueprint(noteId: Long) = "blueprint/$noteId"
     
+    // Tools
+    const val AI_MCQ_GENERATOR = "ai_mcq_generator/{bookId}"
+    const val PDF_EXTRACTION = "pdf_extraction/{sourceId}"
+
     // Book Tools
     fun bookDashboard(bookId: Long) = "book_dashboard/$bookId"
     fun bookSlideshows(bookId: Long) = "book_slideshows/$bookId"
@@ -52,4 +56,6 @@ object MksRoutes {
             else -> "prompt_deck/$promptId"
         }
     }
+    fun aiMcqGenerator(bookId: Long) = "ai_mcq_generator/$bookId"
+    fun pdfExtraction(sourceId: Long) = "pdf_extraction/$sourceId"
 }

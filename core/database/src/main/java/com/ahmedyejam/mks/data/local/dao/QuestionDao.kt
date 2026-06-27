@@ -114,6 +114,21 @@ interface QuestionDao {
 
     @Query(
         """
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        INNER JOIN workspaces w ON b.workspaceId = w.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND w.deletedAt IS NULL
+    """
+    )
+    suspend fun getAllQuestionsNow(): List<QuestionEntity>
+
+
+    @Query(
+        """
         SELECT COUNT(q.id) FROM questions q
         INNER JOIN quizzes qz ON q.quizId = qz.id
         INNER JOIN books b ON qz.bookId = b.id

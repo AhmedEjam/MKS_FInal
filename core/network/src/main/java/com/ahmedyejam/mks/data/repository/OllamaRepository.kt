@@ -72,7 +72,7 @@ class OllamaRepository @Inject constructor() {
             } else {
                 baseUrl
             }
-        return formatted.trimEnd('/')
+        return formatted.trimEnd('/').removeSuffix("/v1")
     }
 
     private fun Request.Builder.applyAuth(apiKey: String?): Request.Builder {

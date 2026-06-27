@@ -1,14 +1,14 @@
 # MKS Android App Architecture Map
 
-> Last updated: 2026-06-08. Active source is Room v26, 25 migration steps (1→26). Schema source of truth: `app/src/main/java/com/ahmedyejam/mks/data/local/MksDatabase.kt`.
+> Last updated: 2026-06-26. Active source is Room v30, 29 migration steps (1→30). Schema source of truth: `core/database/src/main/java/com/ahmedyejam/mks/data/local/MksDatabase.kt`.
 
 ## **🏗️ Application Architecture Overview**
 
 ```
 MKS (Mobile Knowledge System)
 ├── Framework: Jetpack Compose + Material3
-├── Architecture: MVVM with Manual DI
-├── Database: Room v26 (25 migration steps)
+├── Architecture: MVVM with Dagger Hilt DI (modular multi-module)
+├── Database: Room v30 (29 migration steps)
 ├── Language: Kotlin
 ├── Target SDK: 35
 └── Min SDK: 30
@@ -22,7 +22,7 @@ MainActivity (99 lines)
 ├── Theme: Dynamic (Dawn/Forest/Midnight/Lavender/Plain Light/Plain Dark/System)
 ├── Language: Dynamic (English/Arabic RTL)
 ├── Navigation: Single-activity with NavHostController
-└── Dependencies: AppModule (manual DI container)
+└── Dependencies: Dagger Hilt (DI container)
 
 MksApplication (34 lines)
 ├── Implements: ImageLoaderFactory (Coil)
@@ -31,33 +31,21 @@ MksApplication (34 lines)
 └── Crossfade: Enabled for smooth transitions
 ```
 
-## **🗂️ Dependency Injection Container (AppModule)**
+## **🗂️ Dependency Injection Container (Dagger Hilt)**
 
 ```
-AppModule (Manual DI - 1403 lines)
-├── database: MksDatabase (Room v26)
-├── fileManager: FileManager (I/O operations)
-├── repository: MksRepository (data access)
-├── exportManager: ExportManager (ZIP export)
-├── importManager: ImportLibraryManager (multi-format import)
-├── dataStoreManager: DataStoreManager (preferences)
-├── focusManager: FocusManager (adaptive training)
-├── applicationScope: CoroutineScope(Dispatchers.Default)
-├── globalSearchRepository: GlobalSearchRepository (cross-entity search)
-├── reviewRepository: ReviewRepository (unified review queue)
-├── fullImportExportService: MksFullImportExportService (bulk data tools)
-├── deletePreviewService: DeletePreviewService (cascade preview)
-├── categoryMergePreviewService: CategoryMergePreviewService
-├── clearMarksPreviewService: ClearMarksPreviewService
-├── assetReferenceAuditService: AssetReferenceAuditService
-├── libraryMapper: LibraryMapper (import entity mapping)
-└── Per-DAO lazy singletons (workspaceDao, flashcardDeckDao, flashcardDao,
-    learningSessionDao, promptDeckDao, promptCardDao, promptRunDao, mistakeLogDao)
+Hilt DI Modules (app/src/main/java/.../di/)
+├── HiltDataModule        → MksDatabase, DataStoreManager, FileManager, ApplicationScope
+├── HiltDaoModule         → Core DAOs (BookDao, QuizDao, QuestionDao, SessionDao, etc.)
+├── HiltKnowledgeDaoModule → Knowledge-bank DAOs (FlashcardDao, NoteBlueprintDao, etc.)
+├── HiltUtilityDaoModule  → Utility DAOs (GlobalSearchDao, MistakeLogDao, AnnotationDao, etc.)
+├── HiltRepositoryModule  → Split repositories (BookRepository, QuizRepository, etc.)
+└── HiltServiceModule     → Services (ExportManager, ImportLibraryManager, ReviewRepository, etc.)
 ```
 
 ## **🗃️ Data Layer Architecture**
 
-### **Database Schema (Room v26 — 24 Entities, 24 DAOs)**
+### **Database Schema (Room v30 — 26 Entities, 26 DAOs)**
 ```
 MksDatabase
 ├── Workspace Entities:
@@ -78,37 +66,41 @@ MksDatabase
 │   ├── SlideshowCourseEntity (course metadata, progress, derivation flags)
 │   ├── CourseSlideEntity (slide body, notes, image, order, completion)
 │   ├── NoteBlueprintEntity (note body, summary, bullet points, tags, review counters)
+│   ├── NoteCollectionEntity (collection grouping of note blueprints)
 │   ├── PromptEntity (legacy prompt)
 │   ├── PromptDeckEntity (deck metadata for AI prompts)
 │   ├── PromptCardEntity (individual prompt card, stem, variables, output type)
 │   ├── PromptRunEntity (execution history with variables and output)
-│   └── KnowledgeStudySessionEntity (generic progress tracker for non-quiz content)
+│   ├── KnowledgeStudySessionEntity (generic progress tracker for non-quiz content)
+│   └── StudySessionEntity (non-quiz study session progress)
 ├── Assets & Reference Entities:
 │   ├── AssetReferenceEntity (normalized local asset ownership index)
 │   └── SourceDocumentEntity (source materials linked to books)
 ├── Additional Study Entities:
 │   ├── MistakeLogEntryEntity (tracks mistakes with user explanations)
 │   └── AnnotationEntity (highlights and notes on different content types)
-├── DAOs: BookDao, QuizDao, QuestionDao, SessionDao, CategoryMetadataDao,
+├── DAOs (26): BookDao, QuizDao, QuestionDao, SessionDao, CategoryMetadataDao,
 │         WorkspaceDao, FlashcardDeckDao, FlashcardDao, LearningSessionDao,
-│         SlideshowCourseDao, CourseSlideDao, NoteBlueprintDao, PromptDao,
-│         PromptDeckDao, PromptCardDao, PromptRunDao,
-│         KnowledgeStudySessionDao, QuestionCategoryDao, AssetReferenceDao,
-│         QuestionAssetDao, SourceDocumentDao, MistakeLogDao,
+│         SlideshowCourseDao, CourseSlideDao, NoteBlueprintDao, NoteCollectionDao,
+│         PromptDao, PromptDeckDao, PromptCardDao, PromptRunDao,
+│         KnowledgeStudySessionDao, StudySessionDao, QuestionCategoryDao,
+│         AssetReferenceDao, QuestionAssetDao, SourceDocumentDao, MistakeLogDao,
 │         GlobalSearchDao, AnnotationDao
 ├── Converters: Type converters for complex types
-└── Migrations: 25 incremental migrations (1→26)
+└── Migrations: 29 incremental migrations (1→30)
 ```
 
 ### **Repository Layer**
 ```
-MksRepository (single source of truth - 2632 lines)
-├── Data Operations: CRUD for all 24 entity types
-├── Business Logic: Quiz scoring, statistics, adaptive training
-├── Knowledge Bank: Flashcard, slideshow, blueprint, prompt operations
-├── Image Management: Download/save images, path resolution
-├── Export/Import: JSON serialization, library export
-└── Search: Full-text search across books/quizzes/questions
+Split Repositories (core/data/src/main/java/.../repository/)
+├── BookRepository         → Book CRUD, stats, cover images
+├── QuizRepository         → Quiz CRUD, question management, scoring
+├── KnowledgeRepository    → Flashcards, slideshows, blueprints, prompts
+├── StudyRepository        → Sessions, adaptive training, study progress
+├── AssetRepository        → Question assets, source documents, annotations
+├── WorkspaceRepository    → Workspace management, settings
+├── OllamaRepository       → Local LLM integration (Ollama API)
+└── ExportManager          → Library export logic
 
 ImportLibraryManager (934 lines)
 ├── Format Detection: XLSX, JSON, ZIP, CSV/TSV, HTML, TEXT
@@ -310,68 +302,77 @@ Theme System
 ## **📁 File Organization Map**
 
 ```
-/app/src/main/java/com/ahmedyejam/mks/
-├── MainActivity.kt (99 lines) - App entry point
-├── MksApplication.kt (34 lines) - App initialization + Coil setup
-├── di/AppModule.kt (1403 lines) - Manual DI container
-├── data/
-│   ├── local/
-│   │   ├── MksDatabase.kt - Room database setup (v26)
-│   │   ├── MksMigrations.kt - 25 migration steps
-│   │   ├── Converters.kt - Type converters
-│   │   ├── dao/ (24 DAO interfaces)
-│   │   ├── entity/ (24 entity classes)
-│   │   └── FileManager.kt - I/O operations
-│   ├── repository/
-│   │   ├── MksRepository.kt (2632 lines) - Main data access
-│   │   └── ExportManager.kt - Library export
-│   ├── import/ - Multi-format import pipeline
-│   │   ├── repository/ImportLibraryManager.kt (934 lines)
-│   │   ├── detector/ - Format detection
-│   │   ├── parser/ - Content parsers
-│   │   ├── mapping/ - Data mapping
-│   │   ├── normalization/ - Data normalization
-│   │   ├── dto/ - Data transfer objects
-│   │   ├── model/ - Import models
-│   │   ├── validation/ - Import validation
-│   │   ├── security/ - Import security (RemoteAssetPolicy)
-│   │   └── xlsx/ - Excel processing
-│   ├── exchange/ - Bundle exchange format (v7)
-│   ├── exportfull/ - Full library export
-│   ├── preferences/DataStoreManager.kt - User preferences
-│   ├── focus/FocusManager.kt - Adaptive training logic
-│   ├── model/ - Domain models
-│   ├── network/ - Network utilities (RemoteAssetFetcher)
-│   ├── preview/ - Delete/merge preview services
-│   ├── repair/ - Asset reference audit
-│   ├── review/ - Review repository
-│   ├── search/ - Global search repository
-│   ├── simulation/ - Training simulation
-│   └── validation/ - Data validation
-├── ui/ (19 sub-packages)
-│   ├── MksNavHost.kt (708 lines) - Navigation graph
-│   ├── MksRoutes.kt - Route constants
-│   ├── library/ - Library management screens
-│   ├── quiz/ - Quiz player screens
-│   ├── flashcard/ - Flashcard deck screen
-│   ├── slideshow/ - Slideshow course screens
-│   ├── booktools/ - Knowledge bank tool screens
-│   ├── category/ - Category screens
-│   ├── session/ - Session management
-│   ├── summary/ - Results screens
-│   ├── scanner/ - Camera OCR scanner
-│   ├── search/ - Global search
-│   ├── review/ - Review dashboard
-│   ├── data/ - Data tools (import/export)
-│   ├── settings/ - Settings screen
-│   ├── welcome/ - Welcome screen
-│   ├── import/ - Import UI
-│   ├── common/ - Shared screens (InvalidRouteScreen)
-│   ├── components/ - Shared UI components
-│   ├── navigation/ - Route builders & argument helpers
-│   └── theme/ - Theming system
-├── util/ - Utility classes
-└── res/ - Android resources
+MKS Project (Multi-module)
+├── app/src/main/java/com/ahmedyejam/mks/
+│   ├── MainActivity.kt              - App entry point
+│   ├── MksApplication.kt            - App init + Coil setup (@HiltAndroidApp)
+│   └── di/                          - Dagger Hilt DI modules
+│       ├── HiltDataModule.kt        - Database, DataStore, FileManager
+│       ├── HiltDaoModule.kt         - Core DAOs
+│       ├── HiltKnowledgeDaoModule.kt - Knowledge-bank DAOs
+│       ├── HiltUtilityDaoModule.kt  - Utility DAOs
+│       ├── HiltRepositoryModule.kt  - Repositories
+│       └── HiltServiceModule.kt     - Services
+├── core/
+│   ├── database/src/main/java/.../data/local/
+│   │   ├── MksDatabase.kt           - Room database setup (v30)
+│   │   ├── MksMigrations.kt         - 29 migration steps
+│   │   ├── Converters.kt            - Type converters
+│   │   └── dao/ (26 DAO interfaces)
+│   ├── model/src/main/java/.../
+│   │   ├── data/local/entity/ (26 entity classes)
+│   │   ├── data/model/              - Domain models (OllamaModels, etc.)
+│   │   ├── ui/MksRoutes.kt          - Route constants & builders
+│   │   └── util/                    - Utilities (BoundedStreams, MksLogger)
+│   ├── data/src/main/java/.../data/
+│   │   ├── repository/              - Split repositories
+│   │   │   ├── BookRepository.kt
+│   │   │   ├── QuizRepository.kt
+│   │   │   ├── KnowledgeRepository.kt
+│   │   │   ├── StudyRepository.kt
+│   │   │   ├── AssetRepository.kt
+│   │   │   ├── WorkspaceRepository.kt
+│   │   │   └── ExportManager.kt
+│   │   ├── importer/                - Multi-format import pipeline
+│   │   ├── exchange/                - Bundle exchange format
+│   │   ├── exportfull/              - Full library export
+│   │   ├── focus/FocusManager.kt    - Adaptive training logic
+│   │   ├── preferences/             - DataStoreManager
+│   │   ├── preview/                 - Delete/merge preview services
+│   │   ├── repair/                  - Asset reference audit
+│   │   ├── review/                  - ReviewRepository
+│   │   ├── search/                  - GlobalSearchRepository
+│   │   ├── seeder/MksDatabaseSeeder.kt - DB seed data
+│   │   └── validation/              - Data validation
+│   ├── network/src/main/java/.../
+│   │   ├── data/network/            - RemoteAssetFetcher, RemoteAssetPolicy
+│   │   └── data/repository/OllamaRepository.kt - Local LLM integration
+│   └── ui/src/main/java/.../ui/
+│       ├── components/              - Shared UI components
+│       ├── common/InvalidRouteScreen.kt
+│       ├── theme/                   - Color, Type, Theme, MksDesignTokens
+│       └── utils/TtsManager.kt      - Text-to-Speech integration
+└── feature/
+    └── ui/src/main/java/.../ui/
+        ├── MksNavHost.kt            - Navigation graph (22+ routes)
+        ├── library/                 - Library management screens
+        ├── quiz/                    - Quiz player screens
+        ├── flashcard/               - Flashcard deck screen
+        ├── slideshow/               - Slideshow course screens
+        ├── booktools/               - Knowledge bank tool screens
+        ├── category/                - Category screens
+        ├── session/                 - Session management
+        ├── summary/                 - Results screens
+        ├── scanner/                 - Camera OCR scanner
+        ├── search/                  - Global search
+        ├── review/                  - Review dashboard
+        ├── data/                    - Data tools (import/export)
+        ├── settings/                - Settings screen
+        ├── welcome/                 - Welcome screen
+        ├── importer/                - Import UI
+        ├── trash/                   - Trash bin dialog
+        ├── workspace/               - Workspace manager dialog
+        └── navigation/              - Route builders & validators
 ```
 
 ## **⚡ Performance Characteristics**
@@ -379,7 +380,7 @@ Theme System
 ```
 Performance Profile
 ├── Memory: 25% RAM for image cache
-├── Database: Room v26 with 25 incremental migrations
+├── Database: Room v30 with 29 incremental migrations
 ├── UI: Jetpack Compose with lazy loading
 ├── Images: Coil with disk + memory cache
 ├── Lists: LazyVerticalGrid with stable keys
@@ -389,10 +390,11 @@ Performance Profile
 
 ## **🔧 Key Technical Decisions**
 
-- **Manual DI**: Explicit dependencies via `AppModule` (no Hilt/Dagger)
+- **Dagger Hilt DI**: Standardized scope management with `@HiltViewModel` and `hiltViewModel()`
+- **Multi-module Architecture**: `app/`, `core/` (database, model, data, network, ui), `feature/` (ui)
 - **Single Activity**: Compose navigation (no fragments)
 - **StateFlow**: Reactive UI state management
-- **Room v26**: Local persistence with 25 incremental migrations
+- **Room v30**: Local persistence with 29 incremental migrations
 - **Coil**: Image loading and caching (25% RAM)
 - **Material3**: Modern design system with 7 themes
 - **Multi-format Import**: XLSX, JSON, CSV, HTML, TEXT, ZIP with validation & security
@@ -403,5 +405,7 @@ Performance Profile
 - **Review Dashboard**: Unified review queue for flashcards, blueprints, and mistake logs
 - **Data Tools**: Full library import/export with preview
 - **Route Guards**: Invalid route fallback screen with argument validation
+- **Local LLM**: Ollama integration for on-device AI inference
+- **TTS**: Text-to-Speech for article/note narration
 
 This architecture provides a comprehensive, scalable foundation for a quiz and knowledge-bank application with advanced features like multi-format import, adaptive training, rich analytics, and integrated learning tools while maintaining clean separation of concerns and modern Android development practices.

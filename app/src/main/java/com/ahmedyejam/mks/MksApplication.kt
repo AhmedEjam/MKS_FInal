@@ -12,6 +12,7 @@ class MksApplication : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(this)
         com.ahmedyejam.mks.data.importer.xlsx.PoiInitializer.init()
         setupCrashHandler()
     }

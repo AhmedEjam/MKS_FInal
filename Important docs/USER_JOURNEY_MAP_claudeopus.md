@@ -1,6 +1,6 @@
 # MKS Android App — User Journey & UI Map
 
-> **Last updated:** 2026-06-08. Room v26, 25 migration steps, 22+ navigation routes.
+> **Last updated:** 2026-06-26. Room v30, 29 migration steps, 22+ navigation routes.
 >
 > **What this is:** A plain-language, screen-by-screen map of every page, button, gesture, dialog, and interactable element in the MKS Android app. For each item, it says what happens when you interact with it — where it takes you, what it loads, and what it outputs.
 >
@@ -743,8 +743,8 @@ Lets you sort library items by: Name (A-Z), Name (Z-A), Date Created, Date Edite
 |----------------|---------------|
 | **Jetpack Compose** (declarative UI) | **SwiftUI** |
 | **StateFlow** + `collectAsState()` | `ObservableObject` + `@Published` + `@StateObject` |
-| **ViewModel** (manual DI via `ViewModelProvider.Factory`) | `@StateObject` or `@ObservedObject` with manual init |
-| **Room Database** (SQLite ORM, v26, 25 migrations) | **Core Data** or **GRDB** or **SQLite.swift** |
+| **ViewModel** (Hilt DI via `@HiltViewModel` + `hiltViewModel()`) | `@StateObject` or `@ObservedObject` with manual init |
+| **Room Database** (SQLite ORM, v30, 29 migrations) | **Core Data** or **GRDB** or **SQLite.swift** |
 | **Jetpack Navigation** (string routes like `quiz/123`) | **NavigationStack** + `NavigationPath` (deep-linkable) |
 | **DataStore** (key-value preferences) | **UserDefaults** or `@AppStorage` |
 | **Coil** (async image loading + caching) | **AsyncImage** (built-in) or **Kingfisher** |
@@ -785,4 +785,4 @@ prompt_deck/{promptId}?cardId={id}         → AiPromptDeckScreen
 
 ---
 
-*Last updated by Antigravity AI — 2026-06-08. This document should be refreshed with each major app update.*
+*Last updated by Antigravity AI — 2026-06-26. This document should be refreshed with each major app update.*

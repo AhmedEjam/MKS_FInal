@@ -5,7 +5,7 @@
 **Repository**: `AhmedEjam/MKS_FInal`  
 **Language**: Kotlin 99.5%  
 **Framework**: Jetpack Compose + Material3  
-**Database**: Room v28 (27 migration steps)
+**Database**: Room v30 (29 migration steps)
 
 ---
 
@@ -31,7 +31,7 @@ This README provides a comprehensive index to help AI agents (Gemini Pro, Claude
 ✅ Language:           Kotlin
 ✅ UI Framework:       Jetpack Compose (Material3)
 ✅ Dependency Inject:  Dagger Hilt (with legacy AppModule)
-✅ Database:           Room v28 (27 migrations)
+✅ Database:           Room v30 (29 migrations)
 ✅ Image Loading:      Coil (25% RAM cache)
 ✅ Preferences:        DataStore
 ✅ Localization:       English + Arabic (RTL)
@@ -67,8 +67,8 @@ mks/
 │
 ├── data/
 │   ├── local/
-│   │   ├── MksDatabase.kt            Room v28, 27 entities, 27 DAOs
-│   │   ├── MksMigrations.kt          27 migration steps (1→28)
+│   │   ├── MksDatabase.kt            Room v30, 26 entities, 26 DAOs
+│   │   ├── MksMigrations.kt          29 migration steps (1→30)
 │   │   ├── Converters.kt             Type converters
 │   │   ├── FileManager.kt            I/O, HTTP, image management
 │   │   ├── entity/                   24 entity classes (see below)
@@ -208,9 +208,9 @@ mks/
 
 ---
 
-## 🗄️ Database Schema (Room v28)
+## 🗄️ Database Schema (Room v30)
 
-**27 Entity Classes, 27 DAO Interfaces**
+**26 Entity Classes, 26 DAO Interfaces**
 
 ### **Workspace Entities**
 - `WorkspaceEntity` - Multi-workspace support
@@ -246,7 +246,7 @@ mks/
 - `AnnotationEntity` - Highlights & notes
 - `SourceDocumentAssetEntity` - Assets linked to source documents
 
-**Migrations**: 27 incremental steps (v1→v28) in `MksMigrations.kt`
+**Migrations**: 29 incremental steps (v1→v30) in `MksMigrations.kt`
 
 ---
 
@@ -534,7 +534,7 @@ The import pipeline recognizes both English and Arabic field names:
 | Aspect | Details |
 |--------|---------|
 | **Memory** | 25% RAM for image cache (Coil) |
-| **Database** | Room v28, 27 incremental migrations |
+| **Database** | Room v30, 29 incremental migrations |
 | **UI** | Jetpack Compose with lazy loading |
 | **Images** | Coil disk + memory cache (crossfade) |
 | **Lists** | LazyVerticalGrid with stable keys |
@@ -579,10 +579,10 @@ The import pipeline recognizes both English and Arabic field names:
 ## 📝 Code Statistics
 
 - **Total Lines**: ~1000 Compose screens, 2600+ repository lines
-- **Entities**: 27 Room entities
-- **DAOs**: 27 data access objects
+- **Entities**: 26 Room entities
+- **DAOs**: 26 data access objects
 - **Routes**: 22+ navigation routes
-- **Migrations**: 27 database versions
+- **Migrations**: 29 database versions
 - **Themes**: 7 variants + design tokens
 
 ---
@@ -614,8 +614,8 @@ The import pipeline recognizes both English and Arabic field names:
 
 ---
 
-**Last Updated**: June 9, 2026  
-**Database Version**: Room v28 (27 migrations)  
+**Last Updated**: June 26, 2026  
+**Database Version**: Room v30 (29 migrations)  
 **Kotlin**: 99.5% of codebase
 
 ---

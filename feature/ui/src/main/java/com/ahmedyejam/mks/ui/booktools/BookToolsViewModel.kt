@@ -737,9 +737,9 @@ class BookToolsViewModel @Inject constructor(
         generationJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isGenerating = true, error = null)
             try {
-                val baseUrl = dataStoreManager.ollamaBaseUrl.first()
-                val model = dataStoreManager.ollamaModelName.first()
-                val apiKey = dataStoreManager.ollamaApiKey.first().takeIf { it.isNotBlank() }
+                val baseUrl = dataStoreManager.aiBaseUrl.first()
+                val model = dataStoreManager.aiChatModel.first()
+                val apiKey = dataStoreManager.aiApiKey.first().takeIf { it.isNotBlank() }
                 
                 val systemPrompt = "You are an expert educational AI assistant inside the MKS knowledge-bank app. Generate high-quality, structured output exactly as requested by the user's prompt. Do NOT include conversational filler, greetings, or explanations unless explicitly requested."
                 

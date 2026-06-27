@@ -7,7 +7,7 @@
 - **Language:** Kotlin
 - **UI Framework:** Jetpack Compose (single-activity)
 - **DI:** Dagger Hilt (with legacy `AppModule` for startup settings)
-- **Database:** Room v28 (27 migration steps, v1→v28)
+- **Database:** Room v30 (29 migration steps, v1→v30)
 - **File Import:** Multi-format (XLSX, CSV/TSV, JSON, HTML, TEXT, ZIP)
 - **Images:** Coil (memory + disk cache), embedded XLSX images, HTTP downloads
 - **Preferences:** DataStore
@@ -39,7 +39,7 @@ class MksApplication : Application(), ImageLoaderFactory {
 Hilt manages and provides dependencies like `MksRepository`, `FileManager`, etc., via `@Inject`. For legacy compatibility, the `AppModule` still exposes lazy-initialized singletons:
 
 ```
-database              → MksDatabase (Room v28 with 27 migration steps)
+database              → MksDatabase (Room v30 with 29 migration steps)
 fileManager           → FileManager (image I/O, HTTP downloads)
 repository            → MksRepository (single source of truth)
 exportManager         → ExportManager (quiz/book/knowledge-bank ZIP export)
@@ -53,7 +53,7 @@ applicationScope      → CoroutineScope(Dispatchers.Default)
 
 ## Database & Entities
 
-### Schema (Room v28)
+### Schema (Room v30)
 
 The active schema is defined in `core/database/src/main/java/com/ahmedyejam/mks/data/local/MksDatabase.kt` and exported through Room/KSP when the Android build runs.
 
@@ -95,7 +95,7 @@ The active schema is defined in `core/database/src/main/java/com/ahmedyejam/mks/
 
 ### Migrations
 
-Currently at v28 (27 migration steps total: 1→2, 2→3, ..., 27→28).
+Currently at v30 (29 migration steps total: 1→2, 2→3, ..., 29→30).
 Active schema source of truth: `core/database/src/main/java/com/ahmedyejam/mks/data/local/MksDatabase.kt`.
 All migrations are centralized in `com.ahmedyejam.mks.data.local.MksMigrations`.
 

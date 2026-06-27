@@ -40,7 +40,7 @@ class ExportManager(
         return database.withTransaction {
             val quiz = quizDao.getQuizById(quizId) ?: return@withTransaction null
             val book = bookDao.getBookById(quiz.bookId) ?: return@withTransaction null
-            val questions = questionDao.getQuestionsByQuizId(quiz.id).first()
+            val questions = questionDao.getQuestionsByQuizIdNow(quiz.id)
             val workspaceExternalId = database.workspaceDao().getWorkspaceById(book.workspaceId)?.externalId
 
             val exportBook = mapper.mapToBookDto(book, workspaceExternalId)
@@ -92,12 +92,12 @@ class ExportManager(
             val exportQuizzes = mutableListOf<QuizDto>()
             val exportSessions = mutableListOf<SessionDto>()
 
-            val quizzes = quizDao.getQuizzesByBookId(book.id).first()
+            val quizzes = quizDao.getQuizzesByBookIdNow(book.id)
             val allQuestions = mutableListOf<QuestionEntity>()
             for (quiz in quizzes) {
-                val questions = questionDao.getQuestionsByQuizId(quiz.id).first()
+                val questions = questionDao.getQuestionsByQuizIdNow(quiz.id)
                 allQuestions.addAll(questions)
-                val sessions = sessionDao.getSessionsByQuizId(quiz.id).first()
+                val sessions = sessionDao.getSessionsByQuizIdNow(quiz.id)
 
                 exportQuizzes.add(mapper.mapToQuizDto(quiz, questions, book.externalId))
                 exportSessions.addAll(sessions.map { mapper.mapToSessionDto(it, quiz.externalId, questions) })
@@ -178,7 +178,7 @@ class ExportManager(
 
     suspend fun exportAllBooksAsBundle(): LibraryBundleDto {
         return database.withTransaction {
-            val books = bookDao.getAllBooksFlow().first()
+            val books = bookDao.getAllBooksNow()
             val workspaceExternalIds =
                 books
                     .map { it.workspaceId }
@@ -196,11 +196,11 @@ class ExportManager(
             val exportStudySessions = mutableListOf<KnowledgeStudySessionDto>()
 
             for (book in books) {
-                val quizzes = quizDao.getQuizzesByBookId(book.id).first()
+                val quizzes = quizDao.getQuizzesByBookIdNow(book.id)
                 for (quiz in quizzes) {
-                    val questions = questionDao.getQuestionsByQuizId(quiz.id).first()
+                    val questions = questionDao.getQuestionsByQuizIdNow(quiz.id)
                     allQuestionEntities.addAll(questions)
-                    val sessions = sessionDao.getSessionsByQuizId(quiz.id).first()
+                    val sessions = sessionDao.getSessionsByQuizIdNow(quiz.id)
 
                     exportQuizzes.add(mapper.mapToQuizDto(quiz, questions, book.externalId))
                     exportSessions.addAll(sessions.map { mapper.mapToSessionDto(it, quiz.externalId, questions) })
@@ -371,9 +371,9 @@ class ExportManager(
         bookId: Long? = null,
         quizId: Long? = null,
     ): MksExchangeV7SupplementalData {
-        val allBooks = bookDao.getAllBooksFlow().first()
-        val allQuizzes = quizDao.getAllQuizzesFlow().first()
-        val allQuestions = questionDao.getAllQuestionsFlow().first()
+        val allBooks = bookDao.getAllBooksNow()
+        val allQuizzes = quizDao.getAllQuizzesNow()
+        val allQuestions = questionDao.getAllQuestionsNow()
 
         val bookMap = allBooks.associateBy { it.id }
         val quizMap = allQuizzes.associateBy { it.id }

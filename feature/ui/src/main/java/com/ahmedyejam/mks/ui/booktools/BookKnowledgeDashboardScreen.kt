@@ -23,6 +23,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.Assessment
 import androidx.compose.material.icons.rounded.AutoFixHigh
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DocumentScanner
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.HistoryEdu
 import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.ViewCarousel
@@ -76,7 +79,9 @@ fun BookKnowledgeDashboardScreen(
     onOpenFlashcard: (Long) -> Unit,
     onOpenSlideshow: (Long) -> Unit,
     onOpenNote: (Long) -> Unit,
-    onOpenPrompt: (Long) -> Unit
+    onOpenPrompt: (Long) -> Unit,
+    onOpenAiMcqGenerator: (Long) -> Unit,
+    onOpenPdfExtraction: (Long) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -104,6 +109,7 @@ fun BookKnowledgeDashboardScreen(
     var editingNote by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.NoteBlueprintEntity?>(null) }
     var editingPrompt by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.PromptDeckEntity?>(null) }
     var editingSource by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity?>(null) }
+    var optionsSource by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity?>(null) }
     var itemToSnooze by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.MistakeLogEntryEntity?>(null) }
 
     var menuQuiz by remember { mutableStateOf<com.ahmedyejam.mks.data.local.entity.QuizEntity?>(null) }
@@ -232,7 +238,7 @@ fun BookKnowledgeDashboardScreen(
                 beyondViewportPageCount = 1
             ) { page ->
                 when (tabs[page]) {
-                    BookTab.DASHBOARD -> DashboardTab(uiState.bookSummary, bookId, viewModel)
+                    BookTab.DASHBOARD -> DashboardTab(uiState.bookSummary, bookId, viewModel, onOpenAiMcqGenerator)
                     
                     BookTab.SLIDES -> SlidesTab(
                         uiState.allCourses,
@@ -271,7 +277,9 @@ fun BookKnowledgeDashboardScreen(
                     BookTab.SOURCES -> SourcesTab(
                         uiState.allSources,
                         { editingSource = it },
-                        { viewModel.deleteSource(it) })
+                        { viewModel.deleteSource(it) },
+                        { optionsSource = it }
+                    )
                 }
             }
         }
@@ -450,6 +458,52 @@ fun BookKnowledgeDashboardScreen(
             editingSource = null
         }
     }
+    optionsSource?.let { source ->
+        androidx.compose.material3.ModalBottomSheet(onDismissRequest = { optionsSource = null }) {
+            Column(Modifier.padding(bottom = 24.dp)) {
+                Text(
+                    text = source.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(16.dp)
+                )
+                androidx.compose.material3.HorizontalDivider()
+                
+                androidx.compose.material3.ListItem(
+                    headlineContent = { Text("Edit") },
+                    leadingContent = { Icon(Icons.Rounded.Edit, null) },
+                    modifier = Modifier.clickable { 
+                        optionsSource = null
+                        editingSource = source
+                    }
+                )
+                
+                val isExtractable = source.sourceType.equals("PDF", ignoreCase = true) ||
+                        source.sourceType.equals("IMAGE", ignoreCase = true) ||
+                        source.sourceType.equals("AUDIO", ignoreCase = true) ||
+                        source.sourceType.equals("VOICE", ignoreCase = true)
+                
+                if (isExtractable) {
+                    androidx.compose.material3.ListItem(
+                        headlineContent = { Text("Extract Content (AI)") },
+                        leadingContent = { Icon(Icons.Rounded.DocumentScanner, null) },
+                        modifier = Modifier.clickable { 
+                            optionsSource = null
+                            onOpenPdfExtraction(source.id)
+                        }
+                    )
+                }
+                
+                androidx.compose.material3.ListItem(
+                    headlineContent = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                    leadingContent = { Icon(Icons.Rounded.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                    modifier = Modifier.clickable { 
+                        optionsSource = null
+                        viewModel.deleteSource(source)
+                    }
+                )
+            }
+        }
+    }
 
     menuQuiz?.let { quiz ->
         com.ahmedyejam.mks.ui.library.components.QuizOptionsSheet(
@@ -575,7 +629,8 @@ private fun SmallStat(label: String, value: String, color: androidx.compose.ui.g
 fun MagicActionsSection(
     bookId: Long,
     summary: BookKnowledgeSummary?,
-    viewModel: BookToolsViewModel
+    viewModel: BookToolsViewModel,
+    onOpenAiMcqGenerator: (Long) -> Unit
 ) {
     summary ?: return
     val uiState by viewModel.uiState.collectAsState()
@@ -636,6 +691,11 @@ fun MagicActionsSection(
                     onClick = { viewModel.createSlideshowCourseFromQuestions(bookId, "Study Slides - ${System.currentTimeMillis() % 10000}", questions.map { it.id }) }
                 )
             }
+            MagicActionChip(
+                label = "AI MCQ Generator",
+                icon = Icons.Rounded.AutoFixHigh,
+                onClick = { onOpenAiMcqGenerator(bookId) }
+            )
         }
     }
 }

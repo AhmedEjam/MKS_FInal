@@ -171,6 +171,43 @@ fun SettingsScreen(
                 }
             }
 
+            var showProviderConfig by remember { mutableStateOf(false) }
+            val currentProviderId by dataStoreManager.aiProviderId.collectAsState(initial = "ollama_local")
+            val currentBaseUrl by dataStoreManager.aiBaseUrl.collectAsState(initial = "")
+            val currentApiKey by dataStoreManager.aiApiKey.collectAsState(initial = "")
+            val currentModel by dataStoreManager.aiChatModel.collectAsState(initial = "")
+
+            SettingsGroup(title = "AI & Extraction Settings") {
+                OutlinedButton(
+                    onClick = { showProviderConfig = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(tokens.chipRadius)
+                ) {
+                    Text("Configure AI Provider")
+                }
+            }
+
+            if (showProviderConfig) {
+                val currentConfig = com.ahmedyejam.mks.data.model.AiProviderConfig(
+                    providerId = currentProviderId ?: "ollama_local",
+                    baseUrl = currentBaseUrl ?: "",
+                    apiKey = currentApiKey ?: "",
+                    model = currentModel ?: ""
+                )
+                ProviderConfigDialog(
+                    providers = com.ahmedyejam.mks.data.model.AI_PROVIDERS,
+                    initialConfig = currentConfig,
+                    onDismiss = { showProviderConfig = false },
+                    onConfirm = { config ->
+                        viewModel.updateAiProvider(config)
+                        showProviderConfig = false
+                    },
+                    onPing = { config -> viewModel.pingProvider(config) },
+                    onFetchModels = { config -> viewModel.fetchModels(config) },
+                    onTestCall = { config, message -> viewModel.testCall(config, message) }
+                )
+            }
+
             val themeOptions = listOf(
                 ThemeOption("DAWN", R.string.theme_dawn, R.string.theme_dawn_desc),
                 ThemeOption("FOREST", R.string.theme_forest, R.string.theme_forest_desc),
@@ -370,79 +407,6 @@ fun SettingsScreen(
                     )
                 }
             }
-
-            val ollamaBaseUrl by dataStoreManager.ollamaBaseUrl.collectAsState(initial = "http://10.0.2.2:11434")
-            val ollamaModelName by dataStoreManager.ollamaModelName.collectAsState(initial = "llama3")
-            val ollamaApiKey by dataStoreManager.ollamaApiKey.collectAsState(initial = "")
-            var editOllamaBaseUrl by remember(ollamaBaseUrl) { mutableStateOf(ollamaBaseUrl) }
-            var editOllamaModelName by remember(ollamaModelName) { mutableStateOf(ollamaModelName) }
-            var editOllamaApiKey by remember(ollamaApiKey) { mutableStateOf(ollamaApiKey) }
-            var isTestingOllama by remember { mutableStateOf(false) }
-
-            SettingsGroup(title = "AI Integrations") {
-                Text(
-                    "Configure local LLM settings for the AI Prompt Deck. Ollama is recommended. For Android Emulators, use http://10.0.2.2:11434. A remote server can be reached via its http(s) URL; add an API key if it is protected by a reverse proxy.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                OutlinedTextField(
-                    value = editOllamaBaseUrl,
-                    onValueChange = { editOllamaBaseUrl = it },
-                    label = { Text("Ollama Base URL") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = editOllamaModelName,
-                    onValueChange = { editOllamaModelName = it },
-                    label = { Text("Ollama Model Name (e.g. llama3)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = editOllamaApiKey,
-                    onValueChange = { editOllamaApiKey = it },
-                    label = { Text("API Key (optional, for secured servers)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
-                ) {
-                    OutlinedButton(
-                        enabled = !isTestingOllama,
-                        onClick = {
-                            scope.launch {
-                                isTestingOllama = true
-                                val result = viewModel.ollamaRepository.testConnection(
-                                    baseUrl = editOllamaBaseUrl,
-                                    modelName = editOllamaModelName,
-                                    apiKey = editOllamaApiKey.takeIf { it.isNotBlank() }
-                                )
-                                isTestingOllama = false
-                                snackbarHostState.showSnackbar(result.message)
-                            }
-                        }
-                    ) {
-                        Text(if (isTestingOllama) "Testing..." else "Test Connection")
-                    }
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                dataStoreManager.setOllamaBaseUrl(editOllamaBaseUrl)
-                                dataStoreManager.setOllamaModelName(editOllamaModelName)
-                                dataStoreManager.setOllamaApiKey(editOllamaApiKey)
-                                snackbarHostState.showSnackbar("AI settings saved")
-                            }
-                        }
-                    ) {
-                        Text("Save Settings")
-                    }
-                }
-            }
-
             SettingsGroup(title = stringResource(R.string.danger_zone_group), titleColor = MaterialTheme.colorScheme.error) {
                 OutlinedButton(
                     onClick = { showClearCategoriesDialog = true },

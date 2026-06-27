@@ -9,6 +9,10 @@ interface SessionDao {
     @Query("SELECT * FROM sessions WHERE quizId = :quizId AND deletedAt IS NULL ORDER BY lastModifiedAt DESC")
     fun getSessionsByQuizId(quizId: Long): Flow<List<SessionEntity>>
 
+    @Query("SELECT * FROM sessions WHERE quizId = :quizId AND deletedAt IS NULL ORDER BY lastModifiedAt DESC")
+    suspend fun getSessionsByQuizIdNow(quizId: Long): List<SessionEntity>
+
+
     @Query("SELECT * FROM sessions WHERE id = :sessionId AND deletedAt IS NULL")
     suspend fun getSessionById(sessionId: Long): SessionEntity?
 

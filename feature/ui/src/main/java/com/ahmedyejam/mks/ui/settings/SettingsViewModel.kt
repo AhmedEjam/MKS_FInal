@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.focus.FocusManager
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
+import com.ahmedyejam.mks.data.network.AiClient
+import com.ahmedyejam.mks.data.network.AiHttpError
 import com.ahmedyejam.mks.data.repository.AssetRepository
 import com.ahmedyejam.mks.data.repository.ExportManager
 import com.ahmedyejam.mks.data.repository.OllamaRepository
@@ -14,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.OutputStream
 import javax.inject.Inject
 
@@ -25,7 +28,8 @@ class SettingsViewModel @Inject constructor(
     private val assetRepository: AssetRepository,
     val ollamaRepository: OllamaRepository,
     val dataStoreManager: DataStoreManager,
-    val focusManager: FocusManager
+    val focusManager: FocusManager,
+    private val aiClient: AiClient
 ) : ViewModel() {
 
     private val _isExporting = MutableStateFlow(false)
@@ -83,6 +87,55 @@ class SettingsViewModel @Inject constructor(
     fun rebuildDerivedIndexes() {
         viewModelScope.launch(Dispatchers.IO) {
             assetRepository.rebuildDerivedIndexes()
+        }
+    }
+    
+    fun updateAiProvider(config: com.ahmedyejam.mks.data.model.AiProviderConfig) {
+        viewModelScope.launch(Dispatchers.IO) {
+            dataStoreManager.setAiProviderId(config.providerId)
+            dataStoreManager.setAiBaseUrl(config.baseUrl)
+            dataStoreManager.setAiApiKey(config.apiKey)
+            dataStoreManager.setAiChatModel(config.model)
+        }
+    }
+
+    suspend fun pingProvider(config: com.ahmedyejam.mks.data.model.AiProviderConfig): String = withContext(Dispatchers.IO) {
+        try {
+            if (config.providerId.startsWith("ollama")) {
+                val result = ollamaRepository.testConnection(config.baseUrl, config.model, config.apiKey)
+                if (result.success) {
+                    "Connection successful! Models found: ${result.models.size}"
+                } else {
+                    "Connection failed: ${result.message}"
+                }
+            } else {
+                val models = aiClient.listModels(config.baseUrl, config.apiKey)
+                "Connection successful! ${models.size} models available."
+            }
+        } catch (e: Exception) {
+            "Ping failed: ${e.message}"
+        }
+    }
+
+    suspend fun fetchModels(config: com.ahmedyejam.mks.data.model.AiProviderConfig): List<String> = withContext(Dispatchers.IO) {
+        try {
+            aiClient.listModels(config.baseUrl, config.apiKey)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun testCall(config: com.ahmedyejam.mks.data.model.AiProviderConfig, testMessage: String): String = withContext(Dispatchers.IO) {
+        try {
+            val response = aiClient.chatComplete(
+                config = config,
+                systemPrompt = "You are a helpful test assistant.",
+                userMessage = testMessage,
+                maxTokens = 200
+            )
+            response.ifBlank { "Test call successful, but empty response." }
+        } catch (e: Exception) {
+            "Test call failed: ${e.message}"
         }
     }
 }

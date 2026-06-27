@@ -21,6 +21,7 @@ dependencies {
     ksp(libs.moshi.kotlin.codegen)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.pdfbox.android)
 
     // Hilt
     implementation(libs.hilt.android)

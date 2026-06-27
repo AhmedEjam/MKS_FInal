@@ -9,6 +9,10 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE deletedAt IS NULL")
     fun getAllBooksFlow(): Flow<List<BookEntity>>
 
+    @Query("SELECT * FROM books WHERE deletedAt IS NULL")
+    suspend fun getAllBooksNow(): List<BookEntity>
+
+
     @Query("SELECT * FROM books WHERE workspaceId = :workspaceId AND deletedAt IS NULL")
     fun getBooksByWorkspaceFlow(workspaceId: Long): Flow<List<BookEntity>>
 

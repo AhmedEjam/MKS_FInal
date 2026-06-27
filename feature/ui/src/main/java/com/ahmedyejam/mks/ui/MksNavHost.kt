@@ -198,7 +198,8 @@ fun MksNavHost(
                 onOpenSlideshow = { navController.navigate(MksRoutes.slideshow(it)) },
                 onOpenNote = { navController.navigate(MksRoutes.blueprint(it)) },
                 onOpenPrompt = { navController.navigate(MksRoutes.promptDeck(it)) },
-
+                onOpenAiMcqGenerator = { navController.navigate(MksRoutes.aiMcqGenerator(it)) },
+                onOpenPdfExtraction = { navController.navigate(MksRoutes.pdfExtraction(it)) }
             )
         }
         composable(
@@ -304,6 +305,22 @@ fun MksNavHost(
                 bookId = bookId,
                 viewModel = viewModel,
             ) { navController.popBackStack() }
+        }
+
+        composable(
+            route = "ai_mcq_generator/{bookId}",
+            arguments = listOf(navArgument("bookId") { type = NavType.LongType }),
+        ) { backStackEntry ->
+            val bookId = backStackEntry.requirePositiveLongArg("bookId")
+            if (bookId == null) {
+                InvalidRouteScreen { navController.popBackStack() }
+                return@composable
+            }
+            com.ahmedyejam.mks.ui.booktools.AiMcqGeneratorScreen(
+                bookId = bookId,
+                onNavigateUp = { navController.popBackStack() },
+                onQuizSaved = { navController.popBackStack() }
+            )
         }
 
         composable(
@@ -579,6 +596,31 @@ fun MksNavHost(
                     }
                 },
                 onRetryClick = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = MksRoutes.PDF_EXTRACTION,
+            arguments = listOf(navArgument("sourceId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val sourceId = backStackEntry.requirePositiveLongArg("sourceId")
+            if (sourceId == null) {
+                InvalidRouteScreen { navController.popBackStack() }
+                return@composable
+            }
+            val pdfExtractionViewModel: com.ahmedyejam.mks.ui.booktools.PdfExtractionViewModel = hiltViewModel()
+
+            com.ahmedyejam.mks.ui.booktools.PdfExtractionScreen(
+                sourceId = sourceId,
+                viewModel = pdfExtractionViewModel,
+                onBack = { navController.popBackStack() },
+                onNavigateToMcqGenerator = { 
+                    // To do: if you want to navigate from PDF Extraction straight to AI MCQ generator.
+                    // The MCQ generator requires a bookId, not a sourceId.
+                    // We can pass the bookId if we look it up, or just pop back and let the user launch it.
+                    // For now, we just pop back.
+                    navController.popBackStack()
+                }
             )
         }
     }
