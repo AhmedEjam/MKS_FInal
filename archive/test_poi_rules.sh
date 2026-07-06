@@ -1,0 +1,1 @@
+echo "ProGuard rules check..."

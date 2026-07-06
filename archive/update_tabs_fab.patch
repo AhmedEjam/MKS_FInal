@@ -1,0 +1,41 @@
+--- feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/BookKnowledgeDashboardScreen.kt
++++ feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/BookKnowledgeDashboardScreen.kt
+@@ -128,19 +128,15 @@
+         bottomBar = {
+             Box(
+                 modifier = Modifier
+                     .fillMaxWidth()
+-                    .padding(horizontal = 32.dp, vertical = 24.dp),
++                    .padding(start = 32.dp, end = 32.dp, bottom = 48.dp, top = 24.dp),
+                 contentAlignment = Alignment.Center
+             ) {
+-                androidx.compose.material3.Surface(
+-                    shape = RoundedCornerShape(50),
+-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
+-                    shadowElevation = 8.dp
++                Box(
++                    modifier = Modifier.com.ahmedyejam.mks.ui.theme.premiumGlassBackground(baseAlpha = 0.15f, cornerRadius = 50.dp)
+                 ) {
+                     LazyRow(
+                         state = tabListState,
+-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
++                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 6.dp),
++                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                     ) {
+                         items(tabs.size) { index ->
+@@ -176,14 +172,17 @@
+                             BookTab.SOURCES -> showCreateSource = true
+                             else -> {}
+                         }
+                     },
+-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
++                    modifier = Modifier.com.ahmedyejam.mks.ui.theme.premiumGlassBackground(baseAlpha = 0.2f, cornerRadius = 50.dp),
++                    shape = androidx.compose.foundation.shape.CircleShape,
++                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
++                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
++                    elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp)
+                 ) {
+                     Icon(Icons.Default.Add, contentDescription = "Create ${currentTab.title}")
+                 }
