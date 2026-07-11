@@ -1,21 +1,44 @@
 package com.ahmedyejam.mks
 
 import android.app.Application
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
+import com.ahmedyejam.mks.service.RemoteConfigManager
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltAndroidApp
-class MksApplication : Application(), ImageLoaderFactory {
+class MksApplication : Application(), ImageLoaderFactory, Configuration.Provider {
+
+    @Inject lateinit var workerFactory: HiltWorkerFactory
+    @Inject lateinit var remoteConfigManager: RemoteConfigManager
+    
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
         com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(this)
         com.ahmedyejam.mks.data.importer.xlsx.PoiInitializer.init()
         setupCrashHandler()
+
+        // Offload Firebase initializations to prevent ANR
+        applicationScope.launch {
+            remoteConfigManager.fetchAndActivate()
+        }
     }
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     private fun setupCrashHandler() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()

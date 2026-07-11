@@ -1,12 +1,14 @@
 # MKS Enhancement Plan
 
-> Last updated: 2026-06-15. Current state: Room v29, 6-module architecture, 6 domain repositories, all 26 entities in place.
+> Last updated: 2026-07-10. Current state: Room v30, 6-module architecture, 6 domain repositories, all 26 entities in place.
 
 ## Phase 1: Code Solidity & Testing Safety Net 🔴 PRIORITY
 
 ### 1.1 Repository Test Harness & Test Suites
 
 **Status:** 🔴 OPEN (zero repository tests exist)
+
+> **Note:** `GlobalErrorHandler.kt` now exists in `core:data/error/` (partially addresses crash observability in Phase 1.6).
 
 Add a shared in-memory Room + Hilt test rule and fake `FileManager`/`RemoteAssetFetcher`. Create test suites for:
 - `KnowledgeRepository` (1544 lines) — largest, highest priority
@@ -16,10 +18,11 @@ Add a shared in-memory Room + Hilt test rule and fake `FileManager`/`RemoteAsset
 
 ### 1.2 Migration Test Completeness
 
-**Status:** 🔴 OPEN (v26→v27, v27→v28, v28→v29 untested)
+**Status:** ✅ DONE (v26→v30 now fully tested)
 
-- Add `Migration26To27Test`, `Migration27To28Test`, `Migration28To29Test`
-- Add one full `MigrateAll1To29Test` chain test (validates end-to-end migration integrity, catches dropped columns like `source_document_assets` in v29)
+- ~~Add `Migration26To27Test`, `Migration27To28Test`, `Migration28To29Test`~~ ✅ COMPLETED
+- `Migration29To30Test` also exists (covers v29→v30: adds `resultTaxonomy` to sessions)
+- Add one full `MigrateAll1To30Test` chain test (validates end-to-end migration integrity, catches dropped columns like `source_document_assets` in v29)
 - Fill gap coverage: `1→15`, `17→22` (may not exist in real deployments)
 
 ### 1.3 Repository Hygiene (Scripts Cleanup)
@@ -43,11 +46,11 @@ Acceptance gate: `grep -r "AppModule"` must return only the database-builder own
 
 ### 1.5 Static Analysis & Coverage Gates in CI
 
-**Status:** 🟡 IN PROGRESS (CI exists, extend rather than create)
+**Status:** 🟡 IN PROGRESS (CI exists, Detekt 1.23.6 + Ktlint 12.1.1 configured)
 
-- Add **detekt + ktlint** linting to CI pipeline
+- ~~Add **detekt + ktlint** linting to CI pipeline~~ ✅ CONFIGURED (Detekt 1.23.6, Ktlint 12.1.1)
 - Add **Kover** coverage thresholds (fail under 40% on `core/data`)
-- Add **Room schema-export diff check** (fail if `core/database/.../schemas/29.json` out of date vs. entities)
+- Add **Room schema-export diff check** (fail if `core/database/.../schemas/30.json` out of date vs. entities)
 
 ### 1.6 Crash & Observability
 
@@ -94,7 +97,7 @@ Performance, debugging, dependency optimization.
 
 **Status:** 🟢 READY (schema exists, unused)
 
-- `NoteCollectionEntity` already in v29 schema
+- `NoteCollectionEntity` already in v30 schema
 - Wire up in UI: group notes by collection, add collection CRUD to dashboard
 - Low-cost, high-perceived-value organization feature
 
@@ -156,9 +159,10 @@ Reuse existing Ollama + prompt-rendering pipeline. Lowest-effort, highest-deligh
 |------|--------|-------|
 | Version Catalog (`gradle/libs.versions.toml`) | ✅ DONE | In use |
 | CI Pipeline (`.github/workflows/android-ci.yml`) | ✅ DONE | Runs lint→test→build; can be extended |
+| Static Analysis (Detekt + Ktlint) | ✅ DONE | Detekt 1.23.6, Ktlint 12.1.1 configured |
 | Repository Hygiene (root scripts) | 🔴 OPEN | ~25 scripts need moving to `scripts/legacy/` |
-| Migration Tests (v26→v29) | 🔴 OPEN | Missing 3 test cases + full chain test |
+| Migration Tests (v26→v30) | ✅ DONE | v26→v27, v27→v28, v28→v29, v29→v30 all tested |
 | Repository Test Suite | 🔴 OPEN | Zero repository tests |
 | AppModule Decoupling | 🟡 IN PROGRESS | 3 coupling points remain |
-| Crash Observability | 🔴 OPEN | Global exception handler + Result<T> patterns needed |
+| Crash Observability | 🟡 IN PROGRESS | `GlobalErrorHandler.kt` exists in `core:data/error/`; Result<T> patterns still needed |
 

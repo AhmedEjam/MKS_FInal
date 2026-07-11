@@ -76,7 +76,7 @@ Two distinct flows emerge:
     - CSV/TSV → `CsvParser` with delimiter inference (`,` / `\t` / `;`)
     - JSON/HTML/TEXT → `readTextWithLimit()` (10-20MB) → `parseContent()`
 3. **Header detection** (XLSX/CSV only):
-    - `SpreadsheetHeaderMapper.calculateRowScore()` scores first 10 rows
+    - `SpreadsheetHeaderMapper.calculateRowScore()` scores first 25 rows
     - Multi-language aliases: English + Arabic (e.g., "question"/"سؤال", "answer"/"الإجابة")
     - Option column detection: matches "Option A" patterns, or heuristic (columns between question
       and answer)
@@ -346,7 +346,7 @@ mks_exchange.zip (AES-256 encrypted)
 {
   "format": "mks.exchange",
   "schemaVersion": 7,
-  "androidRoomSchema": 26,
+  "androidRoomSchema": 30,
   "includesMedia": true,
   "stableIdPolicy": "externalId required for workspace/book/quiz/question; numeric ids are local.",
   "softDeletePolicy": "deletedAt rows are preserved through soft_deletes.json when present.",
@@ -863,3 +863,7 @@ All import paths converge at:
 - `core/network/.../RemoteAssetFetcher.kt`
 - `core/network/.../RemoteAssetPolicy.kt`
 - `core/network/.../OllamaRepository.kt`
+
+---
+
+*Last updated: 2026-07-10*

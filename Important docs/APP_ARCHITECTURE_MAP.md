@@ -1,6 +1,6 @@
 # MKS Android App Architecture Map
 
-> Last updated: 2026-06-26. Active source is Room v30, 29 migration steps (1→30). Schema source of truth: `core/database/src/main/java/com/ahmedyejam/mks/data/local/MksDatabase.kt`.
+> Last updated: 2026-07-10. Active source is Room v30, 29 migration steps (1→30). Schema source of truth: `core/database/src/main/java/com/ahmedyejam/mks/data/local/MksDatabase.kt`.
 
 ## **🏗️ Application Architecture Overview**
 
@@ -114,7 +114,7 @@ ReviewRepository (unified review queue for flashcards, blueprints, mistakes)
 MksFullImportExportService (bulk data import/export with preview)
 ```
 
-## **🎯 Navigation Structure (22+ Routes)**
+## **🎯 Navigation Structure (24 Routes)**
 
 ```
 Navigation Graph (MksNavHost.kt - 708 lines)
@@ -164,8 +164,12 @@ Navigation Graph (MksNavHost.kt - 708 lines)
 │   └── ScannerScreen (camera OCR scanner)
 ├── adaptive/{type}/{id} (type: BOOK|CATEGORY|QUIZ|ALL)
 │   └── QuizPlayerScreen (adaptive training mode)
-└── summary/{sessionId}
-    └── SummaryScreen (post-quiz analytics)
+├── summary/{sessionId}
+│   └── SummaryScreen (post-quiz analytics)
+├── ai_mcq_generator/{bookId}
+│   └── AiMcqGeneratorScreen (AI-powered MCQ generation from source docs)
+└── pdf_extraction/{sourceId}
+    └── PdfExtractionScreen (PDF text extraction from source documents)
 ```
 
 ## **🖥️ UI Layer Architecture**
@@ -354,7 +358,7 @@ MKS Project (Multi-module)
 │       └── utils/TtsManager.kt      - Text-to-Speech integration
 └── feature/
     └── ui/src/main/java/.../ui/
-        ├── MksNavHost.kt            - Navigation graph (22+ routes)
+        ├── MksNavHost.kt            - Navigation graph (24 routes)
         ├── library/                 - Library management screens
         ├── quiz/                    - Quiz player screens
         ├── flashcard/               - Flashcard deck screen

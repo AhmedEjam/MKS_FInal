@@ -126,7 +126,7 @@ Notable: the `source_document_assets` table was created in v27→v28 then **drop
 | `HiltDaoModule`          | 6 core DAOs (Book, Quiz, Question, Session, CategoryMetadata, QuestionCategory)                                                   |
 | `HiltKnowledgeDaoModule` | 10 knowledge-bank DAOs                                                                                                            |
 | `HiltUtilityDaoModule`   | 10 utility/cross-cutting DAOs                                                                                                     |
-| `HiltRepositoryModule`   | `GlobalSearchRepository`                                                                                                          |
+| `HiltRepositoryModule`   | `GlobalSearchRepository` (explicitly provided). Note: `ReviewRepository` and `OllamaRepository` use `@Inject constructor` and are auto-provided by Hilt. |
 | `HiltServiceModule`      | Placeholder                                                                                                                       |
 
 Database builder config:
@@ -153,7 +153,7 @@ Room.databaseBuilder(context, MksDatabase::class.java, "mks_database")
 
 ## Key Differences from AGENTS.md Documentation
 
-The AGENTS.md file describes the project at version 28 with 27 migrations, an `AppModule.kt`, and
+The AGENTS.md file previously described the project at version 28 with 27 migrations, an `AppModule.kt`, and
 entities/DAOs in `data/local/entity/` and `data/local/dao/` under the app module. The actual current
 state differs:
 
@@ -169,6 +169,9 @@ state differs:
   exists in the current schema.
 - The DI setup splits DAO provision across **three separate modules** (HiltDaoModule,
   HiltKnowledgeDaoModule, HiltUtilityDaoModule) rather than one.
+
+> **Note (2026-07-10):** AGENTS.md has been updated to reflect the current state. The discrepancies
+> listed above should now be resolved. This section is retained for historical reference.
 
 ---
 
@@ -877,3 +880,7 @@ All 26 map to 26 abstract DAO accessors in the same class.
   `Converters`
 - `@ColumnInfo(defaultValue = ...)` is set on columns added in later migrations, ensuring Room knows
   the SQL default
+
+---
+
+*Last updated: 2026-07-10*

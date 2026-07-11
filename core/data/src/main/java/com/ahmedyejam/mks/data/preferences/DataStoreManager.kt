@@ -67,6 +67,8 @@ class DataStoreManager @Inject constructor(
         private val AI_VISION_MODEL = stringPreferencesKey("ai_vision_model")
         private val AI_MCQ_REVIEW_ENABLED = booleanPreferencesKey("ai_mcq_review_enabled")
         private val AI_MCQ_EXTRACTION_MODE = stringPreferencesKey("ai_mcq_extraction_mode")
+
+        private val FCM_TOKEN = stringPreferencesKey("fcm_token")
     }
 
     val themeMode: Flow<String> =
@@ -433,5 +435,14 @@ class DataStoreManager @Inject constructor(
             preferences.remove(LAST_QUIZ_ID)
             preferences.remove(LAST_QUESTION_INDEX)
         }
+    }
+
+    val fcmToken: Flow<String?> =
+        context.dataStore.data.map { preferences ->
+            preferences[FCM_TOKEN]
+        }.distinctUntilChanged()
+
+    suspend fun setFcmToken(token: String) {
+        context.dataStore.edit { preferences -> preferences[FCM_TOKEN] = token }
     }
 }

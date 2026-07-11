@@ -14,6 +14,7 @@ plugins {
     alias(libs.plugins.dagger.hilt.android) apply false
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.ktlint) apply false
+    id("com.google.gms.google-services") version "4.4.0" apply false
 }
 
 subprojects {

@@ -1,6 +1,6 @@
 # Android MKS: Master Architecture & Codebase Inspection Protocol
 
-> **⚠️ REGENERATED:** 2026-06-27. This document is now the **authoritative current-state inspection** and **master protocol**, combining the 6-module architecture map, the v2.2 AI Review Protocol, and the codebase chunks.
+> **⚠️ REGENERATED:** 2026-07-10. **Part 4 added:** 2026-07-11. This document is the **authoritative current-state inspection** and **master protocol**, combining the 6-module architecture map, the v2.2 AI Review Protocol, the codebase chunks, and a concrete multi-phase review execution plan (Part 4).
 
 ---
 
@@ -11,7 +11,7 @@
 /Users/ahmedy.ajam/Android MKS/
 ├── app/                          # Main application module (UI entry point, Activities, Hilt DI)
 ├── core/
-│   ├── database/                 # Room database module (v30, 26 entities, 28 migrations, 26 DAOs)
+│   ├── database/                 # Room database module (v30, 26 entities, 29 migrations, 26 DAOs)
 │   ├── data/                     # Domain repos, import pipeline, preferences, preview services
 │   ├── model/                    # Shared domain models (entities, UI routes, search DTOs)
 │   ├── network/                  # Network module (OllamaRepository, RemoteAssetFetcher)
@@ -582,3 +582,333 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/database/src/androidTest/java/com/ahmedyejam/mks/data/local/dao/QuestionDaoTest.kt` *(~156 lines)*
 
 ---
+
+## Part 4: Recommended Multi-Phase Review Execution Plan
+
+> **Added:** 2026-07-11. This section operationalizes Part 2's dual-perspective protocol into a concrete, bounded execution plan. It maps each phase to the file chunks in Part 3, specifies exactly which files to read (to conserve attention budget), and defines the output artifacts that accumulate across phases. Each phase traces data from origin → transforms → final destination through both the end-user and senior-developer lenses, and concludes with actionable recommendations for improvements, new features, functions to maturize, and refactor opportunities.
+>
+> **Validation directive:** Before executing, the AI agent should review this plan against the current codebase state (AGENTS.md + file tree) and validate that it is the best approach. If the agent identifies gaps or better groupings, it should propose adjustments and wait for user approval before proceeding.
+
+### Plan Principles
+
+1. **Bounded reads per phase** — each phase names the exact files to read. Do not explore beyond the list. This prevents context exhaustion.
+2. **Artifacts accumulate** — each phase writes a markdown file to `review/`. Subsequent phases read prior artifacts (cheap) instead of re-reading source code.
+3. **No search in `build/`** — build output wastes context. Do not grep or glob into `build/`.
+4. **Dual lens per phase** — every phase produces both an End-User Lens and a Senior-Developer Lens analysis.
+5. **Recommendations per phase** — every phase produces a Recommendations section (improvements, features to add, functions to maturize, refactor opportunities).
+6. **Single session** — run all phases in the same Claude Code session so prior artifacts remain in context.
+
+### Chunk Cross-Reference Map
+
+| Phase | Part 3 Chunks | Primary Focus |
+|---|---|---|
+| Phase 1 — Import Pipeline | 9, 10, parts of 12 (FileManager), 16 (ImportViewModel), 17 (CompilerDialog/CompilerViewModel) | File → ParsedQuestion → Room |
+| Phase 2 — Quiz & Knowledge Bank Study | 14 (Book Tools), 15 (Flashcards), 17 (Quiz Player), 19 (Slideshow/Summary), parts of 11 (Quiz/Study/Knowledge repos) | User interaction → Session/Progress entities |
+| Phase 3 — AI, OCR, PDF, Export & Infra | 8 (Network), parts of 11 (ExportManager/AiMcqRepository), 12 (exchange, preferences, seeder), parts of 14 (AiMcq/PdfExtraction), app/service/ | Network calls, workers, export round-trip, preferences |
+| Phase 4 — Synthesis | Reads Phase 1–3 artifacts + user journey docs + enhancement plan | Cross-pipeline map + prioritized roadmap |
+
+---
+
+### Phase 1 — Import Pipeline (File → Persist)
+
+**Goal:** Trace the complete import journey from user file selection to Room persistence. Identify where data enters, what transforms it undergoes, and where it lands.
+
+**Read first (in this order):**
+1. `AGENTS.md` (project guidance — use AI Navigation Guide paths)
+2. `Important docs/IMPORT_INPUT_PATHS.md` (import input path documentation)
+
+**Read these source files (bounded list — do not explore beyond):**
+
+*Chunk 9 — Importer Parsers:*
+- `core/data/.../data/importer/parser/SpreadsheetHeaderMapper.kt`
+- `core/data/.../data/importer/parser/SpreadsheetQuestionParser.kt`
+- `core/data/.../data/importer/parser/CsvParser.kt`
+- `core/data/.../data/importer/parser/JsonQuestionParser.kt`
+- `core/data/.../data/importer/parser/JsonLibraryParser.kt`
+- `core/data/.../data/importer/parser/HtmlQuestionParser.kt`
+- `core/data/.../data/importer/parser/TextQuestionParser.kt`
+- `core/data/.../data/importer/parser/TextFlashcardParser.kt`
+- `core/data/.../data/importer/parser/TextSlideParser.kt`
+- `core/data/.../data/importer/parser/TextArticleParser.kt`
+- `core/data/.../data/importer/parser/PptxSlideParser.kt`
+- `core/data/.../data/importer/parser/ZipLibraryParser.kt`
+- `core/data/.../data/importer/parser/GenericImageExtractor.kt`
+- `core/data/.../data/importer/parser/SourceDetector.kt`
+
+*Chunk 10 — Importer Logic & Excel:*
+- `core/data/.../data/importer/detector/ImportFormatDetector.kt`
+- `core/data/.../data/importer/dto/LibraryBundleDto.kt`
+- `core/data/.../data/importer/mapping/LibraryMapper.kt`
+- `core/data/.../data/importer/normalization/BundleNormalizer.kt`
+- `core/data/.../data/importer/repository/ImportLibraryManager.kt`
+- `core/data/.../data/importer/security/ImportLimits.kt`
+- `core/data/.../data/importer/validation/ImportValidator.kt`
+- `core/data/.../data/importer/xlsx/XlsxImageResolver.kt`
+- `core/data/.../data/importer/xlsx/XlsxLibraryCompiler.kt`
+
+*Chunk 12 (partial) — File I/O:*
+- `core/data/.../data/local/FileManager.kt`
+
+*Chunk 16 (partial) — Import UI:*
+- `feature/ui/.../ui/importer/ImportViewModel.kt`
+
+*Chunk 17 (partial) — Compiler UI:*
+- `feature/ui/.../ui/quiz/CompilerDialog.kt`
+- `feature/ui/.../ui/quiz/CompilerViewModel.kt`
+
+**Output:** `review/phase1_import_pipeline.md`
+
+**Sections required in the output:**
+
+**§1 End-User Lens**
+Trace one real user action: "I selected a spreadsheet and imported it." Describe each step the user sees, each decision they make (header row selection, column mapping, preview review), and where data is at each point (file → temp cache → parsed preview → DB). Note friction points, dead-ends, confusing UI states, and failure modes the user would encounter (e.g., wrong format detected, header row misidentified, image not extracted, large file timeout).
+
+**§2 Senior-Developer Lens**
+For the same pipeline, provide:
+- Data flow diagram (text-based): file → detector → parser → normalizer → validator → mapper → repository → DAO → Room
+- Correctness risks: image priority order (XLSX embedded → image column → question cell → option cell → row-level → merged cell), marked-cell vs explicit answer priority, merged-cell handling, empty-row filtering logic
+- Error handling gaps: what happens when a parser throws? Is the temp file cleaned up on failure? Are partial imports rolled back?
+- Thread/coroutine correctness: is file I/O on `Dispatchers.IO`? Are there main-thread blockers?
+- State desync: can the CompilerUiState preview diverge from what actually gets persisted?
+
+**§3 Recommendations**
+- **Potential Improvements:** Specific, actionable improvements to existing behavior (e.g., better error messages, progress indicators for large files, undo after import).
+- **Features to Add:** New capabilities that would enhance the import experience (e.g., drag-and-drop reordering of column mapping, saved mapping presets, batch multi-file import).
+- **Functions to Maturize:** Existing functions that are partial/stub/fragile and should be hardened (e.g., fuzzy text answer matching, delimiter inference edge cases, PPTX image extraction).
+- **Refactor Opportunities:** Duplicated logic, overly large functions, classes that should be split, patterns that should be unified (e.g., all parsers sharing a common interface, image extraction logic centralized).
+
+**Constraints:** Use `file:line` references. Do not write code or make changes. When done, reply with the file path and a 5-line summary only.
+
+---
+
+### Phase 2 — Quiz Play & Knowledge Bank Study Pipelines
+
+**Goal:** Trace the study/playback pipelines — quiz answering/scoring/sessions, flashcards (spaced repetition), slideshows, note blueprints (reader/TTS/autoscroll), and AI prompt decks — from user entry to data persistence.
+
+**Read first:** `review/phase1_import_pipeline.md` (the prior artifact — do not re-read the importer code).
+
+**Read these source files (bounded list):**
+
+*Chunk 11 (partial) — Repositories:*
+- `core/data/.../data/repository/QuizRepository.kt`
+- `core/data/.../data/repository/StudyRepository.kt`
+- `core/data/.../data/repository/KnowledgeRepository.kt`
+
+*Chunk 14 — Book Tools:*
+- `feature/ui/.../ui/booktools/BookKnowledgeDashboardScreen.kt`
+- `feature/ui/.../ui/booktools/BookDashboardTabs.kt`
+- `feature/ui/.../ui/booktools/BookToolScreens.kt`
+- `feature/ui/.../ui/booktools/BookToolsViewModel.kt`
+
+*Chunk 15 — Flashcards:*
+- `feature/ui/.../ui/flashcard/FlashcardDeckScreen.kt`
+- `feature/ui/.../ui/flashcard/FlashcardDeckViewModel.kt`
+
+*Chunk 17 — Quiz Player:*
+- `feature/ui/.../ui/quiz/QuizPlayerScreen.kt`
+- `feature/ui/.../ui/quiz/QuizViewModel.kt`
+- `feature/ui/.../ui/quiz/QuizQuestionsScreen.kt`
+- `feature/ui/.../ui/quiz/QuizQuestionsViewModel.kt`
+- `feature/ui/.../ui/quiz/QuizDetailTabsScreen.kt`
+
+*Chunk 18 (partial) — Sessions:*
+- `feature/ui/.../ui/session/SessionManagementScreen.kt`
+- `feature/ui/.../ui/session/SessionViewModel.kt`
+
+*Chunk 19 (partial) — Slideshow & Summary:*
+- `feature/ui/.../ui/slideshow/SlideshowCourseScreen.kt`
+- `feature/ui/.../ui/slideshow/SlideshowCourseViewModel.kt`
+- `feature/ui/.../ui/summary/SummaryScreen.kt`
+- `feature/ui/.../ui/summary/SummaryViewModel.kt`
+
+*Entity context (read selectively for field verification):*
+- `core/model/.../data/local/entity/SessionEntity.kt`
+- `core/model/.../data/local/entity/FlashcardEntity.kt`
+- `core/model/.../data/local/entity/LearningSessionEntity.kt`
+- `core/model/.../data/local/entity/KnowledgeStudySessionEntity.kt`
+- `core/model/.../data/local/entity/StudySessionEntity.kt`
+- `core/model/.../data/local/entity/CourseSlideEntity.kt`
+- `core/model/.../data/local/entity/NoteBlueprintEntity.kt`
+- `core/model/.../data/local/entity/PromptDeckEntity.kt`
+- `core/model/.../data/local/entity/PromptCardEntity.kt`
+- `core/model/.../data/local/entity/PromptRunEntity.kt`
+
+*Navigation:*
+- `feature/ui/.../ui/MksNavHost.kt` (routes only, for navigation flow)
+
+*Shared UI:*
+- `core/ui/.../ui/utils/TtsManager.kt`
+
+**Output:** `review/phase2_study_pipelines.md`
+
+**Sections required in the output:**
+
+**§1 End-User Lens**
+For EACH of: quiz, flashcards, slideshow, note reader, prompt deck — trace the user journey from entry (library → book dashboard → tab → screen) through interaction to where their input/state ends up (which entity, which session row). Call out any surface where progress can be lost (e.g., app kill without save), where the back-stack is confusing, where two surfaces disagree on the same data (e.g., dashboard stats vs. quiz list), and where the user has no feedback that their action was saved.
+
+**§2 Senior-Developer Lens**
+Per pipeline:
+- State ownership: which ViewModel owns which StateFlow? Is there any duplicated source of truth?
+- Persistence guarantees: is partial progress saved on app kill? Is session state serialized atomically?
+- Session-entity correctness: does `SessionEntity` capture all user answers? Does `KnowledgeStudySessionEntity` track all knowledge-bank progress? Are streaks computed correctly?
+- Parent book touch: does every study action touch the parent book's `lastStudiedAt`? Are stats refreshed?
+- Derived asset sync: when a question changes, do linked flashcards/slides/notes update? Is `syncConfig` honored?
+- Compose performance: any unnecessary recompositions? Heavy computations in composition?
+
+**§3 Recommendations**
+- **Potential Improvements:** Specific UX/UX-technical improvements (e.g., session resume indicator, progress auto-save frequency, slideshow swipe gesture feedback).
+- **Features to Add:** New study capabilities (e.g., quiz branching based on performance, flashcard SRS algorithm tuning, collaborative note annotation, prompt deck templates).
+- **Functions to Maturize:** Existing functions that are incomplete or fragile (e.g., spaced repetition scoring, streak calculation, slide completion tracking, TTS pause/resume on backgrounding).
+- **Refactor Opportunities:** Duplicated ViewModel state management, BookToolsViewModel splitting if too large, shared study-session logic extraction, unified progress-tracking abstraction.
+
+**Constraints:** `file:line` references. No code changes. Reply with file path + 5-line summary only.
+
+---
+
+### Phase 3 — AI, OCR, PDF, Export, Sync & Infrastructure
+
+**Goal:** Trace the auxiliary pipelines — AI MCQ generation, OCR, PDF text extraction, Ollama LLM, export (ZIP exchange), Firebase (FCM + Remote Config), WorkManager, DataStore preferences — from input origin through network/worker hops to output persistence.
+
+**Read first:** `review/phase1_import_pipeline.md` and `review/phase2_study_pipelines.md`.
+
+**Read these source files (bounded list):**
+
+*Chunk 8 — Network Layer:*
+- `core/network/.../data/network/AiClient.kt`
+- `core/network/.../data/network/McqService.kt`
+- `core/network/.../data/network/OcrService.kt`
+- `core/network/.../data/network/PdfRendererService.kt`
+- `core/network/.../data/network/PdfTextExtractor.kt`
+- `core/network/.../data/network/RemoteAssetFetcher.kt`
+- `core/network/.../data/network/RemoteAssetPolicy.kt`
+- `core/network/.../data/repository/OllamaRepository.kt`
+
+*Chunk 11 (partial) — Repositories:*
+- `core/data/.../data/repository/AiMcqRepository.kt`
+- `core/data/.../data/repository/ExportManager.kt`
+- `core/data/.../data/review/ReviewRepository.kt`
+- `core/data/.../data/search/GlobalSearchRepository.kt`
+
+*Chunk 12 (partial) — Exchange, Preferences, Seeder:*
+- `core/data/.../data/exchange/v7/MksExchangeV7Archive.kt`
+- `core/data/.../data/exchange/v7/MksExchangeV7Models.kt`
+- `core/data/.../data/preferences/DataStoreManager.kt`
+- `core/data/.../data/preferences/SettingsSanitizer.kt`
+- `core/data/.../data/seeder/MksDatabaseSeeder.kt`
+
+*Chunk 14 (partial) — AI MCQ & PDF UI:*
+- `feature/ui/.../ui/booktools/AiMcqGeneratorScreen.kt`
+- `feature/ui/.../ui/booktools/AiMcqGeneratorViewModel.kt`
+- `feature/ui/.../ui/booktools/PdfExtractionScreen.kt`
+- `feature/ui/.../ui/booktools/PdfExtractionViewModel.kt`
+
+*Chunk 19 (partial) — Settings UI:*
+- `feature/ui/.../ui/settings/SettingsScreen.kt`
+- `feature/ui/.../ui/settings/SettingsViewModel.kt`
+- `feature/ui/.../ui/settings/ProviderConfigDialog.kt`
+
+*Chunk 15 (partial) — Data Tools:*
+- `feature/ui/.../ui/data/DataToolsScreen.kt`
+- `feature/ui/.../ui/data/DataToolsViewModel.kt`
+
+*App services:*
+- `app/.../service/AppFirebaseMessagingService.kt`
+- `app/.../service/RemoteConfigManager.kt`
+- `app/.../service/TokenSyncWorker.kt`
+
+**Output:** `review/phase3_aux_pipelines.md`
+
+**Sections required in the output:**
+
+**§1 End-User Lens**
+Trace each of:
+- (a) **AI MCQ generation:** user opens generator → selects source material → configures parameters → generates → reviews → saves as quiz. Where does the AI call happen? What does the user see on failure/offline/timeout?
+- (b) **PDF text extraction:** user opens source → extracts text → reviews → saves. What if PDF is encrypted or image-only?
+- (c) **Export → import round-trip:** user exports a book to ZIP → deletes the book → imports the ZIP. Does the reimported book match the original? Are images preserved? Are sessions/stats preserved?
+- (d) **Preference change:** user changes theme/font scale/language. Does it apply immediately or require restart? Is it persisted?
+- (e) **AI prompt deck:** user creates a prompt → fills variables → runs it → routes output. What happens if Ollama is unreachable?
+
+**§2 Senior-Developer Lens**
+Per pipeline:
+- API-key/secret handling: are keys hardcoded, in DataStore, or in BuildConfig? Are they logged?
+- Network thread correctness: are AI/OCR/PDF calls on `Dispatchers.IO`? Are there timeouts? Cancellation support?
+- Offline-first guarantees: does WorkManager retry with backoff? Are FCM tokens synced when network returns?
+- RemoteConfig: is stale-while-revalidate correct? What happens on first launch with no config?
+- Export round-trip fidelity: does `LibraryMapper` + `ExportManager` + `ImportLibraryManager` produce a lossless round-trip? Are soft-deleted items included? Are images bundled?
+- Unbounded calls: any network call without timeout? Any file read without size limit?
+- DataStore: is it thread-safe? Are there read-modify-write races?
+
+**§3 Recommendations**
+- **Potential Improvements:** Specific improvements (e.g., AI generation progress streaming, export file naming, OCR confidence display, offline queue visibility).
+- **Features to Add:** New capabilities (e.g., cloud sync, multiple AI provider switching, batch PDF import, export format options, FCM topic subscriptions, scheduled study reminders).
+- **Functions to Maturize:** Existing functions that are incomplete (e.g., AI MCQ quality validation, PDF table extraction, Ollama streaming responses, export progress reporting, RemoteConfig default fallbacks).
+- **Refactor Opportunities:** AI client abstraction (support multiple providers uniformly), export/import symmetry enforcement, centralized network error handling, DataStore preference grouping.
+
+**Constraints:** `file:line` references. No code changes. Reply with file path + 5-line summary only.
+
+---
+
+### Phase 4 — Synthesis, Cross-Pipeline Map & Prioritized Roadmap
+
+**Goal:** Consolidate all prior findings into a coherent end-user narrative, a senior-developer risk register, a cross-pipeline data map, and a prioritized improvement roadmap.
+
+**Read only (do NOT re-read source code):**
+- `review/phase1_import_pipeline.md`
+- `review/phase2_study_pipelines.md`
+- `review/phase3_aux_pipelines.md`
+- `Important docs/user_Jour_Geminipro.md` (intended user journey — compare against observed implementation)
+- `Important docs/mks_enhancement_plan.md` (any planned work already identified)
+- `Important docs/USER_JOURNEY_MAP_claudeopus.md` (comprehensive screen-by-screen interaction map)
+
+**Output:** `review/phase4_synthesis.md`
+
+**Sections required in the output:**
+
+**§1 End-User Verdict**
+A coherent narrative of the full user journey across all pipelines (import → study → AI → export → settings). Name the top 10 frictions/gaps a real user would feel, ranked by severity. Mark each as `[Import]` `[Study]` `[AI]` `[Sync]` `[Export]` `[Settings]`. Compare the intended journey (from the user-journey docs) against the observed implementation and flag every divergence.
+
+**§2 Senior-Developer Verdict**
+Top 10 architectural risks across the whole app: data-integrity, single-source-of-truth violations, missing persistence on kill, error-handling gaps, thread/coroutine misuse, security concerns. Each with `file:line` and a one-line remediation.
+
+**§3 Cross-Pipeline Data Map**
+A single text table answering "where does data come from, what does it go through, where does it end up" for every pipeline:
+
+| Pipeline | Origin of Input | Transforms | Final Entity/Table | Owner ViewModel | Owner Repository | Persistence Guarantee |
+|---|---|---|---|---|---|---|
+| Spreadsheet import | File URI | detect → parse → normalize → validate → map | QuestionEntity, QuestionCategoryEntity | CompilerViewModel | ImportLibraryManager → Quiz/BookRepository | On explicit save only |
+| Flashcard study | User tap (flip/rate) | update SRS metrics → session state | FlashcardEntity, LearningSessionEntity | FlashcardDeckViewModel | KnowledgeRepository | On each card action |
+| ... | ... | ... | ... | ... | ... | ... |
+
+(Complete this table for ALL pipelines: import, quiz play, quiz session, flashcard, slideshow, note reader, prompt deck, AI MCQ, OCR, PDF extraction, export, import-round-trip, preference change, FCM token sync, review queue, global search, trash/restore, workspace switch.)
+
+**§4 Prioritized Improvement Roadmap**
+Consolidate all Phase 1–3 Recommendations into a single prioritized roadmap:
+
+| Priority | Category | Recommendation | Pipeline | Effort | Impact |
+|---|---|---|---|---|---|
+| P0 | Bug/Fix | ... | ... | S/M/L | Critical/High/Medium |
+| P1 | Improvement | ... | ... | ... | ... |
+| P2 | Feature | ... | ... | ... | ... |
+| P3 | Refactor | ... | ... | ... | ... |
+| P4 | Maturize | ... | ... | ... | ... |
+
+Categories: `Bug/Fix`, `Improvement`, `Feature`, `Refactor`, `Maturize`, `Security`, `Performance`, `Testing`.
+Priority levels: P0 (critical, do now), P1 (high, next sprint), P2 (medium, roadmap), P3 (low, backlog), P4 (nice-to-have).
+
+Group the roadmap into thematic clusters (e.g., "Import Reliability", "Study Persistence", "AI Robustness", "Export Fidelity", "Infrastructure Hardening", "UX Polish", "Testing Coverage") so the team can tackle them coherently.
+
+**§5 Testing Gap Analysis**
+Consolidate the test-coverage gaps identified across all phases. Map each gap to the risk it introduces and recommend specific test classes to write. Reference existing tests (Part 3, Chunks 20–21) that should be extended.
+
+**Constraints:** No code changes. Reply with the file path and a 10-line executive summary.
+
+---
+
+### Execution Notes
+
+1. **Run phases sequentially** in the same Claude Code session. Each phase explicitly re-reads the prior `.md` artifact, which is cheap (one file) versus re-reading source code.
+2. **Create the `review/` directory** at the project root before Phase 1 (or let Phase 1 create it).
+3. **Do not skip phases.** Each phase's output is input to Phase 4's synthesis. Skipping produces an incomplete data map.
+4. **Do not search `build/`.** It is build output and wastes context.
+5. **If the AI agent identifies a gap in this plan** (e.g., a pipeline not covered, a file that should be read, a better grouping), it should flag it to the user before executing the affected phase rather than silently deviating.
+6. **After Phase 4**, the user should review `review/phase4_synthesis.md` §4 (Prioritized Improvement Roadmap) as the primary deliverable — it is the actionable output of the entire review.

@@ -69,4 +69,8 @@ Once connected, you can use these commands in the Gemini chat:
 * **No `stdio` support:** Android Studio only supports HTTP/SSE transports. It cannot connect to
   servers via `stdio` (standard I/O).
 * **No Resources/Prompts:** MCP resources and prompt templates are not currently supported.
-* **Experimental:** MCP support in Android Studio is currently in preview and may change.
+* **Maturity:** MCP support in Android Studio has matured significantly, but may still have limitations depending on your Android Studio version. Check release notes for the latest capabilities.
+
+---
+
+*Last updated: 2026-07-10*

@@ -1,6 +1,6 @@
 # MKS Android App — User Journey & UI Map
 
-> **Last updated:** 2026-06-26. Room v30, 29 migration steps, 22+ navigation routes.
+> **Last updated:** 2026-07-10. Room v30, 29 migration steps, 24 navigation routes.
 >
 > **What this is:** A plain-language, screen-by-screen map of every page, button, gesture, dialog, and interactable element in the MKS Android app. For each item, it says what happens when you interact with it — where it takes you, what it loads, and what it outputs.
 >
@@ -25,13 +25,15 @@
 13. [AI Prompt Deck Screens](#13-ai-prompt-deck-screens)
 14. [Source Documents Screen](#14-source-documents-screen)
 15. [Book Notes Screen](#15-book-notes-screen)
-16. [Scanner Screen](#16-scanner-screen)
-17. [Global Search Screen](#17-global-search-screen)
-18. [Review Dashboard Screen](#18-review-dashboard-screen)
-19. [Data Tools Screen](#19-data-tools-screen)
-20. [Settings Screen](#20-settings-screen)
-21. [Dialogs & Overlays Reference](#21-dialogs--overlays-reference)
-22. [Architecture Notes for iOS Parity](#22-architecture-notes-for-ios-parity)
+16. [AI MCQ Generator Screen](#16-ai-mcq-generator-screen)
+17. [PDF Extraction Screen](#17-pdf-extraction-screen)
+18. [Scanner Screen](#18-scanner-screen)
+19. [Global Search Screen](#19-global-search-screen)
+20. [Review Dashboard Screen](#20-review-dashboard-screen)
+21. [Data Tools Screen](#21-data-tools-screen)
+22. [Settings Screen](#22-settings-screen)
+23. [Dialogs & Overlays Reference](#23-dialogs--overlays-reference)
+24. [Architecture Notes for iOS Parity](#24-architecture-notes-for-ios-parity)
 
 ---
 
@@ -577,7 +579,43 @@ Shows the last 10 prompt runs with their variables and outputs.
 
 ---
 
-## 16. Scanner Screen
+## 16. AI MCQ Generator Screen
+
+**Route:** `ai_mcq_generator/{bookId}`
+**What it is:** An AI-powered MCQ (multiple-choice question) generation tool accessed from the Book Knowledge Dashboard. Users can generate quiz questions from source documents or AI prompts.
+
+| # | Element | What It Does |
+|---|---------|-------------|
+| 1 | **Source document selector** | Lists source documents attached to the book. Select one or more documents to use as context for MCQ generation. |
+| 2 | **AI provider configuration** | Configure the AI provider (e.g., Ollama) and model used for question generation. |
+| 3 | **Generation settings** | Options for number of questions to generate, difficulty level, question types, and topic focus. |
+| 4 | **"Generate" button** | Triggers the AI to generate MCQs from the selected source material. Shows a loading indicator during generation. |
+| 5 | **Generated questions preview** | Displays generated questions with options and correct answers. Each question can be individually reviewed. |
+| 6 | **Edit icon per question** | Opens the Edit Question Dialog to modify a generated question before saving. |
+| 7 | **Delete icon per question** | Removes a generated question from the batch before saving. |
+| 8 | **"Save to quiz" button** | Saves approved generated questions into an existing or new quiz within the book. |
+
+---
+
+## 17. PDF Extraction Screen
+
+**Route:** `pdf_extraction/{sourceId}`
+**What it is:** A PDF text extraction screen where users can extract text from uploaded PDF source documents for study. Extracted text can be used to create knowledge-bank assets.
+
+| # | Element | What It Does |
+|---|---------|-------------|
+| 1 | **PDF file selector** | Opens the file picker to select a PDF file for text extraction. |
+| 2 | **PDF page preview** | Renders pages of the selected PDF for visual confirmation. |
+| 3 | **"Extract text" button** | Runs the PDF text extraction pipeline (`PdfTextExtractor`). Shows a progress indicator during extraction. |
+| 4 | **Extracted text viewer** | Displays the extracted text content with page-by-page breakdown. Text is selectable and copyable. |
+| 5 | **"Copy all" button** | Copies the entire extracted text to the clipboard. |
+| 6 | **"Save as source" button** | Saves the extracted text as a source document attached to the book. |
+| 7 | **"Create slides" button** | Creates slideshow slides from the extracted text content. |
+| 8 | **"Create blueprint" button** | Creates a review blueprint from the extracted text content. |
+
+---
+
+## 18. Scanner Screen
 
 **Route:** `scanner/{quizId}`
 **What it is:** Camera-based question scanner. Photographs a page and uses OCR to extract questions.
@@ -606,7 +644,7 @@ Shown if OCR fails. Shows the error message and a "Try Again" button to return t
 
 ---
 
-## 17. Global Search Screen
+## 19. Global Search Screen
 
 **Route:** `global_search`
 **What it is:** Searches across the entire database — books, quizzes, questions, notes, flashcards, blueprints, prompts, mistakes, and assets.
@@ -620,7 +658,7 @@ Shown if OCR fails. Shows the error message and a "Try Again" button to return t
 
 ---
 
-## 18. Review Dashboard Screen
+## 20. Review Dashboard Screen
 
 **Route:** `review_dashboard?mistakeId={mistakeId}`
 **What it is:** A unified review queue showing all items due for review across flashcards, blueprints, and mistake logs.
@@ -646,7 +684,7 @@ Shown if OCR fails. Shows the error message and a "Try Again" button to return t
 
 ---
 
-## 19. Data Tools Screen
+## 21. Data Tools Screen
 
 **Route:** `data_tools`
 **What it is:** Advanced import/export with preview capabilities.
@@ -662,7 +700,7 @@ Shown if OCR fails. Shows the error message and a "Try Again" button to return t
 
 ---
 
-## 20. Settings Screen
+## 22. Settings Screen
 
 **Route:** `settings`
 
@@ -707,7 +745,7 @@ Shown if OCR fails. Shows the error message and a "Try Again" button to return t
 
 ---
 
-## 21. Dialogs & Overlays Reference
+## 23. Dialogs & Overlays Reference
 
 ### Edit Entity Dialog
 Used for creating/editing Books and Quizzes. Fields: Title, Description, Cover Image (tap to pick from gallery). Save button creates/updates the entity.
@@ -735,9 +773,15 @@ Fullscreen image viewer with pinch-to-zoom and pan gestures. Shown when tapping 
 ### Sort Dialog
 Lets you sort library items by: Name (A-Z), Name (Z-A), Date Created, Date Edited, Progress.
 
+### Trash Bin Dialog
+A dialog accessible from the Library or Settings that shows soft-deleted items (books, quizzes, knowledge-bank assets). Users can preview deleted items and either **restore** them back to the library or **permanently delete** them. Items are automatically purged after a retention period.
+
+### Workspace Manager Dialog
+A dialog for managing workspaces. Users can **create** new workspaces, **switch** between existing workspaces, **rename** workspaces, or **delete** workspaces. Each workspace has its own isolated set of books, quizzes, and knowledge-bank data. The default workspace cannot be deleted.
+
 ---
 
-## 22. Architecture Notes for iOS Parity
+## 24. Architecture Notes for iOS Parity
 
 | Android Concept | iOS Equivalent |
 |----------------|---------------|
@@ -781,8 +825,10 @@ book_sources/{bookId}?sourceId={id}        → SourceDocumentListScreen
 book_notes/{bookId}                        → BookNotesScreen
 book_prompts/{bookId}                      → AiPromptDeckListScreen
 prompt_deck/{promptId}?cardId={id}         → AiPromptDeckScreen
+ai_mcq_generator/{bookId}                  → AiMcqGeneratorScreen
+pdf_extraction/{sourceId}                  → PdfExtractionScreen
 ```
 
 ---
 
-*Last updated by Antigravity AI — 2026-06-26. This document should be refreshed with each major app update.*
+*Last updated by Antigravity AI — 2026-07-10. This document should be refreshed with each major app update.*
