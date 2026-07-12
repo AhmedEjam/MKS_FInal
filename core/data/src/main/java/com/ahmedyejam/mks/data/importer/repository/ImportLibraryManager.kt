@@ -34,13 +34,11 @@ import com.ahmedyejam.mks.data.importer.validation.ImportValidator
 import com.ahmedyejam.mks.data.importer.xlsx.XlsxLibraryCompiler
 import com.ahmedyejam.mks.data.local.FileManager
 import com.ahmedyejam.mks.data.local.MksDatabase
-import com.ahmedyejam.mks.data.local.WorkspaceDefaults
 import com.ahmedyejam.mks.data.local.entity.BookEntity
 import com.ahmedyejam.mks.data.local.entity.KnowledgeStudySessionEntity
-import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
-import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
 import com.ahmedyejam.mks.data.model.MksResult
 import com.ahmedyejam.mks.data.network.RemoteAssetPolicy
+import com.ahmedyejam.mks.data.repository.WorkspaceRepository
 import com.ahmedyejam.mks.util.readTextWithLimit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -52,6 +50,7 @@ class ImportLibraryManager(
     private val context: Context,
     private val database: MksDatabase,
     private val fileManager: FileManager,
+    private val workspaceRepositoryProvider: javax.inject.Provider<WorkspaceRepository>,
 ) {
     private val bookDao = database.bookDao()
     private val quizDao = database.quizDao()
@@ -79,35 +78,7 @@ class ImportLibraryManager(
     private val mapper = LibraryMapper()
 
     private suspend fun getOrCreateDefaultWorkspaceId(): Long {
-        workspaceDao.getWorkspaceByExternalId(WorkspaceDefaults.DEFAULT_EXTERNAL_ID)?.let { return it.id }
-        workspaceDao.getDefaultWorkspace()?.let { workspace ->
-            workspaceDao.updateWorkspace(
-                workspace.copy(
-                    externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
-                    name = WorkspaceDefaults.DEFAULT_NAME,
-                    description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
-                    isDefault = true,
-                    deletedAt = null,
-                    updatedAt = System.currentTimeMillis(),
-                ),
-            )
-            if (workspaceDao.getSettingsByWorkspaceId(workspace.id) == null) {
-                workspaceDao.insertSettings(WorkspaceSettingsEntity(workspaceId = workspace.id))
-            }
-            return workspace.id
-        }
-
-        val workspaceId =
-            workspaceDao.insertWorkspace(
-                WorkspaceEntity(
-                    externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
-                    name = WorkspaceDefaults.DEFAULT_NAME,
-                    description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
-                    isDefault = true,
-                ),
-            )
-        workspaceDao.insertSettings(WorkspaceSettingsEntity(workspaceId = workspaceId))
-        return workspaceId
+        return workspaceRepositoryProvider.get().getOrCreateDefaultWorkspace().id
     }
 
     fun cleanupStaleImportCache(maxAgeMillis: Long = 24L * 60L * 60L * 1000L) {

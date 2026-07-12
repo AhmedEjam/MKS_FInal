@@ -108,7 +108,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.accompanist.permissions)
-    implementation(libs.play.services.location)
     implementation(libs.pdfbox.android)
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)

@@ -9,7 +9,6 @@ import com.ahmedyejam.mks.data.repository.BookRepository
 import com.ahmedyejam.mks.data.repository.KnowledgeRepository
 import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.util.MksLogger
-import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,38 +26,28 @@ class MksDatabaseSeeder
         suspend fun seedDatabase(workspaceId: Long) {
             MksLogger.i(TAG, "Starting database seeding for workspace $workspaceId")
             try {
-                val books = bookRepository.getAllBooks().first()
-                if (books.any { it.externalId == "book_general_knowledge" }) {
-                    MksLogger.i(TAG, "Database already seeded. Skipping.")
-                    return
-                }
-
-                MksLogger.i(TAG, "Creating sample book...")
-                val gkBookId = bookRepository.insertBook(
-                    BookEntity(
-                        workspaceId = workspaceId,
-                        externalId = "book_general_knowledge",
-                        title = "General knowledge & معلومات عامة",
-                        description = "A collection of general knowledge quizzes and flashcards.",
-                        fields = listOf("General Knowledge", "Sample"),
-                        iconName = "🌍",
-                    ),
+                val gkBookId = getOrCreateBook(
+                    workspaceId = workspaceId,
+                    externalId = "book_general_knowledge",
+                    title = "General knowledge & معلومات عامة",
+                    description = "A collection of general knowledge quizzes and flashcards.",
+                    fields = listOf("General Knowledge", "Sample"),
+                    iconName = "🌍",
                 )
-                MksLogger.i(TAG, "Sample book created with ID: $gkBookId")
+                MksLogger.i(TAG, "General knowledge book ID: $gkBookId")
 
-                val tutorialBookId = bookRepository.insertBook(
-                    BookEntity(
-                        workspaceId = workspaceId,
-                        externalId = "book_how_to_start",
-                        title = "How to start & كيف تبدأ",
-                        description = "Tutorials to get you started with the MKS app.",
-                        fields = listOf("Tutorial", "Help"),
-                        iconName = "🚀",
-                    ),
+                val tutorialBookId = getOrCreateBook(
+                    workspaceId = workspaceId,
+                    externalId = "book_how_to_start",
+                    title = "How to start & كيف تبدأ",
+                    description = "Tutorials to get you started with the MKS app.",
+                    fields = listOf("Tutorial", "Help"),
+                    iconName = "🚀",
                 )
-                MksLogger.i(TAG, "Tutorial book created with ID: $tutorialBookId")
+                MksLogger.i(TAG, "Tutorial book ID: $tutorialBookId")
 
                 // We seed each component independently so a failure in one doesn't block the rest.
+                // Each stage is idempotent: it checks for existing data by externalId before creating.
                 seedEnglishQuiz(gkBookId)
                 seedArabicQuiz(gkBookId)
                 seedEnglishTutorial(tutorialBookId)
@@ -71,12 +60,45 @@ class MksDatabaseSeeder
             }
         }
 
+        private suspend fun getOrCreateBook(
+            workspaceId: Long,
+            externalId: String,
+            title: String,
+            description: String,
+            fields: List<String>,
+            iconName: String,
+        ): Long {
+            val existing = database.bookDao().getBookByExternalId(externalId)
+            if (existing != null) {
+                MksLogger.i(TAG, "Book '$externalId' already exists with ID ${existing.id}. Reusing.")
+                return existing.id
+            }
+            val id = bookRepository.insertBook(
+                BookEntity(
+                    workspaceId = workspaceId,
+                    externalId = externalId,
+                    title = title,
+                    description = description,
+                    fields = fields,
+                    iconName = iconName,
+                ),
+            )
+            MksLogger.i(TAG, "Book '$externalId' created with ID: $id")
+            return id
+        }
+
     private suspend fun seedEnglishQuiz(bookId: Long) {
         MksLogger.i(TAG, "[Stage] English General Knowledge Quiz")
         try {
+            val externalId = "5cfcd20f-b26d-46a5-86a3-1576bdc83ff7"
+            val existing = database.quizDao().getQuizByExternalId(externalId)
+            if (existing != null) {
+                MksLogger.i(TAG, "English Quiz already exists (ID: ${existing.id}). Skipping.")
+                return
+            }
             val quizId = quizRepository.insertQuiz(
                     QuizEntity(
-                        externalId = "5cfcd20f-b26d-46a5-86a3-1576bdc83ff7",
+                        externalId = externalId,
                         bookId = bookId,
                         title = "Sample quiz",
                         description = "25 General Knowledge Questions",
@@ -98,9 +120,15 @@ class MksDatabaseSeeder
     private suspend fun seedArabicQuiz(bookId: Long) {
         MksLogger.i(TAG, "[Stage] Arabic General Knowledge Quiz")
         try {
+            val externalId = "16a396a8-d068-4305-9d4a-97f2577079d9"
+            val existing = database.quizDao().getQuizByExternalId(externalId)
+            if (existing != null) {
+                MksLogger.i(TAG, "Arabic Quiz already exists (ID: ${existing.id}). Skipping.")
+                return
+            }
             val quizId = quizRepository.insertQuiz(
                 QuizEntity(
-                    externalId = "16a396a8-d068-4305-9d4a-97f2577079d9",
+                    externalId = externalId,
                     bookId = bookId,
                     title = "نموذج اختبار",
                     description = "٢٥ سؤال في المعلومات العامة",
@@ -122,9 +150,15 @@ class MksDatabaseSeeder
     private suspend fun seedEnglishTutorial(bookId: Long) {
         MksLogger.i(TAG, "[Stage] English Tutorial Quiz")
         try {
+            val externalId = "how-to-start-en"
+            val existing = database.quizDao().getQuizByExternalId(externalId)
+            if (existing != null) {
+                MksLogger.i(TAG, "English Tutorial already exists (ID: ${existing.id}). Skipping.")
+                return
+            }
             val quizId = quizRepository.insertQuiz(
                 QuizEntity(
-                    externalId = "how-to-start-en",
+                    externalId = externalId,
                     bookId = bookId,
                     title = "How to start",
                     description = "Learn how to use the MKS app",
@@ -146,9 +180,15 @@ class MksDatabaseSeeder
     private suspend fun seedArabicTutorial(bookId: Long) {
         MksLogger.i(TAG, "[Stage] Arabic Tutorial Quiz")
         try {
+            val externalId = "how-to-start-ar"
+            val existing = database.quizDao().getQuizByExternalId(externalId)
+            if (existing != null) {
+                MksLogger.i(TAG, "Arabic Tutorial already exists (ID: ${existing.id}). Skipping.")
+                return
+            }
             val quizId = quizRepository.insertQuiz(
                 QuizEntity(
-                    externalId = "how-to-start-ar",
+                    externalId = externalId,
                     bookId = bookId,
                     title = "كيف تبدأ",
                     description = "تعلم كيفية استخدام تطبيق MKS",
@@ -170,6 +210,13 @@ class MksDatabaseSeeder
     private suspend fun seedKnowledgeAssets(bookId: Long) {
         MksLogger.i(TAG, "[Stage] Knowledge Bank Assets")
         try {
+            val deckExternalId = "sample_flashcard_deck"
+            val existingDeck = database.flashcardDeckDao().getFlashcardDeckByExternalId(deckExternalId)
+            if (existingDeck != null) {
+                MksLogger.i(TAG, "Knowledge assets already seeded (deck ID: ${existingDeck.id}). Skipping.")
+                return
+            }
+
             val deckId = knowledgeRepository.insertFlashcardDeck(
                 com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity(
                     bookId = bookId,

@@ -28,12 +28,16 @@ import com.ahmedyejam.mks.data.local.dao.SourceDocumentDao
 import com.ahmedyejam.mks.data.local.dao.WorkspaceDao
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
+import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.data.preview.CategoryMergePreviewService
 import com.ahmedyejam.mks.data.preview.ClearMarksPreviewService
 import com.ahmedyejam.mks.data.preview.DeletePreviewService
 import com.ahmedyejam.mks.data.repair.AssetReferenceAuditService
 import com.ahmedyejam.mks.data.seeder.MksDatabaseSeeder
+import com.ahmedyejam.mks.di.ApplicationScope
+import com.ahmedyejam.mks.util.MksLogger
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -73,6 +77,8 @@ class WorkspaceRepository
         private val mistakeLogDao: MistakeLogDao,
         private val annotationDao: AnnotationDao,
         private val seederProvider: javax.inject.Provider<MksDatabaseSeeder>,
+        private val dataStoreManager: DataStoreManager,
+        @param:ApplicationScope private val scope: kotlinx.coroutines.CoroutineScope,
         private val deletePreviewService: DeletePreviewService? = null,
         private val categoryMergePreviewService: CategoryMergePreviewService? = null,
         private val clearMarksPreviewService: ClearMarksPreviewService? = null,
@@ -86,43 +92,58 @@ class WorkspaceRepository
 
     suspend fun getOrCreateDefaultWorkspace(): WorkspaceEntity = initializationMutex.withLock {
         workspaceDao.getWorkspaceByExternalId(WorkspaceDefaults.DEFAULT_EXTERNAL_ID)
-            ?.let { return@withLock it }
-            workspaceDao.getDefaultWorkspace()?.let { existing ->
-                val updated =
-                    existing.copy(
-                        externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
-                        name = WorkspaceDefaults.DEFAULT_NAME,
-                        description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
-                        isDefault = true,
-                        deletedAt = null,
-                        updatedAt = System.currentTimeMillis(),
-                    )
-                workspaceDao.updateWorkspace(updated)
-                ensureWorkspaceSettings(updated.id)
-                seederProvider.get().seedDatabase(updated.id)
-                return@withLock updated
+            ?.let { existing ->
+                dataStoreManager.setCurrentWorkspaceId(existing.id)
+                return@withLock existing
             }
-
-            val workspaceId =
-                workspaceDao.insertWorkspace(
-                    WorkspaceEntity(
-                        externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
-                        name = WorkspaceDefaults.DEFAULT_NAME,
-                        description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
-                        isDefault = true,
-                    ),
-                )
-            ensureWorkspaceSettings(workspaceId)
-            seederProvider.get().seedDatabase(workspaceId)
-            return workspaceDao.getWorkspaceById(workspaceId)
-                ?: WorkspaceEntity(
-                    id = workspaceId,
+        workspaceDao.getDefaultWorkspace()?.let { existing ->
+            val updated =
+                existing.copy(
                     externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
                     name = WorkspaceDefaults.DEFAULT_NAME,
                     description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
                     isDefault = true,
+                    deletedAt = null,
+                    updatedAt = System.currentTimeMillis(),
                 )
+            workspaceDao.updateWorkspace(updated)
+            ensureWorkspaceSettings(updated.id)
+            dataStoreManager.setCurrentWorkspaceId(updated.id)
+            launchSeeder(updated.id)
+            return@withLock updated
         }
+
+        val workspaceId =
+            workspaceDao.insertWorkspace(
+                WorkspaceEntity(
+                    externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
+                    name = WorkspaceDefaults.DEFAULT_NAME,
+                    description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
+                    isDefault = true,
+                ),
+            )
+        ensureWorkspaceSettings(workspaceId)
+        dataStoreManager.setCurrentWorkspaceId(workspaceId)
+        launchSeeder(workspaceId)
+        return workspaceDao.getWorkspaceById(workspaceId)
+            ?: WorkspaceEntity(
+                id = workspaceId,
+                externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
+                name = WorkspaceDefaults.DEFAULT_NAME,
+                description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
+                isDefault = true,
+            )
+    }
+
+    private fun launchSeeder(workspaceId: Long) {
+        scope.launch {
+            try {
+                seederProvider.get().seedDatabase(workspaceId)
+            } catch (e: Exception) {
+                MksLogger.e("WorkspaceRepository", "Failed to seed database for workspace $workspaceId", e)
+            }
+        }
+    }
 
         private suspend fun ensureWorkspaceSettings(workspaceId: Long) {
             if (workspaceDao.getSettingsByWorkspaceId(workspaceId) == null) {
@@ -180,6 +201,7 @@ class WorkspaceRepository
             if (workspaceDao.getSettingsByWorkspaceId(workspaceId) == null) {
                 workspaceDao.insertSettings(WorkspaceSettingsEntity(workspaceId = workspaceId))
             }
-            seederProvider.get().seedDatabase(workspaceId)
+            dataStoreManager.setCurrentWorkspaceId(workspaceId)
+            launchSeeder(workspaceId)
         }
     }

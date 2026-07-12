@@ -1176,7 +1176,7 @@ fun AiPromptDeckScreen(
                                     ) {
                                         Icon(Icons.Rounded.SmartToy, null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(8.dp))
-                                        Text("Run with Ollama")
+                                        Text("Run with ${state.aiProviderName}")
                                     }
                                 }
                             }

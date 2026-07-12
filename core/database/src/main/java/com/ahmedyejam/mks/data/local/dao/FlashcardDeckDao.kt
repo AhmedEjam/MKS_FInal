@@ -21,6 +21,9 @@ interface FlashcardDeckDao {
     @Query("SELECT * FROM flashcard_decks WHERE id = :id AND deletedAt IS NULL")
     fun observeFlashcardDeckById(id: Long): Flow<FlashcardDeckEntity?>
 
+    @Query("SELECT * FROM flashcard_decks WHERE externalId = :externalId AND deletedAt IS NULL LIMIT 1")
+    suspend fun getFlashcardDeckByExternalId(externalId: String): FlashcardDeckEntity?
+
     @Query("SELECT COUNT(*) FROM flashcard_decks WHERE deletedAt IS NULL")
     suspend fun countAll(): Int
 

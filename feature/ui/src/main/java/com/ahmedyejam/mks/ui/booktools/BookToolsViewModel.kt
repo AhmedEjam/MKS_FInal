@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.ahmedyejam.mks.data.model.AI_PROVIDERS
 
 private fun String.escapeJsonValue(): String = buildString {
     this@escapeJsonValue.forEach { ch ->
@@ -77,7 +78,9 @@ data class BookToolsUiState(
     val isSaving: Boolean = false,
     val error: String? = null,
     val successMessage: String? = null,
-    val isGenerating: Boolean = false
+    val isGenerating: Boolean = false,
+    val aiProviderId: String = "ollama",
+    val aiProviderName: String = "Ollama (Local)"
 )
 
 @HiltViewModel
@@ -94,6 +97,18 @@ class BookToolsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(BookToolsUiState())
     val uiState = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            dataStoreManager.aiProviderId.collect { providerId ->
+                val providerName = AI_PROVIDERS.find { it.id == providerId }?.name ?: "Ollama (Local)"
+                _uiState.value = _uiState.value.copy(
+                    aiProviderId = providerId,
+                    aiProviderName = providerName
+                )
+            }
+        }
+    }
 
     fun loadBook(bookId: Long) {
         viewModelScope.launch {
@@ -736,6 +751,7 @@ class BookToolsViewModel @Inject constructor(
         cancelGeneration()
         generationJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isGenerating = true, error = null)
+            val providerName = _uiState.value.aiProviderName
             try {
                 val baseUrl = dataStoreManager.aiBaseUrl.first()
                 val model = dataStoreManager.aiChatModel.first()
@@ -763,12 +779,12 @@ class BookToolsViewModel @Inject constructor(
             } catch (e: com.ahmedyejam.mks.data.repository.OllamaApiException) {
                 _uiState.value = _uiState.value.copy(
                     isGenerating = false, 
-                    error = "Ollama Error: ${e.message}"
+                    error = "$providerName Error: ${e.message}"
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isGenerating = false, 
-                    error = "Ollama connection failed: ${e.message}. Ensure Ollama is running and accessible."
+                    error = "$providerName connection failed: ${e.message}. Ensure $providerName is reachable."
                 )
             }
         }

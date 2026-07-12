@@ -79,6 +79,7 @@ class AssetRepository
         private val promptRunDao: PromptRunDao,
         private val mistakeLogDao: MistakeLogDao,
         private val annotationDao: AnnotationDao,
+        private val workspaceRepositoryProvider: javax.inject.Provider<WorkspaceRepository>,
         private val deletePreviewService: DeletePreviewService? = null,
         private val categoryMergePreviewService: CategoryMergePreviewService? = null,
         private val clearMarksPreviewService: ClearMarksPreviewService? = null,
@@ -618,21 +619,6 @@ class AssetRepository
 
     suspend fun updateQuestion(question: QuestionEntity) = questionDao.updateQuestion(question)
 
-        suspend fun getOrCreateDefaultWorkspace(): com.ahmedyejam.mks.data.local.entity.WorkspaceEntity {
-            val workspace = workspaceDao.getDefaultWorkspace()
-            return if (workspace != null) {
-                workspace
-            } else {
-                val id =
-                    workspaceDao.insertWorkspace(
-                        com.ahmedyejam.mks.data.local.entity.WorkspaceEntity(
-                            name = "Default",
-                            isDefault = true,
-                            externalId = java.util.UUID.randomUUID().toString(),
-                        ),
-                    )
-                workspaceDao.insertSettings(com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity(workspaceId = id))
-                workspaceDao.getWorkspaceById(id) ?: com.ahmedyejam.mks.data.local.entity.WorkspaceEntity(id = id, name = "Default", isDefault = true, externalId = java.util.UUID.randomUUID().toString())
-            }
-        }
+        suspend fun getOrCreateDefaultWorkspace(): com.ahmedyejam.mks.data.local.entity.WorkspaceEntity =
+            workspaceRepositoryProvider.get().getOrCreateDefaultWorkspace()
     }

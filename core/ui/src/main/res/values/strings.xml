@@ -415,4 +415,11 @@ grow in every session.</string>
     <string name="slide_counter">Slide %1$d of %2$d</string>
     <string name="import_text">Import text</string>
     <string name="import_pptx">Import PPTX</string>
+
+    <!-- About & Legal -->
+    <string name="about_legal_group">About &amp; Legal</string>
+    <string name="app_version_format">Version %1$s (%2$d)</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="terms_of_service">Terms of Service</string>
+    <string name="contact_support">Contact Support</string>
 </resources>

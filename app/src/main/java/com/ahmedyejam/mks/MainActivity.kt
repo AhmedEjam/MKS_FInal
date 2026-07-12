@@ -81,16 +81,14 @@ class MainActivity : AppCompatActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     val navController = rememberNavController()
-                    val showWelcomeOnStartup by dataStoreManager.showWelcomeOnStartup
-                        .collectAsState(initial = true)
                     val sharedUrisByState by sharedUris.collectAsState()
 
                     MksNavHost(
                         navController = navController,
                         dataStoreManager = dataStoreManager,
-                        showWelcomeOnStartup = showWelcomeOnStartup,
                         sharedUris = sharedUrisByState,
-                    ) { _sharedUris.value = null }
+                        onConsumedSharedUris = { _sharedUris.value = null },
+                    )
 
                     SnackbarHost(hostState = snackbarHostState)
                 }

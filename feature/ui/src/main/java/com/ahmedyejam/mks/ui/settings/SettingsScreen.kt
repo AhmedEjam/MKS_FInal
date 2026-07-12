@@ -70,6 +70,11 @@ import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -423,6 +428,72 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            SettingsGroup(title = stringResource(R.string.about_legal_group)) {
+                val packageInfo = remember(context) {
+                    try {
+                        context.packageManager.getPackageInfo(context.packageName, 0)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+                val versionName = packageInfo?.versionName ?: "1.0.0"
+                val versionCode = packageInfo?.longVersionCode ?: 1L
+
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.app_version_format, versionName, versionCode)) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.privacy_policy)) },
+                    modifier = Modifier.clickable {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/AhmedEjam/mks-privacy/blob/main/index.md"))
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // Browser not found
+                        }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.terms_of_service)) },
+                    modifier = Modifier.clickable {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/AhmedEjam/mks-terms/blob/main/README.md"))
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // Browser not found
+                        }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.contact_support)) },
+                    modifier = Modifier.clickable {
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:support@ahmedejam.com")
+                            putExtra(Intent.EXTRA_SUBJECT, "MKS App Support")
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // No email app found
+                        }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+            }
+
             SettingsGroup(title = stringResource(R.string.danger_zone_group), titleColor = MaterialTheme.colorScheme.error) {
                 OutlinedButton(
                     onClick = { showClearCategoriesDialog = true },

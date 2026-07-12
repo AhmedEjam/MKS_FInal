@@ -241,3 +241,7 @@
 # --- Apache POI / OpenXML Schemas (Missing Rules) ---
 -dontwarn org.openxmlformats.schemas.**
 -dontwarn com.microsoft.schemas.**
+
+# --- PDFBox Missing Classes (JP2Decoder / JP2Encoder) ---
+-dontwarn com.gemalto.jp2.**
+-dontwarn com.tom_roush.pdfbox.**

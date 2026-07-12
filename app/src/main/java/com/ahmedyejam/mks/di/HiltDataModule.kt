@@ -16,6 +16,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
 /** Qualifier for the application-wide [CoroutineScope] that outlives ViewModels. */
@@ -82,14 +83,21 @@ object HiltDataModule {
         @ApplicationContext context: Context,
         database: MksDatabase,
         fileManager: FileManager,
+        workspaceRepositoryProvider: javax.inject.Provider<com.ahmedyejam.mks.data.repository.WorkspaceRepository>,
     ): ImportLibraryManager {
-        return ImportLibraryManager(context, database, fileManager)
+        return ImportLibraryManager(context, database, fileManager, workspaceRepositoryProvider)
     }
 
     @Provides
     @Singleton
     @ApplicationScope
     fun provideApplicationScope(): CoroutineScope {
-        return CoroutineScope(Dispatchers.Default)
+        return CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    }
+
+    @Provides
+    @Singleton
+    fun provideWorkManager(@ApplicationContext context: Context): androidx.work.WorkManager {
+        return androidx.work.WorkManager.getInstance(context)
     }
 }

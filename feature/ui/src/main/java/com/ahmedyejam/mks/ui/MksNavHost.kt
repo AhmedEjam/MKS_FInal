@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -59,6 +60,7 @@ import com.ahmedyejam.mks.ui.summary.SummaryScreen
 import com.ahmedyejam.mks.ui.summary.SummaryViewModel
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
 import com.ahmedyejam.mks.ui.welcome.WelcomeScreen
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Suppress("UNCHECKED_CAST")
@@ -66,13 +68,24 @@ import kotlinx.coroutines.launch
 fun MksNavHost(
     navController: NavHostController,
     dataStoreManager: DataStoreManager,
-    showWelcomeOnStartup: Boolean,
     sharedUris: List<Uri>? = null,
     onConsumedSharedUris: () -> Unit = {},
 ) {
     val currentThemeMode by dataStoreManager.themeMode.collectAsState(initial = "FOREST")
     val scope = rememberCoroutineScope()
-    val startDestination = if (showWelcomeOnStartup) MksRoutes.WELCOME else MksRoutes.LIBRARY
+
+    // Determine start destination ONCE from DataStore to avoid dynamic startDestination changes
+    // that would reset the NavHost graph and destroy ViewModels mid-initialization.
+    var startDestination by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        startDestination = try {
+            if (dataStoreManager.showWelcomeOnStartup.first()) MksRoutes.WELCOME else MksRoutes.LIBRARY
+        } catch (e: Exception) {
+            MksRoutes.LIBRARY
+        }
+    }
+    val resolvedStartDestination = startDestination ?: return
+
     var libraryResetSignal by remember { mutableIntStateOf(0) }
 
     fun returnToLibraryRoot() {
@@ -85,7 +98,7 @@ fun MksNavHost(
     val tokens = LocalMksDesignTokens.current
     NavHost(
         navController = navController,
-        startDestination = startDestination,
+        startDestination = resolvedStartDestination,
         enterTransition = { if (tokens.isPlain) EnterTransition.None else fadeIn() + slideInHorizontally { it } },
         exitTransition = { if (tokens.isPlain) ExitTransition.None else fadeOut() + slideOutHorizontally { -it } },
         popEnterTransition = { if (tokens.isPlain) EnterTransition.None else fadeIn() + slideInHorizontally { -it } },

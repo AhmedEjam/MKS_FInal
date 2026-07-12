@@ -79,6 +79,7 @@ class BookRepository
         private val mistakeLogDao: MistakeLogDao,
         private val quizRepositoryProvider: javax.inject.Provider<QuizRepository>,
         private val assetRepositoryProvider: javax.inject.Provider<AssetRepository>,
+        private val workspaceRepositoryProvider: javax.inject.Provider<WorkspaceRepository>,
         private val annotationDao: AnnotationDao,
         private val deletePreviewService: DeletePreviewService? = null,
         private val categoryMergePreviewService: CategoryMergePreviewService? = null,
@@ -91,42 +92,8 @@ class BookRepository
 
         suspend fun getDefaultWorkspace(): WorkspaceEntity? = workspaceDao.getDefaultWorkspace()
 
-        suspend fun getOrCreateDefaultWorkspace(): WorkspaceEntity {
-            workspaceDao.getWorkspaceByExternalId(WorkspaceDefaults.DEFAULT_EXTERNAL_ID)?.let { return it }
-            workspaceDao.getDefaultWorkspace()?.let { existing ->
-                val updated =
-                    existing.copy(
-                        externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
-                        name = WorkspaceDefaults.DEFAULT_NAME,
-                        description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
-                        isDefault = true,
-                        deletedAt = null,
-                        updatedAt = System.currentTimeMillis(),
-                    )
-                workspaceDao.updateWorkspace(updated)
-                ensureWorkspaceSettings(updated.id)
-                return updated
-            }
-
-            val workspaceId =
-                workspaceDao.insertWorkspace(
-                    WorkspaceEntity(
-                        externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
-                        name = WorkspaceDefaults.DEFAULT_NAME,
-                        description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
-                        isDefault = true,
-                    ),
-                )
-            ensureWorkspaceSettings(workspaceId)
-            return workspaceDao.getWorkspaceById(workspaceId)
-                ?: WorkspaceEntity(
-                    id = workspaceId,
-                    externalId = WorkspaceDefaults.DEFAULT_EXTERNAL_ID,
-                    name = WorkspaceDefaults.DEFAULT_NAME,
-                    description = WorkspaceDefaults.DEFAULT_DESCRIPTION,
-                    isDefault = true,
-                )
-        }
+        suspend fun getOrCreateDefaultWorkspace(): WorkspaceEntity =
+            workspaceRepositoryProvider.get().getOrCreateDefaultWorkspace()
 
         suspend fun ensureWorkspaceSettings(workspaceId: Long) {
             if (workspaceDao.getSettingsByWorkspaceId(workspaceId) == null) {
