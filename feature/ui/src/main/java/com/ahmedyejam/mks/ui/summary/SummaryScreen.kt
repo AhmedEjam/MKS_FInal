@@ -327,12 +327,12 @@ fun SummaryScreen(
                     }
                 }
             } else {
-                itemsIndexed(state.filteredQuestions) { index, question ->
+                itemsIndexed(state.filteredQuestions) { _, indexedQ ->
                     ReviewQuestionItem(
-                        question = question,
+                        question = indexedQ.question,
                         session = session,
                         visibleDetails = state.visibleDetails,
-                        index = index
+                        index = indexedQ.sequenceIndex
                     )
                 }
             }
@@ -409,7 +409,7 @@ fun ReviewQuestionItem(
     visibleDetails: Set<ReviewDetail>,
     index: Int
 ) {
-    val userAnswers = session.answers[question.id]
+    val userAnswers = session.answersByIndex[index] ?: session.answers[question.id]
     val isCorrect = userAnswers != null && question.correctAnswers.toSet() == userAnswers.toSet()
     
     val statusColor = when {

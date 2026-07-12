@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class com.ahmedyejam.mks.ui.flashcard.FlashcardDeckViewModel

@@ -109,6 +109,8 @@ class AiMcqGeneratorViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(quizTitle = title)
     }
 
+    private var generationJob: kotlinx.coroutines.Job? = null
+
     fun startGeneration() {
         val state = _uiState.value
         if (state.inputText.isBlank()) {
@@ -122,7 +124,7 @@ class AiMcqGeneratorViewModel @Inject constructor(
 
         _uiState.value = state.copy(isRunning = true, error = null, savedQuizId = null, successMessage = null)
 
-        viewModelScope.launch {
+        generationJob = viewModelScope.launch {
             aiMcqRepository.generateAndSave(
                 bookId = state.bookId,
                 quizTitle = state.quizTitle.ifBlank { "AI Quiz – ${state.sectionName}" },
@@ -134,7 +136,8 @@ class AiMcqGeneratorViewModel @Inject constructor(
     }
 
     fun cancelGeneration() {
-        viewModelScope.coroutineContext[kotlinx.coroutines.Job]?.cancelChildren()
+        generationJob?.cancel()
+        generationJob = null
         aiMcqRepository.resetProgress()
         _uiState.value = _uiState.value.copy(isRunning = false, error = null)
     }

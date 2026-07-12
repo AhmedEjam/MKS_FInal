@@ -16,6 +16,7 @@ import com.ahmedyejam.mks.data.repository.StudyRepository
 import com.ahmedyejam.mks.data.validation.SessionStateValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +34,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -162,6 +166,7 @@ class QuizViewModel @Inject constructor(
     private var timerJob: Job? = null
     private var autoAdvanceJob: Job? = null
     private var autoAdvanceDelayMs: Long = 2000L
+    private val sessionMutex = Mutex()
 
     init {
         combine(
@@ -497,12 +502,33 @@ class QuizViewModel @Inject constructor(
                     else -> emptyList()
                 }.shuffled()
 
+                // Create a real session so progress is persisted
+                val adaptiveSessionId = if (questions.isNotEmpty()) {
+                    val firstQuizId = questions.first().quizId
+                    val sessionLabel = when (type) {
+                        "CATEGORY" -> "Category: $id"
+                        "BOOK" -> "Review: Book $id"
+                        else -> "Personalized Training"
+                    }
+                    quizRepository.insertSession(
+                        com.ahmedyejam.mks.data.local.entity.SessionEntity(
+                            quizId = firstQuizId,
+                            label = sessionLabel,
+                            questionIds = questions.map { it.id },
+                            originalQuestionCount = questions.size,
+                            shuffleQuestions = true,
+                            shuffleOptions = true,
+                        )
+                    )
+                } else null
+
                 _uiState.update {
                     it.copy(
                         questions = questions,
                         currentIndex = 0,
                         isLoading = false,
                         initialQuestionCount = questions.size,
+                        sessionId = adaptiveSessionId,
                         sessionLabel = when (type) {
                             "CATEGORY" -> "Category: $id"
                             "BOOK" -> "Review: Book $id"
@@ -1055,8 +1081,9 @@ class QuizViewModel @Inject constructor(
                 )
             }
             
-            // Save score and incorrect count to session
+            // Save score and incorrect count to session (mutex prevents concurrent RMW race)
             sessionId?.let { sId ->
+                sessionMutex.withLock {
                 val session = quizRepository.getSessionById(sId)
                 session?.let { currentSession ->
                     val newIncorrectCount = if (!isCorrect && isFirstAttempt) currentSession.incorrectCount + 1 else currentSession.incorrectCount
@@ -1113,6 +1140,7 @@ class QuizViewModel @Inject constructor(
                         )
                     )
                 }
+                } // end sessionMutex.withLock
             }
             
             if (isRapidMode) {
@@ -1299,6 +1327,7 @@ class QuizViewModel @Inject constructor(
                 // Actually finished everything
                 _uiState.update { it.copy(isCompleted = true) }
                 viewModelScope.launch {
+                    withContext(NonCancellable) {
                     val state = _uiState.value
                     state.sessionId?.let { sessionId ->
                         val session = quizRepository.getSessionById(sessionId)
@@ -1315,6 +1344,7 @@ class QuizViewModel @Inject constructor(
                         }
                     }
                     dataStoreManager.clearSession()
+                    } // end withContext(NonCancellable)
                 }
             }
         }

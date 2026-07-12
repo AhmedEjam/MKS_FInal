@@ -136,12 +136,18 @@ fun MKSTheme(
 
     val isPlain = normalizedTheme == "PLAIN_LIGHT" || normalizedTheme == "PLAIN_DARK" || normalizedTheme == "SYSTEM"
 
+    val isMidnight = normalizedTheme == "MIDNIGHT"
+
     val designTokens = MksDesignTokens(
-        success = Color(0xFF3C7A54),
-        warning = Color(0xFFC47A1C),
-        selected = if (isActuallyDark) Color(0xFFF27D52) else Color(0xFFD65A2C),
-        correct = Color(0xFF2E7D32),
-        wrong = Color(0xFFBA1A1A),
+        success = if (isMidnight) MidnightSuccess else Color(0xFF3C7A54),
+        warning = if (isMidnight) MidnightWarning else Color(0xFFC47A1C),
+        selected = when {
+            isMidnight -> MidnightPrimary
+            isActuallyDark -> Color(0xFFF27D52)
+            else -> Color(0xFFD65A2C)
+        },
+        correct = if (isMidnight) MidnightSuccess else Color(0xFF2E7D32),
+        wrong = if (isMidnight) MidnightError else Color(0xFFBA1A1A),
         isPlain = isPlain,
         themeName = normalizedTheme,
         cardRadius = if (isPlain) 12.dp else 18.dp,

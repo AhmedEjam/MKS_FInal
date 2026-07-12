@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.ByteArrayOutputStream
+import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 
 class RemoteAssetFetcher(
@@ -21,6 +22,20 @@ class RemoteAssetFetcher(
             .build()
     }
 ) {
+    companion object {
+        private val BLOCKED_HOSTS = setOf("localhost", "127.0.0.1", "::1", "0.0.0.0")
+
+        /** Returns true if the given [InetAddress] is a private, loopback, link-local, or metadata IP. */
+        private fun isBlockedAddress(addr: InetAddress): Boolean {
+            return addr.isLoopbackAddress ||
+                   addr.isSiteLocalAddress ||
+                   addr.isLinkLocalAddress ||
+                   addr.isAnyLocalAddress ||
+                   // Cloud metadata endpoint (AWS, GCP, Azure)
+                   addr.hostAddress == "169.254.169.254"
+        }
+    }
+
     suspend fun fetch(url: String, policy: RemoteAssetPolicy = RemoteAssetPolicy.Default): RemoteAssetResult = withContext(Dispatchers.IO) {
         val parsed = runCatching { Uri.parse(url) }.getOrNull()
             ?: return@withContext RemoteAssetResult(error = "Invalid remote image URL.")
@@ -33,6 +48,22 @@ class RemoteAssetFetcher(
                 warning = "Plain HTTP image URL was not downloaded. Confirm insecure image downloads to import it.",
                 plainHttpConsentRequired = true
             )
+        }
+
+        // SSRF guard: block private/reserved/localhost hosts
+        val host = parsed.host?.lowercase()
+        if (host.isNullOrBlank() || host in BLOCKED_HOSTS) {
+            return@withContext RemoteAssetResult(error = "Blocked: cannot fetch from local or reserved hosts.")
+        }
+
+        // DNS resolution check — prevents DNS rebinding to internal IPs
+        try {
+            val resolved = InetAddress.getAllByName(host)
+            if (resolved.any { isBlockedAddress(it) }) {
+                return@withContext RemoteAssetResult(error = "Blocked: URL resolves to a private or reserved IP address.")
+            }
+        } catch (e: Exception) {
+            return@withContext RemoteAssetResult(error = "Cannot resolve host: $host")
         }
 
         try {

@@ -44,6 +44,7 @@ fun PdfExtractionScreen(
     val totalPages by viewModel.totalPages.collectAsStateWithLifecycle()
     val selectedPages by viewModel.selectedPages.collectAsStateWithLifecycle()
     val blocks by viewModel.blocks.collectAsStateWithLifecycle()
+    val loadError by viewModel.loadError.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -94,6 +95,25 @@ fun PdfExtractionScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Show load error if present (e.g. encrypted/corrupt PDF)
+            if (loadError != null) {
+                androidx.compose.material3.Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = androidx.compose.material3.CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Text(
+                        text = loadError ?: "",
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
             // PDF Pages Horizontal List
             if (totalPages > 0) {
                 LazyRow(

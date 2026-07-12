@@ -133,6 +133,18 @@ class JsonQuestionParser(
             }
         }
 
+        // 2.5 Numeric index (handles both 0-based and 1-based: "answer": 0, "answer": 1, "answer": "2")
+        if (result.isEmpty()) {
+            val numericIndex = trimmedAnswer.toIntOrNull()
+            if (numericIndex != null) {
+                // Prefer 1-based (most common in user-authored JSON) unless it's out of range
+                when {
+                    numericIndex in 1..options.size -> result.add(options[numericIndex - 1].id)
+                    numericIndex in 0 until options.size -> result.add(options[numericIndex].id)
+                }
+            }
+        }
+
         // 3. Multi-answer match (e.g. "A, B" or "A;B")
         if (result.isEmpty()) {
             val parts =

@@ -65,6 +65,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ahmedyejam.mks.core.ui.R
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -327,12 +329,26 @@ fun SettingsScreen(
                 ) {
                     FilterChip(
                         selected = currentLanguage == "en",
-                        onClick = { scope.launch { dataStoreManager.setLanguage("en") } },
+                        onClick = {
+                            scope.launch {
+                                dataStoreManager.setLanguage("en")
+                                AppCompatDelegate.setApplicationLocales(
+                                    LocaleListCompat.forLanguageTags("en")
+                                )
+                            }
+                        },
                         label = { Text(stringResource(R.string.language_en)) }
                     )
                     FilterChip(
                         selected = currentLanguage == "ar",
-                        onClick = { scope.launch { dataStoreManager.setLanguage("ar") } },
+                        onClick = {
+                            scope.launch {
+                                dataStoreManager.setLanguage("ar")
+                                AppCompatDelegate.setApplicationLocales(
+                                    LocaleListCompat.forLanguageTags("ar")
+                                )
+                            }
+                        },
                         label = { Text(stringResource(R.string.language_ar)) }
                     )
                 }

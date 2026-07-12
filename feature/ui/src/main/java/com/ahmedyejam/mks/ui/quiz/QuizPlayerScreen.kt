@@ -927,15 +927,14 @@ fun QuizTopBar(
             }
         )
         if (initialQuestionCount > 0) {
-            LinearProgressIndicator(
-                progress = { ((currentIndex + 1).toFloat() / initialQuestionCount).coerceAtMost(1f) },
+            // Midnight Premium: signature lavender→orange gradient progress (theme-scoped;
+            // falls back to flat primary on Plain themes). Replaces the flat LinearProgressIndicator.
+            com.ahmedyejam.mks.ui.components.GradientProgressBar(
+                progress = ((currentIndex + 1).toFloat() / initialQuestionCount).coerceAtMost(1f),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(6.dp)
-                    .padding(horizontal = 4.dp)
-                    .clip(CircleShape),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    .padding(horizontal = 4.dp),
+                height = 6.dp
             )
         }
     }
@@ -1436,8 +1435,8 @@ fun resolveQuestionImage(
     }
 
     return when {
-        normalizedTheme == "FOREST" -> if (isRtl) R.drawable.contact_banner_ar_light_forest_path else R.drawable.contact_banner_en_light_forest_path
-        normalizedTheme == "LAVENDER" || normalizedTheme == "PLAIN_LIGHT" -> if (isRtl) R.drawable.contact_banner_ar_light_lavender_valley else R.drawable.contact_banner_en_light_lavender_valley
+        normalizedTheme == "FOREST" -> if (isRtl) R.drawable.contact_banner_ar_light_forest_path else R.drawable.contact_banner_en_light_sunrise_valley
+        normalizedTheme == "LAVENDER" || normalizedTheme == "PLAIN_LIGHT" -> if (isRtl) R.drawable.contact_banner_ar_light_lavender_valley else R.drawable.contact_banner_en_light_sunrise_valley
         isActuallyDark -> if (isRtl) R.drawable.contact_banner_ar_dark_moonlit_valley else R.drawable.contact_banner_en_dark_moonlit_valley
         else -> if (isRtl) R.drawable.contact_banner_ar_light_sunrise_valley else R.drawable.contact_banner_en_light_sunrise_valley
     }

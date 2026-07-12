@@ -42,24 +42,30 @@ val ForestError = Color(0xFFBA1A1A)
 val ForestErrorContainer = Color(0xFFFFDAD6)
 val ForestOnErrorContainer = Color(0xFF410002)
 
-// Midnight Theme — deep focus and low-glare study
-// Premium dark navy background (#0A0E1A), soft lavender and orange accents.
-val MidnightPrimary = Color(0xFFC3C6D7)
-val MidnightOnPrimary = Color(0xFF2C303D)
-val MidnightPrimaryContainer = Color(0xFF1D2B48)
-val MidnightOnPrimaryContainer = Color(0xFFDCE6FF)
-val MidnightSecondary = Color(0xFFD2BCFB) // Soft Lavender
-val MidnightTertiary = Color(0xFFFFB77D) // Vibrant Orange
+// Midnight Theme — "Midnight Premium" premium dark focus system.
+// Deep navy base with soft lavender primary, warm orange secondary, cool blue tertiary.
+// Aligned with the MKS Midnight Premium design system (Stitch redesign).
+val MidnightPrimary = Color(0xFFD2BCFB) // Soft Lavender — primary accent, active states, focus rings
+val MidnightOnPrimary = Color(0xFF20182F) // Dark text on lavender fills
+val MidnightPrimaryContainer = Color(0xFF2A2350) // Lavender-tinted container
+val MidnightOnPrimaryContainer = Color(0xFFEADFFF)
+val MidnightSecondary = Color(0xFFFFB77D) // Warm Orange — streaks, energy CTAs, highlights
+val MidnightTertiary = Color(0xFF8FB8FF) // Cool Blue — informational, links
 val MidnightBackground = Color(0xFF0A0E1A) // Deep Navy Background
-val MidnightSurface = Color(0xFF111317) // Elevated Surface
-val MidnightSurfaceVariant = Color(0xFF1A1C1F)
-val MidnightOnBackground = Color(0xFFE2E2E7)
-val MidnightOnSurface = Color(0xFFE2E2E7)
-val MidnightOnSurfaceVariant = Color(0xFFC7C6CC)
-val MidnightOutline = Color(0xFF46464C)
-val MidnightError = Color(0xFFFFB4AB)
-val MidnightErrorContainer = Color(0xFF93000A)
+val MidnightSurface = Color(0xFF111624) // Elevated glassy card surface
+val MidnightSurfaceVariant = Color(0xFF171D2E) // Higher-elevation surface
+val MidnightOnBackground = Color(0xFFE7E9F2) // Text primary
+val MidnightOnSurface = Color(0xFFE7E9F2)
+val MidnightOnSurfaceVariant = Color(0xFFA2A7BC) // Text secondary
+val MidnightOutline = Color(0xFF2A3348) // Hairline borders
+val MidnightError = Color(0xFFFF9A8F) // Muted red — wrong/destructive
+val MidnightErrorContainer = Color(0xFF5C1D18)
 val MidnightOnErrorContainer = Color(0xFFFFDAD6)
+
+// Midnight Premium shared accent tokens (semantic, theme-scoped).
+val MidnightSuccess = Color(0xFF6DD3A0) // correct / done
+val MidnightWarning = Color(0xFFFFC978) // caution / merged
+val MidnightTextMuted = Color(0xFF6A7189) // tertiary / muted text
 
 // Lavender Theme — soft, reflective, memory-friendly
 val LavenderPrimary = Color(0xFF7E68B3)

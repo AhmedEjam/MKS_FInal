@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1071067755852",
+    "project_id": "myknowledgespace-dfce3ff2",
+    "storage_bucket": "myknowledgespace-dfce3ff2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1071067755852:android:0cbba1c78d029aef05cbe9",
+        "android_client_info": {
+          "package_name": "com.ahmedyejam.mks"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzFkl9monXN6uYdaxG5U-cRczyOMRHLJ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

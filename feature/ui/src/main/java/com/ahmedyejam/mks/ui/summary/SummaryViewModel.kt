@@ -28,7 +28,7 @@ data class SummaryState(
     val questions: List<QuestionEntity> = emptyList(),
     val isLoading: Boolean = true,
     val categoryPerformance: Map<String, CategoryStats> = emptyMap(),
-    val filteredQuestions: List<QuestionEntity> = emptyList(),
+    val filteredQuestions: List<IndexedQuestion> = emptyList(),
     val maxStreak: Int = 0,
     val reviewFilter: ReviewFilter = ReviewFilter.ALL,
     val visibleDetails: Set<ReviewDetail> = setOf(
@@ -37,6 +37,12 @@ data class SummaryState(
         ReviewDetail.QUESTION_NUMBER,
         ReviewDetail.EXPLANATION,
     ),
+)
+
+/** Carries the original sequence index alongside the question, so the UI can use answersByIndex. */
+data class IndexedQuestion(
+    val sequenceIndex: Int,
+    val question: QuestionEntity
 )
 
 data class CategoryStats(
@@ -147,11 +153,11 @@ class SummaryViewModel @Inject constructor(
         val session = state.session ?: return
         
         // Match state.questions (full sequence) with session.answersByIndex
-        val filtered = state.questions.filterIndexed { index, q ->
+        val filtered = state.questions.mapIndexed { index, q ->
             val userAnswers = session.answersByIndex[index]
             val isCorrect = (userAnswers != null) && (q.correctAnswers.toSet() == userAnswers.toSet())
             
-            when (state.reviewFilter) {
+            val matches = when (state.reviewFilter) {
                 ReviewFilter.ALL -> true
                 ReviewFilter.CORRECT -> isCorrect
                 ReviewFilter.WRONG -> (!isCorrect) && (userAnswers != null) && (!q.isDropped)
@@ -159,7 +165,8 @@ class SummaryViewModel @Inject constructor(
                 ReviewFilter.DROPPED -> q.isDropped
                 ReviewFilter.WITH_EXPLANATION -> !q.explanation.isNullOrBlank()
             }
-        }
+            if (matches) IndexedQuestion(index, q) else null
+        }.filterNotNull()
         
         _uiState.update { it.copy(filteredQuestions = filtered) }
     }

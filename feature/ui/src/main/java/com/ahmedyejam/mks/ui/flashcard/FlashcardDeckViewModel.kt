@@ -18,6 +18,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -237,6 +238,37 @@ class FlashcardDeckViewModel @Inject constructor(
             
             viewModelScope.launch {
                 val deckId = deckId ?: return@launch
+
+                // Try to find and resume an existing incomplete session
+                val existingSessions = studyRepository.getLearningSessionsByTarget("FLASHCARD", deckId)
+                    .first()
+                val incompleteSession = existingSessions.firstOrNull { !it.isCompleted && it.deletedAt == null }
+
+                if (incompleteSession != null && incompleteSession.stateJson.isNotBlank()) {
+                    // Attempt to restore state from saved session
+                    try {
+                        val restored = sessionStateAdapter.fromJson(incompleteSession.stateJson)
+                        if (restored != null) {
+                            val restoredIndex = restored.currentCardIndex.coerceIn(
+                                0, (_uiState.value.cards.size - 1).coerceAtLeast(0)
+                            )
+                            reviewedCardIds.addAll(restored.reviewedCardIds)
+                            cardScores.putAll(restored.cardScores)
+                            correctAttemptsCount = restored.correctAttempts
+                            totalAttemptsCount = restored.totalAttempts
+                            sessionTimeAccumulatedMs = restored.timersActive.values.firstOrNull() ?: 0L
+                            activeSessionId = incompleteSession.id
+                            _uiState.value = _uiState.value.copy(currentIndex = restoredIndex)
+                            MksLogger.d("FlashcardDeckViewModel", "Resumed session ${incompleteSession.id} at card $restoredIndex")
+                            startSessionTimer()
+                            return@launch
+                        }
+                    } catch (e: Exception) {
+                        MksLogger.w("FlashcardDeckViewModel", "Failed to restore session state, starting fresh", e)
+                    }
+                }
+
+                // No resumable session found — create a new one
                 val sessionId = studyRepository.createLearningSession("FLASHCARD", deckId, "")
                 activeSessionId = sessionId
                 startSessionTimer()

@@ -46,6 +46,7 @@ data class CompilerUiState(
     val questions: List<ParsedQuestion> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
+    val successMessage: String? = null,
     val mode: ImportMode = ImportMode.AUTO,
     val detectedMode: ImportMode? = null,
     val sheetNames: List<String> = emptyList(),
@@ -506,7 +507,7 @@ class CompilerViewModel @Inject constructor(
                     val finalFlashcards = flashcards.mapIndexed { i, f -> f.copy(orderIndex = currentOrder + i) }
                     knowledgeRepository.insertFlashcards(finalFlashcards)
                 } else {
-                    quizRepository.importCompiledQuestions(
+                    val mksResult = quizRepository.importCompiledQuestions(
                         title = title,
                         targetBookId = bookId,
                         targetQuizId = targetQuizId,
@@ -514,6 +515,27 @@ class CompilerViewModel @Inject constructor(
                         questions = questions,
                         activeWorkspaceId = currentWorkspaceId
                     )
+
+                    // Surface ImportResult feedback
+                    when (mksResult) {
+                        is com.ahmedyejam.mks.data.model.MksResult.Success -> {
+                            val r = mksResult.data
+                            val msg = buildString {
+                                append("Saved ${r.importedQuestionsCount} questions")
+                                if (r.skippedRecordsCount > 0) append(", ${r.skippedRecordsCount} skipped")
+                                if (r.warnings.isNotEmpty()) {
+                                    append("\n⚠ ${r.warnings.size} warning(s): ")
+                                    append(r.warnings.take(3).joinToString("; ") { it.message })
+                                    if (r.warnings.size > 3) append(" …")
+                                }
+                            }
+                            _uiState.update { it.copy(successMessage = msg) }
+                        }
+                        is com.ahmedyejam.mks.data.model.MksResult.Error -> {
+                            _uiState.update { it.copy(error = mksResult.message) }
+                        }
+                        null -> { /* importManager unavailable */ }
+                    }
                 }
                 activeWorkspaceIdOverride = null
                 _uiState.update { it.copy(isLoading = false, questions = emptyList()) }

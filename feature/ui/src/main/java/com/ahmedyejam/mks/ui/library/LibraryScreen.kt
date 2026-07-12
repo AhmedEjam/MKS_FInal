@@ -630,7 +630,9 @@ fun LibraryScreen(
             viewModel = viewModel,
             onDismiss = { showTrashBin = false }
         )
-        if (showQuizEditDialog) {
+    }
+
+    if (showQuizEditDialog) {
         EntityEditDialog(
             title = stringResource(R.string.edit),
             initialName = editingQuizEdit?.title ?: "",
@@ -647,5 +649,4 @@ fun LibraryScreen(
             showQuizEditDialog = false
         }
     }
-}
 }

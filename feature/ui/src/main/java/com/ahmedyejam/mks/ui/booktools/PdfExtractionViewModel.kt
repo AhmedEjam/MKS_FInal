@@ -64,10 +64,14 @@ class PdfExtractionViewModel @Inject constructor(
     private val _blocks = MutableStateFlow<List<ExtractionBlock>>(emptyList())
     val blocks = _blocks.asStateFlow()
 
+    private val _loadError = MutableStateFlow<String?>(null)
+    val loadError = _loadError.asStateFlow()
+
     private val _pdfImagesCache = mutableMapOf<Int, Bitmap>()
 
     fun loadSource(sourceId: Long) {
         viewModelScope.launch {
+            _loadError.value = null
             val source = assetRepository.getSourceDocumentById(sourceId)
             _sourceType.value = source?.sourceType ?: ""
             val uriStr = source?.localPath ?: source?.externalUrl
@@ -79,17 +83,28 @@ class PdfExtractionViewModel @Inject constructor(
                 }
                 _pdfUri.value = uri
                 
-                when {
-                    _sourceType.value.equals("IMAGE", ignoreCase = true) -> {
-                        _totalPages.value = 1
-                        _selectedPages.value = setOf(0)
+                try {
+                    when {
+                        _sourceType.value.equals("IMAGE", ignoreCase = true) -> {
+                            _totalPages.value = 1
+                            _selectedPages.value = setOf(0)
+                        }
+                        _sourceType.value.equals("PDF", ignoreCase = true) -> {
+                            _totalPages.value = pdfRendererService.getPageCount(uri)
+                        }
+                        else -> {
+                            // AUDIO / VOICE / Other
+                            _totalPages.value = 0
+                        }
                     }
-                    _sourceType.value.equals("PDF", ignoreCase = true) -> {
-                        _totalPages.value = pdfRendererService.getPageCount(uri)
-                    }
-                    else -> {
-                        // AUDIO / VOICE / Other
-                        _totalPages.value = 0
+                } catch (e: Exception) {
+                    _totalPages.value = 0
+                    _loadError.value = when {
+                        e.message?.contains("password", ignoreCase = true) == true ||
+                        e.message?.contains("encrypt", ignoreCase = true) == true ->
+                            "This PDF is encrypted or password-protected and cannot be opened."
+                        else ->
+                            "Failed to open this file: ${e.message ?: "Unknown error"}"
                     }
                 }
             }

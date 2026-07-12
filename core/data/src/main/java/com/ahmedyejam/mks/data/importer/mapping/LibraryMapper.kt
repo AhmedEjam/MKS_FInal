@@ -89,6 +89,14 @@ class LibraryMapper {
                 dto.options.indexOfFirst { it.id == correctId }.takeIf { it != -1 }
             }
 
+        // Warn if correct-answer refs didn't resolve to any option
+        if (dto.correct.isNotEmpty() && correctAnswers.isEmpty()) {
+            com.ahmedyejam.mks.util.MksLogger.w(
+                "LibraryMapper",
+                "Question '${dto.id}' has correct refs ${dto.correct} that don't match any option IDs: ${dto.options.map { it.id }}"
+            )
+        }
+
         // Sanitize imageSource to never store raw Base64 blocks
         val rawSource = dto.imageSource.ifBlank { dto.imageDataUrl }
         val sanitizedSource =
@@ -233,9 +241,9 @@ class LibraryMapper {
             explanation = entity.explanation ?: "",
             hint = entity.hint ?: "",
             reference = entity.reference ?: "",
-            imageDataUrl = entity.imagePath ?: "",
+            imageDataUrl = "", // Only populated when embedding data: URIs; not during normal export
             imageSource = entity.imageSource ?: "",
-            imageName = entity.imageName ?: "",
+            imageName = entity.imagePath?.let { java.io.File(it).name } ?: entity.imageName ?: "",
             categories = entity.categories,
             answerMode = if (entity.type == QuestionType.MULTIPLE_CHOICE) "multiple" else "single",
             sourceQuizId = entity.sourceQuizId ?: "",

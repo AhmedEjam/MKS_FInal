@@ -39,10 +39,13 @@ class SpreadsheetQuestionParser(
                 if (cell.isBlank()) {
                     null
                 } else {
+                    val marked = isMarked(cell)
+                    // Strip marker characters from option text so they don't show in UI
+                    val cleanText = if (marked) cell.replace(MARKED_REGEX, "").trim() else cell
                     ParsedOption(
                         id = generateOptionId(index),
-                        text = cell,
-                        marked = isMarked(cell),
+                        text = cleanText,
+                        marked = marked,
                     )
                 }
             }
