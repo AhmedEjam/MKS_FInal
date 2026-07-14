@@ -1,46 +1,6 @@
-# MKS — Final User Experience Review & Journey Map
+# UX Review 2026
+This document contains historical UX frictions, ideas, trust breakers, and improvement catalogs extracted from the original MKS_USER_EXPERIENCE_REVIEW.md.
 
-> **Supersedes and absorbs** `USER_JOURNEY_MAP_claudeopus.md` and `user_Jour_Geminipro.md`. Both are folded into this document in full and are no longer needed. This is the single authoritative **user-perspective** reference: what every screen and control does, where the experience is smooth, where it frustrates or silently loses the user's work, and an exhaustive catalog of every addon, feature, option, interactable, and utility that would improve MKS as a thing people actually study with.
->
-> **Lens:** Written entirely from the **end user's** point of view — a student, resident, or self-learner. No code, no file paths, no architecture. Security/engineering internals live in the separate developer review; only the user-facing edges of those (privacy, trust, data loss) appear here.
->
-> **App in one sentence:** MKS (My Knowledge Space) is an offline-first Android study app that turns imported content (spreadsheets, documents, PDFs, photos, AI output) into interactive quizzes, flashcards, slideshows, note blueprints, and AI prompt decks — organized as Books inside isolated Workspaces, with progress tracking, spaced-repetition review, and cross-content search.
-
----
-
-## Table of Contents
-
-- **Part A — The Experience at a Glance**
-  - A1. The full journey, as a user lives it
-  - A2. What delights
-  - A3. Top frictions, ranked by how much they hurt
-  - A4. Where the app quietly loses your work (trust-breakers)
-  - A5. Promises vs. reality
-- **Part B — Screen-by-Screen Journey Map** (absorbs both prior maps)
-  - B1 Launch & Onboarding · B2 Library Hub · B3 Import / Compiler · B4 Quiz Player · B5 Summary · B6 Session Management · B7 Quiz Questions Browser · B8 Category Questions · B9 Adaptive Training · B10 Book Knowledge Dashboard · B11 Flashcards · B12 Slideshows · B13 Note Blueprints / Reader · B14 AI Prompt Decks · B15 Source Documents · B16 Book Notes · B17 AI MCQ Generator · B18 PDF Extraction · B19 Scanner (OCR) · B20 Global Search · B21 Review Dashboard · B22 Data Tools · B23 Settings · B24 Dialogs & Overlays
-- **Part C — Cross-Cutting Experience Themes**
-- **Part D — Exhaustive Improvement Catalog** (every addon / feature / option / interactable / utility)
-- **Part E — Quick Wins & a Delight Roadmap**
-
-> **Legend used throughout:** 😀 delight · ⚠️ friction · 🩹 trust-breaker (can lose your work/data) · 💡 improvement idea. Priority tags on ideas: **P0** (fix now, actively hurts), **P1** (high value), **P2** (roadmap), **P3** (nice-to-have).
-
----
-
-## Part A — The Experience at a Glance
-
-### A1. The full journey, as a user lives it
-
-You install MKS and land on a **Welcome** screen: pick a language, peek at features, tap **Get Started**. From then on the app always opens to the **Library** — your home base, pre-seeded with one sample book so it's never empty on day one.
-
-You bring in your own material. Tapping the **+** button (or sharing a file from another app) opens the **Import/Compiler** flow: MKS auto-detects the format (spreadsheet, CSV, JSON, HTML, text, or a ZIP bundle), finds the header row, maps columns to fields, and shows a **live preview** of parsed questions you can toggle and correct before saving. Alternatively you photograph a page (**Scanner/OCR**), extract text from a **PDF**, paste text into a deck, or have the **AI MCQ Generator** draft questions for you.
-
-Content is organized as **Books** → which hold **Quizzes** (of Questions) plus a **Knowledge Bank** (flashcard decks, slideshow courses, note blueprints, AI prompt decks, source documents). Everything lives inside a **Workspace** you can switch between for isolation (e.g., "Med School" vs. "Board Prep").
-
-You study. Open a quiz → **Session Management** lets you resume a saved session or start a new one with rich options (filters, ranges, shuffles, timers, rapid/repeat modes). The **Quiz Player** is the heart of the app: one question at a time, options you tap/eliminate, a draggable control sheet, a live score/streak/accuracy readout, per-question navigation grid, and an expandable explanation after answering. Finishing takes you to the **Summary**: score, best streak, per-category performance, and a filterable review of every question, plus share/retry.
-
-Between quizzes you review with **Flashcards** (flip + Again/Good/Easy spaced-repetition), **Slideshows** (swipe + mark studied), **Note Blueprints** (an immersive reader with autoscroll and text-to-speech), and **AI Prompt Decks** (fill variables → run → route the output into a note/blueprint/deck/quiz). The **Review Dashboard** gathers everything due today across flashcards, blueprints, and mistakes. **Global Search** finds anything by text. **Book Dashboard** shows a book's whole learning ecosystem with one-tap "Magic Actions." **Settings** controls themes, font/density, language, study defaults, focus mode, and backup. **Trash** recovers soft-deleted items; **Data Tools** does full library backup/restore.
-
-That's the arc: **bring in → organize → study → review → track → back up.** It's a genuinely deep, capable study system. The rough edges are almost all about **feedback, resume, and confidence that your work was saved** — not missing features.
 
 ### A2. What delights 😀
 
@@ -51,6 +11,7 @@ That's the arc: **bring in → organize → study → review → track → back 
 - **Bilingual + RTL.** English/Arabic with right-to-left layout, and even Arabic header aliases when importing spreadsheets — a real edge for that audience.
 - **Immersive note reader.** Autoscroll with adjustable speed plus text-to-speech with pitch/rate — a hands-free study mode most flashcard apps lack.
 - **Workspaces + Trash + full backup.** Isolation, soft-delete recovery, and ZIP export/import show a maturity of data-stewardship thinking.
+
 
 ### A3. Top frictions, ranked (by how much they hurt)
 
@@ -70,6 +31,7 @@ That's the arc: **bring in → organize → study → review → track → back 
 14. ⚠️ **AI generation "Cancel" bricked progress** — after one cancel, later generations showed no progress. *(A recent update fixed the cancel scope.)*
 15. ⚠️ **Attaching an image/PDF to a question is a raw text field**, not a picker — and a pasted link can break after an app restart.
 
+
 ### A4. Where the app quietly loses your work (trust-breakers) 🩹
 
 Trust is the currency of a study app — you're pouring hours of content and progress into it. These are the moments that erode it. Several were addressed in a recent round of fixes (marked ✅ *reportedly fixed*), but the *pattern* is what matters: **persist continuously, restore faithfully, and always confirm the save.**
@@ -82,6 +44,7 @@ Trust is the currency of a study app — you're pouring hours of content and pro
 - **"Saved to notes" can be a lie** — the toast appears even when nothing was saved (e.g., a PDF source with no parent book).
 - **No undo after import** — a bad column mapping that imported 300 malformed questions has to be cleaned up by hand.
 - **Emptying the Trash can silently no-op** in some states while still reporting success.
+
 
 ### A5. Promises vs. reality
 
@@ -98,54 +61,8 @@ The marketing/journey descriptions make claims the experience doesn't fully hono
 
 ---
 
-## Part B — Screen-by-Screen Journey Map
 
-> This section absorbs the complete screen inventories from both prior journey maps. Every screen, control, gesture, and dialog is listed with what it does, plus inline **⚠️ friction / 🩹 trust / 💡 idea** notes where the experience can improve.
-
-### B1. Launch & Onboarding
-
-**Welcome Screen** (`welcome`) — first launch only (re-enable in Settings).
-
-| Element | What it does |
-|---|---|
-| **Language pill (EN / العربية)** | Switches language, saves to preferences. |
-| **"Explore Features" button** | Opens an informational dialog listing capabilities. |
-| **"Get Started" button** | Marks onboarding complete, goes to Library, removes Welcome from the back stack. |
-
-- ⚠️ Onboarding is a single static screen — it *tells* rather than *shows*. 💡 **P2:** Replace with a 3–4 card interactive tour (import a sample, answer a sample question, flip a card) so the first five minutes create a "win." 💡 **P2:** Offer a "Start with a template" choice (Medical, Language, Law, Custom) that seeds relevant sample content. 💡 **P3:** Theme preview carousel on this screen so the first impression is personalized.
-
-### B2. Library (Main Hub)
-
-**Route:** `library`. The central dashboard: Books at root; a book's Quizzes + Knowledge-Bank items when you tap in; also browse by Category.
-
-**Top App Bar**
-| Element | What it does |
-|---|---|
-| **← Back** | Appears inside a book or in search; returns to root / exits search. |
-| **⋮ Overflow → Sort** | Sort dialog: Name A–Z/Z–A, Date Created, Date Edited, Progress. |
-| **⋮ → Grid/List toggle** | 2-column grid vs single-column list; persisted. |
-| **⋮ → Search** | Inline search bar filtering books/quizzes/categories by name, with a clear (✕). |
-| **⋮ → Settings** | Opens Settings. |
-| **Title** | "MKS Library" at root, book title inside a book, "Category: [name]" when browsing a category. |
-
-**Content area (grid/list)**
-| Element | What it does |
-|---|---|
-| **Book card — tap** | Opens the book (filters to its quizzes + knowledge items). |
-| **Book card — long-press** | Opens the OptionsSheet (Pin, Edit, Dashboard, Export, Import Into, Delete). |
-| **Quiz card — tap** | Goes to Session Management for that quiz. |
-| **Quiz card — long-press** | OptionsSheet with quiz options (incl. Scanner). |
-| **Category chip — tap** | Category Questions screen (that category across the book). |
-| **Knowledge-bank item — tap** | Opens the relevant screen (deck, course, blueprint, prompt deck). |
-
-**Floating Action Button (+)** — expands a context-dependent menu:
-- *Always:* **Import** (file picker: XLSX/CSV/TSV/JSON/HTML/TXT/ZIP → Compiler), **Export** (ZIP of current book or whole library).
-- *Inside a book:* **New Quiz, Adaptive Training, Flashcard Deck, Slideshow Course, Review Blueprint, Sources, Book Notes, AI Prompt Deck.**
-- *At root:* **New Book, Adaptive Training (all books).**
-
-**OptionsSheet (long-press):** Pin/Unpin · Edit · Book Dashboard (books) · Export · Import Into · Scanner (quizzes) · Delete (cascades: book→quizzes→flashcards→slideshows→notes; quiz→questions→sessions).
-
-**Frictions & ideas**
+### B2. Library (Main Hub) - Frictions & Ideas
 - ⚠️ **Sort options can silently do nothing** — sorting categories by "Last studied" or books by certain metrics is a no-op; the user picks a sort and sees no change. 💡 **P1:** Hide sorts that don't apply to the current view, or make them work.
 - ⚠️ **"Recent"/"Resume" reflect edits, not study** — renaming a quiz floats it to the top of "recent," and Resume can surface a quiz you never studied. 💡 **P1:** Track *last studied* separately from *last edited*; base Recent/Resume on study.
 - ⚠️ **No workspace indicator on the hub** — you can't tell which workspace you're in at a glance, and switching is buried. 💡 **P1:** Show the active workspace name in the top bar with a one-tap switcher.
@@ -156,13 +73,7 @@ The marketing/journey descriptions make claims the experience doesn't fully hono
 - 💡 **P3:** **Folders/collections** for books (many med students have 20+ books).
 - 💡 **P3:** Drag-to-reorder books; swipe actions on list rows (swipe to pin/delete).
 
-### B3. Import / Compiler flow
-
-Reached from the FAB **Import**, a book/quiz's **Import Into**, or an Android **Share** from another app. Two paths: the **Compiler** (spreadsheets, CSV, JSON, HTML, text) and the **ZIP/bundle Review** dialog.
-
-**Compiler steps the user sees:** format auto-detected → (XLSX) pick a sheet → header row auto-found → column→field mapping shown → **live preview list** of parsed questions with per-question include toggles, correct-answer highlighting, range include/exclude, long-press to mark the correct option → **Save** (title + target book/quiz/deck).
-
-**Frictions & ideas**
+### B3. Import / Compiler flow - Frictions & Ideas
 - 🩹 **Silent skips on save** — the preview shows questions that the save step drops (no correct answer, no options, blank stem). ✅ *reportedly fixed* (a save summary now reports counts + warnings). 💡 **P1:** Go further — **badge the doomed rows in the preview** with the reason ("no correct answer") so they're fixed *before* saving, not reported after.
 - ⚠️ **Wrong option marked correct** on some spreadsheets/JSON due to 1-based vs 0-based answer numbering. ✅ *partially fixed*. 💡 **P1:** Detect ambiguity and, when unsure, show a one-line "we guessed the answer key — confirm?" prompt.
 - ⚠️ **Legacy `.xls` imports fail outright.** 💡 **P1:** Support old Excel or show "please save as .xlsx."
@@ -176,22 +87,7 @@ Reached from the FAB **Import**, a book/quiz's **Import Into**, or an Android **
 - 💡 **P3:** Drag-to-reorder columns in the mapping editor; a "sample row" preview under each column so mapping is visual.
 - 💡 **P3:** Import directly from a URL / Google Sheets link.
 
-### B4. Quiz Player
-
-**Route:** `quiz/{quizId}?sessionId={sessionId}`. The core study interface — one question at a time.
-
-**Top bar:** ← Back (exits, saves progress) · Timer (MM:SS, counts down if a timer is set) · Progress "3/25" · Score "★ 5/25" · Streak "🔥 3" (hidden at 0) · thin progress bar.
-
-**Question area:** stem (multi-line) · image (tap → fullscreen pinch-zoom) · Assets paperclip (read-only attachments) · horizontal swipe (next/prev, animated) · explanation card after answering (also Hint, High-Yield, Reference).
-
-**Options:** tap to select (radio/checkbox) · double-tap to select+submit (if enabled) · long-press to eliminate (strikethrough) · elimination-mode ✕ per option. After submit: green (correct) / red (your wrong pick); Submit → Next.
-
-**Bottom sheet (drag up):**
-- *Peek:* live Accuracy % (color-coded) · Streak · Submit/Next/Reveal button.
-- *Expanded toggles:* Categories · One-by-One · Rapid Mode · Eliminate · Drop Question (confirm) · Focus Mode (DND) · Mark/Bookmark · Finish Quiz.
-- *Navigation:* filter chips (ALL/ANSWERED/UNANSWERED/MISSED/MARKED/DROPPED) · color-coded question-number grid (tap to jump) · "Restore dropped question" chip.
-
-**Frictions & ideas**
+### B4. Quiz Player - Frictions & Ideas
 - ⚠️ **No "saved" reassurance** — progress *is* saved continuously for normal sessions, but nothing tells the user, so long sessions feel risky. 💡 **P1:** A subtle "progress saved" micro-indicator, and an "exit without finishing?" confirmation that reassures ("your progress is saved — resume anytime").
 - 🩹 **Rapid mode auto-advances with no undo** — a mis-tap commits and jumps. 💡 **P1:** Show a brief countdown with a Cancel/Undo tap during the auto-advance delay.
 - 🩹 **Eliminating the correct option instantly scores it wrong**, no confirm (unlike Drop Question, which confirms). 💡 **P1:** Confirmation or an undo window; treat elimination as reversible until submit.
@@ -206,17 +102,7 @@ Reached from the FAB **Import**, a book/quiz's **Import Into**, or an Android **
 - 💡 **P3: Swipe-to-eliminate** gesture; **double-column layout** on tablets/landscape.
 - 💡 **P3: Read question aloud** (TTS) button in the player for accessibility / eyes-free review.
 
-### B5. Summary (Post-Quiz)
-
-**Route:** `summary/{sessionId}`.
-
-**Score header:** big % · fraction ("17/20 correct") · best streak · session label · average time/question.
-**Top bar:** Share (system share sheet with text export) · ✕ Close (→ Library).
-**Review section:** gear → Visible-Details panel (toggle Stem/Options/Hint/High-Yield/Reference/Number/Explanation) · filter chips (ALL/CORRECT/WRONG/UNANSWERED/DROPPED/WITH EXPLANATION) · color-coded review cards.
-**Category performance:** per-category accuracy breakdown.
-**Bottom:** Retry (new session, same quiz) · Library.
-
-**Frictions & ideas**
+### B5. Summary (Post-Quiz) - Frictions & Ideas
 - ⚠️ **The screen could contradict itself** — a card under the "Correct" filter could show WRONG; category stats used different logic than the cards. ✅ *reportedly unified.* 💡 **P1:** Finish the job — make category performance use the same correct/incorrect classification as the cards and export.
 - ⚠️ **"Avg time/question" can be misleading** (mixes lifetime question time and placeholders). 💡 **P2:** Compute strictly from this session.
 - ⚠️ **"Clear Marks" is hidden behind a bookmark icon** and is quiz-wide/destructive. 💡 **P1:** Give destructive actions explicit labels and clear confirmation copy.
@@ -226,20 +112,7 @@ Reached from the FAB **Import**, a book/quiz's **Import Into**, or an Android **
 - 💡 **P2: Export the summary as PDF/image** for sharing or a study log, not just plain text.
 - 💡 **P3: Celebratory moment** for personal bests (streak record, first 100%) — a small, tasteful animation.
 
-### B6. Session Management
-
-**Route:** `sessions/{quizId}`. All saved sessions for a quiz.
-
-| Element | What it does |
-|---|---|
-| **← Back** | Previous screen. |
-| **+ FAB** | Start Session Dialog. |
-| **Session card** | Label, accuracy ring, score metrics, progress bar, last-active date. Tap: resume (incomplete) or view Summary (complete). Delete: confirm → removes the record. |
-| **Empty state** | Tap to create a session. |
-
-**Start Session Dialog:** label · include filters (Unanswered/Missed/Marked/Categorized/Uncategorized) · question range (From/To) · Shuffle Questions · Shuffle Options · Rapid Mode · Repeat Wrong · Quiz Timer (min) · Question Timer (sec) · Remember Settings · Start.
-
-**Frictions & ideas**
+### B6. Session Management - Frictions & Ideas
 - ⚠️ **Progress % can be wrong** — computed against the quiz's *current* size, so after you add/remove questions (or for a custom subset session) a finished session can read "10%." 💡 **P1:** Compute against the session's own question set; add a "quiz changed since this session" badge.
 - ⚠️ **No staleness cue** — resuming silently remaps onto a changed quiz. 💡 **P1:** Warn when the underlying quiz changed.
 - ⚠️ **The range fields can lock up** if the dialog opens before the question count loads (range stuck at 0, Start disabled). 💡 **P2:** Default the range once the count arrives; validate gracefully.
@@ -247,17 +120,7 @@ Reached from the FAB **Import**, a book/quiz's **Import Into**, or an Android **
 - 💡 **P2: Duplicate a past session's settings**; rename sessions after the fact.
 - 💡 **P3: Auto-name sessions** meaningfully ("Ch.3, 40 Q, timed") instead of blank/generic.
 
-### B7. Quiz Questions Browser
-
-**Route:** `quiz_questions/{quizId}`. Manage/review/organize questions (not for taking the quiz).
-
-**Top bar:** ← Back · Search (filter by text) · Filter (toggle panel) · title + "X/Y Questions."
-**Filter chips:** Stem, Options, Correct Answer, Explanation, Hint, Reference, Info, Marked Only, Has Attachments (toggle field visibility on cards).
-**Question cards:** long-press → multi-select · tap → Edit Question Dialog · bookmark icon · edit (pencil) · attachments (paperclip → Question Assets Dialog) · image tap → fullscreen.
-**Selection-mode bar:** Clear · Select All · Bookmark/Unbookmark selected · Move (to another quiz) · Copy (to another quiz) · Export (new quiz from selection) · Create Flashcards (from selection, option to clear marks) · Delete (confirm).
-**+ FAB:** manual new question. **Summary card:** totals (questions/marked/missed/notes/assets/sources).
-
-**Frictions & ideas**
+### B7. Quiz Questions Browser - Frictions & Ideas
 - 🩹 **Move/Copy strands attachments** — moving/copying questions doesn't carry their assets/annotations, and moved questions' assets point at the wrong book. 💡 **P1:** Carry attachments with the question; make move/copy atomic; confirm the result.
 - ⚠️ **The editor edits a snapshot** — if the list refreshes while the dialog is open, saving can overwrite newer changes. 💡 **P2:** Re-read on save or lock the row.
 - ⚠️ **No inline feedback** on delete/move/copy. 💡 **P1:** Snackbar with Undo for destructive bulk actions.
@@ -266,32 +129,13 @@ Reached from the FAB **Import**, a book/quiz's **Import Into**, or an Android **
 - 💡 **P2: Reorder questions** (drag) and set a canonical order used by non-shuffled sessions.
 - 💡 **P3: Rich-text / LaTeX / code formatting** in stems and explanations (huge for STEM/med).
 
-### B8. Category Questions
-
-**Route:** `category/{categoryName}`. Same as the Questions Browser but scoped to a category across the book, plus a **"Start Quiz" FAB** that launches adaptive training on just that category.
-
-- 💡 **P2:** Category management here — rename, merge, recolor, set an emoji, and see per-category mastery %.
-- 💡 **P2:** "Study weakest category" shortcut surfaced when a category's accuracy is low.
-
-### B9. Adaptive Training
-
-**Route:** `adaptive/{type}/{id}` — not a separate screen; it's the Quiz Player fed intelligently selected questions. Types: **BOOK** (weak/unanswered/recently-missed), **CATEGORY**, **QUIZ** (a quiz's weak spots), **ALL** (everything). Priority: unanswered > recently wrong > low-weight > marked → Summary at the end.
-
-**Frictions & ideas**
+### B9. Adaptive Training - Frictions & Ideas
 - 🩹 **Historically lost all progress on app kill** (no saved session). ✅ *reportedly fixed.* 💡 **P1:** Also let the user **resume** an interrupted adaptive run rather than always starting fresh, and label these sessions clearly in the session list so they don't accumulate as mystery entries.
 - ⚠️ **The user can't see *why* a question was chosen.** 💡 **P2:** A tiny "chosen because: you missed this twice" tag builds trust in the algorithm.
 - 💡 **P1: Tunable adaptivity** — a simple slider (Review my weak spots ⇄ Cover everything evenly) and a "focus this session on [category]" option.
 - 💡 **P2: Daily adaptive goal** ("20 adaptive questions/day") with a streak.
 
-### B10. Book Knowledge Dashboard
-
-**Route:** `book_dashboard/{bookId}`. A book's whole learning ecosystem.
-
-**Study Progress card:** completion bar · Due · Weak · Marked · Mistakes counts.
-**Magic Actions:** "Draft Note from Marked" (if marked>0) · "Note from Mistakes" (if open mistakes>0) — plus (per the FAB context) generate flashcards/slides from questions/marked/missed.
-**Learning Tools grid:** Quizzes · Flashcards · Slideshows · Notes · AI Prompts · Sources (each with a count, tapping into its list).
-
-**Frictions & ideas**
+### B10. Book Knowledge Dashboard - Frictions & Ideas
 - ⚠️ **The Study Progress card only reflects quiz answering** — studying flashcards/slides/notes doesn't move it, so the book feels "stuck" even after hours of review. 💡 **P1:** Fold all study activity into the book's progress and "last studied."
 - ⚠️ **No feedback when Magic Actions run** — a deck/note is created silently. 💡 **P1:** Snackbar "Created 'Marked Cards' deck — Open," and route straight into the new asset.
 - ⚠️ **Auto-generated titles are timestamp fragments** ("Marked Cards - 4821"). 💡 **P2:** Human titles ("Marked cards from Cardiology — Jul 12").
@@ -299,15 +143,7 @@ Reached from the FAB **Import**, a book/quiz's **Import Into**, or an Android **
 - 💡 **P2: More Magic Actions** — "Make a mock exam (50 mixed)," "Summarize this book into one blueprint," "Generate a cram sheet."
 - 💡 **P2: Per-book study goal & reminder** ("study Pharmacology 30 min/day").
 
-### B11. Flashcard Deck Screen
-
-**Route:** `flashcards/{deckId}`. Two modes.
-
-**Top bar:** ← Back · mode toggle (List/Study) · edit deck.
-**List mode:** stats card (title/desc/count/studied/mastery + progress) · Add card · Study · "Generate from questions" (Marked / Missed, option to clear marks) · card rows (front/back preview, attempt/correct counts, source link, move up/down, edit, delete).
-**Study mode:** counter "3/15" · card surface (tap to flip) · Flip button · rating buttons after flip (Again/Good/Easy) · Previous/Next.
-
-**Frictions & ideas**
+### B11. Flashcard Deck Screen - Frictions & Ideas
 - 🩹 **Resume didn't remember your place** — you'd restart at card 1. ✅ *reportedly fixed for flashcards.* 💡 **P1:** Confirm the resume prompt ("Resume where you left off?") is offered and the flip state is remembered too.
 - ⚠️ **No deck-complete recap** — reaching the last card just stops; the tracked accuracy isn't shown. 💡 **P1:** A "deck complete" screen with accuracy, time, and "review the ones you got wrong."
 - ⚠️ **No "due today" surfacing** — spaced repetition runs under the hood but the user can't see which cards are due per deck. 💡 **P1:** "N due" badge per deck and a "Study due" button.
@@ -318,23 +154,13 @@ Reached from the FAB **Import**, a book/quiz's **Import Into**, or an Android **
 - 💡 **P2: Session length control** ("study 20 cards," "study 10 min").
 - 💡 **P3: Leech detection** ("this card keeps failing — rewrite or suspend it?").
 
-### B12. Slideshow Course Screens
-
-**List** (`book_slideshows/{bookId}`): + FAB (new course: title/desc) · course rows (title/desc/slide-count, tap to open, edit, delete).
-**Course** (`slideshow/{courseId}`): + FAB (new slide) · slide rows (title + preview, edit, delete) · in study/present mode, swipe through slides and mark studied.
-
-**Frictions & ideas**
+### B12. Slideshow Course Screens - Frictions & Ideas
 - 🩹 **Resume not restored** and **completion stats go stale** — marking a slide studied updates the slide but the "X completed / Y%" card doesn't move until you leave and return. 💡 **P1:** Apply the same resume treatment as flashcards; update the course progress live.
 - 💡 **P1: Autoplay / presentation mode** with a timer per slide and optional TTS narration (the note reader already has TTS — reuse it).
 - 💡 **P2: Slide images, PPTX import** (supported — surface it), speaker notes view, and a "quiz me on these slides" action.
 - 💡 **P3: Landscape full-screen present mode** with tap zones for next/prev.
 
-### B13. Note Blueprints / Immersive Reader
-
-**List** (`book_blueprints/{bookId}`): + FAB → create (Manual with title/body/mode, or "From Marked" / "From Missed") · note rows (title/mode/status/preview, tap, edit, delete).
-**Reader/Editor** (`blueprint/{noteId}`): body editor · Save · Mark reviewed (increments counter/status) · To flashcards · Append to question note · status info (mode/status/review count). Immersive reader adds: hide system bars, pinned title, **autoscroll (adjustable speed)**, **text-to-speech (adjustable pitch/rate)**.
-
-**Frictions & ideas**
+### B13. Note Blueprints / Immersive Reader - Frictions & Ideas
 - 😀 The immersive reader with autoscroll + TTS is a genuine differentiator.
 - 🩹 **Reader position and TTS position aren't saved** — leave and you lose your place. 💡 **P1:** Persist scroll/read position per note.
 - ⚠️ **TTS has no pause/resume and can keep talking after you leave**; the play/stop button can get out of sync when speech finishes. 💡 **P1:** Proper play/pause/resume, stop on background, word-follow highlighting, and a lock-screen/media control.
@@ -345,12 +171,7 @@ Reached from the FAB **Import**, a book/quiz's **Import Into**, or an Android **
 - 💡 **P2: "Read this to me" from anywhere** (queue multiple notes for a hands-free commute session).
 - 💡 **P3: Estimated reading time**, progress bar through the note, and a bionic-reading toggle.
 
-### B14. AI Prompt Deck Screens
-
-**List** (`book_prompts/{bookId}`): + FAB (new deck) · deck rows (tap/edit/delete).
-**Deck** (`prompt_deck/{promptId}`): **Prompt cards** (create with `{variable}` placeholders + output type; "Use this card," edit, delete) · **Run section** (variable input fields, rendered-prompt preview, copy [records a run], AI-output paste field, Save run, and route output → Note / Blueprint / Flashcards / Quiz) · **Run history** (last 10).
-
-**Frictions & ideas**
+### B14. AI Prompt Deck Screens - Frictions & Ideas
 - 😀 Output routing (prompt → any content type) is powerful and unusual.
 - 🩹 **In-progress AI output is lost on rotation/backgrounding** (the field isn't preserved). 💡 **P1:** Preserve the output field across rotation; auto-save drafts.
 - ⚠️ **No feedback** on save/route; **variable detection** can misfire on ordinary parentheses in prose. 💡 **P2:** Snackbars; tighten variable syntax or let the user confirm detected variables.
@@ -358,27 +179,7 @@ Reached from the FAB **Import**, a book/quiz's **Import Into**, or an Android **
 - 💡 **P1: Prompt template library** (Quiz generator, Flashcard maker, Explain-like-I'm-5, Mnemonic maker, Clinical-vignette) shipped ready to use.
 - 💡 **P2: Per-card model/temperature settings**; re-run with tweaks; compare two outputs side by side.
 
-### B15. Source Documents Screen
-
-**Route:** `book_sources/{bookId}`. + FAB (title, type [Textbook/PDF/Lecture/Website/Guideline/Other], details) · source rows (edit, delete with a citation-warning).
-
-- 💡 **P1: Attach the actual file** (PDF/image) via a proper picker that copies it into the app (so links don't rot), then jump straight to **PDF Extraction** or **AI MCQ Generator** from the source.
-- 💡 **P2: Open the source inline** (built-in PDF viewer) rather than bouncing to an external app.
-- 💡 **P2: Citations** — link a source to specific questions/notes and show "referenced by 12 questions."
-
-### B16. Book Notes Screen
-
-**Route:** `book_notes/{bookId}`. Read-only list of all questions that have notes attached.
-
-- ⚠️ Read-only here; editing happens elsewhere, which is a small detour. 💡 **P2:** Inline edit; filter by "questions with notes / without notes"; export all notes as one study sheet.
-
-### B17. AI MCQ Generator
-
-**Route:** `ai_mcq_generator/{bookId}`. Generate quiz questions from source material with AI.
-
-Controls: source-document selector · AI provider config · generation settings (count, difficulty, types, topic focus) · **Generate** (loading) · generated-questions preview (per-question edit/delete) · **Save to quiz**.
-
-**Frictions & ideas**
+### B17. AI MCQ Generator - Frictions & Ideas
 - 🩹 **Save happens before review** — questions are persisted before you see the preview, so you can't edit/delete *before* they're committed. 💡 **P1:** Preview first, edit freely, then commit on an explicit Save.
 - 🩹 **Cancel used to brick progress** for the rest of the session. ✅ *reportedly fixed.*
 - ⚠️ **Offline/timeout is opaque** — a failed generation looks the same as "no questions found," and there's no "you appear offline." 💡 **P1:** Distinct offline/timeout/empty states; a connectivity hint.
@@ -387,13 +188,7 @@ Controls: source-document selector · AI provider config · generation settings 
 - 💡 **P2: "Explain this question" and "make a harder/easier variant"** one-tap actions; generate distractors for an existing question.
 - 💡 **P2: Provider setup wizard** with a "test connection" and friendly guidance for local (Ollama) vs cloud.
 
-### B18. PDF Extraction
-
-**Route:** `pdf_extraction/{sourceId}`. Extract text from a PDF for study material.
-
-Controls: PDF selector · page preview · **Extract text** (progress) · extracted-text viewer (page-by-page, selectable) · Copy all · Save as source · Create slides · Create blueprint.
-
-**Frictions & ideas**
+### B18. PDF Extraction - Frictions & Ideas
 - 🩹 **Encrypted/corrupt PDFs spun forever** with no message. ✅ *reportedly fixed* (now shows an error). 💡 **P1:** Confirm the message is specific ("this PDF is password-protected").
 - ⚠️ **Image-only (scanned) PDFs return empty text** with no nudge. 💡 **P1:** Detect no-selectable-text and suggest "Use Vision/OCR instead."
 - 🩹 **"Saved to notes" can appear even when nothing saved** (source with no book). 💡 **P1:** Only confirm on a real save; otherwise tell the user why it couldn't.
@@ -401,66 +196,35 @@ Controls: PDF selector · page preview · **Extract text** (progress) · extract
 - 💡 **P2: Page range selection**, OCR fallback for scans, and table-aware extraction.
 - 💡 **P2: Built-in PDF reader** so the user can read and highlight without leaving the app.
 
-### B19. Scanner (Camera OCR)
-
-**Route:** `scanner/{quizId}`. Photograph a page → OCR → questions.
-
-Camera view (viewfinder + big capture button, "Processing…") → Review view ("Review X recognized questions," per-question edit/delete, Discard, Import All) → Error view (message + Try Again).
-
-**Frictions & ideas**
+### B19. Scanner (Camera OCR) - Frictions & Ideas
 - 😀 Turning a printed question bank into a digital quiz by photo is a strong feature.
 - ⚠️ **Single-shot only** — no multi-page capture, no gallery import, no crop/rotate. 💡 **P1:** Multi-capture queue, import-from-gallery, and a crop/deskew step before OCR.
 - ⚠️ **OCR accuracy varies** and there's no confidence cue. 💡 **P2:** Highlight low-confidence text for quick correction; support handwriting where possible.
 - 💡 **P2: Language selection** for OCR (Arabic!), and "scan answer key separately then merge."
 - 💡 **P3: Live edge-detection overlay** to guide framing.
 
-### B20. Global Search
-
-**Route:** `global_search`. Search everything by text (2+ chars) across books, quizzes, questions, notes, flashcards, blueprints, prompts, mistakes, assets → tap a result to jump to it.
-
-**Frictions & ideas**
+### B20. Global Search - Frictions & Ideas
 - 🩹 **Leaks across workspaces** — returns results from workspaces you're not in, breaking isolation. 💡 **P1:** Scope to the active workspace (with an explicit "search all workspaces" opt-in).
 - ⚠️ **No filters or highlighting** — results are a flat list; the matched text isn't emphasized. 💡 **P1:** Type-filter chips (Questions/Notes/Flashcards/…) and snippet highlighting of the matched term.
 - ⚠️ **Slows on large libraries** (whole-text scan). 💡 **P2:** Faster indexed search as libraries grow.
 - 💡 **P2: Recent searches, saved searches, and "search within this book."**
 - 💡 **P3: Search operators** ("marked:true category:cardio"), and voice search.
 
-### B21. Review Dashboard
-
-**Route:** `review_dashboard`. Unified "due today" queue.
-
-Summary cards: Flashcards due · Blueprints due · Mistakes due · Mistakes scheduled · Marked/weak. Queue items: type + title + subtitle; tap to open, "Reviewed" button, "Snooze 1 week."
-
-**Frictions & ideas**
+### B21. Review Dashboard - Frictions & Ideas
 - ⚠️ **Promises 7 queue types, builds 5** — "unfinished slides" and "annotations" never appear as review items even though they're counted. 💡 **P1:** Add those two queues.
 - ⚠️ **Snooze is fixed at 1 week.** 💡 **P1:** Snooze options (tomorrow / 3 days / 1 week / custom).
 - 💡 **P1: A single "Start review" button** that runs a mixed due-items session end-to-end, rather than tapping items one by one.
 - 💡 **P2: Calendar/forecast** ("42 cards due tomorrow, 15 Thursday") so users can plan.
 - 💡 **P2: Daily review reminder notification** (needs the notification system finished) and a review streak.
 
-### B22. Data Tools
-
-**Route:** `data_tools`. Advanced backup/restore.
-
-Export full library (ZIP of JSON dumps) · Save export file · Choose ZIP & preview (parse without importing; shows conflicts/warnings) · local ZIP path field · Preview pasted path · export warnings.
-
-**Frictions & ideas**
+### B22. Data Tools - Frictions & Ideas
 - ⚠️ **Media not always bundled** in the plain export — a "backup" that omits images isn't a full backup. 💡 **P0/P1:** Always bundle media, or state plainly what's included/excluded.
 - ⚠️ **The local-path field is a developer affordance** exposed to users. 💡 **P2:** Hide behind a "developer options" toggle.
 - 💡 **P1: Scheduled auto-backup** to device storage / cloud (Drive) with a "last backed up" timestamp.
 - 💡 **P2: Selective export/import** (pick specific books) and a clear merge-strategy explanation in plain language.
 - 💡 **P2: Cross-device restore** guidance and a versioned backup history.
 
-### B23. Settings
-
-**Route:** `settings`.
-
-**Library & Backup:** Export full library · Advanced import/export preview (→ Data Tools) · Global search · Review dashboard.
-**Appearance:** 7 themes (Dawn/Forest/Midnight/Lavender/Plain Light/Plain Dark/System) · Reset · Font Scale (0.5×–2.0×) · UI Density (0.5×–1.5×) · Show cover images · Language (EN/AR, RTL).
-**Global Configuration:** Show Welcome · Auto-hide knowledge summary · Focus Mode (DND, with Grant-permission) · Skip Unanswered · Double-tap to submit · Rapid-mode advance delay (500–5000ms).
-**Danger Zone:** Clear Categories (confirm) · Reset Database (confirm; wipes + re-seeds, irreversible).
-
-**Frictions & ideas**
+### B23. Settings - Frictions & Ideas
 - 😀 Deep personalization (7 themes, font/density, study defaults) is a strength.
 - ⚠️ **Language didn't apply until restart.** ✅ *reportedly fixed.* ⚠️ **Focus-mode toggle couldn't latch on first permission grant.** 💡 **P1:** Re-check permission when the user returns and flip the toggle on.
 - ⚠️ **Reset Database and Export give no feedback** (dialog closes; success/failure invisible). 💡 **P1:** Progress + result for both; a "type RESET to confirm" guard on the wipe.
@@ -471,27 +235,13 @@ Export full library (ZIP of JSON dumps) · Save export file · Choose ZIP & prev
 - 💡 **P2: Notification preferences** (study reminders, review-due, streak nudges) once notifications are wired.
 - 💡 **P3: Accent-color picker**, true-black OLED theme, and font-family choice.
 
-### B24. Dialogs & Overlays Reference
-
-- **Edit Entity Dialog** — create/edit Books & Quizzes (title, description, cover image picker).
-- **Edit Question Dialog** — full editor (stem, options with add/remove, correct checkboxes, explanation, hint, reference, info, weight). Used in Scanner review, Questions Browser, Category screen.
-- **Question Assets Dialog** — per-question asset management: attachments/links, annotations (highlight + colored notes), source-document links, linked blueprints, "create blueprint from question."
-- **Import Review Dialog** (ZIP) — stats to create/update, merge strategy (Merge Only vs Merge & Update), HTTP-image permission checkbox, errors/warnings, detail lists, Confirm.
-- **Import Warnings Dialog** — post-import warning list with line/row detail.
-- **Zoomable Image Dialog** — fullscreen pinch-zoom + pan for any image.
-- **Sort Dialog** — Name A–Z/Z–A, Date Created/Edited, Progress.
-- **Trash Bin Dialog** — soft-deleted items across 6 types; restore or permanently delete; auto-purge after retention.
-- **Workspace Manager Dialog** — create/switch/rename/delete workspaces; each is isolated; default can't be deleted.
-
-**Frictions & ideas**
+### B24. Dialogs & Overlays Reference - Frictions & Ideas
 - ⚠️ **Question-asset attach is a text field, not a picker**; pasted content URIs can break after restart. 💡 **P1:** Real file/image picker that copies into the app.
 - ⚠️ **Trash retention is invisible** — the user doesn't know how long they have to restore. 💡 **P2:** Show "deleted 3 days ago · auto-purges in 27 days"; add "Restore all" / "Empty trash" with counts.
 - 🩹 **"Empty Trash" can report success while doing nothing** in some states. 💡 **P1:** Verify the purge actually ran before confirming.
 - ⚠️ **Workspace switching is buried in a dialog** with no active-workspace indicator elsewhere. 💡 **P1:** Surface the active workspace and a quick switcher on the hub; add per-workspace color/icon; confirm switches.
 - 💡 **P2:** Move a book between workspaces; export/import a whole workspace; workspace-level stats.
-
 ---
-
 ## Part C — Cross-Cutting Experience Themes
 
 These patterns repeat across many screens; fixing them once lifts the whole app.
