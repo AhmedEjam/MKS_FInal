@@ -14,7 +14,7 @@ This document tracks the current status of the MKS redesign and porting workflow
 | 3 | `core/ui/src/main/java/com/ahmedyejam/mks/ui/components/MidnightComponents.kt` | **New file** — 11 reusable composables (§5). | Unused until screens call them. |
 | 4 | `feature/ui/src/main/java/com/ahmedyejam/mks/ui/quiz/QuizPlayerScreen.kt` | (a) Top question-progress bar `LinearProgressIndicator` → `GradientProgressBar`. (b) Fixed 2 missing-drawable refs (see §9.1). | Sliding sheet + toggles intentionally untouched (§11). |
 | 5 | `feature/ui/src/main/java/com/ahmedyejam/mks/ui/quiz/CompilerViewModel.kt` | Fixed wrong `MksResult` package in the `when` block (§9.2). | Pre-existing bug, not from redesign. |
-| 6 | `Important docs/DESIGN.md` | This document. | — |
+| 6 | `docs/design-system.md` | This document. | — |
 
 ### 2.2 Pending / in-flight
 

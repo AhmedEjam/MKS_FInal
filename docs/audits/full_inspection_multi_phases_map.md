@@ -615,7 +615,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 
 **Read first (in this order):**
 1. `AGENTS.md` (project guidance — use AI Navigation Guide paths)
-2. `Important docs/IMPORT_INPUT_PATHS.md` (import input path documentation)
+2. `docs/importing.md` (import input path documentation)
 
 **Read these source files (bounded list — do not explore beyond):**
 
@@ -856,9 +856,9 @@ Per pipeline:
 - `review/phase1_import_pipeline.md`
 - `review/phase2_study_pipelines.md`
 - `review/phase3_aux_pipelines.md`
-- `Important docs/user_Jour_Geminipro.md` (intended user journey — compare against observed implementation)
-- `Important docs/mks_enhancement_plan.md` (any planned work already identified)
-- `Important docs/USER_JOURNEY_MAP_claudeopus.md` (comprehensive screen-by-screen interaction map)
+- `docs/audits/UX_REVIEW_2026.md` (intended user journey — compare against observed implementation)
+- `docs/roadmap.md` (any planned work already identified)
+- `docs/audits/UX_REVIEW_2026.md` (comprehensive screen-by-screen interaction map)
 
 **Output:** `review/phase4_synthesis.md`
 
