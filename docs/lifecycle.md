@@ -20,19 +20,22 @@ This document outlines the complete, highly detailed user journey and lifecycle 
 ## 1. Discovery & Installation
 
 ### 1.1 Discovery (Play Store)
+
 - **Current State:** The app is found by the user in the Google Play Store.
-- **Interactables:** 
+- **Interactables:**
   - Reading the app description and feature list.
   - Viewing screenshots and promotional media.
   - Tapping the "Install" button.
 
 ### 1.2 Installation & Unpacking
-- **Current State:** The app downloads and installs on the user's device. 
+
+- **Current State:** The app downloads and installs on the user's device.
 - **Details:**
   - Supports Android 11+ (legacy and modern devices).
   - Optimized footprint and download size.
 
 ### 1.3 Device Integration
+
 - **Current State:** The app icon appears on the device launcher.
 - **Interactables:**
   - Tapping the icon to launch the app.
@@ -45,7 +48,7 @@ This document outlines the complete, highly detailed user journey and lifecycle 
 - **Current State:** A basic welcome screen appears, which disables itself after the first startup.
 - **Planned Upgrades & Interactables:**
   - **Language Selector:** Dropdown to choose between English and Arabic (RTL).
-  - **Workspace Selector / Creator:** 
+  - **Workspace Selector / Creator:**
     - A dropdown to pick an existing workspace.
     - A button to "Create New Workspace" instead of standard accounts.
   - **Security Dialog:** If a workspace is protected, a modal dialog appears requiring a password before entry.
@@ -59,7 +62,7 @@ This document outlines the complete, highly detailed user journey and lifecycle 
 
 - **Current State:** The central hub displaying available books.
 - **Interactables & UI Elements:**
-  - **Dynamic Banners (Top Carousel):** Loops every few seconds. 
+  - **Dynamic Banners (Top Carousel):** Loops every few seconds.
     - *Contact Card:* Tapping opens a Linktree URL.
     - *Resume Card:* Tapping jumps straight into the last opened session.
   - **Top App Bar Options (Three-dots menu):**
@@ -105,7 +108,7 @@ This document outlines the complete, highly detailed user journey and lifecycle 
 
 - **Current State:** The `QuizPlayerScreen` where the actual testing happens.
 - **Interactables & UI Elements:**
-  - **Top Bar:** 
+  - **Top Bar:**
     - Question Counter (e.g., 5/20).
     - Bookmark Icon: Tapping marks the question for later review.
     - Bolt Icon: Toggles Focus Mode (hides distractions).
@@ -180,11 +183,11 @@ This document outlines the complete, highly detailed user journey and lifecycle 
 
 - **Current State:** Features spanning the entire app ecosystem.
 - **Interactables & UI Elements:**
-  - **Global Search Screen:** 
+  - **Global Search Screen:**
     - *Search Bar:* Typing queries the entire database.
     - *Filter Chips:* Toggle searches between "Books", "Quizzes", "Questions", and "Notes".
     - *Results List:* Tapping a result teleports the user directly into that specific entity across the app.
-  - **Review Dashboard (Mistake Log):** 
+  - **Review Dashboard (Mistake Log):**
     - A scrollable queue of all questions answered incorrectly globally.
     - Each item shows the question stem and the user's wrong answer.
     - *Actions:* Users can tap to review the question again, or tap the "Mark as Fixed" button to remove it from the mistake queue.
@@ -200,7 +203,7 @@ This document outlines the complete, highly detailed user journey and lifecycle 
 - **Interactables & UI Elements:**
   - **Language Dropdown:** Switches app language (English / Arabic). UI instantly reacts (RTL switch).
   - **Theme Toggles:** Segmented buttons for "System Default", "Light Mode", "Dark Mode".
-  - **Sliders:** 
+  - **Sliders:**
     - *Font Scale:* Drag slider to increase/decrease global text size.
     - *UI Density:* Drag slider to compress or expand padding.
   - **Danger Zone:**

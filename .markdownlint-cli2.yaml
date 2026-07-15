@@ -3,6 +3,7 @@ config:
   MD033: false  # Inline HTML
   MD041: false  # First line in file should be a top level heading
   MD024: false  # Multiple headings with the same content
+  MD036: false  # Emphasis as heading (status footers are a doc convention)
 ignores:
   - "node_modules"
   - "build"

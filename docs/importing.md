@@ -51,7 +51,7 @@ Detection priority order:
 
 ### 1C. Import Dispatch (`handleImportUri`)
 
-```
+```text
 handleImportUri(uri)
 ├─ XLSX / CSV_TSV → CompilerViewModel.onFileSelected() → CompilerDialog
 ├─ ZIP → ImportViewModel.getImportPreview() → ImportReviewDialog
@@ -67,7 +67,7 @@ Two distinct flows emerge:
 
 **File:** `feature/ui/.../ui/quiz/CompilerViewModel.kt`
 
-#### Step-by-step:
+#### Step-by-step
 
 1. **Format detection** → `ImportFormatDetector.detectFormat(uri)` → ImportMode
 2. **File loading**:
@@ -102,7 +102,7 @@ Two distinct flows emerge:
 
 #### ParsedQuestion Data Structure
 
-```
+```text
 ParsedQuestion
 ├─ stem: String
 ├─ externalId: String?
@@ -121,7 +121,7 @@ ParsedQuestion
 
 **File:** `feature/ui/.../ui/importer/ImportViewModel.kt`
 
-#### Step-by-step:
+#### Step-by-step
 
 1. **`getImportPreview(uri)`** → `ImportLibraryManager.getImportPreview()`
     - Detect format → parse via `ZipLibraryParser` or `JsonLibraryParser`
@@ -195,7 +195,7 @@ ParsedQuestion
 All imports converge here. The `executeImportPipeline()` runs **inside a Room database transaction
 **:
 
-```
+```text
 executeImportPipeline()
 1. Validate → ImportValidator (schema, duplicates, question validity)
 2. Normalize → BundleNormalizer (trim text, infer answerMode)
@@ -234,7 +234,7 @@ executeImportPipeline()
 
 All import paths converge to this DTO. It contains:
 
-```
+```text
 LibraryBundleDto
 ├─ schema: Int (default 6, V7 = 7)
 ├─ kind: String ("library-bundle" | "book-bundle" | "quiz-bundle" | "full-library")
@@ -315,7 +315,7 @@ validation), entry count limits.
 The v7 exchange format is a **split-directory, JSON-based archive** inside an AES-256 encrypted
 ZIP (password: `"mks_secure_bundle_2024"`), designed for cross-platform Android/iOS interchange.
 
-```
+```text
 mks_exchange.zip (AES-256 encrypted)
 ├─ manifest.json              ← format, schema version, counts, warnings
 ├─ workspace.json             ← workspaces + settings
@@ -367,7 +367,7 @@ mks_exchange.zip (AES-256 encrypted)
 
 ### 2C. Import Flow
 
-```
+```text
 ZIP file received
 → ZipLibraryParser.parse()
   ├─ Extract ZIP (zip4j, AES-256, password)
@@ -387,7 +387,7 @@ ZIP file received
 
 ### 2D. Export Flow
 
-```
+```text
 ExportManager.exportXxxToZip(outputStream)
 → Read Room entities via DAOs inside database.withTransaction
 → Map to DTOs via LibraryMapper (entity → DTO)
@@ -589,9 +589,9 @@ Titles use pattern `"Marked Cards - ${System.currentTimeMillis() % 10000}"`.
 - Uses Google ML Kit `TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)`
 - Captures bitmap from camera, runs OCR to extract text
 - Parses recognized text into `QuestionEntity` using regex patterns:
-    - Question start: numbered patterns (e.g., `1.`, `Q1)`)
-    - Options: lettered patterns (e.g., `A)`, `B)`), with marked correct answers (`*` prefix)
-    - Falls back to paragraph-based splitting if no structured questions found
+  - Question start: numbered patterns (e.g., `1.`, `Q1)`)
+  - Options: lettered patterns (e.g., `A)`, `B)`), with marked correct answers (`*` prefix)
+  - Falls back to paragraph-based splitting if no structured questions found
 - Questions are editable via `EditQuestionDialog` before saving
 - Saved via `knowledgeRepository.insertQuestions()`
 
@@ -695,7 +695,7 @@ All preferences have implicit defaults (no explicit initialization transaction):
 
 ## 11. Complete Import Flow Diagram
 
-```
+```text
 EXTERNAL DATA SOURCE
 │
 ├─ File (any format)

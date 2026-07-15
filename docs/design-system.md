@@ -56,7 +56,7 @@
 
 ### 3.1 Design-system parameters (as sent to `create_design_system`)
 
-```
+```text
 displayName:  MKS Midnight Premium
 colorMode:    DARK
 colorVariant: EXPRESSIVE
@@ -204,6 +204,7 @@ Existing components to keep using: `EmptyStateCard`, `SummaryCard`, `LoadingErro
 ## 6. Do / Don't
 
 **Do**
+
 - Reference `colorScheme` + `LocalMksDesignTokens` — never a raw `Color(0xFF…)` in a screen.
 - Gate gradients/glow behind `tokens.useGradients`; gate motion behind `tokens.animationSpec()`.
 - Keep one dominant focal element per screen.
@@ -212,6 +213,7 @@ Existing components to keep using: `EmptyStateCard`, `SummaryCard`, `LoadingErro
 - Preserve all ViewModel state/flows/interactions when porting (§11).
 
 **Don't**
+
 - Hardcode navy/lavender hex in feature screens.
 - Stack multiple competing glows.
 - Use pure black (`#000`) — base is deep navy `#0A0E1A`.
@@ -291,7 +293,7 @@ Each entry: the intended layout + the §5 components to assemble. Match the Stit
    card; pill bottom nav (Review active).
 9. **Settings** — top bar; profile/workspace strip; grouped `GlassCard`s w/ `SectionHeader` per group:
    APPEARANCE (theme swatch row w/ Midnight selected+ring, EN/العربية toggle, show-cover switch, font-scale
-   + density sliders), QUIZ BEHAVIOR (focus/double-tap/skip switches, rapid-advance value), AI & EXTRACTION
+   - density sliders), QUIZ BEHAVIOR (focus/double-tap/skip switches, rapid-advance value), AI & EXTRACTION
    (Ollama "connected" green dot, extraction settings), LIBRARY & BACKUP (export ZIP / import / data tools),
    DANGER ZONE (error-tinted: clear categories, reset database); footer version line. Real strings from
    `SettingsScreen.kt`.
@@ -308,12 +310,12 @@ Each entry: the intended layout + the §5 components to assemble. Match the Stit
 12. **Data Tools** — top bar; intro line; Export `GlassCard` (Schema 7 ZIP desc, stats strip,
     `PrimaryPillButton` "Export to ZIP"); Import `GlassCard` (dashed drop zone, format chips
     XLSX/CSV/JSON/HTML/TEXT/PPTX/ZIP, merge-strategy selector Replace/Merge/Skip, `GhostPillButton` "Preview"
-    + `PrimaryPillButton` "Start import"); Recent activity rows w/ `CountBadge` status pills (green Done /
+    - `PrimaryPillButton` "Start import"); Recent activity rows w/ `CountBadge` status pills (green Done /
     orange Merged).
 13. **AI MCQ Generator** — top bar w/ `AiBadge` + gear; intro; source-input `GlassCard` (section name field,
     multiline paste area, token counter, "paste from PDF"); config strip (Ollama connected dot, chat model,
     Advanced Options, "Simple Extraction Mode" toggle); generation options (MCQ count stepper, "Enrich"
-    + "Review pass" toggles = the 3-pass pipeline); `PrimaryPillButton` "Generate MCQs" (glow); pipeline
+    - "Review pass" toggles = the 3-pass pipeline); `PrimaryPillButton` "Generate MCQs" (glow); pipeline
     steps (Extract ✓ → Generate ● spinner → Review pending) + `GradientProgressBar`; preview MCQ `GlassCard`s
     (Q badge, stem, A–D w/ green-check correct, hint chip, edit); "Save as quiz" + "Discard". Real strings
     from `AiMcqGeneratorScreen.kt`.
@@ -329,4 +331,3 @@ Each entry: the intended layout + the §5 components to assemble. Match the Stit
     source ghost + `PrimaryPillButton` "Send to MCQ Generator →").
 
 ---
-

@@ -5,7 +5,7 @@
 ## Application Architecture Overview
 
 ```text
-MKS (Mobile Knowledge System)
+MKS (My Knowledge Space)
 ├── Framework: Jetpack Compose + Material3
 ├── Architecture: MVVM with Dagger Hilt DI (modular multi-module)
 ├── Database: Room v30 (29 migration steps)
@@ -27,7 +27,7 @@ All dependencies flow through Dagger Hilt. ViewModels use `@HiltViewModel` with 
 | `HiltKnowledgeDaoModule` | Knowledge bank DAOs (`SlideshowCourseDao`, `FlashcardDao`, `NoteBlueprintDao`, etc.) |
 | `HiltUtilityDaoModule` | Asset/utility DAOs (`AssetReferenceDao`, `SourceDocumentDao`, `WorkspaceDao`, etc.) |
 | `HiltRepositoryModule` | Non-`@Inject` repos (`OllamaRepository`, `GlobalSearchRepository`, `ReviewRepository`) |
-| `HiltServiceModule` | Preview & repair services |
+| `HiltServiceModule` | Firebase services (`FirebaseMessaging`, `FirebaseRemoteConfig` with 1h fetch interval / 2s timeout) |
 
 > **Note on AppModule:** `AppModule` is a legacy trimmed class used primarily for database building and application scope; it is no longer the primary DI container for repositories.
 
@@ -69,4 +69,4 @@ Navigation is entirely handled by Compose Navigation.
 The central navigation graph is `MksNavHost.kt`. Route definitions and argument keys are defined in `core/model/src/main/java/com/ahmedyejam/mks/ui/MksRoutes.kt`. Route validation ensures navigation safety before displaying screens.
 
 ---
-*Status: Current | Owner: AhmedEjam | Last Verified: 2026-07-14*
+*Status: Current | Owner: AhmedEjam | Last Verified: 2026-07-15*

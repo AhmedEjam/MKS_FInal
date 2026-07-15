@@ -11,6 +11,7 @@
 > **Note:** `GlobalErrorHandler.kt` now exists in `core:data/error/` (partially addresses crash observability in Phase 1.6).
 
 Add a shared in-memory Room + Hilt test rule and fake `FileManager`/`RemoteAssetFetcher`. Create test suites for:
+
 - `KnowledgeRepository` (1544 lines) — largest, highest priority
 - `QuizRepository` (670 lines)
 - `AssetRepository` (592 lines)
@@ -30,6 +31,7 @@ Add a shared in-memory Room + Hilt test rule and fake `FileManager`/`RemoteAsset
 **Status:** 🔴 OPEN (~25 scripts remain in root)
 
 Move all to `scripts/legacy/`:
+
 - Python: `add_hilt*.py`, `fix_*.py`, `patch_*.py`, `update_*.py`, `test_plugins*.py` (6+)
 - Kotlin: `query_books.kt`, `test_parser.kt`
 - Reports: `duplications_report.txt`, `build_core_data.sh`, `mks_repair_diff.patch`
@@ -136,6 +138,7 @@ Reuse existing Ollama + prompt-rendering pipeline. Lowest-effort, highest-deligh
 #### 14b. Auto-Generate Assets from Quiz
 
 `KnowledgeRepository.convertPromptOutputTo*()` plumbing already exists. Expose as Magic Action:
+
 - Generate flashcards from quiz questions
 - Auto-draft notes from quiz explanations
 - Create slides from quiz question/answer pairs
@@ -165,4 +168,3 @@ Reuse existing Ollama + prompt-rendering pipeline. Lowest-effort, highest-deligh
 | Repository Test Suite | 🔴 OPEN | Zero repository tests |
 | AppModule Decoupling | 🟡 IN PROGRESS | 3 coupling points remain |
 | Crash Observability | 🟡 IN PROGRESS | `GlobalErrorHandler.kt` exists in `core:data/error/`; Result<T> patterns still needed |
-

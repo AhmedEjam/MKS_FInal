@@ -15,7 +15,7 @@ This document provides a comprehensive, source-verified overview of **every** AI
 5. [Models & Configurations — `core/model`](#5-models--configurations-coremodel)
 6. [Prompt Engineering Catalog](#6-prompt-engineering-catalog)
 7. [Data & Repository Layer — `core/data`](#7-data--repository-layer-coredata)
-8. [Persistent AI Settings — DataStore](#8-persistent-ai-settings-datastore)
+8. [Persistent AI Settings — DataStore](#8-persistent-ai-settings--datastore)
 9. [Frontend UI & ViewModels — `feature/ui`](#9-frontend-ui--viewmodels-featureui)
 10. [On-Device ML Kit Integration](#10-on-device-ml-kit-integration)
 11. [Dependency Injection Setup](#11-dependency-injection-setup)
@@ -37,7 +37,7 @@ The AI system in MKS is built on **two parallel network stacks** and **one on-de
 
 ### End-to-End Data Flow Diagram
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                           FRONTEND (Compose Screens)                        │
 │  ┌──────────────┐  ┌─────────────────┐  ┌───────────┐  ┌────────────────┐  │
@@ -85,7 +85,7 @@ The AI system in MKS is built on **two parallel network stacks** and **one on-de
 
 ### 2.1 `AiClient` — Primary Unified Client
 
-- **File:** [AiClient.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/AiClient.kt) (275 lines)
+- **File:** [AiClient.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/AiClient.kt) (275 lines)
 - **Annotation:** `@Singleton` + `@Inject constructor()`
 - **Purpose:** Unified OkHttp client targeting **any** provider that speaks the OpenAI `/v1/chat/completions` API.
 
@@ -119,7 +119,7 @@ The AI system in MKS is built on **two parallel network stacks** and **one on-de
 
 ### 2.2 `OllamaRepository` — Native Streaming Client
 
-- **File:** [OllamaRepository.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/repository/OllamaRepository.kt) (260 lines)
+- **File:** [OllamaRepository.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/repository/OllamaRepository.kt) (260 lines)
 - **Annotation:** `@Singleton` + `@Inject constructor()`
 - **Purpose:** Specialized client for Ollama's native `/api/generate` endpoint with **line-by-line streaming**.
 
@@ -152,9 +152,9 @@ The AI system in MKS is built on **two parallel network stacks** and **one on-de
 
 ### 2.3 `RemoteAssetFetcher` — Image Download Client
 
-- **File:** [RemoteAssetFetcher.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/RemoteAssetFetcher.kt) (67 lines)
+- **File:** [RemoteAssetFetcher.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/RemoteAssetFetcher.kt) (67 lines)
 - **Purpose:** Downloads remote images for asset references. **Not AI-related per se**, but part of the network module and used in the import pipeline alongside AI-extracted content.
-- **Policy:** Governed by [RemoteAssetPolicy.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/RemoteAssetPolicy.kt) — controls max download size, content-type validation, and plain HTTP consent.
+- **Policy:** Governed by [RemoteAssetPolicy.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/RemoteAssetPolicy.kt) — controls max download size, content-type validation, and plain HTTP consent.
 
 ---
 
@@ -162,13 +162,13 @@ The AI system in MKS is built on **two parallel network stacks** and **one on-de
 
 ### 3.1 `McqService` — 3-Pass MCQ Pipeline
 
-- **File:** [McqService.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/McqService.kt) (248 lines)
+- **File:** [McqService.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/McqService.kt) (248 lines)
 - **Annotation:** `@Singleton` + `@Inject constructor(aiClient: AiClient)`
 - **Purpose:** Orchestrates the full extract → generate → review MCQ pipeline.
 
 #### Pipeline Stages
 
-```
+```text
 Input Text
     │
     ▼
@@ -230,7 +230,7 @@ Input Text
 
 ### 3.2 `OcrService` — Vision-Language Pipeline
 
-- **File:** [OcrService.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/OcrService.kt) (121 lines)
+- **File:** [OcrService.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/OcrService.kt) (121 lines)
 - **Annotation:** `@Singleton` + `@Inject constructor(aiClient: AiClient)`
 - **Purpose:** Orchestrates VLM OCR on page images.
 
@@ -262,14 +262,14 @@ Input Text
 
 ### 4.1 `PdfRendererService` — Page-to-Bitmap Converter
 
-- **File:** [PdfRendererService.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/PdfRendererService.kt) (74 lines)
+- **File:** [PdfRendererService.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/PdfRendererService.kt) (74 lines)
 - **Engine:** Android `PdfRenderer` (native API).
 - **Default DPI:** 300 for OCR rendering, 150 for UI thumbnails.
 - **Output:** `Bitmap` objects (ARGB_8888, white background).
 
 ### 4.2 `PdfTextExtractor` — Raw Text Layer Extraction
 
-- **File:** [PdfTextExtractor.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/PdfTextExtractor.kt) (51 lines)
+- **File:** [PdfTextExtractor.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/PdfTextExtractor.kt) (51 lines)
 - **Engine:** PdfBox (`com.tom_roush.pdfbox`) — **no AI involved**.
 - **Memory strategy:** `MemoryUsageSetting.setupTempFileOnly()` — avoids OOM on large PDFs by using temp files.
 - **Note:** This is the **non-AI path** — used when the user selects "Extract Text" instead of "AI Vision OCR" in the PDF extraction screen.
@@ -280,7 +280,7 @@ Input Text
 
 ### 5.1 AI Provider Registry (`AiProviderConfig.kt`)
 
-- **File:** [AiProviderConfig.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/AiProviderConfig.kt) (183 lines)
+- **File:** [AiProviderConfig.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/AiProviderConfig.kt) (183 lines)
 
 **Runtime Config** (`AiProviderConfig`) — 4 fields passed through the entire AI pipeline:
 
@@ -315,16 +315,18 @@ Input Text
 
 ### 5.2 Domain Model (`ParsedMcq.kt`)
 
-- **File:** [ParsedMcq.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/ParsedMcq.kt) (154 lines)
+- **File:** [ParsedMcq.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/ParsedMcq.kt) (154 lines)
 - **10 fields:** `chQ`, `stem`, `stemBrief`, `options` (A–E map), `key`, `explanation`, `explanationBrief`, `hint`, `highYield`, `generated`.
 
 **JSON Parsing Resilience:**
-- Strips markdown fences (`\`\`\`json`, `\`\`\``) from LLM output.
+
+- Strips markdown fences (`\`\`\`json`,`\`\`\``) from LLM output.
 - Accepts both bare arrays `[...]` and wrapped objects `{"questions":[...]}`, `{"mcqs":[...]}`, `{"data":[...]}`.
 - Tolerates missing fields — `fromJson()` returns `null` only if `stem` is blank.
 - `key` normalization: uppercased, filters out `"NULL"` strings.
 
 **Entity Conversion (`toQuestionEntity()`):**
+
 - Maps options A–E in order, prepending letter labels.
 - Resolves correct answer index from the key letter.
 - Maps `hint` → `QuestionEntity.hint`, `highYield` → `QuestionEntity.additionalInfo`.
@@ -336,13 +338,13 @@ These configs control how **quiz questions are transformed** into other knowledg
 
 | Config | File | Purpose |
 |---|---|---|
-| `FlashcardGenerationConfig` | [FlashcardGenerationConfig.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/FlashcardGenerationConfig.kt) | Maps question fields → flashcard front/back |
-| `SlideGenerationConfig` | [SlideGenerationConfig.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/SlideGenerationConfig.kt) | Maps question fields → slide title/body/notes |
-| `ArticleGenerationConfig` | [ArticleGenerationConfig.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/ArticleGenerationConfig.kt) | Maps question fields → note blueprint body |
+| `FlashcardGenerationConfig` | [FlashcardGenerationConfig.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/FlashcardGenerationConfig.kt) | Maps question fields → flashcard front/back |
+| `SlideGenerationConfig` | [SlideGenerationConfig.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/SlideGenerationConfig.kt) | Maps question fields → slide title/body/notes |
+| `ArticleGenerationConfig` | [ArticleGenerationConfig.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/ArticleGenerationConfig.kt) | Maps question fields → note blueprint body |
 
 ### 5.4 Ollama Data Models (`OllamaModels.kt`)
 
-- **File:** [OllamaModels.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/OllamaModels.kt) (26 lines)
+- **File:** [OllamaModels.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/OllamaModels.kt) (26 lines)
 - **`OllamaRequest`:** `model`, `prompt`, `system`, `stream`, `options`, `images` — Moshi-serialized.
 - **`OllamaResponse`:** `model`, `createdAt`, `response`, `done` — Moshi-deserialized line-by-line from NDJSON stream.
 
@@ -350,7 +352,7 @@ These configs control how **quiz questions are transformed** into other knowledg
 
 ## 6. Prompt Engineering Catalog
 
-- **File:** [McqPrompts.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/McqPrompts.kt) (231 lines)
+- **File:** [McqPrompts.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/McqPrompts.kt) (231 lines)
 
 ### Template Tokens
 
@@ -390,12 +392,12 @@ These configs control how **quiz questions are transformed** into other knowledg
 
 ### 7.1 `AiMcqRepository` — Pipeline-to-Persistence Bridge
 
-- **File:** [AiMcqRepository.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/data/src/main/java/com/ahmedyejam/mks/data/repository/AiMcqRepository.kt) (159 lines)
+- **File:** [AiMcqRepository.kt](../core/data/src/main/java/com/ahmedyejam/mks/data/repository/AiMcqRepository.kt) (159 lines)
 - **Annotation:** `@Singleton` + `@Inject constructor(mcqService, quizRepository, dataStoreManager)`
 
 #### Workflow (`generateAndSave()`)
 
-```
+```text
 1. Read AI settings from DataStoreManager (7 preferences)
 2. Construct AiProviderConfig + McqRunConfig
 3. Invoke McqService.processMCQ() with progress callback
@@ -407,7 +409,7 @@ These configs control how **quiz questions are transformed** into other knowledg
 
 #### Progress State Machine
 
-```
+```text
 Idle → Processing(chunk, totalChunks, foundSoFar) → Done(count, quizId)
                                                   → Error(message)
 ```
@@ -422,7 +424,7 @@ Idle → Processing(chunk, totalChunks, foundSoFar) → Done(count, quizId)
 
 ## 8. Persistent AI Settings — DataStore
 
-- **File:** [DataStoreManager.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/data/src/main/java/com/ahmedyejam/mks/data/preferences/DataStoreManager.kt) (lines 63–259)
+- **File:** [DataStoreManager.kt](../core/data/src/main/java/com/ahmedyejam/mks/data/preferences/DataStoreManager.kt) (lines 63–259)
 
 ### AI Preference Keys
 
@@ -451,15 +453,17 @@ Idle → Processing(chunk, totalChunks, foundSoFar) → Done(count, quizId)
 
 | Component | File | Lines |
 |---|---|---|
-| Screen | [AiMcqGeneratorScreen.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/AiMcqGeneratorScreen.kt) | 527 |
-| ViewModel | [AiMcqGeneratorViewModel.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/AiMcqGeneratorViewModel.kt) | 178 |
+| Screen | [AiMcqGeneratorScreen.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/AiMcqGeneratorScreen.kt) | 527 |
+| ViewModel | [AiMcqGeneratorViewModel.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/AiMcqGeneratorViewModel.kt) | 178 |
 
 **3-Step UI Flow:**
+
 1. **Input:** Paste/import educational text, set chapter number, section name, quiz title.
 2. **Configure:** Select AI provider via `ProviderConfigDialog`, toggle Review Pass and Simple Mode.
 3. **Generate:** Progress indicator with chunk count and MCQ count. Cancel button available.
 
 **ViewModel Features:**
+
 - Mirrors `AiMcqProgress` flow into UI state.
 - Exposes `availableProviders` (all 17) for the picker.
 - `cancelGeneration()` cancels via `viewModelScope.coroutineContext[Job]?.cancelChildren()`.
@@ -469,25 +473,29 @@ Idle → Processing(chunk, totalChunks, foundSoFar) → Done(count, quizId)
 
 | Component | File | Lines |
 |---|---|---|
-| Screen | [PdfExtractionScreen.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/PdfExtractionScreen.kt) | ~430 |
-| ViewModel | [PdfExtractionViewModel.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/PdfExtractionViewModel.kt) | 320 |
+| Screen | [PdfExtractionScreen.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/PdfExtractionScreen.kt) | ~430 |
+| ViewModel | [PdfExtractionViewModel.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/PdfExtractionViewModel.kt) | 320 |
 
 **Dual Extraction Paths:**
+
 - **Non-AI:** `extractViaText()` → `PdfTextExtractor` → raw text from PDF text layer.
 - **Vision AI:** `extractViaVision()` → renders pages to 300 DPI bitmaps → base64 JPEG → `OcrService.processPages()`.
 
 **Post-Extraction Actions per Block:**
+
 - Edit inline.
 - Save as Note (`NoteBlueprintEntity`).
 - Run AI Review (`OcrService.refineRawText()`).
 - Copy for MCQs (clipboard + navigation).
 
 **ViewModel Also Includes:**
+
 - `pingProvider()` — tests connection to selected AI provider.
 - `fetchModels()` — lists available models from the endpoint.
 - `testCall()` — sends a test message to validate the provider.
 
 **Key Observations:**
+
 - Page bitmaps are cached in a `mutableMapOf<Int, Bitmap>` with explicit `recycle()` in `onCleared()` — proper lifecycle management.
 - Base64 encoding uses `Base64.NO_WRAP` — correct for API payloads.
 - Image compression is JPEG at 90% quality — a good balance of size vs. OCR accuracy.
@@ -497,9 +505,10 @@ Idle → Processing(chunk, totalChunks, foundSoFar) → Done(count, quizId)
 
 | Component | File | Lines |
 |---|---|---|
-| ViewModel | [BookToolsViewModel.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/BookToolsViewModel.kt) | 1125 (AI: L727–L791) |
+| ViewModel | [BookToolsViewModel.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/BookToolsViewModel.kt) | 1125 (AI: L727–L791) |
 
 **`generateWithOllamaStream()`:**
+
 - Reads `baseUrl`, `model`, `apiKey` from DataStore.
 - Uses `OllamaRepository.generateCompletionStream()` — streaming flow.
 - Accumulates tokens into `accumulatedResponse` and calls `onUpdate(accumulatedResponse)` for real-time typing effect.
@@ -507,6 +516,7 @@ Idle → Processing(chunk, totalChunks, foundSoFar) → Done(count, quizId)
 - Cancellable via `cancelGeneration()` which cancels the `generationJob`.
 
 **Post-Generation Actions:**
+
 - `savePromptOutputAsNote()` — converts output to `NoteBlueprintEntity`.
 - `savePromptOutputAsBlueprint()` — similar conversion with different formatting.
 - `recordPromptRun()` — persists the run to `PromptRunEntity` for history tracking.
@@ -515,10 +525,11 @@ Idle → Processing(chunk, totalChunks, foundSoFar) → Done(count, quizId)
 
 | Component | File | Lines |
 |---|---|---|
-| Dialog | [ProviderConfigDialog.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/settings/ProviderConfigDialog.kt) | 273 |
-| ViewModel | [SettingsViewModel.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/settings/SettingsViewModel.kt) | 142 |
+| Dialog | [ProviderConfigDialog.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/settings/ProviderConfigDialog.kt) | 273 |
+| ViewModel | [SettingsViewModel.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/settings/SettingsViewModel.kt) | 142 |
 
 **`ProviderConfigDialog` Features:**
+
 - `FilterChip` horizontal row for provider selection.
 - Editable fields: Base URL, Model Name (with fetched models dropdown), API Key (password masked).
 - Optional AI Prompt editing field.
@@ -527,6 +538,7 @@ Idle → Processing(chunk, totalChunks, foundSoFar) → Done(count, quizId)
 - Per-provider maps (`apiKeysMap`, `baseUrlsMap`, `modelsMap`) — settings persist per-provider within the dialog session.
 
 **Reused Across:**
+
 - Settings screen (`SettingsViewModel`).
 - PDF Extraction screen (`PdfExtractionViewModel`).
 - AI MCQ Generator screen (`AiMcqGeneratorViewModel`).
@@ -539,12 +551,13 @@ Idle → Processing(chunk, totalChunks, foundSoFar) → Done(count, quizId)
 
 | Component | File | Lines |
 |---|---|---|
-| Screen | [ScannerScreen.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/scanner/ScannerScreen.kt) | ~520 |
-| ViewModel | [ScannerViewModel.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/scanner/ScannerViewModel.kt) | 183 |
+| Screen | [ScannerScreen.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/scanner/ScannerScreen.kt) | ~520 |
+| ViewModel | [ScannerViewModel.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/scanner/ScannerViewModel.kt) | 183 |
 
 **Engine:** Google ML Kit `TextRecognition` with `TextRecognizerOptions.DEFAULT_OPTIONS` (Latin script).
 
 **Pipeline:**
+
 1. Camera capture → `Bitmap`.
 2. `InputImage.fromBitmap()` → ML Kit processing.
 3. `recognizer.process(image).await()` → recognized text.
@@ -556,6 +569,7 @@ Idle → Processing(chunk, totalChunks, foundSoFar) → Done(count, quizId)
 5. If regex parsing finds no questions, falls back to splitting text on `\n\n` and creating one question per block.
 
 **Key Observations:**
+
 - ML Kit is **Latin-only** — no Arabic OCR support despite MKS having Arabic localization.
 - The regex parser is **purely local** — no LLM involvement. This means it can't handle complex formatting or ambiguous question structures.
 - Recognized questions are saved via `knowledgeRepository.insertQuestions()`.
@@ -567,7 +581,7 @@ Idle → Processing(chunk, totalChunks, foundSoFar) → Done(count, quizId)
 
 The entire AI stack is auto-wired by Dagger Hilt — **no manual modules required** for AI components:
 
-```
+```text
 @Singleton @Inject constructor()
 ├── AiClient
 ├── OllamaRepository
@@ -646,22 +660,26 @@ The entire AI stack is auto-wired by Dagger Hilt — **no manual modules require
 ### 🔴 Critical (High Impact, Low Effort)
 
 #### R1: Replace `Thread.sleep()` with `delay()` in AiClient Retry Loop
-- **File:** [AiClient.kt L258](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/AiClient.kt#L258)
+
+- **File:** [AiClient.kt L258](../core/network/src/main/java/com/ahmedyejam/mks/data/network/AiClient.kt#L258)
 - **Issue:** `Thread.sleep()` blocks the IO dispatcher thread during backoff, preventing it from serving other coroutines.
 - **Fix:** Replace with `kotlinx.coroutines.delay(backoffMs)`.
 
 #### R2: Fix Arabic/Non-Latin Deduplication in McqService
-- **File:** [McqService.kt L224](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/McqService.kt#L224)
+
+- **File:** [McqService.kt L224](../core/network/src/main/java/com/ahmedyejam/mks/data/network/McqService.kt#L224)
 - **Issue:** `tokenize()` strips all non-ASCII characters (`[^a-z0-9\\s]`), causing Arabic question stems to produce empty token sets — deduplication effectively skips all Arabic content.
 - **Fix:** Use `\\p{L}` (Unicode letter) instead of `[a-z]` in the regex. Consider a Unicode-aware word boundary tokenizer.
 
 #### R3: Fix DataStore Default URL/Model Mismatch
-- **File:** [DataStoreManager.kt L228, L240](file:///Users/ahmedejam/Projects/MKS%20android/core/data/src/main/java/com/ahmedyejam/mks/data/preferences/DataStoreManager.kt#L228)
+
+- **File:** [DataStoreManager.kt L228, L240](../core/data/src/main/java/com/ahmedyejam/mks/data/preferences/DataStoreManager.kt#L228)
 - **Issue:** DataStore defaults (`http://10.0.2.2:11434/v1`, `llama3.1:latest`) don't match the `AiProviderDescriptor` defaults (`http://192.168.1.164:11434/v1`, `gemma4:12b`). First-time users on real devices get emulator-only defaults.
 - **Fix:** Source DataStore defaults from `AI_PROVIDERS.first()` or detect emulator vs. real device.
 
 #### R4: Encrypt API Keys at Rest
-- **File:** [DataStoreManager.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/data/src/main/java/com/ahmedyejam/mks/data/preferences/DataStoreManager.kt)
+
+- **File:** [DataStoreManager.kt](../core/data/src/main/java/com/ahmedyejam/mks/data/preferences/DataStoreManager.kt)
 - **Issue:** API keys stored in plain text in DataStore (backed by SharedPreferences XML).
 - **Fix:** Use AndroidX `EncryptedSharedPreferences` or the `security-crypto` library for the API key field specifically.
 
@@ -670,34 +688,41 @@ The entire AI stack is auto-wired by Dagger Hilt — **no manual modules require
 ### 🟡 Important (Medium Impact)
 
 #### R5: Implement Vision Model Fallback Consistently
+
 - **Issue:** `DataStoreManager.aiVisionModel` documents "Falls back to aiChatModel if blank" but the fallback is **not implemented** in `PdfExtractionViewModel`. Users selecting a provider without a vision model will send the chat model name to the vision endpoint.
 - **Fix:** Add fallback logic in `AiMcqRepository` and `PdfExtractionViewModel` when building `AiProviderConfig` for vision calls. Consider adding a `resolvedVisionModel` property to `AiProviderConfig`.
 
 #### R6: Add Streaming Support to AiClient (Replace OllamaRepository for /v1)
+
 - **Issue:** The app maintains two separate HTTP stacks. `OllamaRepository` is used for streaming Prompt Deck generation, but `AiClient` already connects to the same `/v1` endpoints. This creates duplication and limits Prompt Deck streaming to Ollama-compatible servers only.
 - **Fix:** Add a `chatCompleteStream()` method to `AiClient` that returns `Flow<String>` using SSE parsing, enabling streaming from **any** OpenAI-compatible provider (Groq, Gemini, etc.) for the Prompt Deck feature.
 
 #### R7: Fix StringBuilder Concatenation in Prompt Deck Streaming
-- **File:** [BookToolsViewModel.kt L746-L758](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/BookToolsViewModel.kt#L746)
+
+- **File:** [BookToolsViewModel.kt L746-L758](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/BookToolsViewModel.kt#L746)
 - **Issue:** `accumulatedResponse += chunk` creates a new String object per token — O(n²) memory allocation for long responses.
 - **Fix:** Use `StringBuilder` and emit `sb.toString()`.
 
 #### R8: Centralize the Prompt Deck System Prompt
-- **File:** [BookToolsViewModel.kt L744](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/BookToolsViewModel.kt#L744)
+
+- **File:** [BookToolsViewModel.kt L744](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/BookToolsViewModel.kt#L744)
 - **Issue:** The Prompt Deck system prompt is hardcoded inline in the ViewModel instead of being centralized in `McqPrompts`.
 - **Fix:** Add `PROMPT_DECK_SYSTEM` constant to `McqPrompts` for consistency, versioning, and A/B testability.
 
 #### R9: Parallelize OCR Page Processing
-- **File:** [OcrService.kt L49](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/OcrService.kt#L49)
+
+- **File:** [OcrService.kt L49](../core/network/src/main/java/com/ahmedyejam/mks/data/network/OcrService.kt#L49)
 - **Issue:** Pages are processed sequentially. For a 20-page document, this means 20 serial API calls — potentially 10+ minutes.
 - **Fix:** Use `coroutineScope { }` with limited parallelism (e.g., `Semaphore(3)`) to process 3 pages concurrently.
 
 #### R10: Add ML Kit Arabic Script Support to Scanner
-- **File:** [ScannerViewModel.kt L32](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/scanner/ScannerViewModel.kt#L32)
+
+- **File:** [ScannerViewModel.kt L32](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/scanner/ScannerViewModel.kt#L32)
 - **Issue:** `TextRecognizerOptions.DEFAULT_OPTIONS` only supports Latin script. MKS supports Arabic localization.
 - **Fix:** Use `TextRecognition.getClient(new TextRecognizerOptions.Builder().build())` with the Devanagari/Arabic script recognizer, or switch to ML Kit's `TextRecognition.getClient(TextRecognizerOptions.Builder().build())` which auto-detects script in newer versions. Alternatively, detect the user's language preference and load the appropriate script model.
 
 #### R11: Add Token Cost Estimation Before Generation
+
 - **Issue:** Users have no visibility into how much a generation run will cost or how many tokens will be consumed before starting.
 - **Fix:** Add a pre-flight estimation in `AiMcqRepository` that calculates approximate token count from input text length (÷4 for English, ÷2 for Arabic/CJK) and multiplies by the number of pipeline passes (extraction + optional review). Display in the UI as "Estimated: ~X tokens, ~$Y.YY".
 
@@ -706,46 +731,57 @@ The entire AI stack is auto-wired by Dagger Hilt — **no manual modules require
 ### 🟢 Enhancement Ideas (Nice-to-Have)
 
 #### R12: Add Conversation History to Prompt Deck
+
 - **Issue:** `generateWithOllamaStream()` sends a single-turn prompt — no conversation history. Users can't iteratively refine AI output.
 - **Fix:** Maintain a `List<Message>` (role + content) per Prompt Deck session. Send the full history with each call using `OllamaRepository`'s chat endpoint or switch to `AiClient.chatComplete()` with multi-turn messages.
 
 #### R13: Add Rate Limiting / Quota Tracking per Provider
+
 - **Issue:** No tracking of API call counts, token usage, or cost per provider. Users on metered plans can accidentally exhaust their quota.
 - **Fix:** Add a `UsageTracker` repository that persists `(providerId, date, promptTokens, completionTokens)` tuples from the `usage` response object that `AiClient` already logs.
 
 #### R14: Add Structured Output via JSON Schema (Gemini/OpenAI)
+
 - **Issue:** MCQ generation relies on `response_format: {"type": "json_object"}` which only asks the model to output valid JSON — it doesn't enforce the MCQ schema.
 - **Fix:** For providers that support it (Gemini, GPT-4o), use `response_format: {"type": "json_schema", "json_schema": {...}}` to enforce the exact `ParsedMcq` schema, eliminating parsing failures.
 
 #### R15: Add Offline MCQ Generation Queue
+
 - **Issue:** Generation requires an active network connection. If the user's internet drops mid-chunk, the pipeline fails.
 - **Fix:** Queue generation requests in WorkManager. Each chunk becomes a work item that retries with exponential backoff. Results are merged and persisted when all chunks complete.
 
 #### R16: Implement Model Capability Verification
+
 - **Issue:** Users can select any model for vision OCR, but not all models support image input. Sending images to a text-only model silently fails or produces garbage.
 - **Fix:** After fetching models via `/v1/models`, check for vision capability flags in the model metadata. Warn users or filter the model dropdown for vision-specific tasks.
 
 #### R17: Add AI-Powered Flashcard Generation from Text
+
 - **Issue:** `FlashcardGenerationConfig` only maps existing question fields to flashcard format — it doesn't generate flashcards directly from text.
 - **Fix:** Create a `FlashcardService` in `core/network` that takes raw text and generates flashcard front/back pairs using a dedicated prompt, similar to how `McqService` generates MCQs.
 
 #### R18: Add AI-Powered Note Summarization
+
 - **Issue:** Users must manually edit extracted text into notes. There's no AI summarization step.
 - **Fix:** Add a `SummarizationService` that takes raw extracted text and produces structured note content (outline, key points, definitions) using a dedicated prompt.
 
 #### R19: Improve Provider Autodiscovery
+
 - **Issue:** Users must manually type base URLs and model names. For Ollama, the app could auto-discover local servers.
 - **Fix:** Add mDNS/Bonjour discovery for Ollama servers on the local network. For cloud providers, pre-populate the model dropdown by fetching on dialog open (currently requires clicking "Fetch").
 
 #### R20: Add Generation History & Replay
+
 - **Issue:** MCQ generation results are immediately persisted — there's no way to review what was generated, compare runs, or rollback.
 - **Fix:** Add a `GenerationRunEntity` that records timestamp, provider, model, input text hash, output MCQ count, and a link to the created quiz. This enables an "AI History" tab in the book dashboard.
 
 #### R21: Separate AI Module from `core/network`
+
 - **Issue:** AI services (`AiClient`, `McqService`, `OcrService`) live alongside non-AI utilities (`RemoteAssetFetcher`, `RemoteAssetPolicy`) in `core/network`. The module also contains `PdfRendererService` and `PdfTextExtractor` which aren't network-related.
 - **Fix:** Create a `core/ai` module for AI-specific code. Move `AiClient`, `McqService`, `OcrService`, `PdfRendererService`, `PdfTextExtractor` into it. Keep `RemoteAssetFetcher` in `core/network`.
 
 #### R22: Add Automated Testing for AI Pipelines
+
 - **Issue:** There are no unit tests for `McqService.chunkText()`, `McqService.deduplicate()`, `ParsedMcq.parseJsonArray()`, or `OcrService` logic. These are pure functions that are highly testable.
 - **Fix:** Add unit tests with recorded LLM responses (golden files) to validate parsing logic, deduplication thresholds, and prompt rendering. Use a mock `AiClient` for integration tests.
 
@@ -755,31 +791,31 @@ The entire AI stack is auto-wired by Dagger Hilt — **no manual modules require
 
 | Layer | File | Lines | Size | Key Class |
 |---|---|---|---|---|
-| **Network** | [AiClient.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/AiClient.kt) | 275 | 11KB | `AiClient` |
-| **Network** | [OllamaRepository.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/repository/OllamaRepository.kt) | 260 | 11KB | `OllamaRepository` |
-| **Network** | [RemoteAssetFetcher.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/RemoteAssetFetcher.kt) | 67 | 3KB | `RemoteAssetFetcher` |
-| **Network** | [RemoteAssetPolicy.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/RemoteAssetPolicy.kt) | 22 | 1KB | `RemoteAssetPolicy` |
-| **Pipeline** | [McqService.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/McqService.kt) | 248 | 11KB | `McqService` |
-| **Pipeline** | [OcrService.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/OcrService.kt) | 121 | 5KB | `OcrService` |
-| **Pre-process** | [PdfRendererService.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/PdfRendererService.kt) | 74 | 3KB | `PdfRendererService` |
-| **Pre-process** | [PdfTextExtractor.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/network/src/main/java/com/ahmedyejam/mks/data/network/PdfTextExtractor.kt) | 51 | 2KB | `PdfTextExtractor` |
-| **Model** | [AiProviderConfig.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/AiProviderConfig.kt) | 183 | 6KB | `AiProviderConfig`, `AI_PROVIDERS` |
-| **Model** | [McqPrompts.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/McqPrompts.kt) | 231 | 11KB | `McqPrompts` |
-| **Model** | [ParsedMcq.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/ParsedMcq.kt) | 154 | 7KB | `ParsedMcq` |
-| **Model** | [OllamaModels.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/OllamaModels.kt) | 26 | 1KB | `OllamaRequest`, `OllamaResponse` |
-| **Model** | [FlashcardGenerationConfig.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/FlashcardGenerationConfig.kt) | 21 | 1KB | `FlashcardGenerationConfig` |
-| **Model** | [SlideGenerationConfig.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/SlideGenerationConfig.kt) | 24 | 1KB | `SlideGenerationConfig` |
-| **Model** | [ArticleGenerationConfig.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/model/src/main/java/com/ahmedyejam/mks/data/model/ArticleGenerationConfig.kt) | 16 | 0.5KB | `ArticleGenerationConfig` |
-| **Data** | [AiMcqRepository.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/data/src/main/java/com/ahmedyejam/mks/data/repository/AiMcqRepository.kt) | 159 | 7KB | `AiMcqRepository` |
-| **Data** | [DataStoreManager.kt](file:///Users/ahmedejam/Projects/MKS%20android/core/data/src/main/java/com/ahmedyejam/mks/data/preferences/DataStoreManager.kt) | 449 | 17KB | `DataStoreManager` (AI: L63–L259) |
-| **UI** | [AiMcqGeneratorScreen.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/AiMcqGeneratorScreen.kt) | 527 | 25KB | MCQ Generator Screen |
-| **UI** | [AiMcqGeneratorViewModel.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/AiMcqGeneratorViewModel.kt) | 178 | 7KB | MCQ Generator ViewModel |
-| **UI** | [PdfExtractionScreen.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/PdfExtractionScreen.kt) | ~430 | 17KB | PDF Extraction Screen |
-| **UI** | [PdfExtractionViewModel.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/PdfExtractionViewModel.kt) | 320 | 13KB | PDF Extraction ViewModel |
-| **UI** | [BookToolsViewModel.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/BookToolsViewModel.kt) | 1125 | 55KB | Prompt Deck AI (L727–L791) |
-| **UI** | [ScannerScreen.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/scanner/ScannerScreen.kt) | ~520 | 21KB | Camera Scanner Screen |
-| **UI** | [ScannerViewModel.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/scanner/ScannerViewModel.kt) | 183 | 8KB | Camera Scanner ViewModel |
-| **UI** | [ProviderConfigDialog.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/settings/ProviderConfigDialog.kt) | 273 | 13KB | Reusable Provider Config Dialog |
-| **UI** | [SettingsViewModel.kt](file:///Users/ahmedejam/Projects/MKS%20android/feature/ui/src/main/java/com/ahmedyejam/mks/ui/settings/SettingsViewModel.kt) | 142 | 5KB | Settings ViewModel |
+| **Network** | [AiClient.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/AiClient.kt) | 275 | 11KB | `AiClient` |
+| **Network** | [OllamaRepository.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/repository/OllamaRepository.kt) | 260 | 11KB | `OllamaRepository` |
+| **Network** | [RemoteAssetFetcher.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/RemoteAssetFetcher.kt) | 67 | 3KB | `RemoteAssetFetcher` |
+| **Network** | [RemoteAssetPolicy.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/RemoteAssetPolicy.kt) | 22 | 1KB | `RemoteAssetPolicy` |
+| **Pipeline** | [McqService.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/McqService.kt) | 248 | 11KB | `McqService` |
+| **Pipeline** | [OcrService.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/OcrService.kt) | 121 | 5KB | `OcrService` |
+| **Pre-process** | [PdfRendererService.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/PdfRendererService.kt) | 74 | 3KB | `PdfRendererService` |
+| **Pre-process** | [PdfTextExtractor.kt](../core/network/src/main/java/com/ahmedyejam/mks/data/network/PdfTextExtractor.kt) | 51 | 2KB | `PdfTextExtractor` |
+| **Model** | [AiProviderConfig.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/AiProviderConfig.kt) | 183 | 6KB | `AiProviderConfig`, `AI_PROVIDERS` |
+| **Model** | [McqPrompts.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/McqPrompts.kt) | 231 | 11KB | `McqPrompts` |
+| **Model** | [ParsedMcq.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/ParsedMcq.kt) | 154 | 7KB | `ParsedMcq` |
+| **Model** | [OllamaModels.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/OllamaModels.kt) | 26 | 1KB | `OllamaRequest`, `OllamaResponse` |
+| **Model** | [FlashcardGenerationConfig.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/FlashcardGenerationConfig.kt) | 21 | 1KB | `FlashcardGenerationConfig` |
+| **Model** | [SlideGenerationConfig.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/SlideGenerationConfig.kt) | 24 | 1KB | `SlideGenerationConfig` |
+| **Model** | [ArticleGenerationConfig.kt](../core/model/src/main/java/com/ahmedyejam/mks/data/model/ArticleGenerationConfig.kt) | 16 | 0.5KB | `ArticleGenerationConfig` |
+| **Data** | [AiMcqRepository.kt](../core/data/src/main/java/com/ahmedyejam/mks/data/repository/AiMcqRepository.kt) | 159 | 7KB | `AiMcqRepository` |
+| **Data** | [DataStoreManager.kt](../core/data/src/main/java/com/ahmedyejam/mks/data/preferences/DataStoreManager.kt) | 449 | 17KB | `DataStoreManager` (AI: L63–L259) |
+| **UI** | [AiMcqGeneratorScreen.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/AiMcqGeneratorScreen.kt) | 527 | 25KB | MCQ Generator Screen |
+| **UI** | [AiMcqGeneratorViewModel.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/AiMcqGeneratorViewModel.kt) | 178 | 7KB | MCQ Generator ViewModel |
+| **UI** | [PdfExtractionScreen.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/PdfExtractionScreen.kt) | ~430 | 17KB | PDF Extraction Screen |
+| **UI** | [PdfExtractionViewModel.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/PdfExtractionViewModel.kt) | 320 | 13KB | PDF Extraction ViewModel |
+| **UI** | [BookToolsViewModel.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/BookToolsViewModel.kt) | 1125 | 55KB | Prompt Deck AI (L727–L791) |
+| **UI** | [ScannerScreen.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/scanner/ScannerScreen.kt) | ~520 | 21KB | Camera Scanner Screen |
+| **UI** | [ScannerViewModel.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/scanner/ScannerViewModel.kt) | 183 | 8KB | Camera Scanner ViewModel |
+| **UI** | [ProviderConfigDialog.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/settings/ProviderConfigDialog.kt) | 273 | 13KB | Reusable Provider Config Dialog |
+| **UI** | [SettingsViewModel.kt](../feature/ui/src/main/java/com/ahmedyejam/mks/ui/settings/SettingsViewModel.kt) | 142 | 5KB | Settings ViewModel |
 
 **Total AI codebase:** ~4,800 lines across 27 files.

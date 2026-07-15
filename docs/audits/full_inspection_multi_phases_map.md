@@ -7,6 +7,7 @@
 ## Part 1: Architecture & Project Map
 
 ### 1.1 Module Layout (6-Module Architecture)
+
 ```text
 /Users/ahmedy.ajam/Android MKS/
 ├── app/                          # Main application module (UI entry point, Activities, Hilt DI)
@@ -21,7 +22,9 @@
 ```
 
 ### 1.2 Domain Repositories (The Source of Truth)
+
 All repositories are injected via `@Inject constructor` and manage the boundary between DAOs and remote networks.
+
 | Repository | Location | Responsibility | Test Status |
 |---|---|---|---|
 | `BookRepository` | `core/data` | Book CRUD, cover images, stats, study bundles | 🔴 No tests |
@@ -34,18 +37,23 @@ All repositories are injected via `@Inject constructor` and manage the boundary 
 > **Note:** Circular Dependencies between these repositories are broken via `javax.inject.Provider<T>`.
 
 ### 1.3 Database Schema (Room v30)
+
 **26 Core Entities across 4 Tiers:**
+
 - **Workspace Tier (2):** `WorkspaceEntity`, `WorkspaceSettingsEntity`
 - **Quiz/Library Tier (7):** `BookEntity`, `QuizEntity`, `QuestionEntity`, `SessionEntity`, `CategoryMetadataEntity`, `QuestionCategoryEntity`, `QuestionAssetEntity`
 - **Knowledge Bank Tier (10):** `FlashcardDeckEntity`, `FlashcardEntity`, `LearningSessionEntity`, `SlideshowCourseEntity`, `CourseSlideEntity`, `NoteBlueprintEntity`, `NoteCollectionEntity`, `PromptDeckEntity`, `PromptCardEntity`, `PromptRunEntity`
 - **Study Tracking & Assets (7):** `KnowledgeStudySessionEntity`, `StudySessionEntity`, `AssetReferenceEntity`, `SourceDocumentEntity`, `MistakeLogEntryEntity`, `AnnotationEntity`
 
 **Migration Status (v1 → v30):**
+
 - v15 to v30 are explicitly covered by automated Android Instrumentation Tests (`MigrationXXToYYTest`).
 - *Action Required:* Create one full `MigrateAll1To30Test` chain test.
 
 ### 1.4 Hilt Dependency Injection
+
 All modules are located in `app/di/`:
+
 - **`HiltDataModule`**: `MksDatabase`, `FileManager`, `ExportManager`, `ImportLibraryManager`, `DataStoreManager`, `FocusManager`.
 - **`HiltDaoModule`**: 6 Core Quiz DAOs.
 - **`HiltKnowledgeDaoModule`**: 10 Knowledge Bank DAOs.
@@ -54,7 +62,9 @@ All modules are located in `app/di/`:
 - **`HiltServiceModule`**: Preview & Audit Services (`DeletePreviewService`, etc.).
 
 ### 1.5 The Import Pipeline Engine
+
 An advanced, multi-format parsing engine converting external files into domain DTOs.
+
 ```text
 User selects file (URI)
   ↓
@@ -75,92 +85,99 @@ ImportLibraryManager.orchestrateImport()
   └─ Domain repos insert → Database
 ```
 
-
 ---
 
 ## Part 2: Autonomous AI Code & App Review Protocol (v2.2)
 
 ## 1. System Objective
+>
 > **Total Volume:** ~0 lines of code.
 
 To systematically analyze the Android MKS application utilizing multi-dimensional contexts, surfacing both structural (Developer) and experiential (User) defects, and documenting a re-evaluated codebase vision in a permanent, indexed ledger.
 
 ## 2. Dual Perspective Engine
+>
 > **Total Volume:** ~0 lines of code.
 
 The AI must evaluate all code through two distinct lenses simultaneously:
 
 ### ⚙️ The Developer Perspective (Structural Integrity)
-*   **Architecture & Boundaries:** Does the code violate layered architecture? (e.g., UI writing directly to DB).
-*   **Code Health:** Are we adhering to DRY principles? Can tiny files be merged? Is there dead code?
-*   **Testability:** Is the logic decoupled enough to be easily unit-tested?
-*   **Performance:** Are heavy operations blocking the main thread? Are Jetpack Compose redraws minimized?
-*   **Security:** Are we sanitizing inputs and safely storing sensitive data?
+
+- **Architecture & Boundaries:** Does the code violate layered architecture? (e.g., UI writing directly to DB).
+- **Code Health:** Are we adhering to DRY principles? Can tiny files be merged? Is there dead code?
+- **Testability:** Is the logic decoupled enough to be easily unit-tested?
+- **Performance:** Are heavy operations blocking the main thread? Are Jetpack Compose redraws minimized?
+- **Security:** Are we sanitizing inputs and safely storing sensitive data?
 
 ### 👤 The User Perspective (Experiential Integrity)
-*   **Usability & Polish:** Are empty states, loading spinners, and error messages clear? Does the UI scale smoothly across different device sizes?
-*   **Data Integrity:** When the user clicks "Save", is the data *actually* persisted exactly as intended without silent drops?
-*   **Resilience:** How does the app react to unpredictable user behavior (rapid clicking, offline mode, backgrounding the app)?
+
+- **Usability & Polish:** Are empty states, loading spinners, and error messages clear? Does the UI scale smoothly across different device sizes?
+- **Data Integrity:** When the user clicks "Save", is the data *actually* persisted exactly as intended without silent drops?
+- **Resilience:** How does the app react to unpredictable user behavior (rapid clicking, offline mode, backgrounding the app)?
 
 ---
 
 ## 3. Execution Pipeline & Tool Integration
+>
 > **Total Volume:** ~0 lines of code.
 
-
 ### Phase 1: Static Chunk Analysis (Subroutine: Isolate & Inspect)
-*   **Input:** A defined "Chunk" of 10-20 highly related files from `codebase_review_chunks.md`.
-*   **Process:**
-    1.  Parse syntax for null-safety (`!!` vs `?`) and missing `try/catch` blocks.
-    2.  Scan Jetpack Compose files for missing `remember` blocks and heavy inline computations.
-    3.  Flag duplicated logic for refactoring into reusable helper functions.
-    4.  Identify unused variables, imports, and layouts.
-*   **Tool Execution:**
-    *   Execute `./gradlew detekt` or `./gradlew ktlintCheck` using `run_command` to programmatically find styling and code smell violations.
-    *   Use `grep_search` to trace if functions within the chunk are completely unused throughout the rest of the project.
-*   **Output:** Immediate Refactoring PR / Code Health Report.
+
+- **Input:** A defined "Chunk" of 10-20 highly related files from `codebase_review_chunks.md`.
+- **Process:**
+    1. Parse syntax for null-safety (`!!` vs `?`) and missing `try/catch` blocks.
+    2. Scan Jetpack Compose files for missing `remember` blocks and heavy inline computations.
+    3. Flag duplicated logic for refactoring into reusable helper functions.
+    4. Identify unused variables, imports, and layouts.
+- **Tool Execution:**
+  - Execute `./gradlew detekt` or `./gradlew ktlintCheck` using `run_command` to programmatically find styling and code smell violations.
+  - Use `grep_search` to trace if functions within the chunk are completely unused throughout the rest of the project.
+- **Output:** Immediate Refactoring PR / Code Health Report.
 
 ### Phase 2: Vertical Dataflow Tracing (Subroutine: Pipeline Trace)
-*   **Input:** A specific User Action (e.g., "User taps 'Export Library'").
-*   **Process:**
-    1.  **UI Layer:** Locate the button click event and the intent sent to the ViewModel.
-    2.  **Domain Layer:** Trace the data transformation through the ViewModel and UseCases/Repositories.
-    3.  **Data Layer:** Verify the exact SQL query or File I/O operation executed.
-    4.  **Reconciliation:** Compare the data sent by the UI against the data actually saved/exported. Flag any "Middleman Drops" where data is unintentionally filtered or lost.
-*   **Tool Execution:**
-    *   For configuration chunks (e.g., Chunk 1), run `./gradlew dependencies` to map compile-time pipelines and verify dependency constraints.
-    *   Use `grep_search` to map how entities move from Room DAOs to ViewModel properties.
-*   **Output:** Dataflow map and identified pipeline gaps.
+
+- **Input:** A specific User Action (e.g., "User taps 'Export Library'").
+- **Process:**
+    1. **UI Layer:** Locate the button click event and the intent sent to the ViewModel.
+    2. **Domain Layer:** Trace the data transformation through the ViewModel and UseCases/Repositories.
+    3. **Data Layer:** Verify the exact SQL query or File I/O operation executed.
+    4. **Reconciliation:** Compare the data sent by the UI against the data actually saved/exported. Flag any "Middleman Drops" where data is unintentionally filtered or lost.
+- **Tool Execution:**
+  - For configuration chunks (e.g., Chunk 1), run `./gradlew dependencies` to map compile-time pipelines and verify dependency constraints.
+  - Use `grep_search` to map how entities move from Room DAOs to ViewModel properties.
+- **Output:** Dataflow map and identified pipeline gaps.
 
 ### Phase 3: Chaos Simulation & Brainstorming (Subroutine: Break It)
-*   **Input:** The completed dataflow from Phase 2.
-*   **Process:**
-    1.  **Adversarial Generation:** Actively brainstorm ways to break the flow.
-        *   *Temporal:* What if the user double-taps the submit button?
-        *   *Network:* What if the connection drops exactly midway through the API call?
-        *   *Data:* What if the user imports a 500MB Excel file? What if an integer field receives a string?
-    2.  **State Corruption:** Mentally simulate app suspension/destruction by the OS mid-task.
-*   **Tool Execution:**
-    *   Draft a temporary scratch test or write unit tests to verify the adversarial scenarios using `write_to_file`.
-    *   Run `./gradlew test` to execute the unit tests and verify code resilience.
-*   **Output:** A list of critical **Edge Cases** and concrete recommendations for Unit/UI tests to prevent them.
+
+- **Input:** The completed dataflow from Phase 2.
+- **Process:**
+    1. **Adversarial Generation:** Actively brainstorm ways to break the flow.
+        - *Temporal:* What if the user double-taps the submit button?
+        - *Network:* What if the connection drops exactly midway through the API call?
+        - *Data:* What if the user imports a 500MB Excel file? What if an integer field receives a string?
+    2. **State Corruption:** Mentally simulate app suspension/destruction by the OS mid-task.
+- **Tool Execution:**
+  - Draft a temporary scratch test or write unit tests to verify the adversarial scenarios using `write_to_file`.
+  - Run `./gradlew test` to execute the unit tests and verify code resilience.
+- **Output:** A list of critical **Edge Cases** and concrete recommendations for Unit/UI tests to prevent them.
 
 ---
 
 ## 4. The Code Inspection Ledger (`code_inspection_ledger.md`)
+>
 > **Total Volume:** ~0 lines of code.
 
-
-To guarantee long-term maintainability, the AI must record every audited file, function, and configuration block in a separate, permanent, structured ledger: **[code_inspection_ledger.md](file:///Users/ahmedy.ajam/Android%20MKS/Important%20docs/code_inspection_ledger.md)**.
+To guarantee long-term maintainability, the AI must record every audited file, function, and configuration block in a separate, permanent, structured ledger: **`code_inspection_ledger.md`**.
 
 Rather than copying code blindly, the AI must rebuild and document the "ideal vision" of the function from scratch.
 
 ### Ledger Entry Schema
+
 For each inspected codebase segment, the AI generates a structured entry:
 
-```markdown
+````markdown
 ### [MKS-REV-XXX] Feature / Function Name
-- **File Path:** [filename](file:///absolute/path/to/file)
+- **File Path:** `absolute/path/to/file`
 - **Inspected At:** YYYY-MM-DD THH:MM:SSZ
 - **Understood End Goal:** A plain-english description of what this function does and why it exists.
 - **Failures & Edge Cases:** List of potential temporal, data, network, and system crashes or silent bugs.
@@ -169,24 +186,29 @@ For each inspected codebase segment, the AI generates a structured entry:
   ```kotlin
   // The rewritten, robust, fully-optimized function/class containing zero static and flow bugs
   ```
+
 - **Cross-Chunk Dependency Mapping (Follow-up Actions):**
   List of subsequent lines or files elsewhere in the project (regardless of chunk boundaries) that must be updated to wire this new function in:
-  - [ ] Update DI registration in [HiltModule](file://...) at line XX.
-  - [ ] Update ViewModel injection call in [ViewModel](file://...) at line YY.
-  - [ ] Update Compose view handler in [Screen](file://...) at line ZZ.
-```
+  - [ ] Update DI registration in `HiltModule` at line XX.
+  - [ ] Update ViewModel injection call in `ViewModel` at line YY.
+  - [ ] Update Compose view handler in `Screen` at line ZZ.
+
+````
 
 ### Special Code Indexing Method
+
 Entries use the `MKS-REV-XXX` index. Sub-routines or newly added functions can be inserted between reviews using a dot notation (e.g., `MKS-REV-001.1` for a Hilt module update supporting `MKS-REV-001`), ensuring that all subsequent wires are tracked linearly.
 
 ---
 
 ## 5. Verification & Validation Loop (Compile & Test Check)
+>
 > **Total Volume:** ~0 lines of code.
 
-
 Whenever a potential bug or optimization is identified during any phase, the AI must follow this loop before reporting to the user:
-```
+
+```text
+
       [Identify Defect]
               ↓
    [Draft Test/Scratch Script]
@@ -198,12 +220,13 @@ Whenever a potential bug or optimization is identified during any phase, the AI 
   [Re-run Compiler/Tests] (Verify Success)
               ↓
      [Report to User/Merge]
+
 ```
-*   **Compile Step:** Ensure the project compiles cleanly using `./gradlew compileDebugKotlin` or `./gradlew compileDebugSources`.
-*   **Test Step:** Run `./gradlew test` (or specific target tests) to ensure zero regressions.
+
+- **Compile Step:** Ensure the project compiles cleanly using `./gradlew compileDebugKotlin` or `./gradlew compileDebugSources`.
+- **Test Step:** Run `./gradlew test` (or specific target tests) to ensure zero regressions.
 
 ---
-
 
 ---
 
@@ -216,10 +239,10 @@ I have analyzed the project structure and grouped the source files (`.kt`, `.kts
 
 > **Total Project Volume (Analyzed Chunks):** ~52866 lines of code.
 
-
 Please let me know which chunk you would like to start reviewing, or if you'd like to adjust the grouping!
 
 ## 1. Build & Project Configuration
+>
 > **Context:** Orchestrates dependency management, build flavors, SDK targeting, and modularization for the entire project.
 > **Total Volume:** ~511 lines of code.
 
@@ -235,6 +258,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `test_zip.kts` *(~30 lines)*
 
 ## 2. App Entry Point, DI, & Main Config
+>
 > **Context:** The core skeleton of the app, including Android manifest configurations, the main activity, and Hilt dependency injection modules (v30 architecture).
 > **Total Volume:** ~609 lines of code.
 
@@ -252,6 +276,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `app/src/main/java/com/ahmedyejam/mks/di/HiltUtilityDaoModule.kt` *(~82 lines)*
 
 ## 3. Core Models: Database Entities (Part 1)
+>
 > **Context:** Room database schemas defining the foundational data structures (Books, Notes, Flashcards).
 > **Total Volume:** ~587 lines of code.
 
@@ -270,6 +295,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/model/src/main/java/com/ahmedyejam/mks/data/local/entity/PromptCardEntity.kt` *(~47 lines)*
 
 ## 4. Core Models: Database Entities (Part 2)
+>
 > **Context:** Additional Room entities for Quizzes, Prompts, Sessions, and Workspace management.
 > **Total Volume:** ~621 lines of code.
 
@@ -288,6 +314,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/model/src/main/java/com/ahmedyejam/mks/data/local/entity/WorkspaceSettingsEntity.kt` *(~34 lines)*
 
 ## 5. Core Models: General Data Models
+>
 > **Context:** Non-persisted domain models, UI state configurations, search outputs, and DTOs used across the application.
 > **Total Volume:** ~978 lines of code.
 
@@ -309,6 +336,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/model/src/main/java/com/ahmedyejam/mks/util/MksLogger.kt` *(~45 lines)*
 
 ## 6. Database: DAOs (Part 1)
+>
 > **Context:** Data Access Objects containing SQL queries for CRUD operations on core entities like Books, Notes, and Categories.
 > **Total Volume:** ~778 lines of code.
 
@@ -327,6 +355,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/database/src/main/java/com/ahmedyejam/mks/data/local/dao/NoteCollectionDao.kt` *(~30 lines)*
 
 ## 7. Database: DAOs (Part 2)
+>
 > **Context:** DAOs handling complex relational queries for Prompts, Quizzes, Sessions, and Assets.
 > **Total Volume:** ~1040 lines of code.
 
@@ -345,6 +374,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/database/src/main/java/com/ahmedyejam/mks/data/local/dao/WorkspaceDao.kt` *(~52 lines)*
 
 ## 8. Database: Core Config & Network Layer
+>
 > **Context:** Database migration paths, type converters, local DB setup, alongside remote API clients (Ollama, OCR, PDF extraction).
 > **Total Volume:** ~2600 lines of code.
 
@@ -362,6 +392,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/network/src/main/java/com/ahmedyejam/mks/data/repository/OllamaRepository.kt` *(~259 lines)*
 
 ## 9. Data Layer: Importer Parsers
+>
 > **Context:** The multi-format parsing engine converting XLSX, CSV, JSON, HTML, PPTX, and text files into standard DTOs.
 > **Total Volume:** ~2051 lines of code.
 
@@ -381,6 +412,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/data/src/main/java/com/ahmedyejam/mks/data/importer/parser/ZipLibraryParser.kt` *(~178 lines)*
 
 ## 10. Data Layer: Importer Logic & Excel Handling
+>
 > **Context:** Business logic for format detection, library normalization, Apache POI integration for Excel, and security validation.
 > **Total Volume:** ~3585 lines of code.
 
@@ -399,6 +431,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/data/src/main/java/com/ahmedyejam/mks/data/importer/xlsx/XlsxLibraryCompiler.kt` *(~243 lines)*
 
 ## 11. Data Layer: Repositories
+>
 > **Context:** The 6 core domain repositories acting as the single source of truth for ViewModels, orchestrating data between DAOs and Network.
 > **Total Volume:** ~4893 lines of code.
 
@@ -417,6 +450,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/data/src/main/java/com/ahmedyejam/mks/data/search/GlobalSearchResult.kt` *(~43 lines)*
 
 ## 12. Data Layer: Utilities, Settings, Handlers
+>
 > **Context:** Cross-cutting concerns including DataStore preferences, File I/O, error handling, preview services, and database seeding.
 > **Total Volume:** ~4397 lines of code.
 
@@ -439,6 +473,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/data/src/main/java/com/ahmedyejam/mks/di/ApplicationScope.kt` *(~9 lines)*
 
 ## 13. UI Core: Theme, Components & Nav
+>
 > **Context:** Jetpack Compose design system (colors, typography), reusable UI widgets, and global navigation routing paths.
 > **Total Volume:** ~1490 lines of code.
 
@@ -457,6 +492,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `feature/ui/src/main/java/com/ahmedyejam/mks/ui/navigation/MksRouteValidator.kt` *(~24 lines)*
 
 ## 14. UI Features: Book Tools
+>
 > **Context:** Screens and ViewModels for AI MCQ generation, PDF text extraction, and book-specific knowledge dashboards.
 > **Total Volume:** ~5637 lines of code.
 
@@ -470,6 +506,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `feature/ui/src/main/java/com/ahmedyejam/mks/ui/booktools/PdfExtractionViewModel.kt` *(~319 lines)*
 
 ## 15. UI Features: Categories, Data Tools & Flashcards
+>
 > **Context:** Presentation layer for category management, data export/import workflows, and the flashcard study player.
 > **Total Volume:** ~4099 lines of code.
 
@@ -484,6 +521,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `feature/ui/src/main/java/com/ahmedyejam/mks/ui/flashcard/FlashcardDeckViewModel.kt` *(~509 lines)*
 
 ## 16. UI Features: Library & Imports
+>
 > **Context:** The main entry hub of the app displaying books, quizzes, fab menus, sorting dialogs, and import coordination.
 > **Total Volume:** ~3881 lines of code.
 
@@ -498,6 +536,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `feature/ui/src/main/java/com/ahmedyejam/mks/ui/library/components/SortDialog.kt` *(~74 lines)*
 
 ## 17. UI Features: Quiz Player
+>
 > **Context:** The interactive quiz playing experience, including question navigation, option selection, compiler dialogs, and zoomable images.
 > **Total Volume:** ~5214 lines of code.
 
@@ -511,6 +550,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `feature/ui/src/main/java/com/ahmedyejam/mks/ui/quiz/ZoomableImageDialog.kt` *(~100 lines)*
 
 ## 18. UI Features: Scanners, Search, Reviews & Sessions
+>
 > **Context:** Presentation logic for OCR camera scanning, global full-text search, the unified review queue, and active study sessions.
 > **Total Volume:** ~2358 lines of code.
 
@@ -524,6 +564,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `feature/ui/src/main/java/com/ahmedyejam/mks/ui/session/SessionViewModel.kt` *(~131 lines)*
 
 ## 19. UI Features: Misc (Settings, Workspace, Welcome, Trash, Slideshow)
+>
 > **Context:** Application settings, workspace switching, onboarding screens, soft-delete recovery, and slideshow presentation.
 > **Total Volume:** ~4377 lines of code.
 
@@ -539,6 +580,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `feature/ui/src/main/java/com/ahmedyejam/mks/ui/workspace/WorkspaceManagerDialog.kt` *(~313 lines)*
 
 ## 20. Unit Tests
+>
 > **Context:** Automated tests isolating parsers, validators, file I/O, and data mappers to prevent regressions.
 > **Total Volume:** ~1573 lines of code.
 
@@ -559,6 +601,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `app/src/test/java/com/ahmedyejam/mks/ui/navigation/MksRouteBuildersTest.kt` *(~24 lines)*
 
 ## 21. Android Instrumentation Tests
+>
 > **Context:** On-device tests validating Room database schema migrations (v15->v30) and complex integration workflows.
 > **Total Volume:** ~1587 lines of code.
 
@@ -614,12 +657,14 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 **Goal:** Trace the complete import journey from user file selection to Room persistence. Identify where data enters, what transforms it undergoes, and where it lands.
 
 **Read first (in this order):**
+
 1. `AGENTS.md` (project guidance — use AI Navigation Guide paths)
 2. `docs/importing.md` (import input path documentation)
 
 **Read these source files (bounded list — do not explore beyond):**
 
 *Chunk 9 — Importer Parsers:*
+
 - `core/data/.../data/importer/parser/SpreadsheetHeaderMapper.kt`
 - `core/data/.../data/importer/parser/SpreadsheetQuestionParser.kt`
 - `core/data/.../data/importer/parser/CsvParser.kt`
@@ -636,6 +681,7 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/data/.../data/importer/parser/SourceDetector.kt`
 
 *Chunk 10 — Importer Logic & Excel:*
+
 - `core/data/.../data/importer/detector/ImportFormatDetector.kt`
 - `core/data/.../data/importer/dto/LibraryBundleDto.kt`
 - `core/data/.../data/importer/mapping/LibraryMapper.kt`
@@ -647,16 +693,19 @@ Please let me know which chunk you would like to start reviewing, or if you'd li
 - `core/data/.../data/importer/xlsx/XlsxLibraryCompiler.kt`
 
 *Chunk 12 (partial) — File I/O:*
+
 - `core/data/.../data/local/FileManager.kt`
 
 *Chunk 16 (partial) — Import UI:*
+
 - `feature/ui/.../ui/importer/ImportViewModel.kt`
 
 *Chunk 17 (partial) — Compiler UI:*
+
 - `feature/ui/.../ui/quiz/CompilerDialog.kt`
 - `feature/ui/.../ui/quiz/CompilerViewModel.kt`
 
-**Output:** `review/phase1_import_pipeline.md`
+**Output:** `docs/audits/phase1_import_pipeline.md`
 
 **Sections required in the output:**
 
@@ -665,6 +714,7 @@ Trace one real user action: "I selected a spreadsheet and imported it." Describe
 
 **§2 Senior-Developer Lens**
 For the same pipeline, provide:
+
 - Data flow diagram (text-based): file → detector → parser → normalizer → validator → mapper → repository → DAO → Room
 - Correctness risks: image priority order (XLSX embedded → image column → question cell → option cell → row-level → merged cell), marked-cell vs explicit answer priority, merged-cell handling, empty-row filtering logic
 - Error handling gaps: what happens when a parser throws? Is the temp file cleaned up on failure? Are partial imports rolled back?
@@ -672,6 +722,7 @@ For the same pipeline, provide:
 - State desync: can the CompilerUiState preview diverge from what actually gets persisted?
 
 **§3 Recommendations**
+
 - **Potential Improvements:** Specific, actionable improvements to existing behavior (e.g., better error messages, progress indicators for large files, undo after import).
 - **Features to Add:** New capabilities that would enhance the import experience (e.g., drag-and-drop reordering of column mapping, saved mapping presets, batch multi-file import).
 - **Functions to Maturize:** Existing functions that are partial/stub/fragile and should be hardened (e.g., fuzzy text answer matching, delimiter inference edge cases, PPTX image extraction).
@@ -685,26 +736,30 @@ For the same pipeline, provide:
 
 **Goal:** Trace the study/playback pipelines — quiz answering/scoring/sessions, flashcards (spaced repetition), slideshows, note blueprints (reader/TTS/autoscroll), and AI prompt decks — from user entry to data persistence.
 
-**Read first:** `review/phase1_import_pipeline.md` (the prior artifact — do not re-read the importer code).
+**Read first:** `docs/audits/phase1_import_pipeline.md` (the prior artifact — do not re-read the importer code).
 
 **Read these source files (bounded list):**
 
 *Chunk 11 (partial) — Repositories:*
+
 - `core/data/.../data/repository/QuizRepository.kt`
 - `core/data/.../data/repository/StudyRepository.kt`
 - `core/data/.../data/repository/KnowledgeRepository.kt`
 
 *Chunk 14 — Book Tools:*
+
 - `feature/ui/.../ui/booktools/BookKnowledgeDashboardScreen.kt`
 - `feature/ui/.../ui/booktools/BookDashboardTabs.kt`
 - `feature/ui/.../ui/booktools/BookToolScreens.kt`
 - `feature/ui/.../ui/booktools/BookToolsViewModel.kt`
 
 *Chunk 15 — Flashcards:*
+
 - `feature/ui/.../ui/flashcard/FlashcardDeckScreen.kt`
 - `feature/ui/.../ui/flashcard/FlashcardDeckViewModel.kt`
 
 *Chunk 17 — Quiz Player:*
+
 - `feature/ui/.../ui/quiz/QuizPlayerScreen.kt`
 - `feature/ui/.../ui/quiz/QuizViewModel.kt`
 - `feature/ui/.../ui/quiz/QuizQuestionsScreen.kt`
@@ -712,16 +767,19 @@ For the same pipeline, provide:
 - `feature/ui/.../ui/quiz/QuizDetailTabsScreen.kt`
 
 *Chunk 18 (partial) — Sessions:*
+
 - `feature/ui/.../ui/session/SessionManagementScreen.kt`
 - `feature/ui/.../ui/session/SessionViewModel.kt`
 
 *Chunk 19 (partial) — Slideshow & Summary:*
+
 - `feature/ui/.../ui/slideshow/SlideshowCourseScreen.kt`
 - `feature/ui/.../ui/slideshow/SlideshowCourseViewModel.kt`
 - `feature/ui/.../ui/summary/SummaryScreen.kt`
 - `feature/ui/.../ui/summary/SummaryViewModel.kt`
 
 *Entity context (read selectively for field verification):*
+
 - `core/model/.../data/local/entity/SessionEntity.kt`
 - `core/model/.../data/local/entity/FlashcardEntity.kt`
 - `core/model/.../data/local/entity/LearningSessionEntity.kt`
@@ -734,12 +792,14 @@ For the same pipeline, provide:
 - `core/model/.../data/local/entity/PromptRunEntity.kt`
 
 *Navigation:*
+
 - `feature/ui/.../ui/MksNavHost.kt` (routes only, for navigation flow)
 
 *Shared UI:*
+
 - `core/ui/.../ui/utils/TtsManager.kt`
 
-**Output:** `review/phase2_study_pipelines.md`
+**Output:** `docs/audits/phase2_study_pipelines.md`
 
 **Sections required in the output:**
 
@@ -748,6 +808,7 @@ For EACH of: quiz, flashcards, slideshow, note reader, prompt deck — trace the
 
 **§2 Senior-Developer Lens**
 Per pipeline:
+
 - State ownership: which ViewModel owns which StateFlow? Is there any duplicated source of truth?
 - Persistence guarantees: is partial progress saved on app kill? Is session state serialized atomically?
 - Session-entity correctness: does `SessionEntity` capture all user answers? Does `KnowledgeStudySessionEntity` track all knowledge-bank progress? Are streaks computed correctly?
@@ -756,6 +817,7 @@ Per pipeline:
 - Compose performance: any unnecessary recompositions? Heavy computations in composition?
 
 **§3 Recommendations**
+
 - **Potential Improvements:** Specific UX/UX-technical improvements (e.g., session resume indicator, progress auto-save frequency, slideshow swipe gesture feedback).
 - **Features to Add:** New study capabilities (e.g., quiz branching based on performance, flashcard SRS algorithm tuning, collaborative note annotation, prompt deck templates).
 - **Functions to Maturize:** Existing functions that are incomplete or fragile (e.g., spaced repetition scoring, streak calculation, slide completion tracking, TTS pause/resume on backgrounding).
@@ -769,11 +831,12 @@ Per pipeline:
 
 **Goal:** Trace the auxiliary pipelines — AI MCQ generation, OCR, PDF text extraction, Ollama LLM, export (ZIP exchange), Firebase (FCM + Remote Config), WorkManager, DataStore preferences — from input origin through network/worker hops to output persistence.
 
-**Read first:** `review/phase1_import_pipeline.md` and `review/phase2_study_pipelines.md`.
+**Read first:** `docs/audits/phase1_import_pipeline.md` and `docs/audits/phase2_study_pipelines.md`.
 
 **Read these source files (bounded list):**
 
 *Chunk 8 — Network Layer:*
+
 - `core/network/.../data/network/AiClient.kt`
 - `core/network/.../data/network/McqService.kt`
 - `core/network/.../data/network/OcrService.kt`
@@ -784,12 +847,14 @@ Per pipeline:
 - `core/network/.../data/repository/OllamaRepository.kt`
 
 *Chunk 11 (partial) — Repositories:*
+
 - `core/data/.../data/repository/AiMcqRepository.kt`
 - `core/data/.../data/repository/ExportManager.kt`
 - `core/data/.../data/review/ReviewRepository.kt`
 - `core/data/.../data/search/GlobalSearchRepository.kt`
 
 *Chunk 12 (partial) — Exchange, Preferences, Seeder:*
+
 - `core/data/.../data/exchange/v7/MksExchangeV7Archive.kt`
 - `core/data/.../data/exchange/v7/MksExchangeV7Models.kt`
 - `core/data/.../data/preferences/DataStoreManager.kt`
@@ -797,31 +862,36 @@ Per pipeline:
 - `core/data/.../data/seeder/MksDatabaseSeeder.kt`
 
 *Chunk 14 (partial) — AI MCQ & PDF UI:*
+
 - `feature/ui/.../ui/booktools/AiMcqGeneratorScreen.kt`
 - `feature/ui/.../ui/booktools/AiMcqGeneratorViewModel.kt`
 - `feature/ui/.../ui/booktools/PdfExtractionScreen.kt`
 - `feature/ui/.../ui/booktools/PdfExtractionViewModel.kt`
 
 *Chunk 19 (partial) — Settings UI:*
+
 - `feature/ui/.../ui/settings/SettingsScreen.kt`
 - `feature/ui/.../ui/settings/SettingsViewModel.kt`
 - `feature/ui/.../ui/settings/ProviderConfigDialog.kt`
 
 *Chunk 15 (partial) — Data Tools:*
+
 - `feature/ui/.../ui/data/DataToolsScreen.kt`
 - `feature/ui/.../ui/data/DataToolsViewModel.kt`
 
 *App services:*
+
 - `app/.../service/AppFirebaseMessagingService.kt`
 - `app/.../service/RemoteConfigManager.kt`
 - `app/.../service/TokenSyncWorker.kt`
 
-**Output:** `review/phase3_aux_pipelines.md`
+**Output:** `docs/audits/phase3_aux_pipelines.md`
 
 **Sections required in the output:**
 
 **§1 End-User Lens**
 Trace each of:
+
 - (a) **AI MCQ generation:** user opens generator → selects source material → configures parameters → generates → reviews → saves as quiz. Where does the AI call happen? What does the user see on failure/offline/timeout?
 - (b) **PDF text extraction:** user opens source → extracts text → reviews → saves. What if PDF is encrypted or image-only?
 - (c) **Export → import round-trip:** user exports a book to ZIP → deletes the book → imports the ZIP. Does the reimported book match the original? Are images preserved? Are sessions/stats preserved?
@@ -830,6 +900,7 @@ Trace each of:
 
 **§2 Senior-Developer Lens**
 Per pipeline:
+
 - API-key/secret handling: are keys hardcoded, in DataStore, or in BuildConfig? Are they logged?
 - Network thread correctness: are AI/OCR/PDF calls on `Dispatchers.IO`? Are there timeouts? Cancellation support?
 - Offline-first guarantees: does WorkManager retry with backoff? Are FCM tokens synced when network returns?
@@ -839,6 +910,7 @@ Per pipeline:
 - DataStore: is it thread-safe? Are there read-modify-write races?
 
 **§3 Recommendations**
+
 - **Potential Improvements:** Specific improvements (e.g., AI generation progress streaming, export file naming, OCR confidence display, offline queue visibility).
 - **Features to Add:** New capabilities (e.g., cloud sync, multiple AI provider switching, batch PDF import, export format options, FCM topic subscriptions, scheduled study reminders).
 - **Functions to Maturize:** Existing functions that are incomplete (e.g., AI MCQ quality validation, PDF table extraction, Ollama streaming responses, export progress reporting, RemoteConfig default fallbacks).
@@ -853,14 +925,15 @@ Per pipeline:
 **Goal:** Consolidate all prior findings into a coherent end-user narrative, a senior-developer risk register, a cross-pipeline data map, and a prioritized improvement roadmap.
 
 **Read only (do NOT re-read source code):**
-- `review/phase1_import_pipeline.md`
-- `review/phase2_study_pipelines.md`
-- `review/phase3_aux_pipelines.md`
+
+- `docs/audits/phase1_import_pipeline.md`
+- `docs/audits/phase2_study_pipelines.md`
+- `docs/audits/phase3_aux_pipelines.md`
 - `docs/audits/UX_REVIEW_2026.md` (intended user journey — compare against observed implementation)
 - `docs/roadmap.md` (any planned work already identified)
 - `docs/audits/UX_REVIEW_2026.md` (comprehensive screen-by-screen interaction map)
 
-**Output:** `review/phase4_synthesis.md`
+**Output:** `docs/audits/phase4_synthesis.md`
 
 **Sections required in the output:**
 
@@ -911,4 +984,4 @@ Consolidate the test-coverage gaps identified across all phases. Map each gap to
 3. **Do not skip phases.** Each phase's output is input to Phase 4's synthesis. Skipping produces an incomplete data map.
 4. **Do not search `build/`.** It is build output and wastes context.
 5. **If the AI agent identifies a gap in this plan** (e.g., a pipeline not covered, a file that should be read, a better grouping), it should flag it to the user before executing the affected phase rather than silently deviating.
-6. **After Phase 4**, the user should review `review/phase4_synthesis.md` §4 (Prioritized Improvement Roadmap) as the primary deliverable — it is the actionable output of the entire review.
+6. **After Phase 4**, the user should review `docs/audits/phase4_synthesis.md` §4 (Prioritized Improvement Roadmap) as the primary deliverable — it is the actionable output of the entire review.

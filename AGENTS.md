@@ -1,6 +1,6 @@
 # AGENTS.md - MKS Project Guidance
 
-> **Last updated:** 2026-07-11 | Room v30 | 29 migrations | 26 entities | 26 DAOs | 6-module architecture
+> **Last updated:** 2026-07-15 | Room v30 | 29 migrations | 26 entities | 26 DAOs | 6-module architecture
 >
 > **This file is the single canonical context guide for AI agents.** It consolidates project overview, AI navigation rules, architecture, import pipeline, UI reference, and common tasks. Read the **AI Navigation Guide** section first; it contains the authoritative file paths.
 
@@ -13,6 +13,7 @@
 > **Do not guess file locations or architectures.** Use the paths below. The project is modularized into `app/`, `core/`, and `feature/` directories. Base package: `com.ahmedyejam.mks`.
 
 **Do NOT search this directory** — it contains build output that wastes context:
+
 - `build/`
 
 ### File Navigation Strategy (authoritative paths)
@@ -30,6 +31,8 @@
 | **Domain Models** | `core/model/src/main/java/com/ahmedyejam/mks/data/model/` — `CategoryWithMetadata`, `LearningSessionState`, export/generation configs, etc. |
 | **Route Constants** | `core/model/src/main/java/com/ahmedyejam/mks/ui/MksRoutes.kt` |
 | **NavHost** | `feature/ui/src/main/java/com/ahmedyejam/mks/ui/MksNavHost.kt` |
+| **Background services & sync** | `app/src/main/java/com/ahmedyejam/mks/service/` — `AppFirebaseMessagingService` (push proxy), `RemoteConfigManager` (stale-while-revalidate config), `TokenSyncWorker` (offline-first FCM token sync via WorkManager). |
+| **String resources (EN/AR)** | `core/ui/src/main/res/values/strings.xml` (English), `core/ui/src/main/res/values-ar/strings.xml` (Arabic RTL). |
 
 ### Dynamic Inspection Workflow
 
@@ -133,6 +136,7 @@ val sessions = repository.getStudySessionsByBook(bookId)
 ### Add New Database Column
 
 1. Create migration in `core/database/src/main/java/com/ahmedyejam/mks/data/local/MksMigrations.kt`:
+
    ```kotlin
    val MIGRATION_N_(N+1) = object : Migration(N, N+1) {
        override fun migrate(database: SupportSQLiteDatabase) {
@@ -140,6 +144,7 @@ val sessions = repository.getStudySessionsByBook(bookId)
        }
    }
    ```
+
 2. Add to `HiltDataModule.provideMksDatabase()` builder via `.addMigrations(...)`
 3. Update entity class in `core/model/src/main/java/com/ahmedyejam/mks/data/local/entity/` with new field
 
@@ -174,14 +179,18 @@ The following complementary documentation exists in `docs/`:
 
 | File | Purpose |
 |---|---|
+| `docs/getting-started.md` | Toolchain, build, run, and test instructions |
 | `docs/architecture.md` | High-level system architecture with component diagrams |
 | `docs/lifecycle.md` | Complete user journey and interaction lifecycle |
 | `docs/user-guide.md` | Detailed screen-by-screen UI interaction map |
-| `docs/database.md` | Database inspection notes |
-| `docs/importing.md` | Import input path documentation |
+| `docs/database.md` | Room schema, entities, DAOs, and migration history |
+| `docs/importing.md` | Import formats, limits, security rules, and parsing behavior |
+| `docs/ai.md` | AI providers, pipelines, prompt engineering, and OCR |
+| `docs/design-system.md` | Design tokens, theming, and redesign handoff |
+| `docs/redesign-status.md` | Redesign implementation status and screen porting progress |
 | `docs/roadmap.md` | Planned enhancement roadmap |
-| `docs/ai.md` | Gemini AI tool (MCP) integration guidance |
-| `docs/audits/` | Historical UX reviews and inspection maps |
+| `docs/tooling/android-studio-mcp.md` | Android Studio MCP configuration for AI agents |
+| `docs/audits/` | Historical UX reviews, phase reviews, and inspection maps |
 
 For most tasks, read the relevant sections in this AGENTS.md. For deep architectural questions, consult the additional markdown files in `docs/`.
 
@@ -190,4 +199,4 @@ For most tasks, read the relevant sections in this AGENTS.md. For deep architect
 ## AI Agent Tools (MCP)
 
 To enhance Gemini's capabilities with external tools (GitHub, Figma, custom servers), follow the
-instructions in [ai.md](docs/ai.md).
+instructions in [android-studio-mcp.md](docs/tooling/android-studio-mcp.md).

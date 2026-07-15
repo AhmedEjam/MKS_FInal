@@ -1,6 +1,6 @@
 # MKS Documentation Index
 
-This directory contains the authoritative documentation for the MKS (My Knowledge Space) project. 
+This directory contains the authoritative documentation for the MKS (My Knowledge Space) project.
 
 To avoid duplication and drift, each document is assigned a specific area of responsibility. If you need information on a topic, consult its designated "single source of truth."
 
@@ -24,6 +24,7 @@ To avoid duplication and drift, each document is assigned a specific area of res
 ## AI Context
 
 For AI agents, the primary entry points are:
+
 1. `../README.md` for a high-level project overview.
 2. `../AGENTS.md` for deep technical guidance, file path rules, and safe operation practices.
 

@@ -3,6 +3,7 @@
 > Scope: the complete import journey — file selection → format detection → parse → normalize → validate → map → persist to Room, plus image resolution and asset-reference tracking. Files read: `ImportLibraryManager`, `CompilerViewModel`, `CompilerDialog`, `ImportViewModel`, `FileManager`, `ImportValidator`, `BundleNormalizer`, `ImportLimits`, `SpreadsheetQuestionParser`, `AssetRepository`, plus 18 parser/xlsx/mapper/zip/dto/detector files (2 subagent deep-reads). `build/` excluded. All refs are `file:line`; abbreviated paths use `...` = `src/main/java/com/ahmedyejam/mks`.
 
 ## TL;DR
+
 1. The pipeline is architecturally sound: a single `executeImportPipeline()` inside one Room `withTransaction` (ImportLibraryManager.kt:537) with progress, per-record try/catch, and skip-not-fail semantics.
 2. **Highest-severity defects are silent data corruption/loss, not crashes:** 0-vs-1-based answer-index ambiguity across 3 answer resolvers, XLSX inline images sanitized to `null` on persist, HTML nested-JSON truncation, dropped correct-answer refs, and the CompilerDialog "preview shows it, save silently drops it" desync.
 3. **Two security holes:** unhardened XML parsing (XXE/entity-expansion) in XlsxImageResolver, and an encrypted-ZIP zip-bomb bypass that trusts attacker-declared sizes.
@@ -38,7 +39,8 @@
 ## §2 Senior-Developer Lens
 
 ### Data-flow diagram (actual, verified)
-```
+
+```text
 content:// URI
   │  ImportFormatDetector.detectFormat()  [extension → magic-bytes fallback]   (ImportFormatDetector.kt:17,62)
   ▼
@@ -71,6 +73,7 @@ content:// URI
 ```
 
 ### Correctness risks
+
 - **C1 — 0-vs-1-based answer index (Critical, data corruption).** Three independent resolvers assume different bases and none detects the source base: `JsonQuestionParser.resolveCorrect` treats `"1"` → `opt_1` = the *second* option (JsonQuestionParser.kt:130); `JsonLibraryParser` maps index → `opt_$idx` raw (JsonLibraryParser.kt:187); `SpreadsheetQuestionParser.resolveCorrectAnswers` uses `part.toInt()-1` (SpreadsheetQuestionParser.kt:191, correct). Sources exporting 1-based answer indices import with the **wrong option marked correct**, silently.
 - **C2 — XLSX inline images dropped on persist (Critical).** `XlsxLibraryCompiler` produces `QuestionDto.imageDataUrl` (data URL). But `LibraryMapper.mapToQuestionEntity` funnels `imageDataUrl` into the `rawSource` fallback (LibraryMapper.kt:93) which is then sanitized to `null` precisely because it `startsWith("data:")` (LibraryMapper.kt:95-99). Meanwhile `ImportLibraryManager.resolveImagePath` *does* handle `data:` (ImportLibraryManager.kt:1184) — but the mapper runs on the DTO before the entity is built, so the resolved path must arrive via a separate `imagePath`. Result: resolved embedded XLSX cell images can be lost. Also the export/import direction is asymmetric — export writes a *path* into the *data-URL* field (LibraryMapper.kt:236).
 - **C3 — Dropped correct-answer references (High).** `mapToQuestionEntity` resolves `dto.correct` via `options.indexOfFirst { it.id == correctId }` and `mapNotNull` (LibraryMapper.kt:87-90); any unmatched ID is dropped with no warning → question silently becomes "no correct answer" → then skipped by the validator on the next round-trip.
@@ -80,20 +83,24 @@ content:// URI
 - **C7 — Non-deterministic timestamps break idempotency (Medium).** ~30 `?: System.currentTimeMillis()` defaults across LibraryMapper (e.g. :51-53,:328,:667) mean re-importing the same bundle yields different `createdAt/updatedAt` each time — dedup/merge that keys on timestamps can't be idempotent.
 
 ### Error handling & rollback
+
 - **E1 — Transaction integrity is good.** All persistence is inside one `database.withTransaction` (ImportLibraryManager.kt:537). A throw rolls back the whole import. Per-record failures are caught and converted to warnings + `skippedRecordsCount++` (e.g. :644,:809) so one bad row doesn't abort the batch. **However**, `resolveImagePath` writes image files to disk *inside* the transaction (FileManager writes at ImportLibraryManager.kt:1202,:1263,:1307); a rollback leaves **orphaned image files** on disk (DB rows gone, files remain) — no compensating cleanup.
 - **E2 — Temp-file cleanup mostly correct but leaky on partial copy.** ZIP `rootDir` deleted in `finally` (ImportLibraryManager.kt:368); `cleanupStaleImportCache()` reaps `import_*` older than 24h (:113). But `XlsxLibraryCompiler.prepareTempFile` leaks the created cache file if `copyToWithLimit` throws mid-copy (XlsxLibraryCompiler.kt:37-47). CompilerViewModel deletes `tempFile` only in `onCleared` (:100) — if the process dies first, it lingers until the 24h sweep.
 - **E3 — Result discarded on the primary UI path.** `CompilerViewModel.saveParsedQuestions` ignores the `MksResult`/`ImportResult` from `importCompiledQuestions` (CompilerViewModel.kt:509) — warnings, skip counts, and errors never reach the user (root cause of F1). `ImportViewModel` handles the result correctly (ImportViewModel.kt:66-78), showing the two flows are inconsistent.
 
 ### Security
+
 - **S1 — XXE / entity-expansion (Critical).** `XlsxImageResolver.parseXml` builds a `DocumentBuilderFactory` with only `isNamespaceAware=true` — no `FEATURE_SECURE_PROCESSING`, no `disallow-doctype-decl`, no external-entity disabling (XlsxImageResolver.kt:26-29,:257). Every XML part of an untrusted xlsx is parsed here → billion-laughs DoS (OOM/CPU) and potential local-file exfiltration on JVMs that resolve external entities.
 - **S2 — Encrypted-ZIP zip-bomb bypass (High).** The encrypted extraction path validates entry count/size against **attacker-declared** `header.uncompressedSize`, then extracts with `zipFile.extractFile()` which enforces no byte cap (ZipLibraryParser.kt:60-86). A crafted archive declaring small sizes but inflating large evades `MAX_SINGLE_FILE_SIZE`/`MAX_TOTAL_SIZE`. The plain path is correctly hardened via `copyToWithLimit` on *actual* bytes (ZipLibraryParser.kt:170) — the encrypted path should mirror it.
 - **S3 — Positive controls.** Path-traversal defenses (canonical containment, `..` rejection) exist in both ZIP paths (ZipLibraryParser.kt:81,:167) and in `resolveRelativeAssetPath` (ImportLibraryManager.kt:1325-1341); FileManager rejects absolute paths outside the images dir (FileManager.kt:155-162) and validates asset dirs (:132). Image normalization caps dimensions/pixels/bytes and re-encodes to WEBP (FileManager.kt:324-376) — good defense against decompression bombs at the image layer.
 
 ### Thread / coroutine correctness
+
 - File I/O and parsing are correctly off the main thread: `ImportLibraryManager` wraps everything in `withContext(Dispatchers.IO)` (:171,:298,:382); `CompilerViewModel` uses `Dispatchers.IO` for loading and `Dispatchers.Default` for CPU parsing (:245,:341,:407). No main-thread blockers found. PptxSlideParser correctly uses `Dispatchers.IO`.
 - **T1 — No cancellation/timeout on large parses.** POI `WorkbookFactory.create` and the row loop aren't cooperatively cancellable; backing out of the dialog leaves work running until it finishes or OOMs.
 
 ### State desync
+
 - **D1 — CompilerUiState preview vs persisted (confirmed).** The preview is the source of truth for the UI, but persistence re-runs validation/normalization on the server side (ImportLibraryManager.kt:516,:534) which can drop rows the preview showed (F1/C3). The two never reconcile because the result is discarded (E3).
 
 ---
@@ -101,6 +108,7 @@ content:// URI
 ## §3 Recommendations
 
 ### Potential Improvements
+
 - **I1 (P0):** Surface the `ImportResult` on the CompilerViewModel save path — show "N imported, M skipped (reasons)" and route warnings to the user (fixes F1). CompilerViewModel.kt:509.
 - **I2 (P1):** In the preview, badge questions the validator *will* skip (no correct answer / no options) with a distinct color + inline reason, so the user fixes them before saving. Wire `ParsedQuestion.issues` (already populated, SpreadsheetQuestionParser.kt:69) into CompilerDialog.kt:356.
 - **I3 (P1):** Add the "Allow insecure HTTP images" affordance to the CompilerDialog flow, not just ZIP (F6).
@@ -108,12 +116,14 @@ content:// URI
 - **I5 (P2):** "Undo last import" using `affectedBookIds`/`affectedQuizIds` already returned by `ImportResult` (ImportLibraryManager.kt:1117-1118) — trivial to build a one-tap rollback.
 
 ### Features to Add
+
 - **FA1:** Saved column-mapping presets keyed by header signature — re-importing a familiar spreadsheet layout auto-applies the last good mapping.
 - **FA2:** Batch multi-file import (`OpenMultipleDocuments`) with a queue and per-file result summary; manifest already supports it via share intent (IMPORT_INPUT_PATHS.md §1A).
 - **FA3:** Drag-and-drop reordering of option columns in the mapping editor.
 - **FA4:** Dry-run/validate-only mode that runs the validator and shows the skip report without persisting.
 
 ### Functions to Maturize
+
 - **M1:** `TextQuestionParser` continuation-line handling is a documented stub (TextQuestionParser.kt:43-50, empty body) → multi-line options/prose silently dropped; and its `^[A-Z])` option regex false-matches stems like "A patient presents…" (TextQuestionParser.kt:71). Both need real handling.
 - **M2:** `HtmlQuestionParser` nested-JSON extraction (HtmlQuestionParser.kt:12) must brace-match (depth counter or a real JSON scanner), not non-greedy regex.
 - **M3:** Unify answer resolution into one `AnswerResolver(idScheme, indexBase)` with an explicit/ inferred index-base policy (fixes C1 across all three resolvers).
@@ -121,6 +131,7 @@ content:// URI
 - **M5:** `PptxSlideParser` unguarded POI load with no size cap (PptxSlideParser.kt:21) — wrap + bound.
 
 ### Refactor Opportunities
+
 - **R1 (High):** `replaceOwnerAssetReferences` + `isTrackableLocalAsset` are **duplicated verbatim** in ImportLibraryManager.kt:136/126 and AssetRepository.kt:95/602 — and the allow-lists **diverge**: the importer excludes `assets/` (ImportLibraryManager.kt:133) while AssetRepository excludes `file:///android_asset/` (AssetRepository.kt:609). Extract one `AssetReferenceTracker` to eliminate the drift bug.
 - **R2:** Route all image extraction through `GenericImageExtractor`; `JsonLibraryParser` reimplements image aliasing and bypasses it (JsonLibraryParser.kt:210).
 - **R3:** Enforce ImportLimits (rows/cells/sheets) *before* POI fully loads the workbook (stream/SAX pre-check), closing the OOM window (XlsxLibraryCompiler.kt:60-95).
@@ -128,6 +139,7 @@ content:// URI
 - **R5:** Give every parser a shared `Parser<T>` interface + typed `ImportError` instead of raw `throw Exception(...)` (HtmlQuestionParser.kt:28, ImportLibraryManager.kt:173).
 
 ### Testing Gaps (most dangerous untested surfaces)
+
 - **TG1 — `ImportLibraryManager.executeImportPipeline` (0 tests, ~1065 LOC, the whole persist path).** Most dangerous file in the phase. Needs an instrumented Room test per merge strategy (SKIP/OVERWRITE/DUPLICATE) asserting: idempotent re-import (catches C7), OVERWRITE preserves study stats (verified in code at :781-796 — lock it with a test), rollback leaves no orphan image files (catches E1), and skip-count accuracy (catches F1). Extend `ImportReconciliationTest`.
 - **TG2 — `LibraryMapper` round-trip (0 tests).** Property test: entity → DTO → entity must be lossless for `imagePath`, `correct`, categories (catches C2/C3). Add `LibraryMapperRoundTripTest`.
 - **TG3 — Answer resolution 0/1-based (partial).** `SpreadsheetHeaderMapperTest` exists; add `AnswerResolverTest` covering `"1"`, `"A"`, `"1,3"`, numeric-vs-letter, and marked-only for all three current resolvers (catches C1).

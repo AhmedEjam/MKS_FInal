@@ -1,4 +1,5 @@
 # Redesign Status & Workflow
+
 This document tracks the current status of the MKS redesign and porting workflow, extracted from the original DESIGN.md.
 
 ## 2. CURRENT STATUS — what has been done in the real codebase
@@ -45,6 +46,7 @@ This document tracks the current status of the MKS redesign and porting workflow
 `contact_banner_en_light_forest_path` and `contact_banner_en_light_lavender_valley` are referenced but do
 **not exist anywhere** in the repo (only their `_ar_` counterparts + an `_en_light_sunrise_valley` exist in
 `core/ui/src/main/res/drawable-nodpi/`). Referenced in **two** places:
+
 - `quiz/QuizPlayerScreen.kt` `resolveQuestionImage()` — **FIXED** (English Forest/Lavender now fall back to
   `contact_banner_en_light_sunrise_valley`).
 - `library/components/LibraryComponents.kt` lines ~204–205 — **STILL TO FIX** (apply the same fallback).
@@ -92,6 +94,7 @@ fall back). Never claim a green build you didn't run.
 ## 11. Porting workflow & guardrails
 
 ### 11.1 Per-screen workflow
+
 1. Open the target `*Screen.kt` and its ViewModel. Identify the UI-only composables vs. state/logic.
 2. Get the Stitch render (§3.2) for the target look.
 3. Swap `Card`/`Button`/`Surface`/`LinearProgressIndicator`/chips → §5 components. Replace inline colors with
@@ -104,6 +107,7 @@ fall back). Never claim a green build you didn't run.
    when introducing a new component to isolate linkage errors.
 
 ### 11.2 Guardrails (do NOT break)
+
 - **Preserve all behavior.** No changes to ViewModels, repositories, DAOs, navigation routes, or DI unless a
   bug fix (like §9.2) requires it.
 - **Quiz Player sheet + toggles stay as-is** (§2.3).
@@ -114,6 +118,7 @@ fall back). Never claim a green build you didn't run.
 - **Don't introduce hardcoded colors, pure black, or AI gradient outside AI screens.**
 
 ### 11.3 Suggested order (highest value first)
+
 Library → Summary → Book Dashboard → Review Dashboard → Flashcards → Slideshow → Note Reader → Global Search
 → Settings → Welcome → Data Tools → AI MCQ → AI Prompt Deck → PDF Extraction. (Quiz Player main area partially
 done; finish its `OptionItem` states + streak `CountBadge` after the first clean compile.)

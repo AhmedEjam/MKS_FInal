@@ -1,10 +1,11 @@
 # Phase 4 — Synthesis, Cross-Pipeline Map & Prioritized Roadmap
 
-> Consolidates `review/phase1_import_pipeline.md`, `review/phase2_study_pipelines.md`, `review/phase3_aux_pipelines.md` against the intended-journey docs (`user_Jour_Geminipro.md`, `USER_JOURNEY_MAP_claudeopus.md`) and `mks_enhancement_plan.md`. No source re-read. Refs `file:line`; `...` = `src/main/java/com/ahmedyejam/mks`. **§4 (Prioritized Improvement Roadmap) is the primary deliverable.**
+> Consolidates `docs/audits/phase1_import_pipeline.md`, `docs/audits/phase2_study_pipelines.md`, `docs/audits/phase3_aux_pipelines.md` against the intended-journey docs (`user_Jour_Geminipro.md`, `USER_JOURNEY_MAP_claudeopus.md`) and `mks_enhancement_plan.md`. No source re-read. Refs `file:line`; `...` = `src/main/java/com/ahmedyejam/mks`. **§4 (Prioritized Improvement Roadmap) is the primary deliverable.**
 >
 > **⚠️ UPDATE 2026-07-12 — Round-1 fixes applied and reviewed. See [§6 Applied-Changes Review](#6-applied-changes-review--round-1) at the bottom. The build is currently RED (`:feature:ui:compileDebugKotlin` fails, 3 errors); two are from the applied roadmap edits, one is a pre-existing/theme-related missing-drawable issue. Fix those three before anything else — details and exact patches in §6.**
 
 ## Executive Summary (10 lines)
+
 1. MKS is a genuinely capable, feature-rich offline knowledge app with sound module boundaries (UI→VM→Repo→DAO→Room) and a well-designed import engine and export/exchange format.
 2. Its dominant risk class is **silent data corruption/loss**, not crashes: wrong answers marked correct on import, XLSX images dropped, adaptive-training progress lost on kill, knowledge-bank "resume" that never restores.
 3. Two P0 security holes span the app: SSRF in the remote asset fetcher and plaintext API-key storage; two P0 XML/ZIP parsing holes (XXE, encrypted zip-bomb) sit in the import path.
@@ -23,6 +24,7 @@
 **Full-journey narrative.** A new user lands on Welcome, picks a language (which *doesn't actually switch the UI* — `[Settings]`), and reaches the Library — the hub for books, quizzes, and the knowledge bank. They import a spreadsheet through a polished multi-step compiler with live preview; the import mostly works, but some questions silently vanish on save and some correct answers land on the wrong option `[Import]`. They study: quizzes persist progress well and resume accurately; flashcards and slideshows *look* like they save a session but always restart from card 1 `[Study]`. They generate AI MCQs and extract PDF text — powerful, but failure states are opaque (infinite spinners, "saved" toasts that didn't save) `[AI]`. They export a book to ZIP and re-import it — most data round-trips, but images and some answers degrade `[Export]`. Multi-workspace isolation holds for the library but leaks in global search `[Sync]`.
 
 **Top 10 frictions, ranked by severity:**
+
 1. **`[Study]` Quiz Edit does nothing.** Tapping Edit on a quiz renders no dialog — a misplaced brace (LibraryScreen.kt:628). *Blocker.*
 2. **`[Import]` Questions silently disappear on save.** The preview shows rows the validator later skips; the Compiler save path discards the result so the user gets no "N skipped" feedback (CompilerViewModel.kt:509).
 3. **`[Import]` Wrong option marked correct.** 0-vs-1-based answer-index ambiguity across three resolvers imports the wrong answer with no signal (JsonQuestionParser.kt:130).
@@ -35,6 +37,7 @@
 10. **`[Export]` Round-trip degrades images/answers** — mapper writes a path into the data-URL field and drops unmatched answer refs (LibraryMapper.kt:93,87).
 
 **Intended-vs-observed divergences (from journey/enhancement docs):**
+
 - "Language instantly switches, entire UI re-renders" (geminipro:13, claudeopus:49) → **written but not applied** (A9).
 - "Session Resumption — READY, sessions already persisted" (enhancement Phase 11) → **true only for quizzes; knowledge-bank resume never reads state** (U6).
 - "Each workspace has its own isolated set of books/quizzes/knowledge data" (claudeopus:780) → **library isolates, global search does not** (AUX1).
@@ -96,6 +99,7 @@ Cross-cutting: **zero repository/engine tests** (enhancement Phase 1.1) leaves e
 Grouped into 7 thematic clusters. Priority: P0 (do now) → P4 (nice-to-have). Effort: S/M/L. Impact: Critical/High/Medium.
 
 ### Cluster A — Import Reliability
+
 | Priority | Category | Recommendation | Pipeline | Effort | Impact | file:line |
 |---|---|---|---|---|---|---|
 | P0 | Bug/Fix | Surface ImportResult on Compiler save (N imported / M skipped + reasons) | Import | S | Critical | CompilerViewModel.kt:509 |
@@ -111,6 +115,7 @@ Grouped into 7 thematic clusters. Priority: P0 (do now) → P4 (nice-to-have). E
 | P3 | Feature | Saved column-mapping presets; batch multi-file import | Import | M | Medium | CompilerViewModel.kt:396 |
 
 ### Cluster B — Study Persistence
+
 | Priority | Category | Recommendation | Pipeline | Effort | Impact | file:line |
 |---|---|---|---|---|---|---|
 | P0 | Bug/Fix | Give adaptive training a real session (persist progress) | Study | M | Critical | QuizViewModel.kt:484 |
@@ -125,6 +130,7 @@ Grouped into 7 thematic clusters. Priority: P0 (do now) → P4 (nice-to-have). E
 | P2 | Bug/Fix | Carry assets/annotations on question move/copy; make atomic | Study | M | Medium | CategoryQuestionsViewModel.kt:170 |
 
 ### Cluster C — AI Robustness
+
 | Priority | Category | Recommendation | Pipeline | Effort | Impact | file:line |
 |---|---|---|---|---|---|---|
 | P0 | Bug/Fix | Fix cancelGeneration (cancel held Job, not viewModelScope children) | AI | S | Critical | AiMcqGeneratorViewModel.kt:137 |
@@ -136,6 +142,7 @@ Grouped into 7 thematic clusters. Priority: P0 (do now) → P4 (nice-to-have). E
 | P3 | Feature | Streaming chat + multi-provider registry (generalize OllamaRepository) | AI | L | Medium | AiClient.kt:1 |
 
 ### Cluster D — Export Fidelity
+
 | Priority | Category | Recommendation | Pipeline | Effort | Impact | file:line |
 |---|---|---|---|---|---|---|
 | P1 | Bug/Fix | Lossless image + answer round-trip (depends on Cluster A mapper fixes) | Export | M | High | LibraryMapper.kt:93 |
@@ -143,6 +150,7 @@ Grouped into 7 thematic clusters. Priority: P0 (do now) → P4 (nice-to-have). E
 | P2 | Bug/Fix | DataTools export: write inside coroutine before stream closes | Export | S | Medium | DataToolsScreen.kt:40 |
 
 ### Cluster E — Infrastructure Hardening
+
 | Priority | Category | Recommendation | Pipeline | Effort | Impact | file:line |
 |---|---|---|---|---|---|---|
 | P0 | Security | SSRF guard (IP denylist + redirect re-validation + final-scheme consent) | Sync/Import | M | Critical | RemoteAssetFetcher.kt:19 |
@@ -152,6 +160,7 @@ Grouped into 7 thematic clusters. Priority: P0 (do now) → P4 (nice-to-have). E
 | P1 | Bug/Fix | RemoteConfig: seed StateFlow from cached getBoolean on init | Sync | S | Medium | RemoteConfigManager.kt:20 |
 
 ### Cluster F — UX Polish
+
 | Priority | Category | Recommendation | Pipeline | Effort | Impact | file:line |
 |---|---|---|---|---|---|---|
 | P0 | Bug/Fix | Fix quiz-edit dialog brace (unreachable dialog) | Study | S | Critical | LibraryScreen.kt:628 |
@@ -165,6 +174,7 @@ Grouped into 7 thematic clusters. Priority: P0 (do now) → P4 (nice-to-have). E
 | P3 | Improvement | Rapid-mode/elimination undo; document-picker for question assets | Study | S | Medium | QuizViewModel.kt:1118 · QuestionAssetsDialog.kt:494 |
 
 ### Cluster G — Testing Coverage & Refactor (structural)
+
 | Priority | Category | Recommendation | Pipeline | Effort | Impact | file:line |
 |---|---|---|---|---|---|---|
 | P0 | Testing | Repository/engine test harness (in-mem Room + fakes) — see §5 | All | L | Critical | (enhancement Phase 1.1) |
@@ -218,6 +228,7 @@ Grouped into 7 thematic clusters. Priority: P0 (do now) → P4 (nice-to-have). E
 | E3 | `unresolved reference 'contact_banner_en_light_forest_path'` / `..._lavender_valley` | LibraryComponents.kt:204-205, QuizPlayerScreen.kt:1438-1439 | Pre-existing (missing drawables) | 🔴 blocker |
 
 **E1 — CompilerViewModel MksResult package is wrong.** The new feedback block references `com.ahmedyejam.mks.data.importer.model.MksResult.Success/.Error`, but `importCompiledQuestions` returns `com.ahmedyejam.mks.data.model.MksResult<ImportResult>?` (the sealed class lives in **core:model** at `data/model/MksResult.kt` — there is no `importer.model.MksResult`). Fix: change both branch qualifiers to `com.ahmedyejam.mks.data.model.MksResult` (or add `import com.ahmedyejam.mks.data.model.MksResult` and use the short name). The `null` branch is correct because the return type is nullable, so the `when` becomes exhaustive once the type resolves. Exact edit:
+
 ```kotlin
 // CompilerViewModel.kt ~line 521 and 534 — replace the qualifier:
 is com.ahmedyejam.mks.data.model.MksResult.Success -> { ... }
@@ -266,6 +277,7 @@ is com.ahmedyejam.mks.data.model.MksResult.Error   -> { ... }
 ### 6.3 How to proceed — sequenced next steps
 
 **Step 0 — Get to green (do immediately, ~30 min):**
+
 1. E1: fix the `MksResult` package qualifier in CompilerViewModel.kt (521, 534) → `com.ahmedyejam.mks.data.model.MksResult`.
 2. E2: delete the stray `}` at LibraryScreen.kt:653.
 3. E3: add the two missing `_en_` webp drawables **or** fall back those `when` branches to an existing banner.
@@ -273,6 +285,7 @@ is com.ahmedyejam.mks.data.model.MksResult.Error   -> { ... }
 5. Add `implementation(libs.androidx.appcompat)` to `:feature:ui` if the locale API only resolved transitively.
 
 **Step 1 — Lock the fixes with tests (this is the enabler for everything else):**
+
 - Stand up the in-memory Room + Hilt test harness (enhancement Phase 1.1). Then, in priority order, write the tests that directly cover what round-1 just changed so a re-break is caught:
   - `SummaryConsistencyTest` — filter membership == card badge == export, incl. repeated ids (guards the B P1 fix).
   - `QuizSessionPersistenceTest` — concurrent submits under the Mutex; adaptive session persists and reloads; terminal flush survives cancellation (guards B P0/P1).
@@ -281,6 +294,7 @@ is com.ahmedyejam.mks.data.model.MksResult.Error   -> { ... }
   - `RemoteAssetSecurityTest` — private-IP reject **and** a redirect-to-internal-IP case (will currently FAIL on the redirect case → proves the remaining SSRF gap).
 
 **Step 2 — Finish the partially-done P0/P1 items (from 6.1 🟡):**
+
 - SSRF: close the redirect bypass (`followRedirects(false)` + per-hop re-validation).
 - Answer index: unify the other two resolvers or share one `AnswerResolver`.
 - Session Mutex: extend to `dropOption`/`jumpToQuestion`/`nextQuestion` writers.
@@ -289,6 +303,7 @@ is com.ahmedyejam.mks.data.model.MksResult.Error   -> { ... }
 - Category stats: switch to the `answersByIndex` classifier for full Summary consistency.
 
 **Step 3 — Resume the untouched P0/P1 roadmap rows (not yet started):**
+
 - Security P0 not yet addressed: **XXE hardening** (XlsxImageResolver), **encrypted-ZIP zip-bomb** bound (ZipLibraryParser), **API-key encryption** (DataStore). These are the highest-risk remaining items and are independent of the UI build break.
 - Import P0/P1: XLSX inline-image loss (import side), `.xls` routing, rollback-orphan image cleanup, the `AssetReferenceTracker` de-dup (fixes the divergent allow-list).
 - Infra P0/P1: `TokenSyncWorker` implementation, notification channel + POST_NOTIFICATIONS, RemoteConfig cold-start seed.

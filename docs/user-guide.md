@@ -1,7 +1,6 @@
 # MKS User Guide
 
-# MKS — Final User Experience Review & Journey Map
-
+> **MKS — Final User Experience Review & Journey Map**
 >
 > **Lens:** Written entirely from the **end user's** point of view — a student, resident, or self-learner. No code, no file paths, no architecture. Security/engineering internals live in the separate developer review; only the user-facing edges of those (privacy, trust, data loss) appear here.
 >
@@ -11,16 +10,15 @@
 
 ## Table of Contents
 
-  - A1. The full journey, as a user lives it
-  - A2. What delights
-  - A3. Top frictions, ranked by how much they hurt
-  - A4. Where the app quietly loses your work (trust-breakers)
-  - A5. Promises vs. reality
-  - B1 Launch & Onboarding · B2 Library Hub · B3 Import / Compiler · B4 Quiz Player · B5 Summary · B6 Session Management · B7 Quiz Questions Browser · B8 Category Questions · B9 Adaptive Training · B10 Book Knowledge Dashboard · B11 Flashcards · B12 Slideshows · B13 Note Blueprints / Reader · B14 AI Prompt Decks · B15 Source Documents · B16 Book Notes · B17 AI MCQ Generator · B18 PDF Extraction · B19 Scanner (OCR) · B20 Global Search · B21 Review Dashboard · B22 Data Tools · B23 Settings · B24 Dialogs & Overlays
+- A1. The full journey, as a user lives it
+- A2. What delights
+- A3. Top frictions, ranked by how much they hurt
+- A4. Where the app quietly loses your work (trust-breakers)
+- A5. Promises vs. reality
+- B1 Launch & Onboarding · B2 Library Hub · B3 Import / Compiler · B4 Quiz Player · B5 Summary · B6 Session Management · B7 Quiz Questions Browser · B8 Category Questions · B9 Adaptive Training · B10 Book Knowledge Dashboard · B11 Flashcards · B12 Slideshows · B13 Note Blueprints / Reader · B14 AI Prompt Decks · B15 Source Documents · B16 Book Notes · B17 AI MCQ Generator · B18 PDF Extraction · B19 Scanner (OCR) · B20 Global Search · B21 Review Dashboard · B22 Data Tools · B23 Settings · B24 Dialogs & Overlays
 - **Part C — Cross-Cutting Experience Themes**
 - **Part D — Exhaustive Improvement Catalog** (every addon / feature / option / interactable / utility)
 - **Part E — Quick Wins & a Delight Roadmap**
-
 
 ---
 
@@ -61,6 +59,7 @@ That's the arc: **bring in → organize → study → review → track → back 
 **Route:** `library`. The central dashboard: Books at root; a book's Quizzes + Knowledge-Bank items when you tap in; also browse by Category.
 
 **Top App Bar**
+
 | Element | What it does |
 |---|---|
 | **← Back** | Appears inside a book or in search; returns to root / exits search. |
@@ -71,6 +70,7 @@ That's the arc: **bring in → organize → study → review → track → back 
 | **Title** | "MKS Library" at root, book title inside a book, "Category: [name]" when browsing a category. |
 
 **Content area (grid/list)**
+
 | Element | What it does |
 |---|---|
 | **Book card — tap** | Opens the book (filters to its quizzes + knowledge items). |
@@ -81,6 +81,7 @@ That's the arc: **bring in → organize → study → review → track → back 
 | **Knowledge-bank item — tap** | Opens the relevant screen (deck, course, blueprint, prompt deck). |
 
 **Floating Action Button (+)** — expands a context-dependent menu:
+
 - *Always:* **Import** (file picker: XLSX/CSV/TSV/JSON/HTML/TXT/ZIP → Compiler), **Export** (ZIP of current book or whole library).
 - *Inside a book:* **New Quiz, Adaptive Training, Flashcard Deck, Slideshow Course, Review Blueprint, Sources, Book Notes, AI Prompt Deck.**
 - *At root:* **New Book, Adaptive Training (all books).**
@@ -104,6 +105,7 @@ Reached from the FAB **Import**, a book/quiz's **Import Into**, or an Android **
 **Options:** tap to select (radio/checkbox) · double-tap to select+submit (if enabled) · long-press to eliminate (strikethrough) · elimination-mode ✕ per option. After submit: green (correct) / red (your wrong pick); Submit → Next.
 
 **Bottom sheet (drag up):**
+
 - *Peek:* live Accuracy % (color-coded) · Streak · Submit/Next/Reveal button.
 - *Expanded toggles:* Categories · One-by-One · Rapid Mode · Eliminate · Drop Question (confirm) · Focus Mode (DND) · Mark/Bookmark · Finish Quiz.
 - *Navigation:* filter chips (ALL/ANSWERED/UNANSWERED/MISSED/MARKED/DROPPED) · color-coded question-number grid (tap to jump) · "Restore dropped question" chip.
@@ -251,4 +253,3 @@ Export full library (ZIP of JSON dumps) · Save export file · Choose ZIP & prev
 - **Sort Dialog** — Name A–Z/Z–A, Date Created/Edited, Progress.
 - **Trash Bin Dialog** — soft-deleted items across 6 types; restore or permanently delete; auto-purge after retention.
 - **Workspace Manager Dialog** — create/switch/rename/delete workspaces; each is isolated; default can't be deleted.
-

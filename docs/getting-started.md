@@ -9,7 +9,7 @@ MKS is built entirely in Kotlin using Jetpack Compose and Dagger Hilt.
 - **Android Studio**: Ladybug (or newer recommended)
 - **Language**: Kotlin 99.5%
 - **Min SDK**: 30 (Android 11)
-- **Target SDK**: 37 (Android 15)
+- **Target SDK**: 37
 - **JVM Target**: Java 11
 
 ## Build & Run
@@ -29,7 +29,9 @@ To compile and run the application, use the provided Gradle wrapper commands fro
 MKS includes a database seeder for testing, unit tests, and instrumented tests.
 
 ### Seed Database
+
 The `MksDatabaseSeeder.seed()` function (located in `core/data/seeder/`) initializes the database with useful test data so the app is never empty on first launch:
+
 - 1 sample Book
 - 1 Quiz with 13 questions
 - A sample flashcard deck
@@ -39,6 +41,7 @@ The `MksDatabaseSeeder.seed()` function (located in `core/data/seeder/`) initial
 *To reset the database, clearing app data will trigger a re-seeding upon next launch.*
 
 ### Run Tests
+
 ```bash
 # Run unit tests
 ./gradlew test
@@ -48,4 +51,4 @@ The `MksDatabaseSeeder.seed()` function (located in `core/data/seeder/`) initial
 ```
 
 ---
-*Status: Current | Owner: AhmedEjam | Last Verified: 2026-07-14*
+*Status: Current | Owner: AhmedEjam | Last Verified: 2026-07-15*
