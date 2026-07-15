@@ -13,6 +13,7 @@ To avoid duplication and drift, each document is assigned a specific area of res
 | **[database.md](database.md)** | Room schema, entities, DAOs, and migration history. |
 | **[importing.md](importing.md)** | Import formats, data limits, security rules, parsing invariants, and merge behavior. |
 | **[ai.md](ai.md)** | AI providers, LLM configurations, prompt generation, and OCR logic. |
+| **[lifecycle.md](lifecycle.md)** | Complete user journey and lifecycle from installation to daily use. |
 | **[user-guide.md](user-guide.md)** | Screen-by-screen user journey and workflow documentation. |
 | **[design-system.md](design-system.md)** | Durable visual rules, theming constants, and component contracts. |
 | **[redesign-status.md](redesign-status.md)** | Implementation handoff, screen statuses, and temporary build blockers. |

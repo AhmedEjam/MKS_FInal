@@ -175,6 +175,7 @@ The following complementary documentation exists in `docs/`:
 | File | Purpose |
 |---|---|
 | `docs/architecture.md` | High-level system architecture with component diagrams |
+| `docs/lifecycle.md` | Complete user journey and interaction lifecycle |
 | `docs/user-guide.md` | Detailed screen-by-screen UI interaction map |
 | `docs/database.md` | Database inspection notes |
 | `docs/importing.md` | Import input path documentation |
