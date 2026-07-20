@@ -14,7 +14,7 @@ import java.io.File
 
 @Singleton
 class PdfRendererService @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
 
     suspend fun getPageCount(pdfUri: Uri): Int = withContext(Dispatchers.IO) {

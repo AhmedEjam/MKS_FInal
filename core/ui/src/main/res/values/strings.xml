@@ -165,6 +165,7 @@
     <string name="from_label">From</string>
     <string name="to_label">To</string>
     <string name="start">Start</string>
+    <string name="resume">Resume</string>
     <string name="include_only">Include Only</string>
     <string name="question_range">Question Range</string>
     <string name="shuffle_questions">Shuffle Questions</string>
@@ -422,4 +423,48 @@ grow in every session.</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="terms_of_service">Terms of Service</string>
     <string name="contact_support">Contact Support</string>
+
+    <!-- Study player: shared chrome across flashcards, slideshow, notes and prompt decks -->
+    <string name="player_previous">Previous</string>
+    <string name="player_next">Next</string>
+    <string name="player_progress_format">%1$d of %2$d</string>
+    <string name="player_flip">Flip card</string>
+    <string name="player_flip_hint">Double tap to flip the card</string>
+    <string name="player_face_front">Front</string>
+    <string name="player_face_back">Back</string>
+    <string name="player_rating_again">Again</string>
+    <string name="player_rating_good">Good</string>
+    <string name="player_rating_easy">Easy</string>
+    <string name="player_mark_studied">Mark studied</string>
+    <string name="player_studied">Studied</string>
+
+    <!-- Flashcard deck -->
+    <string name="flashcard_no_cards">No cards to study</string>
+    <string name="flashcard_deck_not_found">Deck not found</string>
+    <string name="flashcard_add_card">Add card</string>
+    <string name="flashcard_study">Study</string>
+    <string name="flashcard_import_file">Import from file</string>
+    <string name="flashcard_paste_text">Paste text</string>
+    <string name="flashcard_generate">Generate from questions</string>
+    <string name="flashcard_empty_title">No flashcards yet</string>
+    <string name="flashcard_empty_body">Create cards manually or generate them from marked or missed questions.</string>
+    <string name="flashcard_cards_count">%1$d cards</string>
+    <string name="flashcard_studied_count">%1$d studied</string>
+    <string name="flashcard_mastery">%1$d%% mastery</string>
+    <string name="flashcard_selected_count">%1$d selected</string>
+    <string name="flashcard_hint_label">Hint</string>
+
+    <!-- Slideshow -->
+    <string name="slideshow_no_slides">No slides to present</string>
+
+    <!-- Player options menu -->
+    <string name="player_show_attempts">Show attempts</string>
+    <string name="player_show_correct">Show correct</string>
+    <string name="player_show_source">Show source</string>
+    <string name="player_show_explanation">Show explanation</string>
+    <string name="player_show_reference">Show reference</string>
+    <string name="player_show_hint">Show hint</string>
+    <string name="player_show_additional_info">Show additional info</string>
+    <string name="player_options">Options</string>
+    <string name="player_toggle_study_mode">Toggle study mode</string>
 </resources>

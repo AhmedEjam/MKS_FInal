@@ -1,6 +1,6 @@
 # AGENTS.md - MKS Project Guidance
 
-> **Last updated:** 2026-07-15 | Room v30 | 29 migrations | 26 entities | 26 DAOs | 6-module architecture
+> **Last updated:** 2026-07-20 | Room v33 | 32 migrations | 28 entities | 28 DAOs | 6-module architecture
 >
 > **This file is the single canonical context guide for AI agents.** It consolidates project overview, AI navigation rules, architecture, import pipeline, UI reference, and common tasks. Read the **AI Navigation Guide** section first; it contains the authoritative file paths.
 
@@ -48,7 +48,7 @@
 - **Language:** Kotlin
 - **UI Framework:** Jetpack Compose (single-activity, Material 3)
 - **DI:** Dagger Hilt (6 modules in `app/di/`)
-- **Database:** Room v30 (29 migration steps, v1→v30, KSP)
+- **Database:** Room v33 (32 migration steps, v1→v33, KSP)
 - **File Import:** Multi-format (XLSX, CSV/TSV, JSON, HTML, TEXT, PPTX, ZIP)
 - **Images:** Coil (25% RAM memory cache + disk cache), embedded XLSX images, HTTP downloads
 - **Preferences:** Jetpack DataStore

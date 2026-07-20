@@ -23,10 +23,20 @@
 - **Golden rule:** never hardcode a hex color in a screen. Always go through `colorScheme.*` or
   `LocalMksDesignTokens.current.*`, and gate gradients/glow on `tokens.useGradients`. This is what keeps
   all 7 themes working from one screen implementation.
-- **Build blocker (important):** the dev environment used to write this could **not compile** — no Android
-  SDK, `gradle.properties`/`local.properties` point at another user (`ahmedy.ajam`), only JDK 26 installed
-  (project needs 17). All code so far is written + statically checked but **not compile-verified**. Whoever
-  has a working toolchain must run the compile (§10) and report errors.
+- **Build status: RESOLVED (2026-07-20).** This was previously flagged as a hard blocker ("cannot compile").
+  It is fixed. The system JDK is 26, which Gradle rejects, but **Android Studio's bundled JDK 21 works**:
+
+  ```bash
+  export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+  ./gradlew assembleDebug
+  ```
+
+  `local.properties` now points at the correct SDK (`/Users/ahmedejam/Library/Android/sdk`). `assembleDebug`
+  and `:app:testDebugUnitTest` both pass. Redesign work is now compile-verified, not just statically checked.
+
+  > Known unrelated failure: `:core:data:testDebugUnitTest` fails because Robolectric cannot download
+  > `org.robolectric:android-all-instrumented:5.0.2_r3`. That is an artifact-fetch/network issue, not a
+  > code defect.
 
 ---
 

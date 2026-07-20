@@ -7,16 +7,16 @@ The database layer is **modular** — split across three Gradle modules:
 | Module           | Contents                                              |
 |------------------|-------------------------------------------------------|
 | `core/model/`    | 26 Entity data classes                                |
-| `core/database/` | `MksDatabase`, `MksMigrations`, `Converters`, 26 DAOs |
+| `core/database/` | `MksDatabase`, `MksMigrations`, `Converters`, 28 DAOs |
 | `app/di/`        | 6 Hilt DI modules wiring it all together              |
 
-**Current version: 30** (29 migration steps from v1→v30), using Room with schema export enabled.
+**Current version: 33** (32 migration steps from v1→v33), using Room with schema export enabled.
 
 ---
 
 ## Entity Patterns
 
-All 26 entities follow consistent conventions:
+All 28 entities follow consistent conventions:
 
 - **Kotlin `data class`** with default values for every field
 - **`@PrimaryKey(autoGenerate = true)`** (except `CategoryMetadataEntity` uses `name`,
@@ -66,7 +66,7 @@ Key design: backward compatibility with legacy comma-separated values, graceful 
 
 ---
 
-## Migrations (29 steps, v1→v30)
+## Migrations (32 steps, v1→v33)
 
 Key patterns used in `MksMigrations.kt`:
 
@@ -77,7 +77,7 @@ Key patterns used in `MksMigrations.kt`:
 3. **`CREATE INDEX IF NOT EXISTS`** — makes migrations rerunnable
 4. **Data seeding in migrations** — v22→v24 creates default workspace; v26→v27 creates default note
    collections
-5. **`MksMigrations.ALL`** array — all 29 objects in order, passed to
+5. **`MksMigrations.ALL`** array — all 32 objects in order, passed to
    `Room.databaseBuilder().addMigrations(*MksMigrations.ALL)`
 
 Notable: the `source_document_assets` table was created in v27→v28 then **dropped** in v28→v29.
@@ -113,6 +113,9 @@ Notable: the `source_document_assets` table was created in v27→v28 then **drop
 | 27→28     | Create source_document_assets table                                                                                                                                                                          |
 | 28→29     | Drop source_document_assets; add unique indexes on books.externalId, quizzes.externalId                                                                                                                      |
 | 29→30     | Add resultTaxonomy (Map<Int, String>) to sessions                                                                                                                                                            |
+| 30→31     | Add draftAnswersByIndex to sessions (in-progress answer drafts)                                                                                                                                              |
+| 31→32     | Create `study_runs` table + 4 indexes — unified resumable study state for non-quiz assets                                                                                                                    |
+| 32→33     | Create `search_index` FTS4 virtual table (unicode61 tokenizer, Arabic-safe) and backfill from books/quizzes/questions/knowledge assets                                                                       |
 
 ---
 
@@ -124,9 +127,9 @@ Notable: the `source_document_assets` table was created in v27→v28 then **drop
 |--------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
 | `HiltDataModule`         | `MksDatabase` singleton, `FileManager`, `Repository`, `ExportManager`, `ImportLibraryManager`, `@ApplicationScope CoroutineScope` |
 | `HiltDaoModule`          | 6 core DAOs (Book, Quiz, Question, Session, CategoryMetadata, QuestionCategory)                                                   |
-| `HiltKnowledgeDaoModule` | 10 knowledge-bank DAOs                                                                                                            |
-| `HiltUtilityDaoModule`   | 10 utility/cross-cutting DAOs                                                                                                     |
-| `HiltRepositoryModule`   | `GlobalSearchRepository` (explicitly provided). Note: `ReviewRepository` and `OllamaRepository` use `@Inject constructor` and are auto-provided by Hilt. |
+| `HiltKnowledgeDaoModule` | 11 knowledge-bank DAOs (incl. `StudyRunDao`)                                                                                      |
+| `HiltUtilityDaoModule`   | 11 utility/cross-cutting DAOs (incl. `SearchIndexDao`)                                                                            |
+| `HiltRepositoryModule`   | `GlobalSearchRepository` (explicit). `ReviewRepository` / `OllamaRepository` use `@Inject constructor`, auto-provided.            |
 | `HiltServiceModule`      | Placeholder                                                                                                                       |
 
 Database builder config:
@@ -157,7 +160,7 @@ The AGENTS.md file previously described the project at version 28 with 27 migrat
 entities/DAOs in `data/local/entity/` and `data/local/dao/` under the app module. The actual current
 state differs:
 
-- **Database version is 30** (not 28), with **29 migrations** (1→2 through 29→30).
+- **Database version is 33**, with **32 migrations** (1→2 through 32→33).
 - **No AppModule.kt exists** — it has been fully replaced by the Hilt DI modules.
 - **Entities** live in `core/model/src/main/java/com/ahmedyejam/mks/data/local/entity/` (a separate
   Gradle module).
@@ -170,8 +173,13 @@ state differs:
 - The DI setup splits DAO provision across **three separate modules** (HiltDaoModule,
   HiltKnowledgeDaoModule, HiltUtilityDaoModule) rather than one.
 
-> **Note (2026-07-10):** AGENTS.md has been updated to reflect the current state. The discrepancies
+> **Note (2026-07-20):** AGENTS.md has been updated to reflect the current state. The discrepancies
 > listed above should now be resolved. This section is retained for historical reference.
+>
+> **⚠️ Migration test coverage gap:** `core/database/src/androidTest/.../local/` has tests through
+> `Migration29To30Test`. Migrations **30→31, 31→32, and 32→33 have no tests** — including the
+> `study_runs` table creation and the FTS4 backfill, which is the most data-sensitive migration in
+> the set. Write these before the current work is committed.
 
 ---
 

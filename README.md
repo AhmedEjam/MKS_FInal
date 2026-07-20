@@ -57,7 +57,7 @@ Start here to understand the documentation authority map and where to find speci
 
 - **[Getting Started](docs/getting-started.md)**: Toolchain, build, run, and test requirements.
 - **[Architecture & DI](docs/architecture.md)**: Module boundaries, dependency flow, and Dagger Hilt injection map.
-- **[Database Schema](docs/database.md)**: Room v30 entities, DAOs, and migrations.
+- **[Database Schema](docs/database.md)**: Room v33 entities, DAOs, and migrations.
 - **[Importing Pipeline](docs/importing.md)**: Formats, limits, security rules, and parsing behavior.
 - **[AI Systems](docs/ai.md)**: AI providers, pipelines, and prompt architectures.
 - **[User Lifecycle](docs/lifecycle.md)**: Complete user journey from installation to daily use.

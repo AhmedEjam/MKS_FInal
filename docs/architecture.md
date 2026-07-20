@@ -8,7 +8,7 @@
 MKS (My Knowledge Space)
 ├── Framework: Jetpack Compose + Material3
 ├── Architecture: MVVM with Dagger Hilt DI (modular multi-module)
-├── Database: Room v30 (29 migration steps)
+├── Database: Room v33 (32 migration steps)
 ├── Language: Kotlin
 ├── Target SDK: 37
 └── Min SDK: 30

@@ -173,6 +173,7 @@
     <string name="from_label">من</string>
     <string name="to_label">إلى</string>
     <string name="start">بدء</string>
+    <string name="resume">استئناف</string>
     <string name="include_only">تضمين فقط</string>
     <string name="question_range">نطاق الأسئلة</string>
     <string name="shuffle_questions">تبديل ترتيب الأسئلة</string>
@@ -430,4 +431,48 @@
     <string name="privacy_policy">سياسة الخصوصية</string>
     <string name="terms_of_service">شروط الخدمة</string>
     <string name="contact_support">اتصل بالدعم</string>
+
+    <!-- مشغل الدراسة: عناصر مشتركة بين البطاقات والعروض والملاحظات وبطاقات الذكاء الاصطناعي -->
+    <string name="player_previous">السابق</string>
+    <string name="player_next">التالي</string>
+    <string name="player_progress_format">%1$d من %2$d</string>
+    <string name="player_flip">اقلب البطاقة</string>
+    <string name="player_flip_hint">انقر نقرًا مزدوجًا لقلب البطاقة</string>
+    <string name="player_face_front">الوجه الأمامي</string>
+    <string name="player_face_back">الوجه الخلفي</string>
+    <string name="player_rating_again">أعد</string>
+    <string name="player_rating_good">جيد</string>
+    <string name="player_rating_easy">سهل</string>
+    <string name="player_mark_studied">تحديد كمُذاكَر</string>
+    <string name="player_studied">تمت المذاكرة</string>
+
+    <!-- مجموعة البطاقات -->
+    <string name="flashcard_no_cards">لا توجد بطاقات للمذاكرة</string>
+    <string name="flashcard_deck_not_found">المجموعة غير موجودة</string>
+    <string name="flashcard_add_card">إضافة بطاقة</string>
+    <string name="flashcard_study">مذاكرة</string>
+    <string name="flashcard_import_file">استيراد من ملف</string>
+    <string name="flashcard_paste_text">لصق نص</string>
+    <string name="flashcard_generate">إنشاء من الأسئلة</string>
+    <string name="flashcard_empty_title">لا توجد بطاقات بعد</string>
+    <string name="flashcard_empty_body">أنشئ البطاقات يدويًا أو ولّدها من الأسئلة المعلَّمة أو الخاطئة.</string>
+    <string name="flashcard_cards_count">%1$d بطاقة</string>
+    <string name="flashcard_studied_count">%1$d تمت مذاكرتها</string>
+    <string name="flashcard_mastery">%1$d%% إتقان</string>
+    <string name="flashcard_selected_count">%1$d محددة</string>
+    <string name="flashcard_hint_label">تلميح</string>
+
+    <!-- العرض التقديمي -->
+    <string name="slideshow_no_slides">لا توجد شرائح للعرض</string>
+
+    <!-- قائمة خيارات المشغل -->
+    <string name="player_show_attempts">إظهار المحاولات</string>
+    <string name="player_show_correct">إظهار الإجابات الصحيحة</string>
+    <string name="player_show_source">إظهار المصدر</string>
+    <string name="player_show_explanation">إظهار الشرح</string>
+    <string name="player_show_reference">إظهار المرجع</string>
+    <string name="player_show_hint">إظهار التلميح</string>
+    <string name="player_show_additional_info">إظهار معلومات إضافية</string>
+    <string name="player_options">خيارات</string>
+    <string name="player_toggle_study_mode">تبديل وضع المذاكرة</string>
 </resources>

@@ -5,14 +5,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,13 +21,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -39,8 +35,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
@@ -101,7 +95,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import androidx.compose.ui.text.style.TextOverflow
 import com.ahmedyejam.mks.core.ui.R
+import com.ahmedyejam.mks.ui.components.StudyControlBar
+import com.ahmedyejam.mks.ui.components.StudyEmptyState
+import com.ahmedyejam.mks.ui.components.StudyProgressHeader
+import com.ahmedyejam.mks.ui.components.StudyStepDots
 import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
@@ -516,9 +515,7 @@ private fun SlidePresentationContent(
 ) {
     val tokens = LocalMksDesignTokens.current
     if (state.slides.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No slides to present")
-        }
+        StudyEmptyState(title = stringResource(R.string.slideshow_no_slides))
         return
     }
 
@@ -537,13 +534,14 @@ private fun SlidePresentationContent(
     }
 
     Column(Modifier.fillMaxSize()) {
-        LinearProgressIndicator(
-            progress = { (state.currentIndex + 1f) / state.slides.size.coerceAtLeast(1) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        StudyProgressHeader(
+            position = state.currentIndex,
+            total = state.slides.size,
+            progressLabel = stringResource(
+                R.string.player_progress_format,
+                state.currentIndex + 1,
+                state.slides.size
+            )
         )
 
         HorizontalPager(
@@ -598,60 +596,38 @@ private fun SlidePresentationContent(
                 }
             }
 
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.Center,
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                items(state.slides.size) { index ->
-                    val isActive = index == state.currentIndex
-                    val isStudied = state.slides[index].isCompleted
-                    Box(
-                        Modifier
-                            .padding(horizontal = 3.dp)
-                            .size(if (isActive) 10.dp else 7.dp)
-                            .clip(CircleShape)
-                            .background(
-                                when {
-                                    isActive -> MaterialTheme.colorScheme.primary
-                                    isStudied -> tokens.success
-                                    else -> MaterialTheme.colorScheme.outlineVariant
-                                }
-                            )
-                            .clickable { viewModel.setCurrentIndex(index) }
-                    )
-                }
-            }
+            StudyStepDots(
+                total = state.slides.size,
+                currentIndex = state.currentIndex,
+                onSelect = { viewModel.setCurrentIndex(it) },
+                completed = { state.slides[it].isCompleted }
+            )
 
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedButton(onClick = { viewModel.previousSlide() }, enabled = state.currentIndex > 0) {
-                    Icon(Icons.Default.ChevronLeft, null)
-                    Spacer(Modifier.width(4.dp))
-                    Text("Previous")
+            StudyControlBar(
+                onPrevious = { viewModel.previousSlide() },
+                onNext = { viewModel.nextSlide() },
+                previousLabel = stringResource(R.string.player_previous),
+                nextLabel = stringResource(R.string.player_next),
+                previousEnabled = state.currentIndex > 0,
+                nextEnabled = state.currentIndex < state.slides.size - 1,
+                primary = {
+                    FilledTonalButton(onClick = { viewModel.toggleSlideStudied() }) {
+                        Icon(
+                            if (currentSlide.isCompleted) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+                            null
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            stringResource(
+                                if (currentSlide.isCompleted) R.string.player_studied
+                                else R.string.player_mark_studied
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
-                FilledTonalButton(onClick = { viewModel.toggleSlideStudied() }) {
-                    Icon(
-                        if (currentSlide.isCompleted) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
-                        null
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(if (currentSlide.isCompleted) "Studied" else "Mark studied")
-                }
-                Button(onClick = { viewModel.nextSlide() }, enabled = state.currentIndex < state.slides.size - 1) {
-                    Text("Next")
-                    Spacer(Modifier.width(4.dp))
-                    Icon(Icons.Default.ChevronRight, null)
-                }
-            }
+            )
         }
     }
 }

@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -60,7 +62,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -76,7 +77,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -86,6 +89,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
 import com.ahmedyejam.mks.data.model.FlashcardGenerationConfig
+import com.ahmedyejam.mks.core.ui.R
+import com.ahmedyejam.mks.ui.components.FlipSurface
+import com.ahmedyejam.mks.ui.components.StudyControlBar
+import com.ahmedyejam.mks.ui.components.StudyEmptyState
+import com.ahmedyejam.mks.ui.components.StudyFaceLabel
+import com.ahmedyejam.mks.ui.components.StudyPlayerScaffold
+import com.ahmedyejam.mks.ui.components.StudyPrimarySlot
+import com.ahmedyejam.mks.ui.components.StudyRatingBar
+import com.ahmedyejam.mks.ui.components.StudyStepDots
 import com.ahmedyejam.mks.ui.quiz.CompilerDialog
 import com.ahmedyejam.mks.ui.quiz.CompilerViewModel
 import com.ahmedyejam.mks.ui.theme.LocalMksDesignTokens
@@ -258,7 +270,7 @@ fun FlashcardDeckScreen(
         topBar = {
             if (state.selectedCardIds.isNotEmpty()) {
                 TopAppBar(
-                    title = { Text("${state.selectedCardIds.size} selected") },
+                    title = { Text(stringResource(R.string.flashcard_selected_count, state.selectedCardIds.size)) },
                     navigationIcon = { IconButton(onClick = { vm.clearSelection() }) { Icon(Icons.Default.Close, contentDescription = "Clear selection") } },
                     actions = {
                         IconButton(onClick = { vm.selectAllCards() }) {
@@ -298,38 +310,38 @@ fun FlashcardDeckScreen(
                         }
                         DropdownMenu(expanded = showOptionsMenu, onDismissRequest = { showOptionsMenu = false }) {
                             DropdownMenuItem(
-                                text = { Text("Show Attempts") },
+                                text = { Text(stringResource(R.string.player_show_attempts)) },
                                 onClick = { showAttemptsChip = !showAttemptsChip },
                                 trailingIcon = { if (showAttemptsChip) Icon(Icons.Default.Check, null) }
                             )
                             DropdownMenuItem(
-                                text = { Text("Show Correct") },
+                                text = { Text(stringResource(R.string.player_show_correct)) },
                                 onClick = { showCorrectChip = !showCorrectChip },
                                 trailingIcon = { if (showCorrectChip) Icon(Icons.Default.Check, null) }
                             )
                             DropdownMenuItem(
-                                text = { Text("Show Source") },
+                                text = { Text(stringResource(R.string.player_show_source)) },
                                 onClick = { showSourceChip = !showSourceChip },
                                 trailingIcon = { if (showSourceChip) Icon(Icons.Default.Check, null) }
                             )
                             if (state.isStudyMode) {
                                 DropdownMenuItem(
-                                    text = { Text("Show Explanation") },
+                                    text = { Text(stringResource(R.string.player_show_explanation)) },
                                     onClick = { showExplanation = !showExplanation },
                                     trailingIcon = { if (showExplanation) Icon(Icons.Default.Check, null) }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Show Reference") },
+                                    text = { Text(stringResource(R.string.player_show_reference)) },
                                     onClick = { showReference = !showReference },
                                     trailingIcon = { if (showReference) Icon(Icons.Default.Check, null) }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Show Hint") },
+                                    text = { Text(stringResource(R.string.player_show_hint)) },
                                     onClick = { showHint = !showHint },
                                     trailingIcon = { if (showHint) Icon(Icons.Default.Check, null) }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Show Additional Info") },
+                                    text = { Text(stringResource(R.string.player_show_additional_info)) },
                                     onClick = { showAdditionalInfo = !showAdditionalInfo },
                                     trailingIcon = { if (showAdditionalInfo) Icon(Icons.Default.Check, null) }
                                 )
@@ -356,7 +368,10 @@ fun FlashcardDeckScreen(
         ) {
             when {
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                state.deck == null -> Text("Deck not found", Modifier.align(Alignment.Center))
+                state.deck == null -> Text(
+                    stringResource(R.string.flashcard_deck_not_found),
+                    Modifier.align(Alignment.Center)
+                )
                 state.isStudyMode -> FlashcardStudyContent(
                     state = state, 
                     viewModel = vm,
@@ -435,21 +450,21 @@ private fun FlashcardDeckDetailContent(
                 Button(onClick = onAddCard, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
-                    Text("Add card")
+                    Text(stringResource(R.string.flashcard_add_card))
                 }
                 OutlinedButton(onClick = onStartStudy, enabled = state.cards.isNotEmpty(), modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
-                    Text("Study")
+                    Text(stringResource(R.string.flashcard_study))
                 }
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 OutlinedButton(onClick = onImportFile, modifier = Modifier.weight(1f)) {
-                    Text("Import from file")
+                    Text(stringResource(R.string.flashcard_import_file))
                 }
                 OutlinedButton(onClick = onPasteText, modifier = Modifier.weight(1f)) {
-                    Text("Paste text")
+                    Text(stringResource(R.string.flashcard_paste_text))
                 }
             }
         }
@@ -464,7 +479,7 @@ private fun FlashcardDeckDetailContent(
             ) {
                 Icon(Icons.Default.AutoAwesome, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Generate from questions", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.flashcard_generate), fontWeight = FontWeight.Bold)
             }
         }
         if (state.cards.isEmpty()) {
@@ -476,8 +491,8 @@ private fun FlashcardDeckDetailContent(
                     elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("No flashcards yet", fontWeight = FontWeight.SemiBold)
-                        Text("Create cards manually or generate them from marked/missed questions.")
+                        Text(stringResource(R.string.flashcard_empty_title), fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.flashcard_empty_body))
                     }
                 }
             }
@@ -513,9 +528,9 @@ private fun DeckStatsCard(deck: FlashcardDeckEntity, cardCount: Int) {
             Text(deck.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             deck.description?.takeIf { it.isNotBlank() }?.let { Text(it) }
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AssistChip(onClick = {}, label = { Text("$cardCount cards") })
-                AssistChip(onClick = {}, label = { Text("${deck.studiedCount} studied") })
-                AssistChip(onClick = {}, label = { Text("${(deck.masteryPercentage * 100).toInt()}% mastery") })
+                AssistChip(onClick = {}, label = { Text(stringResource(R.string.flashcard_cards_count, cardCount)) })
+                AssistChip(onClick = {}, label = { Text(stringResource(R.string.flashcard_studied_count, deck.studiedCount)) })
+                AssistChip(onClick = {}, label = { Text(stringResource(R.string.flashcard_mastery, (deck.masteryPercentage * 100).toInt())) })
             }
             LinearProgressIndicator(progress = { deck.masteryPercentage.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
         }
@@ -577,6 +592,16 @@ private fun FlashcardListItem(
     }
 }
 
+/**
+ * Flashcard study player.
+ *
+ * Built on the shared player kit in `core/ui` so it matches the slideshow and article players.
+ * The interaction model is deliberately single-track: swiping or the arrow controls move between
+ * cards, and the centre slot carries whatever the current card state asks for — flip while face
+ * down, rate while face up. The old screen had rating *and* a separate previous/next row competing
+ * to advance the deck, with no indication which one was authoritative.
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FlashcardStudyContent(
     state: FlashcardDeckUiState,
@@ -587,72 +612,193 @@ private fun FlashcardStudyContent(
     showAdditionalInfo: Boolean
 ) {
     val tokens = LocalMksDesignTokens.current
-    val card = state.currentCard
-    if (card == null) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No cards to study")
-        }
+    if (state.cards.isEmpty() || state.currentCard == null) {
+        StudyEmptyState(title = stringResource(R.string.flashcard_no_cards))
         return
     }
-    
-    val fullBackText = card.backText
-    var displayText = if (state.isFlipped) fullBackText else card.frontText
-    if (state.isFlipped) {
-        val sections = fullBackText.split("\n\n")
-        displayText = sections.filter { section ->
-            when {
-                section.startsWith("Explanation\n") -> showExplanation
-                section.startsWith("Reference\n") -> showReference
-                section.startsWith("Hint\n") -> showHint
-                section.startsWith("Additional Info\n") -> showAdditionalInfo
-                else -> true
+
+    val pagerState = rememberPagerState(
+        initialPage = state.currentIndex,
+        pageCount = { state.cards.size }
+    )
+
+    // Two-way sync between pager and ViewModel. setCurrentIndex no-ops when already current, so
+    // these effects settle instead of ping-ponging.
+    LaunchedEffect(pagerState.currentPage) { viewModel.setCurrentIndex(pagerState.currentPage) }
+    LaunchedEffect(state.currentIndex) {
+        if (pagerState.currentPage != state.currentIndex) {
+            if (tokens.isPlain) {
+                pagerState.scrollToPage(state.currentIndex)
+            } else {
+                pagerState.animateScrollToPage(state.currentIndex)
             }
-        }.joinToString("\n\n")
+        }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text("${state.currentIndex + 1} / ${state.cards.size}", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 8.dp))
-        Surface(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .clickable { viewModel.flipCard() },
-            shape = RoundedCornerShape(tokens.cardRadius),
-            tonalElevation = 2.dp,
-            color = MaterialTheme.colorScheme.surfaceVariant
-        ) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = displayText,
-                    style = MaterialTheme.typography.headlineSmall
+    StudyPlayerScaffold(
+        position = state.currentIndex,
+        total = state.cards.size,
+        progressLabel = stringResource(
+            R.string.player_progress_format,
+            state.currentIndex + 1,
+            state.cards.size
+        ),
+        controls = {
+            Column {
+                StudyPrimarySlot(stateKey = state.isFlipped) { flipped ->
+                    if (flipped) {
+                        StudyRatingBar(
+                            againLabel = stringResource(R.string.player_rating_again),
+                            goodLabel = stringResource(R.string.player_rating_good),
+                            easyLabel = stringResource(R.string.player_rating_easy),
+                            onAgain = { viewModel.rateCurrentCard(FLASHCARD_RATING_AGAIN) },
+                            onGood = { viewModel.rateCurrentCard(FLASHCARD_RATING_GOOD) },
+                            onEasy = { viewModel.rateCurrentCard(FLASHCARD_RATING_EASY) }
+                        )
+                    } else {
+                        Button(
+                            onClick = { viewModel.flipCard() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                stringResource(R.string.player_flip),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+                StudyStepDots(
+                    total = state.cards.size,
+                    currentIndex = state.currentIndex,
+                    onSelect = { viewModel.setCurrentIndex(it) }
+                )
+                StudyControlBar(
+                    onPrevious = { viewModel.previousCard() },
+                    onNext = { viewModel.nextCard() },
+                    previousLabel = stringResource(R.string.player_previous),
+                    nextLabel = stringResource(R.string.player_next),
+                    previousEnabled = state.currentIndex > 0,
+                    nextEnabled = state.currentIndex < state.cards.lastIndex
                 )
             }
         }
-        if (!state.isFlipped) {
-            Button(onClick = { viewModel.flipCard() }, modifier = Modifier.fillMaxWidth()) { Text("Flip") }
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(onClick = { viewModel.rateCurrentCard(FLASHCARD_RATING_AGAIN) }, modifier = Modifier.weight(1f)) { Text("Again") }
-                Button(onClick = { viewModel.rateCurrentCard(FLASHCARD_RATING_GOOD) }, modifier = Modifier.weight(1f)) { Text("Good") }
-                Button(onClick = { viewModel.rateCurrentCard(FLASHCARD_RATING_EASY) }, modifier = Modifier.weight(1f)) { Text("Easy") }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            TextButton(onClick = { viewModel.previousCard() }) { Text("Previous") }
-            TextButton(onClick = { viewModel.nextCard() }) { Text("Next") }
+    ) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            beyondViewportPageCount = 1,
+            pageSpacing = tokens.compactGap
+        ) { page ->
+            val pageCard = state.cards[page]
+            // Only the card actually in view participates in the flip; neighbours stay face down
+            // so a swipe never reveals a pre-flipped answer.
+            val isPageFlipped = state.isFlipped && page == state.currentIndex
+            FlipSurface(
+                isFlipped = isPageFlipped,
+                onFlip = { if (page == state.currentIndex) viewModel.flipCard() },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = tokens.pagePadding, vertical = tokens.compactGap),
+                flipDescription = stringResource(R.string.player_flip_hint),
+                front = {
+                    FlashcardFace(
+                        faceLabel = stringResource(R.string.player_face_front),
+                        text = pageCard.frontText,
+                        hint = pageCard.hint
+                    )
+                },
+                back = {
+                    FlashcardFace(
+                        faceLabel = stringResource(R.string.player_face_back),
+                        text = filterBackSections(
+                            backText = pageCard.backText,
+                            showExplanation = showExplanation,
+                            showReference = showReference,
+                            showHint = showHint,
+                            showAdditionalInfo = showAdditionalInfo
+                        ),
+                        hint = null
+                    )
+                }
+            )
         }
     }
 }
+
+/**
+ * One face of a card.
+ *
+ * The primary text is sized by length rather than fixed at `headlineSmall`. A back face carrying
+ * an explanation plus a reference plus additional info previously rendered every word at headline
+ * size, which read as an undifferentiated wall of text.
+ */
+@Composable
+private fun FlashcardFace(
+    faceLabel: String,
+    text: String,
+    hint: String?
+) {
+    val tokens = LocalMksDesignTokens.current
+    val textStyle = when {
+        text.length > 320 -> MaterialTheme.typography.bodyLarge
+        text.length > 120 -> MaterialTheme.typography.titleMedium
+        else -> MaterialTheme.typography.headlineSmall
+    }
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(tokens.pagePadding)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(tokens.compactGap)
+    ) {
+        StudyFaceLabel(faceLabel)
+        Spacer(Modifier.weight(1f))
+        Text(
+            text = text,
+            style = textStyle,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (!hint.isNullOrBlank()) {
+            Text(
+                text = stringResource(R.string.flashcard_hint_label) + ": " + hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        Spacer(Modifier.weight(1f))
+    }
+}
+
+/**
+ * Applies the top-bar visibility toggles to a generated back face.
+ *
+ * Generated cards join their sections with a blank line and prefix each with a bare label line.
+ * This mirrors the format written by `KnowledgeRepository`'s flashcard generator — a hand-authored
+ * card has no such sections and passes through untouched.
+ */
+private fun filterBackSections(
+    backText: String,
+    showExplanation: Boolean,
+    showReference: Boolean,
+    showHint: Boolean,
+    showAdditionalInfo: Boolean
+): String = backText
+    .split("\n\n")
+    .filter { section ->
+        when {
+            section.startsWith("Explanation\n") -> showExplanation
+            section.startsWith("Reference\n") -> showReference
+            section.startsWith("Hint\n") -> showHint
+            section.startsWith("Additional Info\n") -> showAdditionalInfo
+            else -> true
+        }
+    }
+    .joinToString("\n\n")
 
 @Composable
 private fun FlashcardEditorDialog(

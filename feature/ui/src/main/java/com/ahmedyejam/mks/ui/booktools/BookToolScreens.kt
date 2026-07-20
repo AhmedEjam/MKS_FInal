@@ -81,6 +81,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
@@ -539,7 +540,18 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                         )
                         androidx.compose.material3.HorizontalDivider()
                     }
-                    
+
+                    // Reading position. The article player is scroll-based rather than item-based,
+                    // so progress is derived from scroll offset — without it a long article gives
+                    // the reader no sense of how much is left, which the other players all provide.
+                    ReadingProgressBar(
+                        fraction = if (scrollState.maxValue > 0) {
+                            scrollState.value.toFloat() / scrollState.maxValue
+                        } else {
+                            0f
+                        }
+                    )
+
                     Column(
                         Modifier
                             .fillMaxSize()
@@ -597,6 +609,30 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
             }
         }
     }
+}
+
+/**
+ * Slim reading-position bar for the article player.
+ *
+ * Deliberately not [com.ahmedyejam.mks.ui.components.StudyProgressHeader]: that component reports a
+ * discrete position ("3 of 12") which has no meaning for continuous scrolling. The visual weight
+ * matches it, so the two players still read as the same system.
+ */
+@Composable
+private fun ReadingProgressBar(fraction: Float) {
+    val animated by animateFloatAsState(
+        targetValue = fraction.coerceIn(0f, 1f),
+        animationSpec = LocalMksDesignTokens.current.animationSpec(150),
+        label = "readingProgress"
+    )
+    LinearProgressIndicator(
+        progress = { animated },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(3.dp),
+        color = MaterialTheme.colorScheme.primary,
+        trackColor = MaterialTheme.colorScheme.surfaceVariant
+    )
 }
 
 @Composable
@@ -809,6 +845,30 @@ fun AiPromptDeckScreen(
     var outputText by remember { mutableStateOf("") }
 
     LaunchedEffect(promptId) { viewModel.loadPromptDeck(promptId) }
+
+    if (state.pendingPrivacyConsent) {
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelPrivacyConsent() },
+            title = { Text("Data will be sent to ${state.aiProviderName}") },
+            text = {
+                Text(
+                    "This prompt and any attached content will be sent to an external AI provider (${state.aiProviderName}). " +
+                    "Your data will be processed on their servers according to their privacy policy. " +
+                    "Do you want to continue?"
+                )
+            },
+            confirmButton = {
+                Button(onClick = { viewModel.confirmPrivacyConsent() }) {
+                    Text("Send")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.cancelPrivacyConsent() }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     val listState = rememberLazyListState()
 

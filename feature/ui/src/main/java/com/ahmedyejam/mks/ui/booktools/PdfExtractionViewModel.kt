@@ -38,7 +38,7 @@ data class ExtractionBlock(
 
 @HiltViewModel
 class PdfExtractionViewModel @Inject constructor(
-    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
+    @param:dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val assetRepository: com.ahmedyejam.mks.data.repository.AssetRepository,
     private val knowledgeRepository: com.ahmedyejam.mks.data.repository.KnowledgeRepository,
     private val pdfRendererService: PdfRendererService,

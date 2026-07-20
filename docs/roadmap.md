@@ -1,12 +1,13 @@
 # MKS Enhancement Plan
 
-> Last updated: 2026-07-10. Current state: Room v30, 6-module architecture, 6 domain repositories, all 26 entities in place.
+> Last updated: 2026-07-20. Current state: Room v33, 6-module architecture, 6 domain repositories, all 28 entities in place.
 
 ## Phase 1: Code Solidity & Testing Safety Net 🔴 PRIORITY
 
 ### 1.1 Repository Test Harness & Test Suites
 
-**Status:** 🔴 OPEN (zero repository tests exist)
+**Status:** 🟡 STARTED — `core/data/src/test/.../repository/` now has `WorkspaceIsolationTest` and
+`SoftDeleteCascadeTest`. The six domain repositories below still have no direct coverage.
 
 > **Note:** `GlobalErrorHandler.kt` now exists in `core:data/error/` (partially addresses crash observability in Phase 1.6).
 
@@ -19,11 +20,14 @@ Add a shared in-memory Room + Hilt test rule and fake `FileManager`/`RemoteAsset
 
 ### 1.2 Migration Test Completeness
 
-**Status:** ✅ DONE (v26→v30 now fully tested)
+**Status:** 🔴 REOPENED — coverage stops at v30; three newer migrations are untested.
 
 - ~~Add `Migration26To27Test`, `Migration27To28Test`, `Migration28To29Test`~~ ✅ COMPLETED
 - `Migration29To30Test` also exists (covers v29→v30: adds `resultTaxonomy` to sessions)
-- Add one full `MigrateAll1To30Test` chain test (validates end-to-end migration integrity, catches dropped columns like `source_document_assets` in v29)
+- 🔴 **Missing: `Migration30To31Test`, `Migration31To32Test`, `Migration32To33Test`.** The 32→33
+  FTS4 `search_index` backfill is the highest-risk of the three — it reads every book, quiz, and
+  question at upgrade time.
+- Add one full `MigrateAll1To33Test` chain test (validates end-to-end migration integrity, catches dropped columns like `source_document_assets` in v29)
 - Fill gap coverage: `1→15`, `17→22` (may not exist in real deployments)
 
 ### 1.3 Repository Hygiene (Scripts Cleanup)

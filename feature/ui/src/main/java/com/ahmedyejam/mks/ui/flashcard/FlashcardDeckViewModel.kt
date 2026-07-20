@@ -302,6 +302,20 @@ class FlashcardDeckViewModel @Inject constructor(
         saveSessionStateIncremental()
     }
 
+    /**
+     * Jump directly to a card. Backs the study pager, which needs to report swipe-driven page
+     * changes that did not originate from [nextCard] / [previousCard]. No-ops when the index is
+     * already current so pager sync does not churn state or trigger a redundant session save.
+     */
+    fun setCurrentIndex(index: Int) {
+        val current = _uiState.value
+        if (current.cards.isEmpty()) return
+        val target = index.coerceIn(0, current.cards.lastIndex)
+        if (target == current.currentIndex) return
+        _uiState.value = current.copy(currentIndex = target, isFlipped = false)
+        saveSessionStateIncremental()
+    }
+
     fun updateDeck(title: String, description: String?, coverImage: String?) {
         val deck = _uiState.value.deck ?: return
         viewModelScope.launch {

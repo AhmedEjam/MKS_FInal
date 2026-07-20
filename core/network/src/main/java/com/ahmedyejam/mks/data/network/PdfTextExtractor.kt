@@ -12,7 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class PdfTextExtractor @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
 
     suspend fun extractTextFromPages(pdfUri: Uri, pageNumbers: Set<Int>): String = withContext(Dispatchers.IO) {
