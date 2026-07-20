@@ -6,6 +6,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
+import com.ahmedyejam.mks.util.MksLogger
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,9 +20,13 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class AppFirebaseMessagingService : FirebaseMessagingService() {
 
+    companion object {
+        private const val TAG = "AppFirebaseMessagingService"
+    }
+
     @Inject lateinit var dataStoreManager: DataStoreManager
     @Inject lateinit var workManager: WorkManager
-    
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onNewToken(token: String) {
@@ -44,17 +49,22 @@ class AppFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
+    /**
+     * Data payloads are received but **not yet acted on**.
+     *
+     * Previously this launched an empty coroutine, which read as working code while doing nothing.
+     * Delivering payloads needs a de-duplication store first: FCM can deliver the same `messageId`
+     * more than once, so processing without an idempotency check would double-apply whatever the
+     * payload asks for. Tracked in `docs/roadmap.md` §1.7.
+     *
+     * The receipt is logged so a payload arriving during testing is visible rather than vanishing.
+     */
     override fun onMessageReceived(message: RemoteMessage) {
         // Enforce data-only payload processing
-        if (message.data.isNotEmpty()) {
-            val messageId = message.messageId ?: return
-            
-            serviceScope.launch {
-                // TODO: Insert into Room for Idempotency check. 
-                // e.g., val inserted = database.notificationDao().insertPayload(messageId)
-                // if (inserted) { processPayload() }
-            }
-        }
+        if (message.data.isEmpty()) return
+        val messageId = message.messageId ?: return
+
+        MksLogger.d(TAG, "FCM data payload $messageId received; no handler wired yet")
     }
 
     override fun onDestroy() {

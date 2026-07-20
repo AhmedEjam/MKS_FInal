@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:Theme.kt$@Composable fun MKSTheme( themeMode: String = "FOREST", dynamicColor: Boolean = false, fontScale: Float = 1.0f, uiDensity: Float = 1.0f, content: @Composable () -&gt; Unit )</ID>
+    <ID>NewLineAtEndOfFile:Type.kt$com.ahmedyejam.mks.ui.theme.Type.kt</ID>
+    <ID>UnusedParameter:Theme.kt$dynamicColor: Boolean = false</ID>
+    <ID>UnusedPrivateProperty:Theme.kt$private val DawnColorScheme = lightColorScheme( primary = DawnPrimary, onPrimary = DawnOnPrimary, primaryContainer = DawnPrimaryContainer, onPrimaryContainer = DawnOnPrimaryContainer, secondary = DawnSecondary, tertiary = DawnTertiary, background = DawnBackground, surface = DawnSurface, surfaceVariant = DawnSurfaceVariant, onBackground = DawnOnBackground, onSurface = DawnOnSurface, onSurfaceVariant = DawnOnSurfaceVariant, outline = DawnOutline, error = DawnError, errorContainer = DawnErrorContainer, onErrorContainer = DawnOnErrorContainer )</ID>
+    <ID>WildcardImport:EntityEditDialog.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:EntityEditDialog.kt$import androidx.compose.material3.*</ID>
+    <ID>WildcardImport:EntityEditDialog.kt$import androidx.compose.runtime.*</ID>
+    <ID>WildcardImport:InvalidRouteScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:InvalidRouteScreen.kt$import androidx.compose.material3.*</ID>
+    <ID>WildcardImport:StudyTopAppBar.kt$import androidx.compose.material3.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

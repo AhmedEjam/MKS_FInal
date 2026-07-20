@@ -127,8 +127,15 @@ class TextArticleParserTest {
 
     @Test
     fun explicitLabels_allFields_parses() {
-        val text =
-            "Title: My Note\nSummary: A brief summary\nBody: The full body content\nBullet: Point one\nBullet: Point two\nTag: kotlin\nTag: android"
+        val text = listOf(
+            "Title: My Note",
+            "Summary: A brief summary",
+            "Body: The full body content",
+            "Bullet: Point one",
+            "Bullet: Point two",
+            "Tag: kotlin",
+            "Tag: android",
+        ).joinToString("\n")
 
         val articles =
             parser.parse(text, collectionId = 1L, mode = TextArticleParseMode.EXPLICIT_LABELS)

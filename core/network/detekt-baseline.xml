@@ -1,0 +1,36 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:OllamaRepository.kt$OllamaRepository$fun generateCompletionStream( baseUrl: String, modelName: String, prompt: String, systemPrompt: String? = null, options: Map&lt;String, Any&gt;? = null, images: List&lt;String&gt;? = null, apiKey: String? = null ): Flow&lt;String&gt;</ID>
+    <ID>CyclomaticComplexMethod:RemoteAssetFetcher.kt$RemoteAssetFetcher$suspend fun fetch(url: String, policy: RemoteAssetPolicy = RemoteAssetPolicy.Default): RemoteAssetResult</ID>
+    <ID>InstanceOfCheckForException:OllamaRepository.kt$OllamaRepository$e is CancellationException</ID>
+    <ID>InstanceOfCheckForException:OllamaRepository.kt$OllamaRepository$e is SocketTimeoutException</ID>
+    <ID>LongMethod:McqService.kt$McqService$suspend fun processMCQ( sectionText: String, config: McqRunConfig, onProgress: (suspend (McqProgress) -&gt; Unit)? = null, ): List&lt;ParsedMcq&gt;</ID>
+    <ID>LongMethod:OllamaRepository.kt$OllamaRepository$fun generateCompletionStream( baseUrl: String, modelName: String, prompt: String, systemPrompt: String? = null, options: Map&lt;String, Any&gt;? = null, images: List&lt;String&gt;? = null, apiKey: String? = null ): Flow&lt;String&gt;</ID>
+    <ID>LongMethod:RemoteAssetFetcher.kt$RemoteAssetFetcher$suspend fun fetch(url: String, policy: RemoteAssetPolicy = RemoteAssetPolicy.Default): RemoteAssetResult</ID>
+    <ID>LongParameterList:AiClient.kt$AiClient$( config: AiProviderConfig, systemPrompt: String, userMessage: String, temperature: Double = 0.1, maxTokens: Int = 8192, jsonMode: Boolean = false, )</ID>
+    <ID>LongParameterList:OllamaRepository.kt$OllamaRepository$( baseUrl: String, modelName: String, prompt: String, systemPrompt: String? = null, options: Map&lt;String, Any&gt;? = null, images: List&lt;String&gt;? = null, apiKey: String? = null )</ID>
+    <ID>MagicNumber:AiClient.kt$AiClient$32768</ID>
+    <ID>MagicNumber:AiClient.kt$AiClient$408</ID>
+    <ID>MagicNumber:AiClient.kt$AiClient$8192</ID>
+    <ID>MagicNumber:AiClient.kt$AiHttpError$300</ID>
+    <ID>MagicNumber:OllamaRepository.kt$OllamaRepository$401</ID>
+    <ID>MagicNumber:OllamaRepository.kt$OllamaRepository$403</ID>
+    <ID>MagicNumber:PdfRendererService.kt$PdfRendererService$72f</ID>
+    <ID>MagicNumber:RemoteAssetPolicy.kt$RemoteAssetPolicy$1024L</ID>
+    <ID>MagicNumber:RemoteAssetPolicy.kt$RemoteAssetPolicy$12L</ID>
+    <ID>NestedBlockDepth:AiClient.kt$AiClient$private fun fetchWithRetry(config: AiProviderConfig, payload: JSONObject): JSONObject</ID>
+    <ID>NestedBlockDepth:McqService.kt$McqService$internal fun chunkText(text: String, maxCharsPerChunk: Int = 6_000): List&lt;String&gt;</ID>
+    <ID>ReturnCount:RemoteAssetFetcher.kt$RemoteAssetFetcher.Companion$private fun validateUrl(url: HttpUrl, policy: RemoteAssetPolicy): String?</ID>
+    <ID>SwallowedException:OllamaRepository.kt$OllamaRepository$e: SocketTimeoutException</ID>
+    <ID>SwallowedException:RemoteAssetFetcher.kt$RemoteAssetFetcher.Companion$e: Exception</ID>
+    <ID>ThrowsCount:AiClient.kt$AiClient$private fun fetchWithRetry(config: AiProviderConfig, payload: JSONObject): JSONObject</ID>
+    <ID>TooGenericExceptionCaught:AiClient.kt$AiClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:OllamaRepository.kt$OllamaRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:PdfRendererService.kt$PdfRendererService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:PdfTextExtractor.kt$PdfTextExtractor$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:RemoteAssetFetcher.kt$RemoteAssetFetcher$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:RemoteAssetFetcher.kt$RemoteAssetFetcher.Companion$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

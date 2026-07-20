@@ -25,6 +25,9 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object HiltDataModule {
 
+    // Room's addMigrations is vararg, so spreading MksMigrations.ALL is the only way to pass it.
+    // The array copy happens once at database construction, not on any hot path.
+    @Suppress("SpreadOperator")
     @Provides
     @Singleton
     fun provideDatabase(

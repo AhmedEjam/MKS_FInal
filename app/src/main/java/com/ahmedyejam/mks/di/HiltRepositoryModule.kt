@@ -17,7 +17,10 @@ import javax.inject.Singleton
 object HiltRepositoryModule {
     @Provides
     @Singleton
-    fun provideGlobalSearchRepository(database: MksDatabase, searchIndexManager: SearchIndexManager): GlobalSearchRepository {
+    fun provideGlobalSearchRepository(
+        database: MksDatabase,
+        searchIndexManager: SearchIndexManager,
+    ): GlobalSearchRepository {
         return GlobalSearchRepository(
             dao = database.globalSearchDao(),
             searchIndexDao = database.searchIndexDao(),

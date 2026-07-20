@@ -3,8 +3,8 @@ package com.ahmedyejam.mks.data.importer.xlsx
 import android.util.Base64
 import org.w3c.dom.Document
 import org.w3c.dom.Element
+import com.ahmedyejam.mks.data.importer.security.SecureXml
 import java.util.zip.ZipFile
-import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.math.max
 import kotlin.math.min
 
@@ -23,10 +23,9 @@ class XlsxImageResolver {
             )
     }
 
-    private val dbf =
-        DocumentBuilderFactory.newInstance().apply {
-            isNamespaceAware = true
-        }
+    // Hardened factory: .xlsx files are untrusted input, so DOCTYPE and external entities are
+    // refused outright. See SecureXml for why DOCTYPE is the decisive control here.
+    private val dbf = SecureXml.newDocumentBuilderFactory(namespaceAware = true)
 
     fun extractDispImgId(formula: String): String? {
         val match = DISPIMG_REGEX.find(formula)

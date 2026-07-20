@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:SourceDocumentEntity.kt$SourceDocumentTypes$fun detectType(urlOrPath: String): String</ID>
+    <ID>MagicNumber:BoundedStreams.kt$1024</ID>
+    <ID>MagicNumber:BoundedStreams.kt$5</ID>
+    <ID>MatchingDeclarationName:BoundedStreams.kt$ImportSizeLimitExceededException : IllegalStateException</ID>
+    <ID>MatchingDeclarationName:SearchIndexEntity.kt$SearchIndexEntry</ID>
+    <ID>SwallowedException:BoundedStreams.kt$e: Exception</ID>
+    <ID>SwallowedException:ParsedMcq.kt$ParsedMcq.Companion$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:BoundedStreams.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ParsedMcq.kt$ParsedMcq.Companion$e: Exception</ID>
+    <ID>UnusedParameter:ParsedMcq.kt$ParsedMcq$order: Int</ID>
+  </CurrentIssues>
+</SmellBaseline>

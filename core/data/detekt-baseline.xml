@@ -1,0 +1,491 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>ComplexCondition:AssetRepository.kt$AssetRepository$path.startsWith("http") || path.startsWith("content://") || path.startsWith("assets/") || path.startsWith("data:")</ID>
+    <ID>ComplexCondition:DataStoreManager.kt$DataStoreManager$quizId != null &amp;&amp; quizId &gt; 0 &amp;&amp; questionIndex != null &amp;&amp; questionIndex &gt;= 0</ID>
+    <ID>ComplexCondition:ImportFormatDetector.kt$ImportFormatDetector$header[0] == 0x50.toByte() &amp;&amp; header[1] == 0x4B.toByte() &amp;&amp; header[2] == 0x03.toByte() &amp;&amp; header[3] == 0x04.toByte()</ID>
+    <ID>ComplexCondition:ImportFormatDetector.kt$ImportFormatDetector$header[0] == 0x50.toByte() &amp;&amp; header[1] == 0x4B.toByte() &amp;&amp; header[2] == 0x07.toByte() &amp;&amp; header[3] == 0x08.toByte()</ID>
+    <ID>ComplexCondition:ImportFormatDetector.kt$ImportFormatDetector$header[0] == 0xD0.toByte() &amp;&amp; header[1] == 0xCF.toByte() &amp;&amp; header[2] == 0x11.toByte() &amp;&amp; header[3] == 0xE0.toByte()</ID>
+    <ID>ComplexCondition:JsonLibraryParser.kt$JsonLibraryParser.LibraryTransformingSerializer$first is JsonObject &amp;&amp; ("questions" in first || "items" in first || "stem" in first || "question" in first)</ID>
+    <ID>ComplexCondition:MksExchangeV7Archive.kt$MksExchangeV7Archive$ch.isLetterOrDigit() || ch == '-' || ch == '_' || ch == '.'</ID>
+    <ID>ComplexCondition:SpreadsheetQuestionParser.kt$SpreadsheetQuestionParser$stem.isBlank() &amp;&amp; options.isEmpty() &amp;&amp; resolvedImage.imageDataUrl.isNullOrBlank() &amp;&amp; resolvedImage.imageSource.isNullOrBlank()</ID>
+    <ID>CyclomaticComplexMethod:CsvParser.kt$CsvParser$fun parse( content: String, delimiter: Char? = null, ): List&lt;List&lt;String&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:ExportManager.kt$ExportManager$private suspend fun buildSupplementalData( bookId: Long? = null, quizId: Long? = null, ): MksExchangeV7SupplementalData</ID>
+    <ID>CyclomaticComplexMethod:GlobalSearchResult.kt$fun GlobalSearchResultRow.toResult(): GlobalSearchResult</ID>
+    <ID>CyclomaticComplexMethod:ImportFormatDetector.kt$ImportFormatDetector$private fun detectFromStream(inputStream: InputStream): ImportFormat</ID>
+    <ID>CyclomaticComplexMethod:ImportLibraryManager.kt$ImportLibraryManager$private suspend fun executeImportPipeline( bundle: LibraryBundleDto, assetsDir: File?, format: ImportFormat, strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING, targetBookId: Long? = null, targetQuizId: Long? = null, startTime: Long, onProgress: (Float, String) -&gt; Unit, allowInsecureRemoteImages: Boolean = false, rootDir: File? = null, manifest: ManifestDto? = null, activeWorkspaceId: Long? = null, ): ImportResult</ID>
+    <ID>CyclomaticComplexMethod:ImportLibraryManager.kt$ImportLibraryManager$private suspend fun resolveImagePath( assetRef: String?, assetsDir: File?, rootDir: File? = null, manifest: ManifestDto? = null, allowInsecureRemoteImages: Boolean = false, ): ResolvedImageResult</ID>
+    <ID>CyclomaticComplexMethod:ImportLibraryManager.kt$ImportLibraryManager$suspend fun getImportPreview(uri: Uri): ImportPreviewDto</ID>
+    <ID>CyclomaticComplexMethod:ImportLibraryManager.kt$ImportLibraryManager$suspend fun importLibrary( uri: Uri, strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING, targetBookId: Long? = null, targetQuizId: Long? = null, allowInsecureRemoteImages: Boolean = false, activeWorkspaceId: Long? = null, onProgress: (Float, String) -&gt; Unit = { _, _ -&gt; }, ): MksResult&lt;ImportResult&gt;</ID>
+    <ID>CyclomaticComplexMethod:ImportValidator.kt$ImportValidator$private fun questionProblems( question: QuestionDto, seenQuestionIds: Set&lt;String&gt;, ): List&lt;String&gt;</ID>
+    <ID>CyclomaticComplexMethod:JsonLibraryParser.kt$JsonLibraryParser.LibraryTransformingSerializer$override fun transformDeserialize(element: JsonElement): JsonElement</ID>
+    <ID>CyclomaticComplexMethod:JsonQuestionParser.kt$JsonQuestionParser$private fun parseSingle( map: Map&lt;String, Any&gt;, line: Int, ): ParsedQuestion</ID>
+    <ID>CyclomaticComplexMethod:JsonQuestionParser.kt$JsonQuestionParser$private fun resolveCorrect( answerRaw: String, options: List&lt;ParsedOption&gt;, ): List&lt;String&gt;</ID>
+    <ID>CyclomaticComplexMethod:KnowledgeRepository.kt$KnowledgeRepository$private fun parsePromptOutputQuestions( quizId: Long, outputText: String, ): List&lt;QuestionEntity&gt;</ID>
+    <ID>CyclomaticComplexMethod:KnowledgeRepository.kt$KnowledgeRepository$private fun questionToFlashcard( deckId: Long, question: QuestionEntity, orderIndex: Int, config: FlashcardGenerationConfig, ): FlashcardEntity</ID>
+    <ID>CyclomaticComplexMethod:KnowledgeRepository.kt$KnowledgeRepository$private fun questionToSlide( courseId: Long, question: QuestionEntity, orderIndex: Int, config: SlideGenerationConfig, ): CourseSlideEntity</ID>
+    <ID>CyclomaticComplexMethod:LibraryMapper.kt$LibraryMapper$fun mapToSessionEntity( dto: SessionDto, localQuizId: Long, questionIdMap: Map&lt;String, Long&gt;, ): SessionEntity</ID>
+    <ID>CyclomaticComplexMethod:MksExchangeV7Archive.kt$MksExchangeV7Archive$fun readLegacyBundleFromDirectory(rootDir: File): LibraryBundleDto</ID>
+    <ID>CyclomaticComplexMethod:MksExchangeV7Archive.kt$MksExchangeV7Archive$fun writeLegacyBundleToDirectory( bundle: LibraryBundleDto, rootDir: File, supplemental: MksExchangeV7SupplementalData = MksExchangeV7SupplementalData(), )</ID>
+    <ID>CyclomaticComplexMethod:SearchIndexManager.kt$SearchIndexManager$suspend fun rebuildIndex()</ID>
+    <ID>CyclomaticComplexMethod:SpreadsheetQuestionParser.kt$SpreadsheetQuestionParser$fun parseRow( row: List&lt;String&gt;, rowNumberOneBased: Int, ): ParsedQuestion?</ID>
+    <ID>CyclomaticComplexMethod:SpreadsheetQuestionParser.kt$SpreadsheetQuestionParser$private fun resolveCorrectAnswers( answerRaw: String, options: List&lt;ParsedOption&gt;, ): List&lt;String&gt;</ID>
+    <ID>CyclomaticComplexMethod:TextQuestionParser.kt$TextQuestionParser$private fun resolveCorrect( answerRaw: String, options: List&lt;ParsedOption&gt;, ): List&lt;String&gt;</ID>
+    <ID>CyclomaticComplexMethod:TextSlideParser.kt$TextSlideParser$fun parse( text: String, courseId: Long, startIndex: Int = 0, mode: TextParseMode = TextParseMode.ALTERNATING_PARAGRAPHS, ): List&lt;CourseSlideEntity&gt;</ID>
+    <ID>CyclomaticComplexMethod:XlsxImageResolver.kt$XlsxImageResolver$private fun consumeAnchorNodes( drawingDoc: Document, localName: String, drawingRelMap: Map&lt;String, String&gt;, zipFile: ZipFile, pathCache: MutableMap&lt;String, String&gt;, addressImages: MutableMap&lt;String, String&gt;, rowImages: MutableMap&lt;Int, String&gt;, )</ID>
+    <ID>CyclomaticComplexMethod:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$fun compile(uri: Uri): LibraryBundleDto</ID>
+    <ID>CyclomaticComplexMethod:ZipLibraryParser.kt$ZipLibraryParser$fun parse(inputStream: InputStream): ZipResult</ID>
+    <ID>EmptyCatchBlock:ImportFormatDetector.kt$ImportFormatDetector${ }</ID>
+    <ID>EmptyClassBlock:ExportManager.kt$ExportManager.Companion${ }</ID>
+    <ID>LargeClass:ImportLibraryManager.kt$ImportLibraryManager</ID>
+    <ID>LargeClass:KnowledgeRepository.kt$KnowledgeRepository</ID>
+    <ID>LargeClass:LibraryMapper.kt$LibraryMapper</ID>
+    <ID>LargeClass:MksDatabaseSeeder.kt$MksDatabaseSeeder</ID>
+    <ID>LargeClass:MksExchangeV7Archive.kt$MksExchangeV7Archive</ID>
+    <ID>LongMethod:AiMcqRepository.kt$AiMcqRepository$suspend fun generateAndSave( bookId: Long, quizTitle: String, sectionText: String, chapterNum: String = "1", sectionName: String = "Section", )</ID>
+    <ID>LongMethod:CsvParser.kt$CsvParser$fun parse( content: String, delimiter: Char? = null, ): List&lt;List&lt;String&gt;&gt;</ID>
+    <ID>LongMethod:ExportManager.kt$ExportManager$private suspend fun buildSupplementalData( bookId: Long? = null, quizId: Long? = null, ): MksExchangeV7SupplementalData</ID>
+    <ID>LongMethod:ExportManager.kt$ExportManager$suspend fun exportAllBooksAsBundle(): LibraryBundleDto</ID>
+    <ID>LongMethod:ExportManager.kt$ExportManager$suspend fun exportBookAsBundle(bookId: Long): LibraryBundleDto?</ID>
+    <ID>LongMethod:ImportLibraryManager.kt$ImportLibraryManager$private suspend fun executeImportPipeline( bundle: LibraryBundleDto, assetsDir: File?, format: ImportFormat, strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING, targetBookId: Long? = null, targetQuizId: Long? = null, startTime: Long, onProgress: (Float, String) -&gt; Unit, allowInsecureRemoteImages: Boolean = false, rootDir: File? = null, manifest: ManifestDto? = null, activeWorkspaceId: Long? = null, ): ImportResult</ID>
+    <ID>LongMethod:ImportLibraryManager.kt$ImportLibraryManager$private suspend fun resolveImagePath( assetRef: String?, assetsDir: File?, rootDir: File? = null, manifest: ManifestDto? = null, allowInsecureRemoteImages: Boolean = false, ): ResolvedImageResult</ID>
+    <ID>LongMethod:ImportLibraryManager.kt$ImportLibraryManager$suspend fun getImportPreview(uri: Uri): ImportPreviewDto</ID>
+    <ID>LongMethod:ImportLibraryManager.kt$ImportLibraryManager$suspend fun importLibrary( uri: Uri, strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING, targetBookId: Long? = null, targetQuizId: Long? = null, allowInsecureRemoteImages: Boolean = false, activeWorkspaceId: Long? = null, onProgress: (Float, String) -&gt; Unit = { _, _ -&gt; }, ): MksResult&lt;ImportResult&gt;</ID>
+    <ID>LongMethod:ImportValidator.kt$ImportValidator$fun validate( bundle: LibraryBundleDto, allowUnboundQuizzes: Boolean = false, ): ValidationResult</ID>
+    <ID>LongMethod:JsonLibraryParser.kt$JsonLibraryParser.LibraryTransformingSerializer$override fun transformDeserialize(element: JsonElement): JsonElement</ID>
+    <ID>LongMethod:JsonQuestionParser.kt$JsonQuestionParser$private fun resolveCorrect( answerRaw: String, options: List&lt;ParsedOption&gt;, ): List&lt;String&gt;</ID>
+    <ID>LongMethod:KnowledgeRepository.kt$KnowledgeRepository$private fun parsePromptOutputQuestions( quizId: Long, outputText: String, ): List&lt;QuestionEntity&gt;</ID>
+    <ID>LongMethod:MksDatabaseSeeder.kt$MksDatabaseSeeder$private fun getArabicQuestions(quizId: Long): List&lt;QuestionEntity&gt;</ID>
+    <ID>LongMethod:MksDatabaseSeeder.kt$MksDatabaseSeeder$private fun getArabicTutorialQuestions(quizId: Long): List&lt;QuestionEntity&gt;</ID>
+    <ID>LongMethod:MksDatabaseSeeder.kt$MksDatabaseSeeder$private fun getEnglishQuestions(quizId: Long): List&lt;QuestionEntity&gt;</ID>
+    <ID>LongMethod:MksDatabaseSeeder.kt$MksDatabaseSeeder$private fun getEnglishTutorialQuestions(quizId: Long): List&lt;QuestionEntity&gt;</ID>
+    <ID>LongMethod:MksDatabaseSeeder.kt$MksDatabaseSeeder$private suspend fun seedKnowledgeAssets(bookId: Long)</ID>
+    <ID>LongMethod:MksExchangeV7Archive.kt$MksExchangeV7Archive$fun readLegacyBundleFromDirectory(rootDir: File): LibraryBundleDto</ID>
+    <ID>LongMethod:MksExchangeV7Archive.kt$MksExchangeV7Archive$fun writeLegacyBundleToDirectory( bundle: LibraryBundleDto, rootDir: File, supplemental: MksExchangeV7SupplementalData = MksExchangeV7SupplementalData(), )</ID>
+    <ID>LongMethod:ReviewRepository.kt$ReviewRepository$suspend fun loadQueues(workspaceId: Long, now: Long = System.currentTimeMillis()): List&lt;ReviewQueueItem&gt;</ID>
+    <ID>LongMethod:TextArticleParser.kt$TextArticleParser$fun parse( text: String, collectionId: Long, mode: TextArticleParseMode = TextArticleParseMode.BASIC, defaultMode: String = "SIMPLE_NOTE", ): List&lt;NoteBlueprintEntity&gt;</ID>
+    <ID>LongMethod:TextFlashcardParser.kt$TextFlashcardParser$fun parse( text: String, deckId: Long, startIndex: Int = 0, mode: TextParseMode = TextParseMode.ALTERNATING_PARAGRAPHS, ): List&lt;FlashcardEntity&gt;</ID>
+    <ID>LongMethod:TextSlideParser.kt$TextSlideParser$fun parse( text: String, courseId: Long, startIndex: Int = 0, mode: TextParseMode = TextParseMode.ALTERNATING_PARAGRAPHS, ): List&lt;CourseSlideEntity&gt;</ID>
+    <ID>LongMethod:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$fun compile(uri: Uri): LibraryBundleDto</ID>
+    <ID>LongMethod:ZipLibraryParser.kt$ZipLibraryParser$fun parse(inputStream: InputStream): ZipResult</ID>
+    <ID>LongParameterList:AssetReferenceAuditService.kt$AssetReferenceAuditService$( private val assetReferenceDao: AssetReferenceDao, private val bookDao: BookDao, private val quizDao: QuizDao, private val questionDao: QuestionDao, private val flashcardDao: FlashcardDao, private val courseSlideDao: CourseSlideDao, private val sourceDocumentDao: SourceDocumentDao, private val questionAssetDao: QuestionAssetDao, )</ID>
+    <ID>LongParameterList:AssetRepository.kt$AssetRepository$( bookId: Long, ownerType: String, ownerId: Long, selectedText: String? = null, noteBody: String? = null, colorLabel: String = AnnotationColorLabel.YELLOW, positionDataJson: String? = null, )</ID>
+    <ID>LongParameterList:AssetRepository.kt$AssetRepository$( private val workspaceDao: WorkspaceDao, private val bookDao: BookDao, private val quizDao: QuizDao, private val questionDao: QuestionDao, private val sessionDao: SessionDao, private val categoryMetadataDao: CategoryMetadataDao, private val fileManager: FileManager, private val exportManager: ExportManager? = null, private val importManager: ImportLibraryManager? = null, private val flashcardDeckDao: FlashcardDeckDao, private val flashcardDao: FlashcardDao, private val learningSessionDao: LearningSessionDao, private val slideshowCourseDao: SlideshowCourseDao, private val courseSlideDao: CourseSlideDao, private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao, private val noteBlueprintDao: NoteBlueprintDao, private val promptDao: PromptDao, private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao, private val knowledgeStudySessionDao: KnowledgeStudySessionDao, private val questionCategoryDao: QuestionCategoryDao, private val assetReferenceDao: AssetReferenceDao, private val questionAssetDao: QuestionAssetDao, private val sourceDocumentDao: SourceDocumentDao, private val promptDeckDao: PromptDeckDao, private val promptCardDao: PromptCardDao, private val promptRunDao: PromptRunDao, private val mistakeLogDao: MistakeLogDao, private val annotationDao: AnnotationDao, private val workspaceRepositoryProvider: javax.inject.Provider&lt;WorkspaceRepository&gt;, private val deletePreviewService: DeletePreviewService? = null, private val categoryMergePreviewService: CategoryMergePreviewService? = null, private val clearMarksPreviewService: ClearMarksPreviewService? = null, private val assetReferenceAuditService: AssetReferenceAuditService? = null, )</ID>
+    <ID>LongParameterList:BookRepository.kt$BookRepository$( private val workspaceDao: WorkspaceDao, private val bookDao: BookDao, private val quizDao: QuizDao, private val questionDao: QuestionDao, private val sessionDao: SessionDao, private val categoryMetadataDao: CategoryMetadataDao, private val fileManager: FileManager, private val exportManager: ExportManager? = null, private val importManager: ImportLibraryManager? = null, private val flashcardDeckDao: FlashcardDeckDao, private val flashcardDao: FlashcardDao, private val learningSessionDao: LearningSessionDao, private val slideshowCourseDao: SlideshowCourseDao, private val courseSlideDao: CourseSlideDao, private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao, private val noteBlueprintDao: NoteBlueprintDao, private val promptDao: PromptDao, private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao, private val knowledgeStudySessionDao: KnowledgeStudySessionDao, private val questionCategoryDao: QuestionCategoryDao, private val assetReferenceDao: AssetReferenceDao, private val questionAssetDao: QuestionAssetDao, private val sourceDocumentDao: SourceDocumentDao, private val promptDeckDao: PromptDeckDao, private val promptCardDao: PromptCardDao, private val promptRunDao: PromptRunDao, private val mistakeLogDao: MistakeLogDao, private val quizRepositoryProvider: javax.inject.Provider&lt;QuizRepository&gt;, private val assetRepositoryProvider: javax.inject.Provider&lt;AssetRepository&gt;, private val workspaceRepositoryProvider: javax.inject.Provider&lt;WorkspaceRepository&gt;, private val annotationDao: AnnotationDao, private val deletePreviewService: DeletePreviewService? = null, private val categoryMergePreviewService: CategoryMergePreviewService? = null, private val clearMarksPreviewService: ClearMarksPreviewService? = null, private val assetReferenceAuditService: AssetReferenceAuditService? = null, @param:com.ahmedyejam.mks.di.ApplicationScope private val scope: kotlinx.coroutines.CoroutineScope )</ID>
+    <ID>LongParameterList:DataStoreManager.kt$DataStoreManager$( filters: Set&lt;String&gt;, shuffleQ: Boolean, shuffleO: Boolean, rapid: Boolean, repeatWrong: Boolean, quizTimer: Int, qTimer: Int, )</ID>
+    <ID>LongParameterList:ExportManager.kt$ExportManager$( private val database: MksDatabase, private val bookDao: BookDao, private val quizDao: QuizDao, private val questionDao: QuestionDao, private val sessionDao: SessionDao, private val categoryMetadataDao: CategoryMetadataDao, private val fileManager: FileManager, private val mapper: LibraryMapper, )</ID>
+    <ID>LongParameterList:ImportLibraryManager.kt$ImportLibraryManager$( bundle: LibraryBundleDto, assetsDir: File?, format: ImportFormat, strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING, targetBookId: Long? = null, targetQuizId: Long? = null, startTime: Long, onProgress: (Float, String) -&gt; Unit, allowInsecureRemoteImages: Boolean = false, rootDir: File? = null, manifest: ManifestDto? = null, activeWorkspaceId: Long? = null, )</ID>
+    <ID>LongParameterList:ImportLibraryManager.kt$ImportLibraryManager$( title: String, questions: List&lt;ParsedQuestion&gt;, targetBookId: Long? = null, targetQuizId: Long? = null, newBookTitle: String? = null, activeWorkspaceId: Long? = null, onProgress: (Float, String) -&gt; Unit = { _, _ -&gt; }, )</ID>
+    <ID>LongParameterList:ImportLibraryManager.kt$ImportLibraryManager$( uri: Uri, strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING, targetBookId: Long? = null, targetQuizId: Long? = null, allowInsecureRemoteImages: Boolean = false, activeWorkspaceId: Long? = null, onProgress: (Float, String) -&gt; Unit = { _, _ -&gt; }, )</ID>
+    <ID>LongParameterList:KnowledgeRepository.kt$KnowledgeRepository$( bookId: Long, title: String, description: String? = null, questionIds: List&lt;Long&gt;, clearMarksAfter: Boolean = false, config: FlashcardGenerationConfig = FlashcardGenerationConfig.DEFAULT, )</ID>
+    <ID>LongParameterList:KnowledgeRepository.kt$KnowledgeRepository$( cardId: Long, inputValuesJson: String, renderedPrompt: String, outputText: String? = null, linkedAssetType: String? = null, linkedAssetId: Long? = null, )</ID>
+    <ID>LongParameterList:KnowledgeRepository.kt$KnowledgeRepository$( private val workspaceDao: WorkspaceDao, private val bookDao: BookDao, private val quizDao: QuizDao, private val questionDao: QuestionDao, private val sessionDao: SessionDao, private val categoryMetadataDao: CategoryMetadataDao, private val fileManager: FileManager, private val exportManager: ExportManager? = null, private val importManager: ImportLibraryManager? = null, private val flashcardDeckDao: FlashcardDeckDao, private val flashcardDao: FlashcardDao, private val learningSessionDao: LearningSessionDao, private val slideshowCourseDao: SlideshowCourseDao, private val courseSlideDao: CourseSlideDao, private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao, private val noteBlueprintDao: NoteBlueprintDao, private val promptDao: PromptDao, private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao, private val knowledgeStudySessionDao: KnowledgeStudySessionDao, private val questionCategoryDao: QuestionCategoryDao, private val assetReferenceDao: AssetReferenceDao, private val questionAssetDao: QuestionAssetDao, private val sourceDocumentDao: SourceDocumentDao, private val promptDeckDao: PromptDeckDao, private val promptCardDao: PromptCardDao, private val promptRunDao: PromptRunDao, private val mistakeLogDao: MistakeLogDao, private val quizRepositoryProvider: javax.inject.Provider&lt;QuizRepository&gt;, private val bookRepositoryProvider: javax.inject.Provider&lt;BookRepository&gt;, private val assetRepositoryProvider: javax.inject.Provider&lt;AssetRepository&gt;, private val annotationDao: AnnotationDao, private val deletePreviewService: DeletePreviewService? = null, private val categoryMergePreviewService: CategoryMergePreviewService? = null, private val clearMarksPreviewService: ClearMarksPreviewService? = null, private val assetReferenceAuditService: AssetReferenceAuditService? = null, )</ID>
+    <ID>LongParameterList:LibraryMapper.kt$LibraryMapper$( dto: QuestionAssetDto, localBookId: Long, localQuizId: Long, localQuestionId: Long, localPath: String?, sourceDocumentId: Long?, )</ID>
+    <ID>LongParameterList:MksDatabaseSeeder.kt$MksDatabaseSeeder$( workspaceId: Long, externalId: String, title: String, description: String, fields: List&lt;String&gt;, iconName: String, )</ID>
+    <ID>LongParameterList:MksExchangeV7Archive.kt$MksExchangeV7Archive$( source: String, ownerKind: String, ownerExternalId: String, ownerId: Long, fallbackName: String, mimeType: String? = null, )</ID>
+    <ID>LongParameterList:QuizRepository.kt$QuizRepository$( private val workspaceDao: WorkspaceDao, private val bookDao: BookDao, private val quizDao: QuizDao, private val questionDao: QuestionDao, private val sessionDao: SessionDao, private val categoryMetadataDao: CategoryMetadataDao, private val fileManager: FileManager, private val exportManager: ExportManager? = null, private val importManager: ImportLibraryManager? = null, private val flashcardDeckDao: FlashcardDeckDao, private val flashcardDao: FlashcardDao, private val learningSessionDao: LearningSessionDao, private val slideshowCourseDao: SlideshowCourseDao, private val courseSlideDao: CourseSlideDao, private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao, private val noteBlueprintDao: NoteBlueprintDao, private val promptDao: PromptDao, private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao, private val knowledgeStudySessionDao: KnowledgeStudySessionDao, private val questionCategoryDao: QuestionCategoryDao, private val assetReferenceDao: AssetReferenceDao, private val questionAssetDao: QuestionAssetDao, private val sourceDocumentDao: SourceDocumentDao, private val promptDeckDao: PromptDeckDao, private val promptCardDao: PromptCardDao, private val promptRunDao: PromptRunDao, private val mistakeLogDao: MistakeLogDao, private val annotationDao: AnnotationDao, private val deletePreviewService: DeletePreviewService? = null, private val categoryMergePreviewService: CategoryMergePreviewService? = null, private val clearMarksPreviewService: ClearMarksPreviewService? = null, private val assetReferenceAuditService: AssetReferenceAuditService? = null, private val bookRepositoryProvider: javax.inject.Provider&lt;BookRepository&gt;, private val assetRepositoryProvider: javax.inject.Provider&lt;AssetRepository&gt;, )</ID>
+    <ID>LongParameterList:QuizRepository.kt$QuizRepository$( title: String, targetBookId: Long?, targetQuizId: Long? = null, newBookTitle: String? = null, questions: List&lt;ParsedQuestion&gt;, activeWorkspaceId: Long? = null, )</ID>
+    <ID>LongParameterList:QuizRepository.kt$QuizRepository$( uri: Uri, strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING, targetBookId: Long? = null, targetQuizId: Long? = null, allowInsecureRemoteImages: Boolean = false, activeWorkspaceId: Long? = null, onProgress: (Float, String) -&gt; Unit = { _, _ -&gt; }, )</ID>
+    <ID>LongParameterList:ReviewRepository.kt$ReviewRepository$( private val flashcardDao: FlashcardDao, private val noteBlueprintDao: NoteBlueprintDao, private val mistakeLogDao: MistakeLogDao, private val questionDao: QuestionDao, private val courseSlideDao: CourseSlideDao, private val annotationDao: AnnotationDao, private val slideshowCourseDao: SlideshowCourseDao, private val bookDao: BookDao, )</ID>
+    <ID>LongParameterList:SearchIndexManager.kt$SearchIndexManager$( private val database: MksDatabase, private val searchIndexDao: SearchIndexDao, private val bookDao: BookDao, private val quizDao: QuizDao, private val questionDao: QuestionDao, private val courseSlideDao: CourseSlideDao, private val annotationDao: AnnotationDao, private val slideshowCourseDao: SlideshowCourseDao, private val sourceDocumentDao: SourceDocumentDao, private val promptDeckDao: PromptDeckDao, )</ID>
+    <ID>LongParameterList:SearchIndexManager.kt$SearchIndexManager$( title: String, subtitle: String, content: String, entityType: String, entityId: String, workspaceId: Long, bookId: Long, quizId: Long, parentId: Long, updatedAt: Long, )</ID>
+    <ID>LongParameterList:StudyRepository.kt$StudyRepository$( bookId: Long, quizId: Long, questionId: Long, sessionId: Long?, selectedAnswer: String?, correctAnswer: String?, )</ID>
+    <ID>LongParameterList:StudyRepository.kt$StudyRepository$( private val workspaceDao: WorkspaceDao, private val bookDao: BookDao, private val quizDao: QuizDao, private val questionDao: QuestionDao, private val quizRepositoryProvider: javax.inject.Provider&lt;QuizRepository&gt;, private val sessionDao: SessionDao, private val categoryMetadataDao: CategoryMetadataDao, private val fileManager: FileManager, private val exportManager: ExportManager? = null, private val importManager: ImportLibraryManager? = null, private val flashcardDeckDao: FlashcardDeckDao, private val flashcardDao: FlashcardDao, private val learningSessionDao: LearningSessionDao, private val slideshowCourseDao: SlideshowCourseDao, private val courseSlideDao: CourseSlideDao, private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao, private val noteBlueprintDao: NoteBlueprintDao, private val promptDao: PromptDao, private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao, private val knowledgeStudySessionDao: KnowledgeStudySessionDao, private val questionCategoryDao: QuestionCategoryDao, private val assetReferenceDao: AssetReferenceDao, private val questionAssetDao: QuestionAssetDao, private val sourceDocumentDao: SourceDocumentDao, private val promptDeckDao: PromptDeckDao, private val promptCardDao: PromptCardDao, private val promptRunDao: PromptRunDao, private val mistakeLogDao: MistakeLogDao, private val annotationDao: AnnotationDao, private val deletePreviewService: DeletePreviewService? = null, private val categoryMergePreviewService: CategoryMergePreviewService? = null, private val clearMarksPreviewService: ClearMarksPreviewService? = null, private val assetReferenceAuditService: AssetReferenceAuditService? = null, )</ID>
+    <ID>LongParameterList:WorkspaceRepository.kt$WorkspaceRepository$( private val workspaceDao: WorkspaceDao, private val database: com.ahmedyejam.mks.data.local.MksDatabase, private val bookDao: BookDao, private val quizDao: QuizDao, private val questionDao: QuestionDao, private val sessionDao: SessionDao, private val categoryMetadataDao: CategoryMetadataDao, private val fileManager: FileManager, private val exportManager: ExportManager? = null, private val importManager: ImportLibraryManager? = null, private val flashcardDeckDao: FlashcardDeckDao, private val flashcardDao: FlashcardDao, private val learningSessionDao: LearningSessionDao, private val slideshowCourseDao: SlideshowCourseDao, private val courseSlideDao: CourseSlideDao, private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao, private val noteBlueprintDao: NoteBlueprintDao, private val promptDao: PromptDao, private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao, private val knowledgeStudySessionDao: KnowledgeStudySessionDao, private val questionCategoryDao: QuestionCategoryDao, private val assetReferenceDao: AssetReferenceDao, private val questionAssetDao: QuestionAssetDao, private val sourceDocumentDao: SourceDocumentDao, private val promptDeckDao: PromptDeckDao, private val promptCardDao: PromptCardDao, private val promptRunDao: PromptRunDao, private val mistakeLogDao: MistakeLogDao, private val annotationDao: AnnotationDao, private val seederProvider: javax.inject.Provider&lt;MksDatabaseSeeder&gt;, private val dataStoreManager: DataStoreManager, @param:ApplicationScope private val scope: kotlinx.coroutines.CoroutineScope, private val deletePreviewService: DeletePreviewService? = null, private val categoryMergePreviewService: CategoryMergePreviewService? = null, private val clearMarksPreviewService: ClearMarksPreviewService? = null, private val assetReferenceAuditService: AssetReferenceAuditService? = null, )</ID>
+    <ID>LongParameterList:XlsxImageResolver.kt$XlsxImageResolver$( drawingDoc: Document, localName: String, drawingRelMap: Map&lt;String, String&gt;, zipFile: ZipFile, pathCache: MutableMap&lt;String, String&gt;, addressImages: MutableMap&lt;String, String&gt;, rowImages: MutableMap&lt;Int, String&gt;, )</ID>
+    <ID>LoopWithTooManyJumpStatements:XlsxImageResolver.kt$XlsxImageResolver$for</ID>
+    <ID>LoopWithTooManyJumpStatements:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$for</ID>
+    <ID>LoopWithTooManyJumpStatements:ZipLibraryParser.kt$ZipLibraryParser$while</ID>
+    <ID>MagicNumber:ApiKeyCrypto.kt$ApiKeyCrypto$256</ID>
+    <ID>MagicNumber:BookRepository.kt$BookRepository$300</ID>
+    <ID>MagicNumber:CategoryMergePreviewService.kt$CategoryMergePreviewService$80</ID>
+    <ID>MagicNumber:ClearMarksPreviewService.kt$ClearMarksPreviewService$80</ID>
+    <ID>MagicNumber:FileManager.kt$FileManager$3L</ID>
+    <ID>MagicNumber:FileManager.kt$FileManager$4L</ID>
+    <ID>MagicNumber:FileManager.kt$FileManager$96</ID>
+    <ID>MagicNumber:ImportFormatDetector.kt$ImportFormatDetector$2048</ID>
+    <ID>MagicNumber:ImportFormatDetector.kt$ImportFormatDetector$3</ID>
+    <ID>MagicNumber:ImportFormatDetector.kt$ImportFormatDetector$32</ID>
+    <ID>MagicNumber:ImportFormatDetector.kt$ImportFormatDetector$4</ID>
+    <ID>MagicNumber:ImportFormatDetector.kt$ImportFormatDetector$5</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$0.05f</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$0.1f</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$0.25f</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$0.2f</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$0.3f</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$0.65f</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$1000L</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$20</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$24L</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$255</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$50</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager$60L</ID>
+    <ID>MagicNumber:ImportLibraryManager.kt$ImportLibraryManager.Companion$32</ID>
+    <ID>MagicNumber:ImportValidator.kt$ImportValidator$4</ID>
+    <ID>MagicNumber:ImportValidator.kt$ImportValidator$5</ID>
+    <ID>MagicNumber:ImportValidator.kt$ImportValidator$6</ID>
+    <ID>MagicNumber:ImportValidator.kt$ImportValidator$7</ID>
+    <ID>MagicNumber:JsonQuestionParser.kt$JsonQuestionParser$25</ID>
+    <ID>MagicNumber:JsonQuestionParser.kt$JsonQuestionParser$65</ID>
+    <ID>MagicNumber:JsonQuestionParser.kt$JsonQuestionParser$8</ID>
+    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$1000L</ID>
+    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$10L</ID>
+    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$12</ID>
+    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$160</ID>
+    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$180</ID>
+    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$24L</ID>
+    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$3L</ID>
+    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$60L</ID>
+    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$65</ID>
+    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$80</ID>
+    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$999</ID>
+    <ID>MagicNumber:LibraryMapper.kt$LibraryMapper$1000</ID>
+    <ID>MagicNumber:MksDatabaseSeeder.kt$MksDatabaseSeeder$3</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x12</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x20</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x21</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x23</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x26</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x28</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x29</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x2E</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x38</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x3E</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x3F</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x79</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x7D</ID>
+    <ID>MagicNumber:MksExchangeV7Models.kt$MksExchangeV7Paths$0x7F</ID>
+    <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$1000L</ID>
+    <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$120</ID>
+    <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$20</ID>
+    <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$200</ID>
+    <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$24L</ID>
+    <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$3L</ID>
+    <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$60L</ID>
+    <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$7L</ID>
+    <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$90</ID>
+    <ID>MagicNumber:SearchIndexManager.kt$SearchIndexManager$500</ID>
+    <ID>MagicNumber:SettingsSanitizer.kt$SettingsSanitizer$0.5f</ID>
+    <ID>MagicNumber:SettingsSanitizer.kt$SettingsSanitizer$1.5f</ID>
+    <ID>MagicNumber:SettingsSanitizer.kt$SettingsSanitizer$10000</ID>
+    <ID>MagicNumber:SettingsSanitizer.kt$SettingsSanitizer$300</ID>
+    <ID>MagicNumber:SettingsSanitizer.kt$SettingsSanitizer$500</ID>
+    <ID>MagicNumber:SettingsSanitizer.kt$SettingsSanitizer$600</ID>
+    <ID>MagicNumber:SettingsSanitizer.kt$SettingsSanitizer$7200</ID>
+    <ID>MagicNumber:SourceDetector.kt$SourceDetector$5</ID>
+    <ID>MagicNumber:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$100</ID>
+    <ID>MagicNumber:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$120</ID>
+    <ID>MagicNumber:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$20</ID>
+    <ID>MagicNumber:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$200</ID>
+    <ID>MagicNumber:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$3</ID>
+    <ID>MagicNumber:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$40</ID>
+    <ID>MagicNumber:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$5</ID>
+    <ID>MagicNumber:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$6</ID>
+    <ID>MagicNumber:SpreadsheetQuestionParser.kt$SpreadsheetQuestionParser$26</ID>
+    <ID>MagicNumber:SpreadsheetQuestionParser.kt$SpreadsheetQuestionParser$65</ID>
+    <ID>MagicNumber:TextArticleParser.kt$TextArticleParser$50</ID>
+    <ID>MagicNumber:XlsxImageResolver.kt$XlsxImageResolver$26</ID>
+    <ID>MagicNumber:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$10</ID>
+    <ID>MagicNumber:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$100</ID>
+    <ID>MagicNumber:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$200</ID>
+    <ID>MagicNumber:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$40</ID>
+    <ID>MagicNumber:ZipLibraryParser.kt$ZipLibraryParser$7</ID>
+    <ID>MatchingDeclarationName:FileManagerModels.kt$AssetFileSaveResult</ID>
+    <ID>MatchingDeclarationName:ThemeMode.kt$MksThemeModes</ID>
+    <ID>MaxLineLength:AssetRepository.kt$AssetRepository$if (path.startsWith("http") || path.startsWith("content://") || path.startsWith("assets/") || path.startsWith("data:")) return path</ID>
+    <ID>MaxLineLength:GenericImageExtractor.kt$GenericImageExtractor$"""(https?://[^\s"'&lt;&gt;]+\.(?:png|jpe?g|gif|webp|svg|bmp|tiff?|avif|ico|pdf|png|jpg|jpeg)(?:[?#][^\s"'&lt;&gt;]*)|https?://[^\s"'&lt;&gt;]+)"""</ID>
+    <ID>MaxLineLength:ImportLibraryManager.kt$ImportLibraryManager$"Ignoring targetBookId=$targetBookId because targetQuizId=$targetQuizId belongs to bookId=${targetQuiz.bookId}."</ID>
+    <ID>MaxLineLength:ImportLibraryManager.kt$ImportLibraryManager$"This import contains plain HTTP image URLs. They will not be downloaded unless you explicitly allow insecure image downloads in the review dialog."</ID>
+    <ID>MaxLineLength:ImportLibraryManager.kt$ImportLibraryManager$warnings.add(ImportWarning("Quiz '${quizDto.title}' cover image import warning: $warning", affectedId = quizDto.id))</ID>
+    <ID>MaxLineLength:ImportValidator.kt$ImportValidator$message = "Skipped question '${question.id.ifBlank { "#${index + 1}" }}' in quiz '${quiz.title}' at $displayLine: $reason"</ID>
+    <ID>MaxLineLength:JsonLibraryParser.kt$JsonLibraryParser.LibraryTransformingSerializer$// Handle cases where options are objects but might use "value" or "content" instead of "text"</ID>
+    <ID>MaxLineLength:JsonLibraryParser.kt$JsonLibraryParser.LibraryTransformingSerializer$it["id"]?.jsonPrimitive?.content == cStr || it["text"]?.jsonPrimitive?.content == cStr</ID>
+    <ID>MaxLineLength:JsonLibraryParser.kt$JsonLibraryParser.LibraryTransformingSerializer$questMap["explanation"] = questMap["rational"] ?: questMap["feedback"] ?: questMap["comment"] ?: JsonPrimitive("")</ID>
+    <ID>MaxLineLength:JsonLibraryParser.kt$JsonLibraryParser.LibraryTransformingSerializer$questMap["imageDataUrl"] = questMap["image"] ?: questMap["imageUrl"] ?: questMap["photo"] ?: questMap["img"] ?: JsonPrimitive("")</ID>
+    <ID>MaxLineLength:JsonLibraryParser.kt$JsonLibraryParser.LibraryTransformingSerializer$val textVal = oMap["text"] ?: oMap["value"] ?: oMap["content"] ?: oMap["answer"] ?: JsonPrimitive("")</ID>
+    <ID>MaxLineLength:JsonLibraryParser.kt$JsonLibraryParser.LibraryTransformingSerializer$var correct = questMap["correct"] ?: questMap["answer"] ?: questMap["correctAnswers"] ?: questMap["solution"] ?: questMap["correct_index"]</ID>
+    <ID>MaxLineLength:JsonLibraryParser.kt$JsonLibraryParser.LibraryTransformingSerializer$var options = questMap["options"] ?: questMap["answers"] ?: questMap["choices"] ?: questMap["optionList"]</ID>
+    <ID>MaxLineLength:KnowledgeRepository.kt$KnowledgeRepository$promptText = "&lt;system_role&gt;You are an expert learning designer.&lt;/system_role&gt;\n&lt;instructions&gt;Convert the core concepts from the provided material into concise, high-yield spaced-repetition flashcards.\nFollow these rules:\n1. Make the front of the card a clear, unambiguous question or cloze deletion.\n2. Keep the back of the card concise and to the point.\n3. Provide an optional brief hint to aid recall.\nOutput strictly in JSON format as an array of objects with keys: \"front\", \"back\", \"hint\".&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:KnowledgeRepository.kt$KnowledgeRepository$promptText = "&lt;system_role&gt;You are an expert technical writer and educator.&lt;/system_role&gt;\n&lt;instructions&gt;Synthesize the provided material into a highly structured, comprehensive, yet easy-to-digest study blueprint.\nFormat the output in Markdown with the following sections:\n- **Core Summary**: A brief 2-3 sentence overview.\n- **Key Concepts**: Bulleted list of the most important takeaways.\n- **Detailed Breakdown**: A structured analysis with subheadings.\n- **Common Pitfalls / Mistakes to Avoid**: What students usually get wrong about this.\n- **Review Cues**: Short questions to test memory.&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:KnowledgeRepository.kt$KnowledgeRepository$promptText = "&lt;system_role&gt;You are an expert test creator and medical educator.&lt;/system_role&gt;\n&lt;instructions&gt;Analyze the provided material and generate 3 to 5 high-quality, challenging multiple-choice questions.\nEnsure that:\n1. The stem is clinically relevant or focuses on key conceptual understanding.\n2. There are 4-5 plausible options.\n3. The correct answer is unambiguously correct.\n4. A detailed rationale/explanation is provided for why the correct answer is right and why the distractors are wrong.\nOutput strictly in JSON format as an array of objects with keys: \"question\", \"options\" (array of strings), \"answer\" (string), \"explanation\" (string).&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:KnowledgeRepository.kt$KnowledgeRepository$promptText = "&lt;system_role&gt;You are an expert tutor in {relevant_speciality}.&lt;/system_role&gt;\n&lt;instructions&gt;Please explain the following question part: {part_to_explain}.\n\nHere is the full question context:\n{question}&lt;/instructions&gt;"</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$"A comprehensive hub inside a book to manage its quizzes, flashcard decks, slideshow courses, note blueprints, and AI prompt decks"</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$"Use its specialized player interface (such as note autoscroll/TTS) or convert it to another format (like transforming a quiz into flashcards)"</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$"Use the Explanation button during study, or run templates in the Prompts tab, connected to cloud APIs or a local Ollama server"</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$"استخدام واجهة المشغل الخاصة بها (مثل القراءة الصوتي والتمرير التلقائي للمقالات) أو تحويلها لتشكيل آخر (كتحويل كوز إلى بطاقات مراجعة)"</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$"مركز متكامل داخل الكتاب لإدارة الكوزات، والبطاقات المراجعة، والشرائح التعليمية، ومقالات الملاحظات، وبرومبتات الذكاء الاصطناعي"</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$body = "The Solar System consists of the Sun and everything that orbits it, including eight planets. Mars is often called the Red Planet due to iron oxide on its surface."</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$explanation = "MKS allows you to generate explanations during quizzes or draft custom materials from the Prompts tab, using either cloud APIs or a local Ollama server."</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$explanation = "You can customize colors, fonts, and layout density by heading to the Settings screen and choosing Appearance/Theme."</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$explanation = "You can get additional books by navigating to the 'Contact Us' section and requesting them. This is a temporary setup as the app is still under active development."</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$explanation = "You can import supported files (like XLSX or CSV) via the Library's Import tool, or by sharing the file from another app and choosing MKS as the destination."</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$explanation = "You can study materials through specialized players (like the blueprint reader with autoscroll/TTS) or convert them (e.g., turning quiz questions into flashcards)."</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$explanation = "يمكنك الاستيراد إما من داخل التطبيق عبر خيار الاستيراد بالمكتبة، أو بمشاركة ملف مدعوم (مثل XLSX/CSV) من أي تطبيق خارجي واختيار MKS عبر نظام مشاركة أندرويد."</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$explanation = "يمكنك التفاعل مع الذكاء الاصطناعي عبر زر الشرح داخل الكوزات أو من خلال لوحة البرومبتات، مع دعم الربط بنماذج سحابية أو خادم محلي يعمل على Ollama."</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$explanation = "يمكنك الحصول على الكتب من خلال خانة 'اتصل بنا' وطلبها مباشرة من المطور. هذه الحالة مؤقتة نظراً لأن التطبيق ما زال في مرحلة التطوير."</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$explanation = "يمكنك دراسة كل مادة عبر المشغل المخصص لها (كقارئ المقالات وخاصية القراءة التلقائية) أو بتحويلها مثل تحويل الكوزات إلى بطاقات مراجعة لتنويع أساليب الدراسة."</ID>
+    <ID>MaxLineLength:MksDatabaseSeeder.kt$MksDatabaseSeeder$explanation = "ينظم تطبيق MKS المواد المعرفية في هيئة اختبارات (Quizzes)، بطاقات مراجعة، شرائح عرض، وملاحظات أو مقالات (Blueprints)."</ID>
+    <ID>MaxLineLength:MksExchangeV7Archive.kt$MksExchangeV7Archive$return source.isNotBlank() &amp;&amp; !source.startsWith("data:") &amp;&amp; !source.startsWith("http://", ignoreCase = true) &amp;&amp; !source.startsWith("https://", ignoreCase = true) &amp;&amp; !source.startsWith("media/")</ID>
+    <ID>MaxLineLength:MksExchangeV7Archive.kt$MksExchangeV7Archive$source.startsWith("http://", ignoreCase = true) || source.startsWith("https://", ignoreCase = true) || source.startsWith("media/") -&gt; null</ID>
+    <ID>MaxLineLength:SearchIndexManager.kt$SearchIndexManager$"VALUES ('${escape(title)}', '${escape(subtitle)}', '${escape(content)}', '${escape(entityType)}', '${escape(entityId)}', $workspaceId, $bookId, $quizId, $parentId, $updatedAt)"</ID>
+    <ID>MaxLineLength:SearchIndexManager.kt$SearchIndexManager$execInsert(ann.noteBody ?: ann.selectedText ?: "Annotation", ann.ownerType, ann.selectedText ?: "", "ANNOTATION", ann.id.toString(), book.workspaceId, ann.bookId, 0, ann.ownerId, ann.updatedAt)</ID>
+    <ID>MaxLineLength:SearchIndexManager.kt$SearchIndexManager$execInsert(deck.title, deck.description ?: "", deck.tags.joinToString(" "), "PROMPT_DECK", deck.id.toString(), book.workspaceId, book.id, 0, 0, deck.updatedAt)</ID>
+    <ID>MaxLineLength:SearchIndexManager.kt$SearchIndexManager$execInsert(quiz.title, quiz.description ?: "", quiz.category ?: "", "QUIZ", quiz.id.toString(), book.workspaceId, book.id, quiz.id, 0, quiz.updatedAt)</ID>
+    <ID>MaxLineLength:SearchIndexManager.kt$SearchIndexManager$execInsert(slide.title, course.title, slide.body ?: "", "SLIDE", slide.id.toString(), book.workspaceId, book.id, 0, course.id, slide.updatedAt)</ID>
+    <ID>MaxLineLength:SearchIndexManager.kt$SearchIndexManager$execInsert(src.title, src.author ?: "", src.description ?: "", "SOURCE", src.id.toString(), book.workspaceId, book.id, 0, 0, src.updatedAt)</ID>
+    <ID>MaxLineLength:SearchIndexManager.kt$SearchIndexManager$val</ID>
+    <ID>MaxLineLength:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$"additional" to listOf("additional info", "additional", "info", "notes", "extra", "high-yield", "high yield", "facts", "fact", "idea", "معلومة", "ملاحظات")</ID>
+    <ID>MaxLineLength:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$"answer" to listOf("answer", "answers", "ans", "an", "correct", "key", "correct answer", "answer key", "correct_option", "back", "الإجابة", "الجواب", "مفتاح الإجابة", "الوجه الخلفي")</ID>
+    <ID>MaxLineLength:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$"explanation" to listOf("explanation", "explanation summary", "rationale", "exp", "reason", "summary", "logic", "الشرح", "تفسير")</ID>
+    <ID>MaxLineLength:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$"question" to listOf("question", "question summary", "question text", "q text", "question_text", "q", "stem", "rephrased stem", "question stem", "text", "front", "السؤال", "سؤال", "نص السؤال", "نص", "الوجه الأمامي")</ID>
+    <ID>MaxLineLength:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$"reference" to listOf("reference", "ref", "source", "chapter q", "ch q", "chapter_q", "ch_q", "q#", "question number", "citation", "مرجع", "reference text")</ID>
+    <ID>MaxLineLength:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$Regex("""^(option|opt|choice|answer option|mcq|ans|q|خيار|الخيار)\s*\d+$""", RegexOption.IGNORE_CASE).containsMatchIn(norm)</ID>
+    <ID>MaxLineLength:SpreadsheetQuestionParser.kt$SpreadsheetQuestionParser$if</ID>
+    <ID>NestedBlockDepth:AssetRepository.kt$AssetRepository$suspend fun rebuildDerivedIndexes()</ID>
+    <ID>NestedBlockDepth:CsvParser.kt$CsvParser$fun parse( content: String, delimiter: Char? = null, ): List&lt;List&lt;String&gt;&gt;</ID>
+    <ID>NestedBlockDepth:ImportFormatDetector.kt$ImportFormatDetector$private fun getFileName(uri: Uri): String?</ID>
+    <ID>NestedBlockDepth:ImportLibraryManager.kt$ImportLibraryManager$private suspend fun resolveImagePath( assetRef: String?, assetsDir: File?, rootDir: File? = null, manifest: ManifestDto? = null, allowInsecureRemoteImages: Boolean = false, ): ResolvedImageResult</ID>
+    <ID>NestedBlockDepth:KnowledgeRepository.kt$KnowledgeRepository$private fun parsePromptOutputFlashcards( deckId: Long, outputText: String, ): List&lt;FlashcardEntity&gt;</ID>
+    <ID>NestedBlockDepth:KnowledgeRepository.kt$KnowledgeRepository$private fun parsePromptOutputQuestions( quizId: Long, outputText: String, ): List&lt;QuestionEntity&gt;</ID>
+    <ID>NestedBlockDepth:LibraryBundleDto.kt$AssetsSerializer$override fun deserialize(decoder: Decoder): Map&lt;String, String&gt;</ID>
+    <ID>NestedBlockDepth:MksExchangeV7Archive.kt$MksExchangeV7Archive$fun writeLegacyBundleToSchema7Zip( bundle: LibraryBundleDto, outputStream: OutputStream, supplemental: MksExchangeV7SupplementalData = MksExchangeV7SupplementalData(), )</ID>
+    <ID>NestedBlockDepth:SpreadsheetHeaderMapper.kt$SpreadsheetHeaderMapper$fun guessOptionColumns( headerRow: List&lt;String&gt;, mapped: Map&lt;String, Int&gt;, ): List&lt;Int&gt;</ID>
+    <ID>NestedBlockDepth:SpreadsheetQuestionParser.kt$SpreadsheetQuestionParser$private fun resolveCorrectAnswers( answerRaw: String, options: List&lt;ParsedOption&gt;, ): List&lt;String&gt;</ID>
+    <ID>NestedBlockDepth:TextFlashcardParser.kt$TextFlashcardParser$fun parse( text: String, deckId: Long, startIndex: Int = 0, mode: TextParseMode = TextParseMode.ALTERNATING_PARAGRAPHS, ): List&lt;FlashcardEntity&gt;</ID>
+    <ID>NestedBlockDepth:TextQuestionParser.kt$TextQuestionParser$private fun resolveCorrect( answerRaw: String, options: List&lt;ParsedOption&gt;, ): List&lt;String&gt;</ID>
+    <ID>NestedBlockDepth:TextSlideParser.kt$TextSlideParser$fun parse( text: String, courseId: Long, startIndex: Int = 0, mode: TextParseMode = TextParseMode.ALTERNATING_PARAGRAPHS, ): List&lt;CourseSlideEntity&gt;</ID>
+    <ID>NestedBlockDepth:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$fun compile(uri: Uri): LibraryBundleDto</ID>
+    <ID>NestedBlockDepth:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$private fun getFileName(uri: Uri): String?</ID>
+    <ID>NestedBlockDepth:ZipLibraryParser.kt$ZipLibraryParser$fun parse(inputStream: InputStream): ZipResult</ID>
+    <ID>NestedBlockDepth:ZipLibraryParser.kt$ZipLibraryParser$private fun extractPlainZip( zipFile: File, targetDir: File, )</ID>
+    <ID>PrintStackTrace:KnowledgeRepository.kt$KnowledgeRepository$e</ID>
+    <ID>ReturnCount:ApiKeyCrypto.kt$ApiKeyCrypto$fun decrypt(stored: String): String</ID>
+    <ID>ReturnCount:AssetRepository.kt$AssetRepository$fun resolveImagePath(path: String?): String?</ID>
+    <ID>ReturnCount:AssetRepository.kt$AssetRepository$private fun prepareQuestionAsset(asset: QuestionAssetEntity): QuestionAssetEntity</ID>
+    <ID>ReturnCount:AssetRepository.kt$AssetRepository$private fun prepareSourceDocument(source: SourceDocumentEntity): SourceDocumentEntity</ID>
+    <ID>ReturnCount:AssetRepository.kt$AssetRepository$suspend fun appendBlueprintToSourceQuestionNote(noteId: Long)</ID>
+    <ID>ReturnCount:ExportManager.kt$ExportManager$private fun resolveLocalPath(path: String?): String?</ID>
+    <ID>ReturnCount:FileManager.kt$FileManager$fun copyAssetUriToInternalStorage( uriString: String, originalName: String? = null, ): MksResult&lt;AssetFileSaveResult&gt;</ID>
+    <ID>ReturnCount:FileManager.kt$FileManager$fun getBase64Image(path: String?): String</ID>
+    <ID>ReturnCount:FileManager.kt$FileManager$fun getFile(path: String?): File?</ID>
+    <ID>ReturnCount:FileManager.kt$FileManager$fun saveBase64AsImageDetailed(base64String: String): MksResult&lt;String&gt;</ID>
+    <ID>ReturnCount:FileManager.kt$FileManager$fun saveImageDetailed( bytes: ByteArray, extension: String = "webp", ): MksResult&lt;String&gt;</ID>
+    <ID>ReturnCount:FileManager.kt$FileManager$fun saveImageDetailed(base64String: String?): MksResult&lt;String&gt;</ID>
+    <ID>ReturnCount:FileManager.kt$FileManager$private fun normalizeImageBytes(bytes: ByteArray): NormalizedImageResult</ID>
+    <ID>ReturnCount:FileManager.kt$FileManager$suspend fun downloadAndSaveImageDetailed( url: String, policy: RemoteAssetPolicy = RemoteAssetPolicy.Default, ): MksResult&lt;String&gt;</ID>
+    <ID>ReturnCount:FocusManager.kt$FocusManager$fun enableFocusMode(): Boolean</ID>
+    <ID>ReturnCount:GenericImageExtractor.kt$GenericImageExtractor$fun extractFromFields(text: String?): ResolvedImage?</ID>
+    <ID>ReturnCount:GenericImageExtractor.kt$GenericImageExtractor$fun extractFromText(text: String?): ResolvedImage?</ID>
+    <ID>ReturnCount:ImportFormatDetector.kt$ImportFormatDetector$private fun detectFromStream(inputStream: InputStream): ImportFormat</ID>
+    <ID>ReturnCount:ImportFormatDetector.kt$ImportFormatDetector$private fun isLikelyTabular(content: String): Boolean</ID>
+    <ID>ReturnCount:ImportLibraryManager.kt$ImportLibraryManager$private fun parseSpreadsheetSimple(uri: Uri): List&lt;ParsedQuestion&gt;</ID>
+    <ID>ReturnCount:ImportLibraryManager.kt$ImportLibraryManager$private suspend fun resolveImagePath( assetRef: String?, assetsDir: File?, rootDir: File? = null, manifest: ManifestDto? = null, allowInsecureRemoteImages: Boolean = false, ): ResolvedImageResult</ID>
+    <ID>ReturnCount:JsonQuestionParser.kt$JsonQuestionParser$private fun parseMap(map: Map&lt;String, Any&gt;): List&lt;ParsedQuestion&gt;</ID>
+    <ID>ReturnCount:SessionStateValidator.kt$SessionStateValidator$fun validate(session: SessionEntity): SessionValidationResult</ID>
+    <ID>ReturnCount:SourceDetector.kt$SourceDetector$fun detectMode( fileName: String?, content: String?, ): ImportMode</ID>
+    <ID>ReturnCount:SourceDetector.kt$SourceDetector$private fun isTabular(content: String): Boolean</ID>
+    <ID>ReturnCount:SpreadsheetQuestionParser.kt$SpreadsheetQuestionParser$private fun resolveFromCell( value: String?, ref: String, rowNum: Int, ): ResolvedImage?</ID>
+    <ID>ReturnCount:SpreadsheetQuestionParser.kt$SpreadsheetQuestionParser$private fun resolveImage( row: List&lt;String&gt;, rowNumber: Int, qIdx: Int, imgIdx: Int, optIdxs: List&lt;Int&gt;, ): ResolvedImage</ID>
+    <ID>ReturnCount:XlsxImageResolver.kt$XlsxImageResolver$fun getCellImagePathMap(zipFile: ZipFile): Map&lt;String, String&gt;</ID>
+    <ID>ReturnCount:XlsxImageResolver.kt$XlsxImageResolver$fun resolveSheetFormulaImages( zipFile: ZipFile, sheetName: String, cellImagePathMap: Map&lt;String, String&gt;, ): Map&lt;String, String&gt;</ID>
+    <ID>ReturnCount:XlsxImageResolver.kt$XlsxImageResolver$private fun getSheetPath( zipFile: ZipFile, sheetName: String, ): String?</ID>
+    <ID>ReturnCount:XlsxImageResolver.kt$XlsxImageResolver$private fun resolveAnchoredSheetImages( zipFile: ZipFile, sheetName: String, ): SheetImageResolution</ID>
+    <ID>SwallowedException:ApiKeyCrypto.kt$ApiKeyCrypto$e: Exception</ID>
+    <ID>SwallowedException:FileManager.kt$FileManager$e: Exception</ID>
+    <ID>SwallowedException:GlobalSearchRepository.kt$GlobalSearchRepository$e: Exception</ID>
+    <ID>SwallowedException:HtmlQuestionParser.kt$HtmlQuestionParser$e: Exception</ID>
+    <ID>SwallowedException:ImportFormatDetector.kt$ImportFormatDetector$e: Exception</ID>
+    <ID>ThrowsCount:ImportLibraryManager.kt$ImportLibraryManager$private suspend fun executeImportPipeline( bundle: LibraryBundleDto, assetsDir: File?, format: ImportFormat, strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING, targetBookId: Long? = null, targetQuizId: Long? = null, startTime: Long, onProgress: (Float, String) -&gt; Unit, allowInsecureRemoteImages: Boolean = false, rootDir: File? = null, manifest: ManifestDto? = null, activeWorkspaceId: Long? = null, ): ImportResult</ID>
+    <ID>ThrowsCount:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$fun compile(uri: Uri): LibraryBundleDto</ID>
+    <ID>ThrowsCount:ZipLibraryParser.kt$ZipLibraryParser$fun parse(inputStream: InputStream): ZipResult</ID>
+    <ID>ThrowsCount:ZipLibraryParser.kt$ZipLibraryParser$private fun extractPlainZip( zipFile: File, targetDir: File, )</ID>
+    <ID>TooGenericExceptionCaught:AiMcqRepository.kt$AiMcqRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ApiKeyCrypto.kt$ApiKeyCrypto$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:BookRepository.kt$BookRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:FileManager.kt$FileManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:FocusManager.kt$FocusManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:GlobalSearchRepository.kt$GlobalSearchRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:HtmlQuestionParser.kt$HtmlQuestionParser$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ImportFormatDetector.kt$ImportFormatDetector$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ImportLibraryManager.kt$ImportLibraryManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:KnowledgeRepository.kt$KnowledgeRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MksDatabaseSeeder.kt$MksDatabaseSeeder$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:PoiInitializer.kt$PoiInitializer$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SecureXml.kt$SecureXml$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:WorkspaceRepository.kt$WorkspaceRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ZipLibraryParser.kt$ZipLibraryParser$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:BookRepository.kt$BookRepository$throw Exception( "Failed to create book: Duplicate external ID or invalid workspace.", e )</ID>
+    <ID>TooGenericExceptionThrown:HtmlQuestionParser.kt$HtmlQuestionParser$throw Exception("No embedded quiz JSON found in the HTML.")</ID>
+    <ID>TooGenericExceptionThrown:ImportLibraryManager.kt$ImportLibraryManager$throw Exception("Could not open stream")</ID>
+    <ID>TooGenericExceptionThrown:ImportLibraryManager.kt$ImportLibraryManager$throw Exception("Could not read file content")</ID>
+    <ID>TooGenericExceptionThrown:ImportLibraryManager.kt$ImportLibraryManager$throw Exception("Unexpected format: $format")</ID>
+    <ID>TooGenericExceptionThrown:ImportLibraryManager.kt$ImportLibraryManager$throw Exception("Unsupported file format")</ID>
+    <ID>TooManyFunctions:AssetRepository.kt$AssetRepository</ID>
+    <ID>TooManyFunctions:BookRepository.kt$BookRepository</ID>
+    <ID>TooManyFunctions:DataStoreManager.kt$DataStoreManager</ID>
+    <ID>TooManyFunctions:FileManager.kt$FileManager</ID>
+    <ID>TooManyFunctions:ImportLibraryManager.kt$ImportLibraryManager</ID>
+    <ID>TooManyFunctions:KnowledgeRepository.kt$KnowledgeRepository</ID>
+    <ID>TooManyFunctions:LibraryMapper.kt$LibraryMapper</ID>
+    <ID>TooManyFunctions:QuizRepository.kt$QuizRepository</ID>
+    <ID>TooManyFunctions:StudyRepository.kt$StudyRepository</ID>
+    <ID>UnusedParameter:FileManager.kt$FileManager$extension: String = "webp"</ID>
+    <ID>UnusedParameter:FileManager.kt$FileManager$originalName: String? = null</ID>
+    <ID>UnusedPrivateMember:AssetRepository.kt$AssetRepository$private suspend fun registerAssetReference( ownerType: String, ownerId: Long, path: String?, )</ID>
+    <ID>UnusedPrivateMember:KnowledgeRepository.kt$KnowledgeRepository$private fun parseLongList(json: String): List&lt;Long&gt;</ID>
+    <ID>UnusedPrivateProperty:AssetReferenceAuditService.kt$AssetReferenceAuditService$private val courseSlideDao: CourseSlideDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val categoryMergePreviewService: CategoryMergePreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val categoryMetadataDao: CategoryMetadataDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val clearMarksPreviewService: ClearMarksPreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val deletePreviewService: DeletePreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val exportManager: ExportManager? = null</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val importManager: ImportLibraryManager? = null</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val knowledgeStudySessionDao: KnowledgeStudySessionDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val learningSessionDao: LearningSessionDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val mistakeLogDao: MistakeLogDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val promptCardDao: PromptCardDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val promptDao: PromptDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val promptDeckDao: PromptDeckDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val promptRunDao: PromptRunDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val sessionDao: SessionDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao</ID>
+    <ID>UnusedPrivateProperty:AssetRepository.kt$AssetRepository$private val workspaceDao: WorkspaceDao</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val assetReferenceAuditService: AssetReferenceAuditService? = null</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val assetReferenceDao: AssetReferenceDao</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val categoryMergePreviewService: CategoryMergePreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val categoryMetadataDao: CategoryMetadataDao</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val clearMarksPreviewService: ClearMarksPreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val courseSlideDao: CourseSlideDao</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val exportManager: ExportManager? = null</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val importManager: ImportLibraryManager? = null</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val knowledgeStudySessionDao: KnowledgeStudySessionDao</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val learningSessionDao: LearningSessionDao</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val questionCategoryDao: QuestionCategoryDao</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val sessionDao: SessionDao</ID>
+    <ID>UnusedPrivateProperty:BookRepository.kt$BookRepository$private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao</ID>
+    <ID>UnusedPrivateProperty:ExportManager.kt$ExportManager$private val json = Json { prettyPrint = true ignoreUnknownKeys = true encodeDefaults = true }</ID>
+    <ID>UnusedPrivateProperty:ExportManager.kt$ExportManager$private val okHttpClient by lazy { okhttp3.OkHttpClient() }</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val annotationDao: AnnotationDao</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val assetReferenceAuditService: AssetReferenceAuditService? = null</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val assetReferenceDao: AssetReferenceDao</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val categoryMergePreviewService: CategoryMergePreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val categoryMetadataDao: CategoryMetadataDao</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val clearMarksPreviewService: ClearMarksPreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val deletePreviewService: DeletePreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val exportManager: ExportManager? = null</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val importManager: ImportLibraryManager? = null</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val knowledgeStudySessionDao: KnowledgeStudySessionDao</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val learningSessionDao: LearningSessionDao</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val mistakeLogDao: MistakeLogDao</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val questionAssetDao: QuestionAssetDao</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val questionCategoryDao: QuestionCategoryDao</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val quizRepositoryProvider: javax.inject.Provider&lt;QuizRepository&gt;</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val sessionDao: SessionDao</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val sourceDocumentDao: SourceDocumentDao</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao</ID>
+    <ID>UnusedPrivateProperty:KnowledgeRepository.kt$KnowledgeRepository$private val workspaceDao: WorkspaceDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val annotationDao: AnnotationDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val assetReferenceAuditService: AssetReferenceAuditService? = null</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val assetReferenceDao: AssetReferenceDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val courseSlideDao: CourseSlideDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val exportManager: ExportManager? = null</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val flashcardDao: FlashcardDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val flashcardDeckDao: FlashcardDeckDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val knowledgeStudySessionDao: KnowledgeStudySessionDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val learningSessionDao: LearningSessionDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val mistakeLogDao: MistakeLogDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val noteBlueprintDao: NoteBlueprintDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val promptCardDao: PromptCardDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val promptDao: PromptDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val promptDeckDao: PromptDeckDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val promptRunDao: PromptRunDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val slideshowCourseDao: SlideshowCourseDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val sourceDocumentDao: SourceDocumentDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao</ID>
+    <ID>UnusedPrivateProperty:QuizRepository.kt$QuizRepository$private val workspaceDao: WorkspaceDao</ID>
+    <ID>UnusedPrivateProperty:ReviewRepository.kt$ReviewRepository$private val bookDao: BookDao</ID>
+    <ID>UnusedPrivateProperty:SoftDeleteCascadeTest.kt$SoftDeleteCascadeTest$val q2Id = questionDao.insertQuestion(QuestionEntity( quizId = quizId, externalId = "q2", text = "Q2", type = QuestionType.SINGLE_CHOICE, options = listOf("B"), correctAnswers = listOf(0), ))</ID>
+    <ID>UnusedPrivateProperty:SoftDeleteCascadeTest.kt$SoftDeleteCascadeTest$val qId = questionDao.insertQuestion(QuestionEntity( quizId = quizId, externalId = "q1", text = "Question 1", type = QuestionType.SINGLE_CHOICE, options = listOf("A", "B"), correctAnswers = listOf(0), ))</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val assetReferenceAuditService: AssetReferenceAuditService? = null</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val assetReferenceDao: AssetReferenceDao</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val categoryMergePreviewService: CategoryMergePreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val categoryMetadataDao: CategoryMetadataDao</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val clearMarksPreviewService: ClearMarksPreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val courseSlideDao: CourseSlideDao</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val deletePreviewService: DeletePreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val exportManager: ExportManager? = null</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val fileManager: FileManager</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val importManager: ImportLibraryManager? = null</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val learningSessionDao: LearningSessionDao</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val promptDao: PromptDao</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val questionCategoryDao: QuestionCategoryDao</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val slideshowCourseDao: SlideshowCourseDao</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val sourceDocumentDao: SourceDocumentDao</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao</ID>
+    <ID>UnusedPrivateProperty:StudyRepository.kt$StudyRepository$private val workspaceDao: WorkspaceDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val annotationDao: AnnotationDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val assetReferenceAuditService: AssetReferenceAuditService? = null</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val assetReferenceDao: AssetReferenceDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val categoryMergePreviewService: CategoryMergePreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val categoryMetadataDao: CategoryMetadataDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val clearMarksPreviewService: ClearMarksPreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val courseSlideDao: CourseSlideDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val deletePreviewService: DeletePreviewService? = null</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val exportManager: ExportManager? = null</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val fileManager: FileManager</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val flashcardDao: FlashcardDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val flashcardDeckDao: FlashcardDeckDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val importManager: ImportLibraryManager? = null</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val knowledgeStudySessionDao: KnowledgeStudySessionDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val learningSessionDao: LearningSessionDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val mistakeLogDao: MistakeLogDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val noteBlueprintDao: NoteBlueprintDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val noteCollectionDao: com.ahmedyejam.mks.data.local.dao.NoteCollectionDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val promptCardDao: PromptCardDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val promptDao: PromptDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val promptDeckDao: PromptDeckDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val promptRunDao: PromptRunDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val questionAssetDao: QuestionAssetDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val questionCategoryDao: QuestionCategoryDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val questionDao: QuestionDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val quizDao: QuizDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val sessionDao: SessionDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val slideshowCourseDao: SlideshowCourseDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val sourceDocumentDao: SourceDocumentDao</ID>
+    <ID>UnusedPrivateProperty:WorkspaceRepository.kt$WorkspaceRepository$private val studySessionDao: com.ahmedyejam.mks.data.local.dao.StudySessionDao</ID>
+    <ID>UseCheckOrError:BookRepository.kt$BookRepository$throw IllegalStateException("Cannot delete system book")</ID>
+    <ID>UseCheckOrError:ImportLibraryManager.kt$ImportLibraryManager$throw IllegalStateException("Could not resolve a destination book for quiz '${quizDto.title}'")</ID>
+    <ID>UseCheckOrError:QuizRepository.kt$QuizRepository$throw IllegalStateException("Cannot delete system quiz")</ID>
+    <ID>UseCheckOrError:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$throw IllegalStateException("Could not create temporary file")</ID>
+    <ID>UseCheckOrError:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$throw IllegalStateException("Sheet '$sheetName' exceeds ${ImportLimits.MAX_XLSX_CELLS_PER_SHEET} cell limit.")</ID>
+    <ID>UseCheckOrError:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$throw IllegalStateException("Sheet '$sheetName' exceeds ${ImportLimits.MAX_XLSX_ROWS_PER_SHEET} row limit.")</ID>
+    <ID>UseCheckOrError:XlsxLibraryCompiler.kt$XlsxLibraryCompiler$throw IllegalStateException("XLSX has too many sheets (max ${ImportLimits.MAX_XLSX_SHEETS}).")</ID>
+    <ID>UseCheckOrError:ZipLibraryParser.kt$ZipLibraryParser$throw IllegalStateException("No JSON library file found in ZIP")</ID>
+    <ID>UseCheckOrError:ZipLibraryParser.kt$ZipLibraryParser$throw IllegalStateException("Too many entries in ZIP archive")</ID>
+    <ID>UseCheckOrError:ZipLibraryParser.kt$ZipLibraryParser$throw IllegalStateException("Total uncompressed size of ZIP archive exceeds maximum")</ID>
+    <ID>UseCheckOrError:ZipLibraryParser.kt$ZipLibraryParser$throw IllegalStateException("Zip entry '$entryName' exceeds maximum size")</ID>
+    <ID>UseCheckOrError:ZipLibraryParser.kt$ZipLibraryParser$throw IllegalStateException("Zip entry '${header.fileName}' exceeds maximum size")</ID>
+    <ID>UseRequire:KnowledgeRepository.kt$KnowledgeRepository$throw IllegalArgumentException("No questions selected for blueprint creation.")</ID>
+    <ID>UseRequire:KnowledgeRepository.kt$KnowledgeRepository$throw IllegalArgumentException("No questions selected for flashcard generation.")</ID>
+    <ID>VariableNaming:MksDatabaseSeeder.kt$MksDatabaseSeeder$private val TAG = "MksDatabaseSeeder"</ID>
+    <ID>VariableNaming:QuizRepository.kt$QuizRepository$val TAG = "QuizRepository"</ID>
+    <ID>WildcardImport:ExportManager.kt$import com.ahmedyejam.mks.data.exchange.v7.*</ID>
+    <ID>WildcardImport:ExportManager.kt$import com.ahmedyejam.mks.data.importer.dto.*</ID>
+    <ID>WildcardImport:ExportManager.kt$import com.ahmedyejam.mks.data.local.dao.*</ID>
+    <ID>WildcardImport:ExportManager.kt$import com.ahmedyejam.mks.data.local.entity.*</ID>
+    <ID>WildcardImport:GlobalSearchResult.kt$import com.ahmedyejam.mks.ui.*</ID>
+    <ID>WildcardImport:JsonLibraryParser.kt$import kotlinx.serialization.json.*</ID>
+    <ID>WildcardImport:MksRepositoryModels.kt$import com.ahmedyejam.mks.data.local.entity.*</ID>
+    <ID>WildcardImport:SoftDeleteCascadeTest.kt$import com.ahmedyejam.mks.data.local.dao.*</ID>
+    <ID>WildcardImport:SoftDeleteCascadeTest.kt$import com.ahmedyejam.mks.data.local.entity.*</ID>
+    <ID>WildcardImport:SoftDeleteCascadeTest.kt$import org.junit.Assert.*</ID>
+    <ID>WildcardImport:WorkspaceIsolationTest.kt$import com.ahmedyejam.mks.data.local.dao.*</ID>
+    <ID>WildcardImport:WorkspaceIsolationTest.kt$import com.ahmedyejam.mks.data.local.entity.*</ID>
+    <ID>WildcardImport:WorkspaceIsolationTest.kt$import org.junit.Assert.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

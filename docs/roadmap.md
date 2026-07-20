@@ -33,6 +33,47 @@ closed independently — migrating it to `StudyRun` is optional cleanup, not a f
 ⚠️ Resume cannot be meaningfully tested without process death on a real device. See the manual test
 plan in `docs/testing/study-run-adoption.md` before shipping.
 
+### 1.8 Detekt debt burn-down 🟡 BASELINED, NOT FIXED
+
+**Status:** 🟡 `./gradlew detekt` now passes — but **1,001 findings are baselined, not resolved.**
+
+Detekt previously failed fast on `:app` with 10 findings and never analysed anything else, which
+made the codebase look nearly clean. `:app` is now genuinely fixed (0 findings, no baseline file).
+Reaching the other modules revealed the real total: **1,988 findings**.
+
+Reduced to 1,268 by configuring rules that are structurally wrong for this codebase rather than by
+suppressing real problems — `FunctionNaming`, `LongMethod`, `LongParameterList` and `MagicNumber`
+now ignore `@Composable`, because Compose screens are PascalCase, declarative, state-and-callback
+heavy, and full of layout literals by design. That alone took `core:ui` from 142 → 10 and
+`feature:ui` from 1,011 → 508.
+
+The remaining findings are recorded in per-module `detekt-baseline.xml`. **A baseline is a debt
+ledger, not a fix.** New code is held to the full standard; the backlog below is still owed.
+
+| Module | Baselined |
+|---|---|
+| `core/data` | 485 |
+| `feature/ui` | 387 |
+| `core/database` | 79 |
+| `core/network` | 30 |
+| `core/ui` | 10 |
+| `core/model` | 10 |
+
+Suggested burn-down order, worst-signal first:
+
+1. **`UnusedPrivateProperty` (126)** — start here. Each one is potentially dead code, and unlike
+   the rest these are cheap to verify and delete.
+2. **`TooGenericExceptionCaught` (192) + `SwallowedException` (30)** — `catch (e: Exception) {}`
+   with an empty body. This is the same class of problem as the audit's error-handling findings:
+   failures become invisible rather than handled. Highest correctness value of the group.
+3. **`MaxLineLength` (319)** — mechanical, safely automatable, no behavioural risk.
+4. **`CyclomaticComplexMethod` (79) + remaining `LongMethod` (43)** — overlaps with the god-object
+   refactors already tracked in the audit (QuizViewModel, BookToolsViewModel, LibraryViewModel).
+5. **`MagicNumber` (204 non-Compose)** — lowest value; many are genuinely clearer inline.
+
+Do not regenerate the baseline to clear a newly introduced warning. Regenerate only after a
+deliberate burn-down pass, and expect the counts above to drop.
+
 ### 1.1 Repository Test Harness & Test Suites
 
 **Status:** 🟡 STARTED — `core/data/src/test/.../repository/` now has `WorkspaceIsolationTest`,

@@ -25,6 +25,16 @@ subprojects {
     configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
         buildUponDefaultConfig = true
         allRules = false
+        config.setFrom(rootProject.files("config/detekt/detekt.yml"))
+
+        // Pre-existing findings are recorded per module in detekt-baseline.xml so the build fails
+        // on *new* violations while the existing backlog stays visible and diffable. A baseline is
+        // a debt ledger, not a fix: see docs/roadmap.md §1.8 for the counts and burn-down order.
+        // Regenerate deliberately with `./gradlew detektBaseline`, never to clear a fresh warning.
+        val moduleBaseline = file("detekt-baseline.xml")
+        if (moduleBaseline.exists()) {
+            baseline = moduleBaseline
+        }
     }
 
     // Configure ktlint

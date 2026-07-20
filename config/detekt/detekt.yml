@@ -1,0 +1,80 @@
+# Detekt configuration for MKS.
+#
+# Layered on top of detekt's defaults (`buildUponDefaultConfig = true` in the root build script),
+# so this file contains only deliberate deviations — everything not mentioned here keeps its
+# default behaviour.
+#
+# The bar for adding an entry: the rule must be structurally wrong for this codebase, not merely
+# inconvenient. Anything that represents a genuine defect gets fixed in the code instead.
+
+naming:
+  FunctionNaming:
+    # Composable functions are PascalCase by Compose convention — the framework's own API is named
+    # this way. Without this every screen and component in the project is a violation.
+    ignoreAnnotated:
+      - 'Composable'
+
+complexity:
+  LongMethod:
+    # A Compose screen is a single declarative tree; splitting it purely to satisfy a line count
+    # tends to produce indirection rather than clarity. Genuine decomposition is still worthwhile
+    # and is tracked separately as the god-object work in docs/roadmap.md.
+    ignoreAnnotated:
+      - 'Composable'
+
+  LongParameterList:
+    # Composables take one parameter per piece of state and one per callback; that is the idiom.
+    ignoreAnnotated:
+      - 'Composable'
+      - 'Provides'
+
+  TooManyFunctions:
+    # Hilt DI modules are one @Provides function per dependency by construction. Splitting
+    # HiltKnowledgeDaoModule or HiltUtilityDaoModule to satisfy a function count would scatter
+    # related bindings across arbitrary file boundaries and make the graph harder to follow, not
+    # easier — the count is a symptom of how many DAOs exist, not of a design problem.
+    ignoreAnnotatedFunctions:
+      - 'Provides'
+      - 'Binds'
+    thresholdInFiles: 20
+    thresholdInClasses: 20
+    thresholdInObjects: 20
+
+style:
+  MagicNumber:
+    # Layout literals (padding, weights, corner radii) are the overwhelming majority of these and
+    # are clearer inline than hoisted to named constants. Design tokens that *are* shared already
+    # live in MksDesignTokens.
+    ignoreAnnotated:
+      - 'Composable'
+      - 'Preview'
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+      - '100'
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+
+  MaxLineLength:
+    # Matches .editorconfig / ktlint so the two tools do not disagree about the same line.
+    maxLineLength: 140
+    excludes:
+      # Test data — long literal strings are often the clearest way to express a parser fixture.
+      - '**/test/**'
+      - '**/androidTest/**'
+
+  ForbiddenComment:
+    # TODO markers are allowed in tests and scratch fixtures; in production code an unimplemented
+    # path should be documented as a known limitation with a roadmap reference instead, so that it
+    # is tracked rather than buried in a comment.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+
+exceptions:
+  TooGenericExceptionCaught:
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'

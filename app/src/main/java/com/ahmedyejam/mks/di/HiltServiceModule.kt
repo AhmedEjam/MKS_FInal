@@ -13,6 +13,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object HiltServiceModule {
 
+    /** Serve cached config for an hour before hitting the network again. */
+    private const val MIN_FETCH_INTERVAL_SECONDS = 3600L
+
+    /** Matches `RemoteConfigManager.FETCH_TIMEOUT_MS`; config must not delay first paint. */
+    private const val FETCH_TIMEOUT_SECONDS = 2L
+
     @Provides
     @Singleton
     fun provideFirebaseMessaging(): FirebaseMessaging = FirebaseMessaging.getInstance()
@@ -20,9 +26,11 @@ object HiltServiceModule {
     @Provides
     @Singleton
     fun provideRemoteConfig(): FirebaseRemoteConfig = FirebaseRemoteConfig.getInstance().apply {
-        setConfigSettingsAsync(remoteConfigSettings {
-            minimumFetchIntervalInSeconds = 3600
-            fetchTimeoutInSeconds = 2 // Strict 2000ms timeout
-        })
+        setConfigSettingsAsync(
+            remoteConfigSettings {
+                minimumFetchIntervalInSeconds = MIN_FETCH_INTERVAL_SECONDS
+                fetchTimeoutInSeconds = FETCH_TIMEOUT_SECONDS
+            },
+        )
     }
 }

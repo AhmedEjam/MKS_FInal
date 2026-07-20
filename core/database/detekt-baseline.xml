@@ -1,0 +1,85 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>EmptyCatchBlock:MksMigrations.kt$MksMigrations.&lt;no name provided&gt;${}</ID>
+    <ID>LongMethod:MksMigrations.kt$MksMigrations.&lt;no name provided&gt;$override fun migrate(db: SupportSQLiteDatabase)</ID>
+    <ID>MaxLineLength:AnnotationDao.kt$AnnotationDao$@Query("SELECT * FROM annotations WHERE deletedAt IS NULL AND (selectedText LIKE :likeQuery OR noteBody LIKE :likeQuery OR colorLabel LIKE :likeQuery) ORDER BY updatedAt DESC LIMIT :limit")</ID>
+    <ID>MaxLineLength:AnnotationDao.kt$AnnotationDao$@Query("UPDATE annotations SET deletedAt = :deletedAt, updatedAt = :deletedAt WHERE ownerType = :ownerType AND ownerId = :ownerId AND deletedAt IS NULL")</ID>
+    <ID>MaxLineLength:AssetReferenceDao.kt$AssetReferenceDao$@Query("UPDATE asset_references SET deletedAt = :deletedAt WHERE ownerType = :ownerType AND ownerId = :ownerId AND path = :path AND deletedAt IS NULL")</ID>
+    <ID>MaxLineLength:FlashcardDao.kt$FlashcardDao$@Query("UPDATE flashcards SET lastReviewedAt = :reviewedAt, dueAt = :nextDueAt, reviewCount = reviewCount + 1, updatedAt = :reviewedAt WHERE id = :id")</ID>
+    <ID>MaxLineLength:FlashcardDeckDao.kt$FlashcardDeckDao$@Query("SELECT * FROM flashcard_decks WHERE deletedAt IS NOT NULL AND bookId IN (SELECT id FROM books WHERE workspaceId = :workspaceId)")</ID>
+    <ID>MaxLineLength:KnowledgeStudySessionDao.kt$KnowledgeStudySessionDao$@Query("SELECT * FROM knowledge_study_sessions WHERE targetType = :targetType AND targetId = :targetId AND deletedAt IS NULL ORDER BY updatedAt DESC")</ID>
+    <ID>MaxLineLength:KnowledgeStudySessionDao.kt$KnowledgeStudySessionDao$@Query("SELECT * FROM knowledge_study_sessions WHERE targetType = :targetType AND targetId = :targetId AND isCompleted = 0 AND deletedAt IS NULL ORDER BY updatedAt DESC LIMIT 1")</ID>
+    <ID>MaxLineLength:MistakeLogDao.kt$MistakeLogDao$@Query("SELECT * FROM mistake_log_entries WHERE deletedAt IS NULL AND isFixed = 0 AND reviewAt IS NOT NULL AND reviewAt &lt;= :now ORDER BY reviewAt ASC, createdAt DESC LIMIT :limit")</ID>
+    <ID>MaxLineLength:MistakeLogDao.kt$MistakeLogDao$@Query("SELECT * FROM mistake_log_entries WHERE questionId = :questionId AND deletedAt IS NULL AND ((:sessionId IS NULL AND sessionId IS NULL) OR sessionId = :sessionId) LIMIT 1")</ID>
+    <ID>MaxLineLength:MksMigrations.kt$MksMigrations.&lt;no name provided&gt;$db.execSQL("CREATE INDEX IF NOT EXISTS `index_source_document_assets_sourceDocumentId` ON `source_document_assets` (`sourceDocumentId`)")</ID>
+    <ID>MaxLineLength:MksMigrations.kt$MksMigrations.&lt;no name provided&gt;$db.execSQL("CREATE INDEX IF NOT EXISTS `index_study_sessions_targetId_targetType` ON `study_sessions` (`targetId`, `targetType`)")</ID>
+    <ID>MaxLineLength:MksMigrations.kt$MksMigrations.&lt;no name provided&gt;$db.execSQL("CREATE TABLE IF NOT EXISTS `category_metadata` (`name` TEXT NOT NULL, `emoji` TEXT, `color` INTEGER, `isPinned` INTEGER NOT NULL, PRIMARY KEY(`name`))")</ID>
+    <ID>MaxLineLength:MksMigrations.kt$MksMigrations.&lt;no name provided&gt;$db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_asset_references_ownerType_ownerId_path ON asset_references(ownerType, ownerId, path)")</ID>
+    <ID>MaxLineLength:NoteBlueprintDao.kt$NoteBlueprintDao$@Query("SELECT * FROM note_blueprints WHERE collectionId = :collectionId AND deletedAt IS NULL AND (sourceQuestionId = :questionId OR linkedQuestionsJson LIKE '%' || :questionId || '%') ORDER BY updatedAt DESC")</ID>
+    <ID>MaxLineLength:NoteBlueprintDao.kt$NoteBlueprintDao$@Query("SELECT * FROM note_blueprints WHERE deletedAt IS NOT NULL AND collectionId IN (SELECT id FROM note_collections WHERE bookId IN (SELECT id FROM books WHERE workspaceId = :workspaceId))")</ID>
+    <ID>MaxLineLength:NoteBlueprintDao.kt$NoteBlueprintDao$@Query("SELECT * FROM note_blueprints WHERE deletedAt IS NULL AND (sourceQuestionId = :questionId OR linkedQuestionsJson LIKE '%' || :questionId || '%') ORDER BY updatedAt DESC")</ID>
+    <ID>MaxLineLength:NoteBlueprintDao.kt$NoteBlueprintDao$@Query("SELECT * FROM note_blueprints WHERE deletedAt IS NULL AND reviewStatus != 'REVIEWED' AND updatedAt &lt;= :now ORDER BY lastReviewedAt ASC, updatedAt DESC LIMIT :limit")</ID>
+    <ID>MaxLineLength:NoteBlueprintDao.kt$NoteBlueprintDao$@Query("SELECT COUNT(*) FROM note_blueprints WHERE deletedAt IS NULL AND (sourceQuestionId IS NOT NULL OR linkedQuestionsJson != '[]' OR linkedAssetsJson != '[]')")</ID>
+    <ID>MaxLineLength:NoteBlueprintDao.kt$NoteBlueprintDao$@Query("SELECT b.* FROM note_blueprints b JOIN note_collections c ON b.collectionId = c.id WHERE c.bookId = :bookId AND b.deletedAt IS NULL AND c.deletedAt IS NULL ORDER BY b.updatedAt DESC")</ID>
+    <ID>MaxLineLength:NoteBlueprintDao.kt$NoteBlueprintDao$@Query("UPDATE note_blueprints SET reviewStatus = 'REVIEWED', reviewCount = reviewCount + 1, lastReviewedAt = :reviewedAt, updatedAt = :reviewedAt WHERE id = :id")</ID>
+    <ID>MaxLineLength:PromptCardDao.kt$PromptCardDao$@Query("SELECT COUNT(*) FROM prompt_cards WHERE deletedAt IS NULL AND deckId IN (SELECT id FROM prompt_decks WHERE bookId = :bookId AND deletedAt IS NULL)")</ID>
+    <ID>MaxLineLength:PromptRunDao.kt$PromptRunDao$@Query("SELECT * FROM prompt_runs WHERE deletedAt IS NULL AND promptCardId IN (SELECT id FROM prompt_cards WHERE deckId = :deckId AND deletedAt IS NULL) ORDER BY createdAt DESC")</ID>
+    <ID>MaxLineLength:PromptRunDao.kt$PromptRunDao$@Query("SELECT COUNT(*) FROM prompt_runs WHERE deletedAt IS NULL AND outputText IS NOT NULL AND outputText != '' AND promptCardId IN (SELECT id FROM prompt_cards WHERE deletedAt IS NULL AND deckId IN (SELECT id FROM prompt_decks WHERE bookId = :bookId AND deletedAt IS NULL))")</ID>
+    <ID>MaxLineLength:PromptRunDao.kt$PromptRunDao$@Query("SELECT COUNT(*) FROM prompt_runs WHERE deletedAt IS NULL AND promptCardId IN (SELECT id FROM prompt_cards WHERE deletedAt IS NULL AND deckId IN (SELECT id FROM prompt_decks WHERE bookId = :bookId AND deletedAt IS NULL))")</ID>
+    <ID>MaxLineLength:QuestionAssetDao.kt$QuestionAssetDao$@Query("SELECT * FROM question_assets WHERE questionId = :questionId AND deletedAt IS NULL ORDER BY isPinned DESC, sortOrder ASC, createdAt ASC")</ID>
+    <ID>MaxLineLength:QuestionAssetDao.kt$QuestionAssetDao$@Query("SELECT * FROM question_assets WHERE quizId = :quizId AND deletedAt IS NULL ORDER BY questionId ASC, isPinned DESC, sortOrder ASC, createdAt ASC")</ID>
+    <ID>MaxLineLength:QuestionDao.kt$QuestionDao$@Query("UPDATE questions SET categories = '[]', updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE categories IS NOT NULL AND categories != '[]'")</ID>
+    <ID>MaxLineLength:QuestionDao.kt$QuestionDao$@Query("UPDATE questions SET deletedAt = :deletedAt, updatedAt = :deletedAt, lastEditedAt = :deletedAt WHERE quizId = :quizId AND deletedAt IS NULL")</ID>
+    <ID>MaxLineLength:QuestionDao.kt$QuestionDao$@Query("UPDATE questions SET deletedAt = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE quizId = :quizId AND deletedAt = :deletedAtFilter")</ID>
+    <ID>MaxLineLength:QuestionDao.kt$QuestionDao$@Query("UPDATE questions SET isMarked = 0, markedAt = NULL, markReason = NULL, markReviewAt = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE id = :questionId")</ID>
+    <ID>MaxLineLength:QuestionDao.kt$QuestionDao$@Query("UPDATE questions SET isMarked = 0, markedAt = NULL, markReason = NULL, markReviewAt = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE quizId = :quizId AND isMarked = 1")</ID>
+    <ID>MaxLineLength:QuizDao.kt$QuizDao$@Query("SELECT COUNT(*) FROM questions WHERE deletedAt IS NULL AND quizId IN (SELECT id FROM quizzes WHERE bookId = :bookId AND deletedAt IS NULL)")</ID>
+    <ID>MaxLineLength:QuizDao.kt$QuizDao$@Query("SELECT COUNT(*) FROM questions WHERE quizId IN (SELECT id FROM quizzes WHERE bookId = :bookId AND deletedAt IS NULL) AND deletedAt IS NULL")</ID>
+    <ID>MaxLineLength:QuizDao.kt$QuizDao$@Query("UPDATE quizzes SET category = NULL, updatedAt = :updatedAt, lastEditedAt = :updatedAt WHERE category IS NOT NULL AND category != ''")</ID>
+    <ID>MaxLineLength:QuizDao.kt$QuizDao$@Query("UPDATE quizzes SET questionCount = (SELECT COUNT(*) FROM questions WHERE quizId = :quizId AND deletedAt IS NULL) WHERE id = :quizId")</ID>
+    <ID>MaxLineLength:SessionDao.kt$SessionDao$@Query("UPDATE sessions SET deletedAt = :deletedAt, updatedAt = :deletedAt, lastModifiedAt = :deletedAt WHERE quizId = :quizId AND deletedAt IS NULL")</ID>
+    <ID>MaxLineLength:SessionDao.kt$SessionDao$@Query("UPDATE sessions SET deletedAt = NULL, updatedAt = :updatedAt, lastModifiedAt = :updatedAt WHERE quizId = :quizId AND deletedAt = :deletedAtFilter")</ID>
+    <ID>MaxLineLength:SlideshowCourseDao.kt$SlideshowCourseDao$@Query("SELECT * FROM slideshow_courses WHERE deletedAt IS NOT NULL AND bookId IN (SELECT id FROM books WHERE workspaceId = :workspaceId)")</ID>
+    <ID>MaxLineLength:SourceDocumentDao.kt$SourceDocumentDao$@Query("SELECT * FROM source_documents WHERE deletedAt IS NULL AND (title LIKE '%' || :query || '%' OR author LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%') ORDER BY updatedAt DESC")</ID>
+    <ID>MaxLineLength:StudyRunDao.kt$StudyRunDao$@Query("SELECT * FROM study_runs WHERE contentType = :contentType AND contentId = :contentId AND isCompleted = 0 AND deletedAt IS NULL ORDER BY updatedAt DESC LIMIT 1")</ID>
+    <ID>MaxLineLength:StudySessionDao.kt$StudySessionDao$@Query("SELECT * FROM study_sessions WHERE targetId = :targetId AND targetType = :targetType AND deletedAt IS NULL ORDER BY updatedAt DESC")</ID>
+    <ID>MaxLineLength:StudySessionDao.kt$StudySessionDao$@Query("SELECT * FROM study_sessions WHERE targetId = :targetId AND targetType = :targetType AND isCompleted = 0 AND deletedAt IS NULL ORDER BY updatedAt DESC LIMIT 1")</ID>
+    <ID>SwallowedException:Converters.kt$Converters$e: Exception</ID>
+    <ID>SwallowedException:MksMigrations.kt$MksMigrations.&lt;no name provided&gt;$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Converters.kt$Converters$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MksMigrations.kt$MksMigrations.&lt;no name provided&gt;$e: Exception</ID>
+    <ID>TooManyFunctions:AnnotationDao.kt$AnnotationDao</ID>
+    <ID>TooManyFunctions:BookDao.kt$BookDao</ID>
+    <ID>TooManyFunctions:Converters.kt$Converters</ID>
+    <ID>TooManyFunctions:CourseSlideDao.kt$CourseSlideDao</ID>
+    <ID>TooManyFunctions:FlashcardDao.kt$FlashcardDao</ID>
+    <ID>TooManyFunctions:FlashcardDeckDao.kt$FlashcardDeckDao</ID>
+    <ID>TooManyFunctions:KnowledgeStudySessionDao.kt$KnowledgeStudySessionDao</ID>
+    <ID>TooManyFunctions:MistakeLogDao.kt$MistakeLogDao</ID>
+    <ID>TooManyFunctions:MksDatabase.kt$MksDatabase : RoomDatabase</ID>
+    <ID>TooManyFunctions:NoteBlueprintDao.kt$NoteBlueprintDao</ID>
+    <ID>TooManyFunctions:PromptCardDao.kt$PromptCardDao</ID>
+    <ID>TooManyFunctions:PromptDeckDao.kt$PromptDeckDao</ID>
+    <ID>TooManyFunctions:PromptRunDao.kt$PromptRunDao</ID>
+    <ID>TooManyFunctions:QuestionAssetDao.kt$QuestionAssetDao</ID>
+    <ID>TooManyFunctions:QuestionDao.kt$QuestionDao</ID>
+    <ID>TooManyFunctions:QuizDao.kt$QuizDao</ID>
+    <ID>TooManyFunctions:SessionDao.kt$SessionDao</ID>
+    <ID>TooManyFunctions:SourceDocumentDao.kt$SourceDocumentDao</ID>
+    <ID>TooManyFunctions:WorkspaceDao.kt$WorkspaceDao</ID>
+    <ID>VariableNaming:Converters.kt$Converters$private val TAG = "Converters"</ID>
+    <ID>WildcardImport:BookDao.kt$import androidx.room.*</ID>
+    <ID>WildcardImport:CategoryMetadataDao.kt$import androidx.room.*</ID>
+    <ID>WildcardImport:CourseSlideDao.kt$import androidx.room.*</ID>
+    <ID>WildcardImport:FlashcardDao.kt$import androidx.room.*</ID>
+    <ID>WildcardImport:FlashcardDeckDao.kt$import androidx.room.*</ID>
+    <ID>WildcardImport:LearningSessionDao.kt$import androidx.room.*</ID>
+    <ID>WildcardImport:PromptDao.kt$import androidx.room.*</ID>
+    <ID>WildcardImport:SessionDao.kt$import androidx.room.*</ID>
+    <ID>WildcardImport:SlideshowCourseDao.kt$import androidx.room.*</ID>
+    <ID>WildcardImport:StudyRunDao.kt$import androidx.room.*</ID>
+    <ID>WildcardImport:WorkspaceDao.kt$import androidx.room.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

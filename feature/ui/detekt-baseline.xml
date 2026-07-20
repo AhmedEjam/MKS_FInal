@@ -1,0 +1,393 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>ComplexCondition:BookToolScreens.kt$path != null &amp;&amp; (path.endsWith(".png", true) || path.endsWith(".jpg", true) || path.endsWith(".jpeg", true))</ID>
+    <ID>ComplexCondition:BookToolScreens.kt$selectedCardId != null &amp;&amp; seededQuestionId != null &amp;&amp; variables.isNotEmpty() &amp;&amp; state.questions.isNotEmpty()</ID>
+    <ID>ComplexCondition:QuestionAssetsDialog.kt$assetType == QuestionAssetType.SOURCE_REFERENCE &amp;&amp; selectedSourceIdText.isBlank() &amp;&amp; newSourceTitle.isNotBlank() &amp;&amp; existing == null</ID>
+    <ID>ComplexCondition:QuizViewModel.kt$QuizViewModel$!isTimeout &amp;&amp; currentState.isOneByOne &amp;&amp; !currentState.isAnswered &amp;&amp; currentState.visibleOptionsCount &lt; currentState.shuffledOptions.size</ID>
+    <ID>CyclomaticComplexMethod:BookKnowledgeDashboardScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun BookKnowledgeDashboardScreen( bookId: Long, viewModel: BookToolsViewModel, onBack: () -&gt; Unit, onOpenQuiz: (Long) -&gt; Unit, onOpenFlashcard: (Long) -&gt; Unit, onOpenSlideshow: (Long) -&gt; Unit, onOpenNote: (Long) -&gt; Unit, onOpenPrompt: (Long) -&gt; Unit, onOpenAiMcqGenerator: (Long) -&gt; Unit, onOpenPdfExtraction: (Long) -&gt; Unit, )</ID>
+    <ID>CyclomaticComplexMethod:BookToolScreens.kt$@Composable fun QuestionNoteItem( question: QuestionEntity, visibleComponents: Set&lt;QuestionComponent&gt;, onSaveNote: (String) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:BookToolScreens.kt$@OptIn( ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class ) @Composable fun EntitySelectorDialog( state: BookToolsUiState, onDismiss: () -&gt; Unit, onEntitySelected: (String, com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity?) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:BookToolScreens.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun AiPromptDeckScreen( promptId: Long, focusedCardId: Long? = null, @Suppress("UNUSED_PARAMETER") focusedRunId: Long? = null, seededQuestionId: Long? = null, viewModel: BookToolsViewModel, onBack: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:BookToolScreens.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: () -&gt; Unit)</ID>
+    <ID>CyclomaticComplexMethod:BookToolsViewModel.kt$BookToolsViewModel$fun createNewQuiz( bookId: Long, title: String, description: String, coverImage: String?, sourceQuizIds: List&lt;Long&gt;, sourceCategories: List&lt;String&gt;, filters: QuizCreationFilters = QuizCreationFilters() )</ID>
+    <ID>CyclomaticComplexMethod:BookToolsViewModel.kt$BookToolsViewModel$fun createTemplatePromptCard(deckId: Long, templateType: String)</ID>
+    <ID>CyclomaticComplexMethod:CategoryComponents.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun CategoryChip( category: CategoryWithMetadata, isSelected: Boolean = false, onCategorySelected: (CategoryWithMetadata) -&gt; Unit, onCategoryLongClick: (CategoryWithMetadata) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:CategoryEditDialog.kt$@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class) @Composable fun CategoryEditDialog( category: CategoryWithMetadata, allCategories: List&lt;CategoryWithMetadata&gt;, books: List&lt;BookEntity&gt;, onDismiss: () -&gt; Unit, onDelete: () -&gt; Unit, onRename: (String) -&gt; Unit, onMerge: (String) -&gt; Unit, onGetMergePreview: suspend (String) -&gt; Int, onCreateQuiz: (String, Long) -&gt; Unit, onTogglePin: () -&gt; Unit, onUpdateEmoji: (String?) -&gt; Unit, onUpdateColor: (Int?) -&gt; Unit, onViewQuestions: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:CategoryQuestionsScreen.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun QuestionCard( question: QuestionEntity, visibility: VisibilityState, isSelected: Boolean, isSelectionMode: Boolean = false, onToggleSelection: () -&gt; Unit, onToggleMarked: () -&gt; Unit, onImageClick: (String) -&gt; Unit, onEditClick: () -&gt; Unit = {}, hasAssets: Boolean = false, onAssetsClick: () -&gt; Unit = {}, onToggleDropped: (() -&gt; Unit)? = null )</ID>
+    <ID>CyclomaticComplexMethod:CategoryQuestionsScreen.kt$@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) @Composable fun CategoryQuestionsScreen( viewModel: CategoryQuestionsViewModel, onBack: () -&gt; Unit, onStartQuiz: (String) -&gt; Unit = {}, )</ID>
+    <ID>CyclomaticComplexMethod:CompilerDialog.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun CompilerDialog( viewModel: CompilerViewModel, books: List&lt;BookEntity&gt;, quizzes: List&lt;QuizEntity&gt; = emptyList(), onUndoImport: ((ImportResult) -&gt; Unit)? = null, onDismiss: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:CompilerViewModel.kt$CompilerViewModel$fun onSheetSelected(sheetName: String?)</ID>
+    <ID>CyclomaticComplexMethod:CompilerViewModel.kt$CompilerViewModel$fun saveParsedQuestions( title: String, bookId: Long?, targetQuizId: Long? = null, targetDeckId: Long? = null, newBookTitle: String? = null )</ID>
+    <ID>CyclomaticComplexMethod:FlashcardDeckScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun FlashcardDeckScreen( deckId: Long, focusedCardId: Long? = null, onBack: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:FlashcardDeckScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable private fun FlashcardGeneratorDialog( quizzes: List&lt;com.ahmedyejam.mks.data.local.entity.QuizEntity&gt;, categories: List&lt;String&gt;, onDismiss: () -&gt; Unit, onConfirm: (source: String, sourceId: String?, config: FlashcardGenerationConfig, clearMarks: Boolean) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:LibraryComponents.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun LibraryBanner( resumeQuiz: QuizEntity?, recentQuizzes: List&lt;QuizEntity&gt;, currentThemeMode: String, onQuizClick: (QuizEntity) -&gt; Unit, onLinkClick: (String) -&gt; Unit, modifier: Modifier = Modifier )</ID>
+    <ID>CyclomaticComplexMethod:LibraryComponents.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun QuizOptionsSheet( quiz: QuizEntity, onDismiss: () -&gt; Unit, onBrowseQuestionsClick: (() -&gt; Unit)? = null, onScanClick: (() -&gt; Unit)? = null, onPinClick: (() -&gt; Unit)? = null, onEditClick: (() -&gt; Unit)? = null, onExportClick: (() -&gt; Unit)? = null, onImportClick: (() -&gt; Unit)? = null, onDeleteClick: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:LibraryDialogs.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun CreateQuizDialog( quizzes: List&lt;QuizEntity&gt;, categories: List&lt;String&gt;, onDismiss: () -&gt; Unit, onConfirm: (title: String, description: String, coverImage: String?, sourceQuizIds: List&lt;Long&gt;, sourceCategories: List&lt;String&gt;, filters: QuizCreationFilters) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:LibraryScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun LibraryScreen( viewModel: LibraryViewModel, compilerViewModel: CompilerViewModel, importViewModel: ImportViewModel, sharedUris: List&lt;Uri&gt;? = null, onConsumedSharedUris: () -&gt; Unit = {}, onQuizSelected: (Long) -&gt; Unit, onScanSelected: (Long) -&gt; Unit, onAdaptiveSelected: (String, String) -&gt; Unit, onBrowseQuestions: (Long) -&gt; Unit, onCategorySelected: (String) -&gt; Unit, onSettingsSelected: () -&gt; Unit, onBookDashboardSelected: (Long) -&gt; Unit = {}, onGlobalSearchClick: () -&gt; Unit = {}, onReviewDashboardClick: () -&gt; Unit = {}, returnResetSignal: Int = 0, )</ID>
+    <ID>CyclomaticComplexMethod:MksNavHost.kt$@Suppress("UNCHECKED_CAST") @Composable fun MksNavHost( navController: NavHostController, dataStoreManager: DataStoreManager, sharedUris: List&lt;Uri&gt;? = null, onConsumedSharedUris: () -&gt; Unit = {}, )</ID>
+    <ID>CyclomaticComplexMethod:PdfExtractionScreen.kt$@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class) @Composable fun PdfExtractionScreen( sourceId: Long, viewModel: PdfExtractionViewModel, onBack: () -&gt; Unit, onNavigateToMcqGenerator: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:ProviderConfigDialog.kt$@Composable fun ProviderConfigDialog( providers: List&lt;AiProviderDescriptor&gt;, initialConfig: AiProviderConfig?, onDismiss: () -&gt; Unit, onConfirm: (AiProviderConfig) -&gt; Unit, onPing: (suspend (AiProviderConfig) -&gt; String)? = null, onFetchModels: (suspend (AiProviderConfig) -&gt; List&lt;String&gt;)? = null, onTestCall: (suspend (AiProviderConfig, String) -&gt; String)? = null, initialPrompt: String? = null, defaultPrompt: String? = null, onPromptChange: ((String) -&gt; Unit)? = null )</ID>
+    <ID>CyclomaticComplexMethod:QuestionAssetsDialog.kt$@Composable private fun QuestionAssetFormDialog( question: QuestionEntity, bookId: Long, existing: QuestionAssetEntity?, sourceDocuments: List&lt;SourceDocumentEntity&gt;, onDismiss: () -&gt; Unit, onSave: (QuestionAssetEntity) -&gt; Unit, onCreateSourceAndSave: (QuestionAssetEntity, SourceDocumentEntity) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:QuizPlayerScreen.kt$@Composable fun QuestionContent( state: QuizState, currentQuestion: com.ahmedyejam.mks.data.local.entity.QuestionEntity, viewModel: QuizViewModel, onEditCategory: (CategoryWithMetadata) -&gt; Unit, onImageClick: (Any) -&gt; Unit, assetCount: Int = 0, onAssetsClick: () -&gt; Unit = {} )</ID>
+    <ID>CyclomaticComplexMethod:QuizPlayerScreen.kt$@Composable fun resolveQuestionImage( imagePath: String?, imageSource: String?, themeMode: String, isRtl: Boolean ): Any?</ID>
+    <ID>CyclomaticComplexMethod:QuizPlayerScreen.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun OptionItem( text: String, isSelected: Boolean, isAnswered: Boolean, isCorrect: Boolean, isDropped: Boolean, isSingleChoice: Boolean, eliminationModeEnabled: Boolean, onClick: () -&gt; Unit, onDoubleClick: () -&gt; Unit, onDrop: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:QuizPlayerScreen.kt$@OptIn(ExperimentalLayoutApi::class) @Composable fun QuizSheetContent( state: QuizState, viewModel: QuizViewModel, onDropQuestion: () -&gt; Unit, onAskAiClick: (Long) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:QuizPlayerScreen.kt$@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class) @Composable fun QuizPlayerScreen( viewModel: QuizViewModel, onQuizFinished: (Long, Int, Int) -&gt; Unit, onAskAiClick: (Long) -&gt; Unit = {}, onBack: () -&gt; Unit, onViewCategoryQuestions: (String) -&gt; Unit = {}, )</ID>
+    <ID>CyclomaticComplexMethod:QuizQuestionsScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun QuizQuestionsScreen( viewModel: QuizQuestionsViewModel, focusedQuestionId: Long? = null, isEmbedded: Boolean = false, onBack: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$fun dropOption(shuffledIndex: Int)</ID>
+    <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$fun nextQuestion()</ID>
+    <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$fun startAdaptiveTraining(type: String, id: String?, limit: Int = 20)</ID>
+    <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$fun startQuiz(quizId: Long, sessionId: Long? = null)</ID>
+    <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$private fun finalizeSubmission( currentQuestion: QuestionEntity, isCorrect: Boolean, currentIndex: Int, selectedOptions: Set&lt;Int&gt;, sessionId: Long?, newScore: Int, newCurrentStreak: Int, newMaxStreak: Int, initialQuestionCount: Int, repeatWrong: Boolean, shuffledOptionsSize: Int, isRapidMode: Boolean )</ID>
+    <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$private fun startTimer()</ID>
+    <ID>CyclomaticComplexMethod:ReviewDashboardScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun ReviewDashboardScreen( viewModel: ReviewDashboardViewModel, focusedMistakeId: Long? = null, onBack: () -&gt; Unit, onOpenRoute: (Any) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:ScannerViewModel.kt$ScannerViewModel$private fun parseTextToQuestions(text: String, quizId: Long): List&lt;QuestionEntity&gt;</ID>
+    <ID>CyclomaticComplexMethod:SessionManagementScreen.kt$@OptIn(ExperimentalLayoutApi::class) @Composable fun StartSessionDialog( totalQuestions: Int, defaultIncludeFilters: Set&lt;String&gt;, defaultShuffleQuestions: Boolean, defaultShuffleOptions: Boolean, defaultRapidMode: Boolean, defaultRepeatWrong: Boolean, defaultQuizTimerSeconds: Int, defaultQuestionTimerSeconds: Int, filteredMatchCount: Int? = null, onFiltersChanged: ((Set&lt;String&gt;, Int, Int) -&gt; Unit)? = null, onQuickStart: (() -&gt; Unit)? = null, onDismiss: () -&gt; Unit, onConfirm: (SessionConfig, Boolean) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:SettingsScreen.kt$@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) @Composable fun SettingsScreen( viewModel: SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel(), onBack: () -&gt; Unit, onGlobalSearch: () -&gt; Unit = {}, onReviewDashboard: () -&gt; Unit = {}, onDataTools: () -&gt; Unit = {} )</ID>
+    <ID>CyclomaticComplexMethod:SlideshowCourseScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun SlideshowCourseScreen( courseId: Long, focusedSlideId: Long? = null, onBack: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:SlideshowCourseScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable private fun SlideGeneratorDialog( quizzes: List&lt;QuizEntity&gt;, categories: List&lt;String&gt;, onDismiss: () -&gt; Unit, onConfirm: (source: String, sourceId: String?, config: SlideGenerationConfig, clearMarks: Boolean) -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:SummaryScreen.kt$@Composable fun ReviewQuestionItem( question: QuestionEntity, session: SessionEntity, visibleDetails: Set&lt;ReviewDetail&gt;, index: Int )</ID>
+    <ID>CyclomaticComplexMethod:SummaryScreen.kt$@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class) @Composable fun SummaryScreen( viewModel: SummaryViewModel, sessionId: Long, onHomeClick: () -&gt; Unit, onRetryClick: () -&gt; Unit, )</ID>
+    <ID>CyclomaticComplexMethod:SummaryViewModel.kt$SummaryViewModel$fun getExportText(): String</ID>
+    <ID>CyclomaticComplexMethod:SummaryViewModel.kt$SummaryViewModel$fun loadSummary(sessionId: Long)</ID>
+    <ID>CyclomaticComplexMethod:TrashBinDialog.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun TrashBinDialog( viewModel: LibraryViewModel, onDismiss: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:WelcomeScreen.kt$@Composable fun WelcomeScreen( currentLanguage: String, themeMode: String, onLanguageChanged: (String) -&gt; Unit, onThemeChanged: (String) -&gt; Unit = {}, onStart: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:WorkspaceManagerDialog.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun WorkspaceManagerDialog( viewModel: LibraryViewModel, activeWorkspaceId: Long, onDismiss: () -&gt; Unit )</ID>
+    <ID>EmptyInitBlock:LibraryViewModel.kt$LibraryViewModel${ }</ID>
+    <ID>LargeClass:BookToolsViewModel.kt$BookToolsViewModel : ViewModel</ID>
+    <ID>LargeClass:LibraryViewModel.kt$LibraryViewModel : ViewModel</ID>
+    <ID>LargeClass:QuizViewModel.kt$QuizViewModel : ViewModel</ID>
+    <ID>LongMethod:BookToolsViewModel.kt$BookToolsViewModel$fun createNewQuiz( bookId: Long, title: String, description: String, coverImage: String?, sourceQuizIds: List&lt;Long&gt;, sourceCategories: List&lt;String&gt;, filters: QuizCreationFilters = QuizCreationFilters() )</ID>
+    <ID>LongMethod:CompilerViewModel.kt$CompilerViewModel$fun onSheetSelected(sheetName: String?)</ID>
+    <ID>LongMethod:CompilerViewModel.kt$CompilerViewModel$fun saveParsedQuestions( title: String, bookId: Long?, targetQuizId: Long? = null, targetDeckId: Long? = null, newBookTitle: String? = null )</ID>
+    <ID>LongMethod:QuizViewModel.kt$QuizViewModel$fun dropOption(shuffledIndex: Int)</ID>
+    <ID>LongMethod:QuizViewModel.kt$QuizViewModel$fun nextQuestion()</ID>
+    <ID>LongMethod:QuizViewModel.kt$QuizViewModel$fun startQuiz(quizId: Long, sessionId: Long? = null)</ID>
+    <ID>LongMethod:QuizViewModel.kt$QuizViewModel$private fun finalizeSubmission( currentQuestion: QuestionEntity, isCorrect: Boolean, currentIndex: Int, selectedOptions: Set&lt;Int&gt;, sessionId: Long?, newScore: Int, newCurrentStreak: Int, newMaxStreak: Int, initialQuestionCount: Int, repeatWrong: Boolean, shuffledOptionsSize: Int, isRapidMode: Boolean )</ID>
+    <ID>LongMethod:SummaryViewModel.kt$SummaryViewModel$fun getExportText(): String</ID>
+    <ID>LongMethod:SummaryViewModel.kt$SummaryViewModel$fun loadSummary(sessionId: Long)</ID>
+    <ID>LongParameterList:BookToolsViewModel.kt$BookToolsViewModel$( bookId: Long, title: String, description: String, coverImage: String?, sourceQuizIds: List&lt;Long&gt;, sourceCategories: List&lt;String&gt;, filters: QuizCreationFilters = QuizCreationFilters() )</ID>
+    <ID>LongParameterList:BookToolsViewModel.kt$BookToolsViewModel$( private val ollamaRepository: OllamaRepository, private val dataStoreManager: DataStoreManager, private val fileManager: com.ahmedyejam.mks.data.local.FileManager, private val bookRepository: BookRepository, private val knowledgeRepository: KnowledgeRepository, private val assetRepository: AssetRepository, private val quizRepository: QuizRepository, private val studyRepository: StudyRepository )</ID>
+    <ID>LongParameterList:FlashcardDeckViewModel.kt$FlashcardDeckViewModel$( @param:ApplicationScope private val applicationScope: kotlinx.coroutines.CoroutineScope, private val bookRepository: BookRepository, private val knowledgeRepository: KnowledgeRepository, private val assetRepository: AssetRepository, private val quizRepository: QuizRepository, private val studyRepository: StudyRepository, private val studyRunRepository: StudyRunRepository )</ID>
+    <ID>LongParameterList:ImportViewModel.kt$ImportViewModel$( uri: Uri, strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING, targetBookId: Long? = null, targetQuizId: Long? = null, allowInsecureRemoteImages: Boolean = false, activeWorkspaceId: Long? = null )</ID>
+    <ID>LongParameterList:LibraryViewModel.kt$LibraryViewModel$( bookId: Long, title: String, description: String, coverImage: String?, sourceQuizIds: List&lt;Long&gt;, sourceCategories: List&lt;String&gt; )</ID>
+    <ID>LongParameterList:LibraryViewModel.kt$LibraryViewModel$( private val dataStoreManager: DataStoreManager, private val bookRepository: BookRepository, private val workspaceRepository: WorkspaceRepository, private val knowledgeRepository: KnowledgeRepository, private val assetRepository: AssetRepository, private val quizRepository: QuizRepository, private val exportManager: com.ahmedyejam.mks.data.repository.ExportManager )</ID>
+    <ID>LongParameterList:PdfExtractionViewModel.kt$PdfExtractionViewModel$( @param:dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context, private val assetRepository: com.ahmedyejam.mks.data.repository.AssetRepository, private val knowledgeRepository: com.ahmedyejam.mks.data.repository.KnowledgeRepository, private val pdfRendererService: PdfRendererService, private val pdfTextExtractor: PdfTextExtractor, private val ocrService: OcrService, val dataStoreManager: DataStoreManager, private val aiClient: AiClient, private val ollamaRepository: OllamaRepository )</ID>
+    <ID>LongParameterList:QuizViewModel.kt$QuizViewModel$( currentQuestion: QuestionEntity, isCorrect: Boolean, currentIndex: Int, selectedOptions: Set&lt;Int&gt;, sessionId: Long?, newScore: Int, newCurrentStreak: Int, newMaxStreak: Int, initialQuestionCount: Int, repeatWrong: Boolean, shuffledOptionsSize: Int, isRapidMode: Boolean )</ID>
+    <ID>LongParameterList:SessionViewModel.kt$SessionViewModel$( filters: Set&lt;String&gt;, shuffleQ: Boolean, shuffleO: Boolean, rapid: Boolean, repeatWrong: Boolean, quizTimer: Int, qTimer: Int )</ID>
+    <ID>LongParameterList:SessionViewModel.kt$SessionViewModel$( quizId: Long, label: String, shuffleQuestions: Boolean = true, shuffleOptions: Boolean = true, rapidMode: Boolean = false, repeatWrong: Boolean = true, quizTimerSeconds: Int = 0, questionTimerSeconds: Int = 0, rangeFrom: Int = 0, rangeTo: Int = -1, includeFilters: List&lt;String&gt; = emptyList(), onCreated: (Long) -&gt; Unit )</ID>
+    <ID>LongParameterList:SettingsViewModel.kt$SettingsViewModel$( private val exportManager: ExportManager, private val workspaceRepository: WorkspaceRepository, private val quizRepository: QuizRepository, private val assetRepository: AssetRepository, val ollamaRepository: OllamaRepository, val dataStoreManager: DataStoreManager, val focusManager: FocusManager, private val aiClient: AiClient )</ID>
+    <ID>LongParameterList:SlideshowCourseViewModel.kt$SlideshowCourseViewModel$( @param:dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context, @param:ApplicationScope private val applicationScope: kotlinx.coroutines.CoroutineScope, private val bookRepository: BookRepository, private val knowledgeRepository: KnowledgeRepository, private val assetRepository: AssetRepository, private val quizRepository: QuizRepository, private val studyRepository: StudyRepository, private val studyRunRepository: StudyRunRepository )</ID>
+    <ID>LoopWithTooManyJumpStatements:ScannerViewModel.kt$ScannerViewModel$for</ID>
+    <ID>MagicNumber:CategoryQuestionsViewModel.kt$CategoryQuestionsViewModel$3</ID>
+    <ID>MagicNumber:CategoryQuestionsViewModel.kt$CategoryQuestionsViewModel$4</ID>
+    <ID>MagicNumber:CategoryQuestionsViewModel.kt$CategoryQuestionsViewModel$5</ID>
+    <ID>MagicNumber:CategoryQuestionsViewModel.kt$CategoryQuestionsViewModel$6</ID>
+    <ID>MagicNumber:CompilerViewModel.kt$CompilerViewModel$10</ID>
+    <ID>MagicNumber:CompilerViewModel.kt$CompilerViewModel$100</ID>
+    <ID>MagicNumber:CompilerViewModel.kt$CompilerViewModel$200</ID>
+    <ID>MagicNumber:CompilerViewModel.kt$CompilerViewModel$3</ID>
+    <ID>MagicNumber:CompilerViewModel.kt$CompilerViewModel$40</ID>
+    <ID>MagicNumber:FlashcardDeckViewModel.kt$FlashcardDeckViewModel$0.2f</ID>
+    <ID>MagicNumber:FlashcardDeckViewModel.kt$FlashcardDeckViewModel$0.8f</ID>
+    <ID>MagicNumber:FlashcardDeckViewModel.kt$FlashcardDeckViewModel$1000L</ID>
+    <ID>MagicNumber:GlobalSearchViewModel.kt$GlobalSearchViewModel$250</ID>
+    <ID>MagicNumber:ImportViewModel.kt$ImportViewModel$0.1f</ID>
+    <ID>MagicNumber:PdfExtractionViewModel.kt$PdfExtractionViewModel$90</ID>
+    <ID>MagicNumber:QuizPlayerScreen.kt$60</ID>
+    <ID>MagicNumber:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$3</ID>
+    <ID>MagicNumber:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$4</ID>
+    <ID>MagicNumber:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$5</ID>
+    <ID>MagicNumber:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$6</ID>
+    <ID>MagicNumber:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$7</ID>
+    <ID>MagicNumber:QuizViewModel.kt$QuizViewModel$1000</ID>
+    <ID>MagicNumber:QuizViewModel.kt$QuizViewModel$3</ID>
+    <ID>MagicNumber:QuizViewModel.kt$QuizViewModel$4</ID>
+    <ID>MagicNumber:QuizViewModel.kt$QuizViewModel$5</ID>
+    <ID>MagicNumber:ReviewDashboardViewModel.kt$ReviewDashboardViewModel$1000L</ID>
+    <ID>MagicNumber:ReviewDashboardViewModel.kt$ReviewDashboardViewModel$24L</ID>
+    <ID>MagicNumber:ReviewDashboardViewModel.kt$ReviewDashboardViewModel$60L</ID>
+    <ID>MagicNumber:ReviewDashboardViewModel.kt$ReviewDashboardViewModel$7L</ID>
+    <ID>MagicNumber:ScannerViewModel.kt$ScannerViewModel$3</ID>
+    <ID>MagicNumber:SlideshowCourseViewModel.kt$SlideshowCourseViewModel$1000</ID>
+    <ID>MagicNumber:SlideshowCourseViewModel.kt$SlideshowCourseViewModel$1000L</ID>
+    <ID>MagicNumber:SummaryViewModel.kt$SummaryViewModel$20</ID>
+    <ID>MatchingDeclarationName:BookDashboardTabs.kt$BookTab</ID>
+    <ID>MatchingDeclarationName:BookToolScreens.kt$QuestionComponent</ID>
+    <ID>MatchingDeclarationName:LibraryDialogs.kt$QuizCreationFilters</ID>
+    <ID>MatchingDeclarationName:QuizDetailTabsScreen.kt$QuizTab</ID>
+    <ID>MatchingDeclarationName:QuizPlayerScreen.kt$QuizSheetValue</ID>
+    <ID>MatchingDeclarationName:ReviewDashboardScreen.kt$ReviewTab</ID>
+    <ID>MatchingDeclarationName:TrashBinDialog.kt$TrashTab</ID>
+    <ID>MaxLineLength:AiMcqGeneratorScreen.kt$.</ID>
+    <ID>MaxLineLength:BookDashboardTabs.kt$android.widget.Toast.makeText(context, "Could not open source: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()</ID>
+    <ID>MaxLineLength:BookDashboardTabs.kt$android.widget.Toast.makeText(context, "No URL or local path available", android.widget.Toast.LENGTH_SHORT).show()</ID>
+    <ID>MaxLineLength:BookDashboardTabs.kt$val uri = if (uriStr.startsWith("http") || uriStr.startsWith("content://")) android.net.Uri.parse(uriStr) else android.net.Uri.fromFile(java.io.File(uriStr))</ID>
+    <ID>MaxLineLength:BookKnowledgeDashboardScreen.kt$onClick = { viewModel.createBlueprintFromQuestions(bookId, "Study Note - ${System.currentTimeMillis() % 10000}", questions.map { it.id }) }</ID>
+    <ID>MaxLineLength:BookKnowledgeDashboardScreen.kt$onClick = { viewModel.createFlashcardDeckFromMarkedQuestions(bookId, "Marked Cards - ${System.currentTimeMillis() % 10000}") }</ID>
+    <ID>MaxLineLength:BookKnowledgeDashboardScreen.kt$onClick = { viewModel.createFlashcardDeckFromMissedQuestions(bookId, "Mistakes Cards - ${System.currentTimeMillis() % 10000}") }</ID>
+    <ID>MaxLineLength:BookKnowledgeDashboardScreen.kt$onClick = { viewModel.createFlashcardDeckFromQuestions(bookId, "Study Cards - ${System.currentTimeMillis() % 10000}", questions.map { it.id }) }</ID>
+    <ID>MaxLineLength:BookKnowledgeDashboardScreen.kt$onClick = { viewModel.createSlideshowCourseFromQuestions(bookId, "Study Slides - ${System.currentTimeMillis() % 10000}", questions.map { it.id }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$AnimatedVisibility</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$BookToolListItem(course.title, course.description ?: "${course.slideCount} slides", Icons.Rounded.Slideshow, { onOpenCourse(course.id) }, { editingState.value = course }, { deletingState.value = course })</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$BookToolListItem(deck.title, deck.description ?: "Reusable prompt deck", Icons.Rounded.Psychology, { onOpenPrompt(deck.id) }, { editingState.value = deck }, { deletingState.value = deck })</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$BookToolListScaffold</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$ConfirmDeleteDialog("Delete article?", "Delete '${note.title}'?", { deletingState.value = null }, { viewModel.deleteNote(note); deletingState.value = null })</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$ConfirmDeleteDialog("Delete prompt deck?", "Delete '${deck.title}' and its cards/runs?", { deletingState.value = null }, { viewModel.deletePromptDeck(deck); deletingState.value = null })</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.appendBlueprintToQuestionNote(note.id) }) { Text("Append to question note") }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.recordPromptCardRun(selectedCard, values.toMap(), renderedPrompt, outputText.takeIf { it.isNotBlank() }) }) { Text("Save run") }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsBlueprint(selectedCard, outputText, "$editTitle article") }, enabled = outputText.isNotBlank()) { Text("To article") }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsFlashcards(selectedCard, outputText, "$editTitle flashcards") }, enabled = outputText.isNotBlank()) { Text("To flashcards") }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsNote(selectedCard, outputText, "$editTitle note") }, enabled = outputText.isNotBlank()) { Text("To note") }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsQuiz(selectedCard, outputText, "$editTitle quiz") }, enabled = outputText.isNotBlank()) { Text("To quiz") }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Icon(if (isPlayerMode) Icons.Rounded.Edit else Icons.Rounded.PlayArrow, if (isPlayerMode) "Edit Mode" else "Player Mode")</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$IconButton(onClick = { clipboard.setText(AnnotatedString(renderedPrompt)) }) { Icon(Icons.Rounded.ContentCopy, "Copy") }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$IconButton(onClick = { viewModel.deletePromptCard(card) }) { Icon(Icons.Rounded.Delete, "Delete") }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$LaunchedEffect</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$LinearProgressIndicator(progress = { if (summary.totalQuestions == 0) 0f else (summary.totalQuestions - summary.unansweredQuestions).toFloat() / summary.totalQuestions }, modifier = Modifier.fillMaxWidth())</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$OutlinedTextField(editedBody, { editedBody = it }, modifier = Modifier.fillMaxWidth(), minLines = 8, label = { Text("Article body") })</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$OutlinedTextField(prompt, { prompt = it }, label = { Text("Prompt text, use {variables}") }, modifier = Modifier.fillMaxWidth(), minLines = 5)</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Row</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Text("Configure Question Context", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Text("Select which parts of the question to inject into the prompt:", style = MaterialTheme.typography.bodySmall)</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Text("Used ${card.usageCount} time(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Text(source.description.orEmpty().take(100), style = MaterialTheme.typography.bodySmall, maxLines = 2)</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Text(state.promptDeck?.title.orEmpty(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[itemId] = previewText to null else selectedItems.remove(itemId) })</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[itemId] = previewText to source else selectedItems.remove(itemId) })</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$append("Title: ${source.title}\nType: ${source.sourceType}\nDetails:\n${source.description.orEmpty()}")</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$colors = CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$confirmButton = { Button(onClick = { onConfirm(sourceTitle, sourceType, details, url) }, enabled = sourceTitle.isNotBlank()) { Text(confirmLabel) } }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$confirmButton = { Button(onClick = { onConfirm(title, prompt, type) }, enabled = title.isNotBlank() &amp;&amp; prompt.isNotBlank()) { Text("Save") } }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeAttachedFiles, onClick = { includeAttachedFiles = !includeAttachedFiles }, label = { Text("Attached Files") }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeExplanation, onClick = { includeExplanation = !includeExplanation }, label = { Text("Explanation") }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeHint, onClick = { includeHint = !includeHint }, label = { Text("Hint") }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeOptions, onClick = { includeOptions = !includeOptions }, label = { Text("Options") }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeStem, onClick = { includeStem = !includeStem }, label = { Text("Stem") }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$items(state.promptRuns.filter { it.promptCardId == selectedCard.id }.take(10), key = { "run_${it.id}" }) { run -&gt; PromptRunItem(run) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$onCreate = { title, body, mode -&gt; viewModel.updateNote(note.copy(title = title, body = body, blueprintMode = mode)); editingState.value = null }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$prompt = "&lt;system_role&gt;You are a highly organized academic advisor.&lt;/system_role&gt;\n&lt;instructions&gt;Based on the following material, create a structured, step-by-step study schedule. Break down the topics into manageable daily or weekly tasks.&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$prompt = "&lt;system_role&gt;You are an expert learning designer.&lt;/system_role&gt;\n&lt;instructions&gt;Create high-yield flashcards.\nOutput JSON array with keys: \"front\", \"back\", \"hint\".&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$prompt = "&lt;system_role&gt;You are an expert memory coach and educator.&lt;/system_role&gt;\n&lt;instructions&gt;Create catchy, easy-to-remember mnemonics (like acronyms or rhymes) to help memorize the key facts from this material.&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$prompt = "&lt;system_role&gt;You are an expert summarizer.&lt;/system_role&gt;\n&lt;instructions&gt;Provide a concise summary of the following material. Highlight the key takeaways and main concepts.&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$prompt = "&lt;system_role&gt;You are an expert teacher who excels at explaining complex topics simply.&lt;/system_role&gt;\n&lt;instructions&gt;Explain the core concepts of the provided material as if you were speaking to a 5-year-old. Use simple analogies and avoid jargon.&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$prompt = "&lt;system_role&gt;You are an expert test creator.&lt;/system_role&gt;\n&lt;instructions&gt;Generate multiple-choice questions from this material.\nOutput JSON array with keys: \"question\", \"options\", \"answer\", \"explanation\".&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$prompt = "&lt;system_role&gt;You are an expert tutor in {relevant_speciality}.&lt;/system_role&gt;\n&lt;instructions&gt;Please explain the following question part: {part_to_explain}.\n\nHere is the full question context:\n{question}&lt;/instructions&gt;"</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$run.outputText?.takeIf { it.isNotBlank() }?.let { Text("Output: ${it.take(160)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$scrollState.animateScrollTo(scrollState.maxValue, animationSpec = androidx.compose.animation.core.tween(duration, easing = androidx.compose.animation.core.LinearEasing))</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$style = MaterialTheme.typography.bodyLarge.copy(lineHeight = androidx.compose.ui.unit.TextUnit(28f, androidx.compose.ui.unit.TextUnitType.Sp))</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$val explainCard = state.promptCards.find { it.title.contains("Explain", ignoreCase = true) || it.title.contains("Ask AI", ignoreCase = true) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$val filteredQuestions = if (selectedQuizId == null) state.questions else state.questions.filter { it.quizId == selectedQuizId }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$val imageAssets = assets.filter { it.assetType == "image" || it.mimeType?.startsWith("image/") == true }.mapNotNull { it.localPath }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$val partName = variables.firstOrNull { it.contains("part_to_explain", ignoreCase = true) || it.contains("part", ignoreCase = true) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$val varName = variables.firstOrNull { it.contains("question", ignoreCase = true) || it.contains("content", ignoreCase = true) || it.contains("text", ignoreCase = true) }</ID>
+    <ID>MaxLineLength:BookToolsViewModel.kt$BookToolsViewModel$"BLUEPRINT" -&gt; "&lt;system_role&gt;You are an expert technical writer and educator.&lt;/system_role&gt;\n&lt;instructions&gt;Synthesize the provided material into a highly structured, comprehensive, yet easy-to-digest study blueprint.\nFormat the output in Markdown with the following sections:\n- **Core Summary**: A brief 2-3 sentence overview.\n- **Key Concepts**: Bulleted list of the most important takeaways.\n- **Detailed Breakdown**: A structured analysis with subheadings.\n- **Common Pitfalls / Mistakes to Avoid**: What students usually get wrong about this.\n- **Review Cues**: Short questions to test memory.&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:BookToolsViewModel.kt$BookToolsViewModel$"EXPLAIN" -&gt; "&lt;system_role&gt;You are an expert tutor in {relevant_speciality}.&lt;/system_role&gt;\n&lt;instructions&gt;Please explain the following question part: {part_to_explain}.\n\nHere is the full question context:\n{question}&lt;/instructions&gt;"</ID>
+    <ID>MaxLineLength:BookToolsViewModel.kt$BookToolsViewModel$"FLASHCARDS" -&gt; "&lt;system_role&gt;You are an expert learning designer.&lt;/system_role&gt;\n&lt;instructions&gt;Convert the core concepts from the provided material into concise, high-yield spaced-repetition flashcards.\nFollow these rules:\n1. Make the front of the card a clear, unambiguous question or cloze deletion.\n2. Keep the back of the card concise and to the point.\n3. Provide an optional brief hint to aid recall.\nOutput strictly in JSON format as an array of objects with keys: \"front\", \"back\", \"hint\".&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:BookToolsViewModel.kt$BookToolsViewModel$"QUIZ" -&gt; "&lt;system_role&gt;You are an expert test creator and medical educator.&lt;/system_role&gt;\n&lt;instructions&gt;Analyze the provided material and generate 3 to 5 high-quality, challenging multiple-choice questions.\nEnsure that:\n1. The stem is clinically relevant or focuses on key conceptual understanding.\n2. There are 4-5 plausible options.\n3. The correct answer is unambiguously correct.\n4. A detailed rationale/explanation is provided for why the correct answer is right and why the distractors are wrong.\nOutput strictly in JSON format as an array of objects with keys: \"question\", \"options\" (array of strings), \"answer\" (string), \"explanation\" (string).&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
+    <ID>MaxLineLength:BookToolsViewModel.kt$BookToolsViewModel$allNotes = saved?.let { (_uiState.value.allNotes.filter { note -&gt; note.id != id } + it).sortedByDescending { note -&gt; note.updatedAt } } ?: _uiState.value.allNotes</ID>
+    <ID>MaxLineLength:BookToolsViewModel.kt$BookToolsViewModel$allPromptDecks = saved?.let { (_uiState.value.allPromptDecks.filter { deck -&gt; deck.id != id } + it).sortedByDescending { deck -&gt; deck.updatedAt } } ?: _uiState.value.allPromptDecks</ID>
+    <ID>MaxLineLength:BookToolsViewModel.kt$BookToolsViewModel$filteredQuestions = filteredQuestions.filter { (it.attempts &gt; 0 &amp;&amp; it.correctCount &lt; it.attempts) || (it.lastAttemptResult == false) }</ID>
+    <ID>MaxLineLength:BookToolsViewModel.kt$BookToolsViewModel$fun</ID>
+    <ID>MaxLineLength:BookToolsViewModel.kt$BookToolsViewModel$val questions = _uiState.value.questions.filter { it.attempts &gt; 0 &amp;&amp; (it.correctCount &lt; it.attempts || it.lastAttemptResult == false) }</ID>
+    <ID>MaxLineLength:BookToolsViewModel.kt$BookToolsViewModel$val systemPrompt = "You are an expert educational AI assistant inside the MKS knowledge-bank app. Generate high-quality, structured output exactly as requested by the user's prompt. Do NOT include conversational filler, greetings, or explanations unless explicitly requested."</ID>
+    <ID>MaxLineLength:BookToolsViewModel.kt$BookToolsViewModel$variablesJson = extractVariables(card.promptText).joinToString(prefix = "[", postfix = "]") { "\"${it.escapeJsonValue()}\"" }</ID>
+    <ID>MaxLineLength:CategoryEditDialog.kt$containerColor = if (category.isPinned) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant</ID>
+    <ID>MaxLineLength:CategoryEditDialog.kt$contentColor = category.color?.let { androidx.compose.ui.graphics.Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant</ID>
+    <ID>MaxLineLength:CategoryEditDialog.kt$contentColor = if (category.isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant</ID>
+    <ID>MaxLineLength:CategoryEditDialog.kt$stringResource(R.string.answered_label) to "${category.answeredCount} (${if (category.questionCount &gt; 0) (category.answeredCount.toFloat() / category.questionCount * 100).toInt() else 0}%)"</ID>
+    <ID>MaxLineLength:CategoryEditDialog.kt$stringResource(R.string.pinned_label) to if (category.isPinned) stringResource(R.string.yes_label) else stringResource(R.string.no_label)</ID>
+    <ID>MaxLineLength:CategoryQuestionsScreen.kt$onAddAnnotation = { selectedText, noteBody, colorLabel -&gt; viewModel.addQuestionAnnotation(bookId, question.id, selectedText, noteBody, colorLabel) }</ID>
+    <ID>MaxLineLength:CategoryQuestionsViewModel.kt$CategoryQuestionsViewModel$fun</ID>
+    <ID>MaxLineLength:CategoryQuestionsViewModel.kt$CategoryQuestionsViewModel$knowledgeRepository.createFlashcardDeckFromQuestions(sourceQuiz.bookId, title, "Generated from selected questions", selected, clearMarksAfter)</ID>
+    <ID>MaxLineLength:CategoryQuestionsViewModel.kt$CategoryQuestionsViewModel$private</ID>
+    <ID>MaxLineLength:CompilerDialog.kt$color = if (isCorrect) Color(0xFF4CAF50) else if (question.isIncluded) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant</ID>
+    <ID>MaxLineLength:CompilerDialog.kt$text = if (selectedIdx == -1) stringResource(R.string.none_selection) else "$selectedIdx: ${availableColumns.getOrNull(selectedIdx) ?: ""}"</ID>
+    <ID>MaxLineLength:CompilerViewModel.kt$CompilerViewModel$_uiState.update { it.copy(isLoading = true, error = null, questions = emptyList(), targetQuizId = targetQuizId, targetDeckId = targetDeckId) }</ID>
+    <ID>MaxLineLength:DataToolsScreen.kt$Text("Danger Zone", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)</ID>
+    <ID>MaxLineLength:DataToolsScreen.kt$Text("Restore", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 8.dp))</ID>
+    <ID>MaxLineLength:DataToolsViewModel.kt$DataToolsViewModel$_state.update { it.copy(isWorking = false, showResetConfirm = false, message = "Database reset complete. Sample data reloaded.") }</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$AssistChip(onClick = {}, label = { Text(stringResource(R.string.flashcard_mastery, (deck.masteryPercentage * 100).toInt())) })</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$DropdownMenuItem(text = { Text("All Book Questions") }, onClick = { source = "ALL"; sourceId = null; expandedSource = false })</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$DropdownMenuItem(text = { Text("Category") }, onClick = { source = "CATEGORY"; sourceId = categories.firstOrNull(); expandedSource = false })</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$DropdownMenuItem(text = { Text("Marked Questions") }, onClick = { source = "MARKED"; sourceId = null; expandedSource = false })</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$DropdownMenuItem(text = { Text("Missed Questions") }, onClick = { source = "MISSED"; sourceId = null; expandedSource = false })</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$DropdownMenuItem(text = { Text("Specific Quiz") }, onClick = { source = "QUIZ"; sourceId = quizzes.firstOrNull()?.id?.toString(); expandedSource = false })</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$DropdownMenuItem(text = { Text(quiz.title) }, onClick = { sourceId = quiz.id.toString(); expandedSubSource = false })</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(includeAdditionalInfoInBack, { includeAdditionalInfoInBack = it }); Text("Additional Info") }</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(includeAnswerInBack, { includeAnswerInBack = it }); Text("Answer") }</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(includeExplanationInBack, { includeExplanationInBack = it }); Text("Explanation") }</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(includeHintInBack, { includeHintInBack = it }); Text("Hint") }</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(includeImageInBack, { includeImageInBack = it }); Text("Image") }</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(includeImageInFront, { includeImageInFront = it }); Text("Image") }</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(includeOptionsInFront, { includeOptionsInFront = it }); Text("Options") }</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(includeReferenceInBack, { includeReferenceInBack = it }); Text("Reference") }</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(includeStemInFront, { includeStemInFront = it }); Text("Question Stem") }</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$includeAnswerInBack</ID>
+    <ID>MaxLineLength:FlashcardDeckScreen.kt$navigationIcon = { IconButton(onClick = { vm.clearSelection() }) { Icon(Icons.Default.Close, contentDescription = "Clear selection") } }</ID>
+    <ID>MaxLineLength:FlashcardDeckViewModel.kt$FlashcardDeckViewModel$val decksFlow = deck?.bookId?.let { knowledgeRepository.getFlashcardDecksByBookId(it) } ?: kotlinx.coroutines.flow.flowOf(emptyList&lt;FlashcardDeckEntity&gt;())</ID>
+    <ID>MaxLineLength:FlashcardDeckViewModel.kt$FlashcardDeckViewModel$val quizzesFlow = deck?.bookId?.let { quizRepository.getQuizzesByBookId(it, com.ahmedyejam.mks.data.repository.SortOption.TITLE) } ?: kotlinx.coroutines.flow.flowOf(emptyList&lt;com.ahmedyejam.mks.data.local.entity.QuizEntity&gt;())</ID>
+    <ID>MaxLineLength:GlobalSearchScreen.kt$EmptyStateCard("Search MKS", "Type at least two characters to search across books, quizzes, questions, assets, sources, flashcards, blueprints, prompts, and mistakes.")</ID>
+    <ID>MaxLineLength:GlobalSearchScreen.kt$Text(result.type.name.replace('_', ' '), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$Row</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$containerColor = if (book.isPinned) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$containerColor = if (quiz.isPinned) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$contentColor = if (quiz.isPinned) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$drawLine(colors.primary.copy(alpha = 0.36f), Offset(w * 0.18f, y), Offset(w * (0.27f - i * 0.01f), y - h * 0.035f), 2.dp.toPx())</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$drawLine(colors.primary.copy(alpha = 0.44f), Offset(w * 0.18f, y), Offset(w * (0.10f + i * 0.01f), y - h * 0.035f), 2.dp.toPx())</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$else -&gt; if (isRtl) R.drawable.contact_banner_ar_light_sunrise_valley else R.drawable.contact_banner_en_light_sunrise_valley</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$isActuallyDark -&gt; if (isRtl) R.drawable.contact_banner_ar_dark_moonlit_valley else R.drawable.contact_banner_en_dark_moonlit_valley</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$isActuallyDark -&gt; if (isRtl) R.drawable.resume_banner_ar_dark_midnight else R.drawable.resume_banner_en_dark_midnight</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$normalizedTheme == "FOREST" -&gt; if (isRtl) R.drawable.contact_banner_ar_light_forest_path else R.drawable.contact_banner_en_light_forest_path</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$normalizedTheme == "FOREST" -&gt; if (isRtl) R.drawable.resume_banner_ar_light_forest else R.drawable.resume_banner_en_light_forest</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$normalizedTheme == "LAVENDER" || normalizedTheme == "PLAIN_LIGHT" -&gt; if (isRtl) R.drawable.contact_banner_ar_light_lavender_valley else R.drawable.contact_banner_en_light_lavender_valley</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$normalizedTheme == "LAVENDER" || normalizedTheme == "PLAIN_LIGHT" -&gt; if (isRtl) R.drawable.resume_banner_ar_light_lavender else R.drawable.resume_banner_en_light_lavender</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$stringResource(R.string.avg_attempts_label) to "%.1f".format(if (book.questionCount &gt; 0) book.totalAttempts.toFloat() / book.questionCount else 0f)</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$stringResource(R.string.avg_attempts_label) to "%.1f".format(if (quiz.questionCount &gt; 0) quiz.totalAttempts.toFloat() / quiz.questionCount else 0f)</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$stringResource(R.string.last_studied_label) to if (book.lastStudiedAt &gt; 0) dateFormat.format(Date(book.lastStudiedAt)) else stringResource(R.string.never_label)</ID>
+    <ID>MaxLineLength:LibraryComponents.kt$stringResource(R.string.last_studied_label) to if (quiz.lastStudiedAt &gt; 0) dateFormat.format(Date(quiz.lastStudiedAt)) else stringResource(R.string.never_label)</ID>
+    <ID>MaxLineLength:LibraryDialogs.kt$Text("${preview.booksToCreate.size + preview.booksToUpdate.size} (${preview.booksToCreate.size} new, ${preview.booksToUpdate.size} update)")</ID>
+    <ID>MaxLineLength:LibraryDialogs.kt$Text("${preview.questionsToCreate.size + preview.questionsToUpdate.size} (${preview.questionsToCreate.size} new, ${preview.questionsToUpdate.size} update)")</ID>
+    <ID>MaxLineLength:LibraryDialogs.kt$Text("${preview.quizzesToCreate.size + preview.quizzesToUpdate.size} (${preview.quizzesToCreate.size} new, ${preview.quizzesToUpdate.size} update)")</ID>
+    <ID>MaxLineLength:LibraryDialogs.kt$Text("Source Categories (Filters)", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))</ID>
+    <ID>MaxLineLength:LibraryDialogs.kt$onConfirm: (title: String, description: String, coverImage: String?, sourceQuizIds: List&lt;Long&gt;, sourceCategories: List&lt;String&gt;, filters: QuizCreationFilters) -&gt; Unit</ID>
+    <ID>MaxLineLength:LibraryDialogs.kt$selectedCategories = if (selectedCategories.contains(cat)) selectedCategories - cat else selectedCategories + cat</ID>
+    <ID>MaxLineLength:LibraryDialogs.kt$selectedQuizIds = if (selectedQuizIds.contains(quiz.id)) selectedQuizIds - quiz.id else selectedQuizIds + quiz.id</ID>
+    <ID>MaxLineLength:LibraryTopBar.kt$text = { Text(if (currentViewMode == "GRID") stringResource(R.string.list_view_label) else stringResource(R.string.grid_view_label)) }</ID>
+    <ID>MaxLineLength:PdfExtractionScreen.kt$color = if (block.status == ExtractionStatus.ERROR) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface</ID>
+    <ID>MaxLineLength:PdfExtractionScreen.kt$defaultPrompt = if (type == "vision") com.ahmedyejam.mks.data.model.McqPrompts.OCR_DEFAULT else if (type == "review") com.ahmedyejam.mks.data.model.McqPrompts.OCR_REVIEW_DEFAULT else null</ID>
+    <ID>MaxLineLength:PdfExtractionScreen.kt$val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager</ID>
+    <ID>MaxLineLength:ProviderConfigDialog.kt$Text("Setup complete! Tap Save to finish.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:ProviderConfigDialog.kt$Text("Tap Save to apply these settings.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:ProviderConfigDialog.kt$Text("Testing...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:ProviderConfigDialog.kt$color = if (i &lt;= currentStep) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)</ID>
+    <ID>MaxLineLength:QuestionAssetsDialog.kt$Text("Add an image, PDF, text note, web link, or source citation to make this question a richer study workspace.")</ID>
+    <ID>MaxLineLength:QuestionAssetsDialog.kt$Text("Annotations", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))</ID>
+    <ID>MaxLineLength:QuestionAssetsDialog.kt$if</ID>
+    <ID>MaxLineLength:QuestionAssetsDialog.kt$imageVector = if (asset.assetType == QuestionAssetType.SOURCE_REFERENCE) Icons.Default.Book else Icons.Default.AttachFile</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimary)</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$Icon(Icons.Rounded.HourglassBottom, contentDescription = "Quiz Timer", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$Icon(Icons.Rounded.Star, contentDescription = "Score", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$Icon(Icons.Rounded.Update, contentDescription = "Question Timer", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.secondary)</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$Icon(Icons.Rounded.Whatshot, contentDescription = "Streak", modifier = Modifier.size(14.dp), tint = Color(0xFFFF9800))</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$color = if (accuracy &gt;= 80) Color(0xFF4CAF50) else if (accuracy &gt;= 50) Color(0xFFFF9800) else MaterialTheme.colorScheme.error</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$icon = if (state.questions.isNotEmpty() &amp;&amp; state.questions[state.currentIndex].isMarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$normalizedTheme == "FOREST" -&gt; if (isRtl) R.drawable.contact_banner_ar_light_forest_path else R.drawable.contact_banner_en_light_sunrise_valley</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$normalizedTheme == "LAVENDER" || normalizedTheme == "PLAIN_LIGHT" -&gt; if (isRtl) R.drawable.contact_banner_ar_light_lavender_valley else R.drawable.contact_banner_en_light_sunrise_valley</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$targetValue = if (checked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$text = if (state.isAnswered) stringResource(R.string.next) else if (state.isOneByOne &amp;&amp; state.visibleOptionsCount &lt; state.shuffledOptions.size) stringResource(R.string.reveal) else stringResource(R.string.submit)</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$tint = if (error != null) MaterialTheme.colorScheme.error.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)</ID>
+    <ID>MaxLineLength:QuizPlayerScreen.kt$tint = if (state.currentIndex &gt; 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)</ID>
+    <ID>MaxLineLength:QuizQuestionsScreen.kt$Text(if (uiState.searchQuery.isBlank()) stringResource(R.string.no_questions_found) else stringResource(R.string.no_questions_match_filter))</ID>
+    <ID>MaxLineLength:QuizQuestionsScreen.kt$onAddAnnotation = { selectedText, noteBody, colorLabel -&gt; viewModel.addQuestionAnnotation(bookId, question.id, selectedText, noteBody, colorLabel) }</ID>
+    <ID>MaxLineLength:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$(query.isBlank() || question.text.contains(query, ignoreCase = true) || question.explanation?.contains(query, ignoreCase = true) == true)</ID>
+    <ID>MaxLineLength:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$fun</ID>
+    <ID>MaxLineLength:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$knowledgeRepository.createFlashcardDeckFromQuestions(quiz.bookId, title, "Generated from selected questions", selected, clearMarksAfter)</ID>
+    <ID>MaxLineLength:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$private</ID>
+    <ID>MaxLineLength:QuizViewModel.kt$QuizState$*</ID>
+    <ID>MaxLineLength:QuizViewModel.kt$QuizViewModel$_uiState.update { it.copy(isLoading = false, error = "Current question data is missing. This session may be corrupted.") }</ID>
+    <ID>MaxLineLength:QuizViewModel.kt$QuizViewModel$if</ID>
+    <ID>MaxLineLength:QuizViewModel.kt$QuizViewModel$val correctText = currentQuestion.correctAnswers.asSequence().sorted().mapNotNull { currentQuestion.options.getOrNull(it) }.joinToString(", ").ifBlank { currentQuestion.correctAnswers.joinToString(",") }</ID>
+    <ID>MaxLineLength:QuizViewModel.kt$QuizViewModel$val newIncorrectCount = if (!isCorrect &amp;&amp; isFirstAttempt) currentSession.incorrectCount + 1 else currentSession.incorrectCount</ID>
+    <ID>MaxLineLength:QuizViewModel.kt$QuizViewModel$val restoredDraft = if (restoredAnswers == null) session?.draftAnswersByIndex?.get(_uiState.value.currentIndex)?.toSet() else null</ID>
+    <ID>MaxLineLength:QuizViewModel.kt$QuizViewModel$val selectedText = selectedOptions.asSequence().sorted().mapNotNull { currentQuestion.options.getOrNull(it) }.joinToString(", ").ifBlank { selectedOptions.joinToString(",") }</ID>
+    <ID>MaxLineLength:ScannerScreen.kt$Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error)</ID>
+    <ID>MaxLineLength:ScannerScreen.kt$Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit), modifier = Modifier.size(20.dp))</ID>
+    <ID>MaxLineLength:ScannerScreen.kt$Icon(Icons.Default.ErrorOutline, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.error)</ID>
+    <ID>MaxLineLength:ScannerScreen.kt$Text(stringResource(R.string.import_error, state.message), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)</ID>
+    <ID>MaxLineLength:SessionManagementScreen.kt$Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), modifier = Modifier.size(16.dp), tint = colors.error)</ID>
+    <ID>MaxLineLength:SessionManagementScreen.kt$Text(stringResource(R.string.empty_sessions_body), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:SessionManagementScreen.kt$totalQuestions &gt; 0 &amp;&amp; rangeTo &gt; totalQuestions -&gt; context.getString(R.string.range_error_to_at_most_n, totalQuestions)</ID>
+    <ID>MaxLineLength:SessionManagementScreen.kt$var questionTimerSeconds by rememberSaveable { mutableStateOf(if (defaultQuestionTimerSeconds &gt; 0) defaultQuestionTimerSeconds.toString() else "30") }</ID>
+    <ID>MaxLineLength:SessionManagementScreen.kt$var quizTimerMinutes by rememberSaveable { mutableStateOf(if (defaultQuizTimerSeconds &gt; 0) (defaultQuizTimerSeconds / 60).toString() else "30") }</ID>
+    <ID>MaxLineLength:SettingsScreen.kt$val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt$SettingsViewModel$suspend</ID>
+    <ID>MaxLineLength:SlideshowCourseScreen.kt$DropdownMenuItem(text = { Text("All Book Questions") }, onClick = { source = "ALL"; sourceId = null; expandedSource = false })</ID>
+    <ID>MaxLineLength:SlideshowCourseScreen.kt$DropdownMenuItem(text = { Text("Category") }, onClick = { source = "CATEGORY"; sourceId = categories.firstOrNull(); expandedSource = false })</ID>
+    <ID>MaxLineLength:SlideshowCourseScreen.kt$DropdownMenuItem(text = { Text("Marked Questions") }, onClick = { source = "MARKED"; sourceId = null; expandedSource = false })</ID>
+    <ID>MaxLineLength:SlideshowCourseScreen.kt$DropdownMenuItem(text = { Text("Missed Questions") }, onClick = { source = "MISSED"; sourceId = null; expandedSource = false })</ID>
+    <ID>MaxLineLength:SlideshowCourseScreen.kt$DropdownMenuItem(text = { Text("Specific Quiz") }, onClick = { source = "QUIZ"; sourceId = quizzes.firstOrNull()?.id?.toString(); expandedSource = false })</ID>
+    <ID>MaxLineLength:SlideshowCourseScreen.kt$DropdownMenuItem(text = { Text(quiz.title) }, onClick = { sourceId = quiz.id.toString(); expandedSubSource = false })</ID>
+    <ID>MaxLineLength:SlideshowCourseScreen.kt$OutlinedTextField(body, { body = it }, label = { Text(stringResource(R.string.slide_body)) }, modifier = Modifier.fillMaxWidth(), minLines = 4)</ID>
+    <ID>MaxLineLength:SlideshowCourseScreen.kt$OutlinedTextField(notes, { notes = it }, label = { Text(stringResource(R.string.slide_notes)) }, modifier = Modifier.fillMaxWidth(), minLines = 2)</ID>
+    <ID>MaxLineLength:SlideshowCourseScreen.kt$OutlinedTextField(title, { title = it }, label = { Text(stringResource(R.string.slide_header)) }, modifier = Modifier.fillMaxWidth())</ID>
+    <ID>MaxLineLength:SlideshowCourseScreen.kt$navigationIcon = { IconButton(onClick = { vm.clearSelection() }) { Icon(Icons.Default.Close, contentDescription = "Clear selection") } }</ID>
+    <ID>MaxLineLength:SlideshowCourseScreen.kt$onImportPptx = { pptxPickerLauncher.launch("application/vnd.openxmlformats-officedocument.presentationml.presentation") }</ID>
+    <ID>MaxLineLength:SlideshowCourseViewModel.kt$SlideshowCourseViewModel$flowOf(knowledgeRepository.getSlideshowCourseById(id))</ID>
+    <ID>MaxLineLength:SummaryScreen.kt$Text("${stats.correct}/${stats.total} correct", style = MaterialTheme.typography.bodySmall, color = contentColor.copy(alpha = 0.7f))</ID>
+    <ID>MaxLineLength:SummaryScreen.kt$Text(stringResource(R.string.visible_details), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:SummaryScreen.kt$color = if (MaterialTheme.colorScheme.primaryContainer == Color(0xFFFFB300)) Color.Black else Color(0xFFFF9800)</ID>
+    <ID>MaxLineLength:SummaryScreen.kt$color = if (isCorrectOption || isUserSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant</ID>
+    <ID>MaxLineLength:SummaryScreen.kt$tint = if (MaterialTheme.colorScheme.primaryContainer == Color(0xFFFFB300)) Color.Black else Color(0xFFFF9800)</ID>
+    <ID>MaxLineLength:SummaryScreen.kt$tint = if (showDetailSettings) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant</ID>
+    <ID>MaxLineLength:TrashBinDialog.kt$Text("Are you sure you want to permanently delete \"$title\"? This action is irreversible and all nested files or assets will be lost.")</ID>
+    <ID>MaxLineLength:WorkspaceManagerDialog.kt$Text("Are you sure you want to delete workspace \"${workspace.name}\"? All books and content inside this workspace will be soft-deleted and moved to the Trash Bin.")</ID>
+    <ID>MaxLineLength:WorkspaceManagerDialog.kt$color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface</ID>
+    <ID>MaxLineLength:WorkspaceManagerDialog.kt$color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant</ID>
+    <ID>MaxLineLength:WorkspaceManagerDialog.kt$tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.error</ID>
+    <ID>MaxLineLength:WorkspaceManagerDialog.kt$tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary</ID>
+    <ID>NestedBlockDepth:CompilerViewModel.kt$CompilerViewModel$private fun getFileName(uri: Uri): String?</ID>
+    <ID>NestedBlockDepth:ScannerViewModel.kt$ScannerViewModel$private fun parseTextToQuestions(text: String, quizId: Long): List&lt;QuestionEntity&gt;</ID>
+    <ID>ReturnCount:PdfExtractionViewModel.kt$PdfExtractionViewModel$suspend fun getPageBitmap(pageIndex: Int): Bitmap?</ID>
+    <ID>ReturnCount:QuizViewModel.kt$QuizViewModel$fun submitAnswer(isTimeout: Boolean = false)</ID>
+    <ID>SwallowedException:BookToolScreens.kt$e: Exception</ID>
+    <ID>SwallowedException:BookToolsViewModel.kt$BookToolsViewModel$e: kotlinx.coroutines.CancellationException</ID>
+    <ID>SwallowedException:CompilerViewModel.kt$CompilerViewModel$e: Exception</ID>
+    <ID>SwallowedException:DataToolsViewModel.kt$DataToolsViewModel$e: Exception</ID>
+    <ID>SwallowedException:MksNavHost.kt$e: Exception</ID>
+    <ID>SwallowedException:PdfExtractionViewModel.kt$PdfExtractionViewModel$e: Exception</ID>
+    <ID>SwallowedException:SettingsScreen.kt$e: Exception</ID>
+    <ID>SwallowedException:SettingsViewModel.kt$SettingsViewModel$e: Exception</ID>
+    <ID>SwallowedException:SlideshowCourseViewModel.kt$SlideshowCourseViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:BookDashboardTabs.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:BookToolScreens.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:BookToolsViewModel.kt$BookToolsViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CompilerViewModel.kt$CompilerViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DataToolsViewModel.kt$DataToolsViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:FlashcardDeckViewModel.kt$FlashcardDeckViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ImportViewModel.kt$ImportViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibraryScreen.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LibraryViewModel.kt$LibraryViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MksNavHost.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:PdfExtractionViewModel.kt$PdfExtractionViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:QuizViewModel.kt$QuizViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ScannerScreen.kt$exc: Exception</ID>
+    <ID>TooGenericExceptionCaught:ScannerViewModel.kt$ScannerViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SettingsScreen.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SettingsViewModel.kt$SettingsViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SlideshowCourseViewModel.kt$SlideshowCourseViewModel$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:ImportViewModel.kt$ImportViewModel$throw Exception("Could not load preview")</ID>
+    <ID>TooGenericExceptionThrown:PdfExtractionViewModel.kt$PdfExtractionViewModel$throw Exception("No source loaded")</ID>
+    <ID>TooGenericExceptionThrown:PdfExtractionViewModel.kt$PdfExtractionViewModel$throw Exception("Raw text extraction is only supported for PDFs. Please use AI extraction.")</ID>
+    <ID>TooManyFunctions:BookToolScreens.kt$com.ahmedyejam.mks.ui.booktools.BookToolScreens.kt</ID>
+    <ID>TooManyFunctions:BookToolsViewModel.kt$BookToolsViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:CategoryQuestionsViewModel.kt$CategoryQuestionsViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:CompilerViewModel.kt$CompilerViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:FlashcardDeckViewModel.kt$FlashcardDeckViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:LibraryViewModel.kt$LibraryViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:QuizQuestionsViewModel.kt$QuizQuestionsViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:QuizViewModel.kt$QuizViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:SlideshowCourseViewModel.kt$SlideshowCourseViewModel : ViewModel</ID>
+    <ID>UnusedParameter:BookToolsViewModel.kt$BookToolsViewModel$sourceId: Long</ID>
+    <ID>UnusedParameter:ProviderConfigDialog.kt$defaultPrompt: String? = null</ID>
+    <ID>UnusedPrivateProperty:BookToolsViewModel.kt$BookToolsViewModel$private val fileManager: com.ahmedyejam.mks.data.local.FileManager</ID>
+    <ID>UseCheckOrError:CompilerViewModel.kt$CompilerViewModel$throw IllegalStateException("Could not create temporary file")</ID>
+    <ID>UseCheckOrError:CompilerViewModel.kt$CompilerViewModel$throw IllegalStateException("Sheet '$sheetName' exceeds ${ImportLimits.MAX_XLSX_CELLS_PER_SHEET} cell limit.")</ID>
+    <ID>UseCheckOrError:CompilerViewModel.kt$CompilerViewModel$throw IllegalStateException("Sheet '$sheetName' exceeds ${ImportLimits.MAX_XLSX_ROWS_PER_SHEET} row limit.")</ID>
+    <ID>UseCheckOrError:CompilerViewModel.kt$CompilerViewModel$throw IllegalStateException("XLSX has too many sheets (max ${ImportLimits.MAX_XLSX_SHEETS}).")</ID>
+    <ID>WildcardImport:GlobalSearchViewModel.kt$import kotlinx.coroutines.flow.*</ID>
+    <ID>WildcardImport:PdfExtractionScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:PdfExtractionScreen.kt$import androidx.compose.material.icons.rounded.*</ID>
+    <ID>WildcardImport:PdfExtractionScreen.kt$import androidx.compose.material3.*</ID>
+    <ID>WildcardImport:PdfExtractionScreen.kt$import androidx.compose.runtime.*</ID>
+    <ID>WildcardImport:ReviewDashboardViewModel.kt$import kotlinx.coroutines.flow.*</ID>
+    <ID>WildcardImport:ScannerScreen.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:ScannerScreen.kt$import androidx.compose.material.icons.filled.*</ID>
+    <ID>WildcardImport:ScannerScreen.kt$import androidx.compose.material3.*</ID>
+    <ID>WildcardImport:ScannerScreen.kt$import androidx.compose.runtime.*</ID>
+    <ID>WildcardImport:SortDialog.kt$import androidx.compose.foundation.layout.*</ID>
+    <ID>WildcardImport:SortDialog.kt$import androidx.compose.material3.*</ID>
+  </CurrentIssues>
+</SmellBaseline>
