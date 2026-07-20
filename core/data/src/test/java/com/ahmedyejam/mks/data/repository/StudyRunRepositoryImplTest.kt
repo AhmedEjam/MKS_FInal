@@ -197,6 +197,37 @@ class StudyRunRepositoryImplTest {
     }
 
     @Test
+    fun `resumed state carries the run id needed to keep saving`() = runTest {
+        val dao = FakeStudyRunDao()
+        val repository = repo(dao)
+        val id = repository.start(StartStudyRun(StudyContentType.SLIDESHOW, 1L, listOf(1L, 2L)))
+
+        // Regression: StudyRunState originally omitted runId, so a caller could resume a run but
+        // had no handle to write further progress to it — resume worked exactly once, then silently
+        // stopped persisting. Callers must be able to round-trip resume -> saveProgress.
+        val resumed = requireNotNull(repository.getLatestIncomplete(StudyContentType.SLIDESHOW, 1L))
+        assertEquals("resumed state should expose the persisted run id", id, resumed.runId)
+
+        repository.saveProgress(resumed.runId, StudyRunProgress(currentIndex = 1, completedItemIds = setOf(1L)))
+        assertEquals(1, requireNotNull(repository.resume(resumed.runId)).currentIndex)
+    }
+
+    @Test
+    fun `an incomplete run is offered again after being left mid way`() = runTest {
+        val dao = FakeStudyRunDao()
+        val repository = repo(dao)
+        val id = repository.start(StartStudyRun(StudyContentType.SLIDESHOW, 5L, listOf(1L, 2L, 3L)))
+        repository.saveProgress(id, StudyRunProgress(currentIndex = 2, completedItemIds = setOf(1L, 2L)))
+
+        // Leaving the player is a pause, not a finish: the run must still be resumable, and must
+        // come back at the stored position rather than at zero.
+        val resumed = requireNotNull(repository.getLatestIncomplete(StudyContentType.SLIDESHOW, 5L))
+        assertEquals(id, resumed.runId)
+        assertEquals(2, resumed.currentIndex)
+        assertEquals(setOf(1L, 2L), resumed.completedItemIds)
+    }
+
+    @Test
     fun `every declared content type survives the enum round trip`() = runTest {
         val dao = FakeStudyRunDao()
         val repository = repo(dao)

@@ -7,6 +7,9 @@ import com.ahmedyejam.mks.data.importer.parser.TextFlashcardParser
 import com.ahmedyejam.mks.data.local.entity.FlashcardDeckEntity
 import com.ahmedyejam.mks.data.local.entity.FlashcardEntity
 import com.ahmedyejam.mks.data.model.FlashcardGenerationConfig
+import com.ahmedyejam.mks.data.model.StartStudyRun
+import com.ahmedyejam.mks.data.model.StudyContentType
+import com.ahmedyejam.mks.data.model.StudyRunRepository
 import com.ahmedyejam.mks.data.repository.AssetRepository
 import com.ahmedyejam.mks.data.repository.BookRepository
 import com.ahmedyejam.mks.data.repository.KnowledgeRepository
@@ -53,7 +56,8 @@ class FlashcardDeckViewModel @Inject constructor(
     private val knowledgeRepository: KnowledgeRepository,
     private val assetRepository: AssetRepository,
     private val quizRepository: QuizRepository,
-    private val studyRepository: StudyRepository
+    private val studyRepository: StudyRepository,
+    private val studyRunRepository: StudyRunRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(FlashcardDeckUiState())
     val uiState = _uiState.asStateFlow()
@@ -68,6 +72,9 @@ class FlashcardDeckViewModel @Inject constructor(
     private val sessionStateAdapter = moshi.adapter(com.ahmedyejam.mks.data.model.LearningSessionState::class.java)
 
     private var activeSessionId: Long? = null
+
+    /** Resumable study run for the current study-mode pass. See [saveStudyRunProgress]. */
+    private var activeStudyRunId: Long? = null
     private var sessionTimeAccumulatedMs: Long = 0L
     private var sessionLastStartedTimestamp: Long = 0L
     private var isSessionTimerRunning: Boolean = false
@@ -158,11 +165,13 @@ class FlashcardDeckViewModel @Inject constructor(
     }
 
     private fun saveSessionStateIncremental() {
+        saveStudyRunProgress()
+
         val sessionId = activeSessionId ?: return
         val deckId = deckId ?: return
         val current = _uiState.value
         val elapsed = getSessionElapsedTimeMs()
-        
+
         val stateObj = com.ahmedyejam.mks.data.model.LearningSessionState(
             targetType = "FLASHCARD",
             targetId = deckId,
@@ -189,7 +198,58 @@ class FlashcardDeckViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Persists resume position and per-card detail for the active run.
+     *
+     * Uses [applicationScope] so a save initiated during teardown still lands. The run stays
+     * incomplete unless every card has been reviewed — leaving study mode is a pause, not a finish.
+     */
+    private fun saveStudyRunProgress() {
+        val runId = activeStudyRunId ?: return
+        val deckIdSnapshot = deckId ?: return
+        val current = _uiState.value
+        val completed = reviewedCardIds.toSet()
+        val elapsed = getSessionElapsedTimeMs()
+        val allReviewed = current.cards.isNotEmpty() && completed.containsAll(current.cards.map { it.id })
+
+        val detail = com.ahmedyejam.mks.data.model.LearningSessionState(
+            targetType = "FLASHCARD",
+            targetId = deckIdSnapshot,
+            deckId = deckIdSnapshot,
+            reviewedCardIds = completed,
+            cardScores = cardScores.toMap(),
+            currentCardIndex = current.currentIndex,
+            timersActive = mapOf(0L to elapsed),
+            startedAt = System.currentTimeMillis() - elapsed,
+            totalAttempts = totalAttemptsCount,
+            correctAttempts = correctAttemptsCount,
+        )
+        val detailJson = try {
+            sessionStateAdapter.toJson(detail)
+        } catch (e: Exception) {
+            MksLogger.w("FlashcardDeckViewModel", "Could not serialize study run detail", e)
+            null
+        }
+
+        applicationScope.launch {
+            studyRunRepository.saveProgress(
+                runId,
+                com.ahmedyejam.mks.data.model.StudyRunProgress(
+                    currentIndex = current.currentIndex,
+                    completedItemIds = completed,
+                    stateJson = detailJson,
+                ),
+            )
+            if (allReviewed) {
+                studyRunRepository.complete(runId)
+            }
+        }
+    }
+
     fun endAndSaveSession() {
+        saveStudyRunProgress()
+        activeStudyRunId = null
+
         val sessionId = activeSessionId ?: return
         activeSessionId = null
         pauseSessionTimer()
@@ -238,39 +298,47 @@ class FlashcardDeckViewModel @Inject constructor(
             
             viewModelScope.launch {
                 val deckId = deckId ?: return@launch
+                val cards = _uiState.value.cards
 
-                // Try to find and resume an existing incomplete session
-                val existingSessions = studyRepository.getLearningSessionsByTarget("FLASHCARD", deckId)
-                    .first()
-                val incompleteSession = existingSessions.firstOrNull { !it.isCompleted && it.deletedAt == null }
-
-                if (incompleteSession != null && incompleteSession.stateJson.isNotBlank()) {
-                    // Attempt to restore state from saved session
+                // Resume position now comes from StudyRun, the shared resumable-state store, rather
+                // than from LearningSession.stateJson. LearningSession remains the analytics record
+                // of "a study session happened"; it is no longer also the resume mechanism.
+                val existing = studyRunRepository.getLatestIncomplete(StudyContentType.FLASHCARD_DECK, deckId)
+                if (existing != null) {
+                    activeStudyRunId = existing.runId
+                    reviewedCardIds.addAll(existing.completedItemIds)
+                    // Cards may have been added or removed since the run started, so clamp.
+                    val restoredIndex = existing.currentIndex.coerceIn(
+                        0, (cards.size - 1).coerceAtLeast(0)
+                    )
+                    // The richer per-card detail (scores, attempts, elapsed time) rides along in the
+                    // run's own stateJson. Failing to parse it costs statistics, not position, so
+                    // the resume still proceeds.
                     try {
-                        val restored = sessionStateAdapter.fromJson(incompleteSession.stateJson)
-                        if (restored != null) {
-                            val restoredIndex = restored.currentCardIndex.coerceIn(
-                                0, (_uiState.value.cards.size - 1).coerceAtLeast(0)
-                            )
-                            reviewedCardIds.addAll(restored.reviewedCardIds)
-                            cardScores.putAll(restored.cardScores)
-                            correctAttemptsCount = restored.correctAttempts
-                            totalAttemptsCount = restored.totalAttempts
-                            sessionTimeAccumulatedMs = restored.timersActive.values.firstOrNull() ?: 0L
-                            activeSessionId = incompleteSession.id
-                            _uiState.value = _uiState.value.copy(currentIndex = restoredIndex)
-                            MksLogger.d("FlashcardDeckViewModel", "Resumed session ${incompleteSession.id} at card $restoredIndex")
-                            startSessionTimer()
-                            return@launch
+                        existing.stateJson?.takeIf { it.isNotBlank() }?.let { json ->
+                            sessionStateAdapter.fromJson(json)?.let { restored ->
+                                cardScores.putAll(restored.cardScores)
+                                correctAttemptsCount = restored.correctAttempts
+                                totalAttemptsCount = restored.totalAttempts
+                                sessionTimeAccumulatedMs = restored.timersActive.values.firstOrNull() ?: 0L
+                            }
                         }
                     } catch (e: Exception) {
-                        MksLogger.w("FlashcardDeckViewModel", "Failed to restore session state, starting fresh", e)
+                        MksLogger.w("FlashcardDeckViewModel", "Study run detail unreadable; resuming position only", e)
                     }
+                    _uiState.value = _uiState.value.copy(currentIndex = restoredIndex)
+                    MksLogger.d("FlashcardDeckViewModel", "Resumed study run ${existing.runId} at card $restoredIndex")
+                } else {
+                    activeStudyRunId = studyRunRepository.start(
+                        StartStudyRun(
+                            contentType = StudyContentType.FLASHCARD_DECK,
+                            contentId = deckId,
+                            orderedItemIds = cards.map { it.id },
+                        ),
+                    )
                 }
 
-                // No resumable session found — create a new one
-                val sessionId = studyRepository.createLearningSession("FLASHCARD", deckId, "")
-                activeSessionId = sessionId
+                activeSessionId = studyRepository.createLearningSession("FLASHCARD", deckId, "")
                 startSessionTimer()
             }
         } else {

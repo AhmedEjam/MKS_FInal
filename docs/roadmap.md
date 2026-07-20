@@ -4,31 +4,34 @@
 
 ## Phase 1: Code Solidity & Testing Safety Net 🔴 PRIORITY
 
-### 1.0 Decide the fate of `study_runs` 🔴 BLOCKING
+### 1.0 Adopt `study_runs` ✅ RESOLVED — adopted (needs device verification)
 
-**Status:** 🔴 OPEN — decision required before further study/resume work.
+**Status:** 🟡 ADOPTED for flashcards and slideshow; **unverified on a device.**
 
-Migration v31→v32 shipped a `study_runs` table, and `StudyRunDao` / `StudyRunRepository` /
-`StudyRunRepositoryImpl` are complete and Hilt-wired. **Nothing consumes them.** The only references
-outside their own definitions are the DI modules. Meanwhile resume works today through the older
-per-ViewModel `LearningSessionEntity.stateJson` path.
+`study_runs` shipped as a migration in v31→v32 but had no consumer. It is now the source of truth
+for resumable study position, with a clear split of responsibility:
 
-The result is two parallel resume mechanisms — one live, one dormant with an already-released
-migration behind it. This is the highest-leverage architectural decision currently open, because
-every additional player that adopts `stateJson` makes the eventual unification more expensive.
+- **`StudyRun`** — in-flight resumable state ("where was I"): ordered item ids, current index,
+  completed items, plus free-form `stateJson` for per-player detail.
+- **`LearningSession`** — the analytics record ("a study session happened"): time spent, completion.
+  It is no longer also the resume mechanism.
 
-`StudyRunRepositoryImplTest` (9 JVM tests) now pins the dormant contract, so whichever way this goes
-the behaviour is documented. Two viable paths:
+**This fixed a live bug.** `SlideshowCourseViewModel.setPresentationMode(true)` unconditionally reset
+to slide 1 and created a *new* `LearningSession` every time. It wrote `stateJson` on every slide
+change that nothing ever read back, so presentation resume never worked and orphaned incomplete
+sessions accumulated. This was audit finding #7, still live for slideshows (it had been fixed for
+flashcards, which did read their state back).
 
-1. **Adopt.** Migrate the four players onto `StudyRunRepository`, delete the per-ViewModel
-   `stateJson` handling. `StudyContentType` already covers `ADAPTIVE_QUIZ` and `REVIEW_QUEUE`, so
-   this also closes audit finding #6 (adaptive training persists nothing) in the same pass.
-   Requires a device to verify — resume is not meaningfully testable without process death.
-2. **Retire.** Keep the table (dropping it needs another migration and buys little), but delete the
-   repository and DAO, and record `study_runs` as reserved-but-unused so nobody rediscovers it and
-   assumes it works.
+**Adoption surfaced an API defect:** `StudyRunState` had no `runId`, so a caller could resume a run
+but had no handle to save further progress to it — resume would have worked exactly once and then
+silently stopped persisting. `runId` added; `StudyRunRepositoryImplTest` now has a regression test.
 
-Adoption is the better end state; the constraint is that it needs runtime verification.
+Still on the old path (deliberately, they are not item-sequence players): the article/notes player
+and the AI prompt deck. `ADAPTIVE_QUIZ` is already persisted via `SessionEntity`, so audit #6 is
+closed independently — migrating it to `StudyRun` is optional cleanup, not a fix.
+
+⚠️ Resume cannot be meaningfully tested without process death on a real device. See the manual test
+plan in `docs/testing/study-run-adoption.md` before shipping.
 
 ### 1.1 Repository Test Harness & Test Suites
 

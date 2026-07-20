@@ -9,6 +9,10 @@ import com.ahmedyejam.mks.data.local.entity.CourseSlideEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 import com.ahmedyejam.mks.data.model.SlideGenerationConfig
+import com.ahmedyejam.mks.data.model.StartStudyRun
+import com.ahmedyejam.mks.data.model.StudyContentType
+import com.ahmedyejam.mks.data.model.StudyRunProgress
+import com.ahmedyejam.mks.data.model.StudyRunRepository
 import com.ahmedyejam.mks.data.repository.AssetRepository
 import com.ahmedyejam.mks.data.repository.BookRepository
 import com.ahmedyejam.mks.data.repository.KnowledgeRepository
@@ -54,7 +58,8 @@ class SlideshowCourseViewModel @Inject constructor(
     private val knowledgeRepository: KnowledgeRepository,
     private val assetRepository: AssetRepository,
     private val quizRepository: QuizRepository,
-    private val studyRepository: StudyRepository
+    private val studyRepository: StudyRepository,
+    private val studyRunRepository: StudyRunRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SlideshowCourseUiState())
     val uiState = _uiState.asStateFlow()
@@ -65,6 +70,17 @@ class SlideshowCourseViewModel @Inject constructor(
     private val sessionStateAdapter = moshi.adapter(com.ahmedyejam.mks.data.model.LearningSessionState::class.java)
 
     private var activeSessionId: Long? = null
+
+    /**
+     * The resumable study run for the current presentation.
+     *
+     * `LearningSession` records that a study session happened (time spent, completion) and feeds
+     * the stats surfaces. `StudyRun` is the separate, resumable "where was I" state. Presentation
+     * mode previously wrote a LearningSession `stateJson` on every slide change that nothing ever
+     * read back, so resume silently restarted at slide 1 every time.
+     */
+    private var activeStudyRunId: Long? = null
+
     private var sessionTimeAccumulatedMs: Long = 0L
     private var sessionLastStartedTimestamp: Long = 0L
     private var isSessionTimerRunning: Boolean = false
@@ -197,6 +213,10 @@ class SlideshowCourseViewModel @Inject constructor(
     }
 
     private fun saveSessionStateIncremental() {
+        // Resume position is tracked separately from the analytics session and must be written
+        // even if no LearningSession is active, so this runs before the early returns below.
+        saveStudyRunProgress()
+
         val sessionId = activeSessionId ?: return
         val courseId = courseId ?: return
         val current = _uiState.value
@@ -227,10 +247,15 @@ class SlideshowCourseViewModel @Inject constructor(
     }
 
     fun endAndSaveSession() {
+        // Flush resume position first. The run is deliberately left incomplete unless every slide
+        // has been seen — leaving presentation mode is a pause, not a finish.
+        saveStudyRunProgress()
+        activeStudyRunId = null
+
         val sessionId = activeSessionId ?: return
         activeSessionId = null
         pauseSessionTimer()
-        
+
         val courseId = courseId ?: return
         val current = _uiState.value
         val elapsed = getSessionElapsedTimeMs()
@@ -265,22 +290,72 @@ class SlideshowCourseViewModel @Inject constructor(
         if (enabled) {
             _uiState.value = _uiState.value.copy(isPresentationMode = true, currentIndex = 0)
             reviewedSlideIds.clear()
-            val currentSlide = _uiState.value.currentSlide
-            if (currentSlide != null) {
-                reviewedSlideIds.add(currentSlide.id)
-            }
             sessionTimeAccumulatedMs = 0L
             isSessionTimerRunning = false
-            
+
             viewModelScope.launch {
                 val courseId = courseId ?: return@launch
-                val sessionId = studyRepository.createLearningSession("COURSE", courseId, "")
-                activeSessionId = sessionId
+                val slides = _uiState.value.slides
+
+                // Resume an interrupted run for this course if one exists, otherwise start a new
+                // one. getLatestIncomplete is scoped to (contentType, contentId), so another
+                // course's run can never be picked up here.
+                val existing = studyRunRepository.getLatestIncomplete(StudyContentType.SLIDESHOW, courseId)
+                if (existing != null) {
+                    activeStudyRunId = existing.runId
+                    reviewedSlideIds.addAll(existing.completedItemIds)
+                    // Slides may have been added or removed since the run started, so the stored
+                    // index is clamped rather than trusted.
+                    val restoredIndex = existing.currentIndex.coerceIn(0, (slides.size - 1).coerceAtLeast(0))
+                    _uiState.value = _uiState.value.copy(currentIndex = restoredIndex)
+                    MksLogger.d(
+                        "SlideshowCourseViewModel",
+                        "Resumed study run ${existing.runId} at slide $restoredIndex",
+                    )
+                } else {
+                    activeStudyRunId = studyRunRepository.start(
+                        StartStudyRun(
+                            contentType = StudyContentType.SLIDESHOW,
+                            contentId = courseId,
+                            orderedItemIds = slides.map { it.id },
+                        ),
+                    )
+                }
+
+                // Whichever slide we land on counts as seen.
+                _uiState.value.currentSlide?.let { reviewedSlideIds.add(it.id) }
+
+                activeSessionId = studyRepository.createLearningSession("COURSE", courseId, "")
                 startSessionTimer()
+                saveStudyRunProgress()
             }
         } else {
             endAndSaveSession()
             _uiState.value = _uiState.value.copy(isPresentationMode = false, currentIndex = 0)
+        }
+    }
+
+    /**
+     * Persists resume position for the active run.
+     *
+     * Runs on [applicationScope] so a save triggered while the screen is being torn down still
+     * completes. The run is intentionally left incomplete on exit — that is what makes it
+     * resumable; it is only completed once every slide has been seen.
+     */
+    private fun saveStudyRunProgress() {
+        val runId = activeStudyRunId ?: return
+        val current = _uiState.value
+        val completed = reviewedSlideIds.toSet()
+        val allSeen = current.slides.isNotEmpty() && completed.containsAll(current.slides.map { it.id })
+
+        applicationScope.launch {
+            studyRunRepository.saveProgress(
+                runId,
+                StudyRunProgress(currentIndex = current.currentIndex, completedItemIds = completed),
+            )
+            if (allSeen) {
+                studyRunRepository.complete(runId)
+            }
         }
     }
 

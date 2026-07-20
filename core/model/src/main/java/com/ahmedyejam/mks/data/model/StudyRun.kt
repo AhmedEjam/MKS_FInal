@@ -10,6 +10,13 @@ enum class StudyContentType {
 }
 
 data class StudyRunState(
+    /**
+     * Identifier of the persisted run.
+     *
+     * Required to call [StudyRunRepository.saveProgress] or [StudyRunRepository.complete] after
+     * resuming — without it a caller can read a run back but has no handle to keep writing to it.
+     */
+    val runId: Long,
     val contentType: StudyContentType,
     val contentId: Long,
     val orderedItemIds: List<Long>,

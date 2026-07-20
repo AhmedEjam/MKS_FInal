@@ -57,6 +57,7 @@ class StudyRunRepositoryImpl @Inject constructor(
     }
 
     private fun StudyRunEntity.toState() = StudyRunState(
+        runId = id,
         contentType = StudyContentType.valueOf(contentType),
         contentId = contentId,
         orderedItemIds = orderedItemIds,
