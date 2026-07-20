@@ -57,6 +57,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AttachFile
 import androidx.compose.material.icons.rounded.Block
@@ -173,6 +174,14 @@ fun QuizPlayerScreen(
     onViewCategoryQuestions: (String) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val quizHintsShown by viewModel.quizHintsShown.collectAsStateWithLifecycle(initialValue = true)
+    var showHintsDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        if (!quizHintsShown && state.questions.isNotEmpty()) {
+            showHintsDialog = true
+        }
+    }
     
     val currentQuestion by remember(state.currentIndex, state.questions) {
         derivedStateOf {
@@ -190,6 +199,34 @@ fun QuizPlayerScreen(
     var showQuestionAssets by showQuestionAssetsState
     var selectedCategoryForEdit by rememberSaveable(state.allCategoriesWithMetadata) { mutableStateOf<CategoryWithMetadata?>(null) }
 
+
+    if (showHintsDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showHintsDialog = false
+                viewModel.dismissQuizHints()
+            },
+            title = { Text("Quick Tips") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("• Swipe left/right to navigate between questions")
+                    Text("• Tap options to select, tap again to deselect")
+                    Text("• Use the ← Previous button to go back")
+                    Text("• Drag the bottom sheet up for more controls")
+                    Text("• Long-press an option to eliminate it")
+                    Text("• Tap Submit to lock in your answer")
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showHintsDialog = false
+                    viewModel.dismissQuizHints()
+                }) {
+                    Text("Got it")
+                }
+            }
+        )
+    }
 
     if (showDropQuestionDialog) {
         AlertDialog(
@@ -970,7 +1007,7 @@ fun QuizSheetContent(
             ) {
                 // Performance Stats in Peek
                 Column(
-                    modifier = Modifier.weight(0.3f),
+                    modifier = Modifier.weight(0.25f),
                     horizontalAlignment = Alignment.Start
                 ) {
                     val answered = state.questionResultsByIndex.size
@@ -988,9 +1025,25 @@ fun QuizSheetContent(
                     )
                 }
 
+                // Visible Previous button (not gesture-only)
+                IconButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.previousQuestion()
+                    },
+                    enabled = state.currentIndex > 0,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = stringResource(R.string.previous_label),
+                        tint = if (state.currentIndex > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
+                }
+
                 Button(
                     modifier = Modifier
-                        .weight(0.7f)
+                        .weight(0.55f)
                         .height(48.dp),
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)

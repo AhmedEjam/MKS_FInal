@@ -51,6 +51,25 @@ interface NoteBlueprintDao {
     @Query("SELECT COUNT(*) FROM note_blueprints WHERE deletedAt IS NULL AND reviewStatus != 'REVIEWED' AND updatedAt <= :now")
     suspend fun countDueBlueprints(now: Long): Int
 
+    @Query("""
+        SELECT bp.* FROM note_blueprints bp
+        JOIN note_collections c ON bp.collectionId = c.id
+        JOIN books b ON c.bookId = b.id
+        WHERE bp.deletedAt IS NULL AND c.deletedAt IS NULL AND b.deletedAt IS NULL AND b.workspaceId = :workspaceId
+        AND bp.reviewStatus != 'REVIEWED' AND bp.updatedAt <= :now
+        ORDER BY bp.lastReviewedAt ASC, bp.updatedAt DESC LIMIT :limit
+    """)
+    suspend fun getDueBlueprintsByWorkspace(now: Long, workspaceId: Long, limit: Int = 50): List<NoteBlueprintEntity>
+
+    @Query("""
+        SELECT COUNT(*) FROM note_blueprints bp
+        JOIN note_collections c ON bp.collectionId = c.id
+        JOIN books b ON c.bookId = b.id
+        WHERE bp.deletedAt IS NULL AND c.deletedAt IS NULL AND b.deletedAt IS NULL AND b.workspaceId = :workspaceId
+        AND bp.reviewStatus != 'REVIEWED' AND bp.updatedAt <= :now
+    """)
+    suspend fun countDueBlueprintsByWorkspace(now: Long, workspaceId: Long): Int
+
     @Query("UPDATE note_blueprints SET reviewStatus = 'REVIEWED', reviewCount = reviewCount + 1, lastReviewedAt = :reviewedAt, updatedAt = :reviewedAt WHERE id = :id")
     suspend fun markReviewed(id: Long, reviewedAt: Long)
 

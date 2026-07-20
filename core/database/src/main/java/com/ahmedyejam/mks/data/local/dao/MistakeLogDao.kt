@@ -44,6 +44,31 @@ interface MistakeLogDao {
     @Query("SELECT COUNT(*) FROM mistake_log_entries WHERE deletedAt IS NULL AND isFixed = 0 AND reviewAt IS NOT NULL AND reviewAt > :now")
     suspend fun countPendingMistakes(now: Long): Int
 
+    @Query("""
+        SELECT m.* FROM mistake_log_entries m
+        JOIN books b ON m.bookId = b.id
+        WHERE m.deletedAt IS NULL AND b.deletedAt IS NULL AND b.workspaceId = :workspaceId
+        AND m.isFixed = 0 AND m.reviewAt IS NOT NULL AND m.reviewAt <= :now
+        ORDER BY m.reviewAt ASC, m.createdAt DESC LIMIT :limit
+    """)
+    suspend fun getDueMistakesByWorkspace(now: Long, workspaceId: Long, limit: Int = 50): List<MistakeLogEntryEntity>
+
+    @Query("""
+        SELECT COUNT(*) FROM mistake_log_entries m
+        JOIN books b ON m.bookId = b.id
+        WHERE m.deletedAt IS NULL AND b.deletedAt IS NULL AND b.workspaceId = :workspaceId
+        AND m.isFixed = 0 AND m.reviewAt IS NOT NULL AND m.reviewAt <= :now
+    """)
+    suspend fun countDueMistakesByWorkspace(now: Long, workspaceId: Long): Int
+
+    @Query("""
+        SELECT COUNT(*) FROM mistake_log_entries m
+        JOIN books b ON m.bookId = b.id
+        WHERE m.deletedAt IS NULL AND b.deletedAt IS NULL AND b.workspaceId = :workspaceId
+        AND m.isFixed = 0 AND m.reviewAt IS NOT NULL AND m.reviewAt > :now
+    """)
+    suspend fun countPendingMistakesByWorkspace(now: Long, workspaceId: Long): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMistake(entry: MistakeLogEntryEntity): Long
 

@@ -187,6 +187,7 @@ fun SessionManagementScreen(
 
     if (showNewLabelDialog) {
         val totalQuestions = quizQuestionCounts[quizId] ?: 0
+        val filteredCount by viewModel.filteredCount.collectAsState()
         
         StartSessionDialog(
             totalQuestions = totalQuestions,
@@ -197,6 +198,16 @@ fun SessionManagementScreen(
             defaultRepeatWrong = defRepeatWrong,
             defaultQuizTimerSeconds = defQuizTimer,
             defaultQuestionTimerSeconds = defQuestionTimer,
+            filteredMatchCount = filteredCount,
+            onFiltersChanged = { filters, from, to ->
+                viewModel.updateFilteredCount(quizId, filters, from, to)
+            },
+            onQuickStart = {
+                viewModel.quickStart(quizId) { sessionId ->
+                    onSessionSelected(sessionId, false)
+                }
+                showNewLabelDialog = false
+            },
             onDismiss = { showNewLabelDialog = false },
             onConfirm = { config, saveDefaults ->
                 if (saveDefaults) {
@@ -306,6 +317,9 @@ fun StartSessionDialog(
     defaultRepeatWrong: Boolean,
     defaultQuizTimerSeconds: Int,
     defaultQuestionTimerSeconds: Int,
+    filteredMatchCount: Int? = null,
+    onFiltersChanged: ((Set<String>, Int, Int) -> Unit)? = null,
+    onQuickStart: (() -> Unit)? = null,
     onDismiss: () -> Unit,
     onConfirm: (SessionConfig, Boolean) -> Unit
 ) {
@@ -335,9 +349,26 @@ fun StartSessionDialog(
     var selectedFilters by rememberSaveable { mutableStateOf(defaultIncludeFilters) }
     var rememberDefaults by rememberSaveable { mutableStateOf(false) }
 
+    LaunchedEffect(selectedFilters, rangeFrom, rangeTo) {
+        onFiltersChanged?.invoke(selectedFilters, rangeFrom - 1, rangeTo - 1)
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.start_new_session_title)) },
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(stringResource(R.string.start_new_session_title))
+                if (onQuickStart != null) {
+                    TextButton(onClick = onQuickStart) {
+                        Text("Quick Start")
+                    }
+                }
+            }
+        },
         text = {
             Column(
                 modifier = Modifier
@@ -415,6 +446,14 @@ fun StartSessionDialog(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
+                filteredMatchCount?.let { count ->
+                    Text(
+                        text = if (count > 0) "$count questions match these settings" else "No questions match these settings",
+                        color = if (count > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
 
                 HorizontalDivider()
 
@@ -466,8 +505,9 @@ fun StartSessionDialog(
         },
         confirmButton = {
             val hasRangeError = rangeFrom < 1 || rangeTo > totalQuestions || rangeFrom > rangeTo
+            val hasNoMatches = filteredMatchCount == 0
             TextButton(
-                enabled = !hasRangeError,
+                enabled = !hasRangeError && !hasNoMatches,
                 onClick = {
                     onConfirm(
                         SessionConfig(
@@ -577,10 +617,11 @@ fun SessionItem(
     onDelete: () -> Unit
 ) {
     val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()) }
-    val progress = if (totalQuestions > 0) (session.currentQuestionIndex.toFloat() / totalQuestions).coerceIn(0f, 1f) else 0f
+    val sessionTotal = if (session.originalQuestionCount > 0) session.originalQuestionCount else totalQuestions
+    val progress = if (sessionTotal > 0) (session.currentQuestionIndex.toFloat() / sessionTotal).coerceIn(0f, 1f) else 0f
     val answeredCount = (session.score + session.incorrectCount).coerceAtLeast(0)
     val accuracy = if (answeredCount > 0) (session.score.toFloat() / answeredCount * 100).toInt() else 0
-    val remaining = (totalQuestions - answeredCount).coerceAtLeast(0)
+    val remaining = (sessionTotal - answeredCount).coerceAtLeast(0)
     val colors = MaterialTheme.colorScheme
     val correctColor = if (isSystemInDarkTheme()) Color(0xFFA5D6A7) else Color(0xFF2E7D32)
 
@@ -657,7 +698,7 @@ fun SessionItem(
                         contentColor = if (session.isCompleted) colors.onPrimaryContainer else colors.secondary
                     ) {
                         Text(
-                            text = if (session.isCompleted) stringResource(R.string.completed_badge) else stringResource(R.string.start),
+                            text = if (session.isCompleted) stringResource(R.string.completed_badge) else stringResource(R.string.resume),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)

@@ -1006,6 +1006,248 @@ object MksMigrations {
         }
     }
 
+    val MIGRATION_30_31 = object : Migration(30, 31) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            MksDatabase.addColumnIfMissing(
+                db,
+                "sessions",
+                "draftAnswersByIndex",
+                "TEXT NOT NULL DEFAULT '{}'"
+            )
+        }
+    }
+
+    val MIGRATION_31_32 = object : Migration(31, 32) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `study_runs` (
+                    `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    `contentType` TEXT NOT NULL,
+                    `contentId` INTEGER NOT NULL,
+                    `orderedItemIds` TEXT NOT NULL DEFAULT '[]',
+                    `currentIndex` INTEGER NOT NULL DEFAULT 0,
+                    `completedItemIds` TEXT NOT NULL DEFAULT '[]',
+                    `isCompleted` INTEGER NOT NULL DEFAULT 0,
+                    `startedAt` INTEGER NOT NULL DEFAULT 0,
+                    `updatedAt` INTEGER NOT NULL DEFAULT 0,
+                    `completedAt` INTEGER NOT NULL DEFAULT 0,
+                    `configurationJson` TEXT,
+                    `stateJson` TEXT,
+                    `deletedAt` INTEGER
+                )
+            """)
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_study_runs_contentType` ON `study_runs` (`contentType`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_study_runs_contentId` ON `study_runs` (`contentId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_study_runs_isCompleted` ON `study_runs` (`isCompleted`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_study_runs_deletedAt` ON `study_runs` (`deletedAt`)")
+        }
+    }
+
+    val MIGRATION_32_33 = object : Migration(32, 33) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Create FTS4 search index with unicode61 tokenizer for Arabic/Unicode support.
+            // Metadata columns are NOT INDEXED so they're stored but not tokenized —
+            // filtering on workspaceId is a fast post-filter after MATCH narrows results.
+            db.execSQL("""
+                CREATE VIRTUAL TABLE IF NOT EXISTS `search_index` USING fts4(
+                    `title`, `subtitle`, `content`,
+                    `entityType`, `entityId`, `workspaceId`, `bookId`, `quizId`, `parentId`, `updatedAt`,
+                    tokenize=unicode61
+                )
+            """)
+
+            // Populate the index from existing data — one INSERT per entity type
+            // Books
+            db.execSQL("""
+                INSERT INTO search_index (title, subtitle, content, entityType, entityId, workspaceId, bookId, quizId, parentId, updatedAt)
+                SELECT 
+                    b.title, 
+                    COALESCE(b.description, ''),
+                    '',
+                    'BOOK',
+                    CAST(b.id AS TEXT),
+                    b.workspaceId,
+                    b.id, 0, 0,
+                    b.updatedAt
+                FROM books b WHERE b.deletedAt IS NULL
+            """)
+
+            // Quizzes
+            db.execSQL("""
+                INSERT INTO search_index (title, subtitle, content, entityType, entityId, workspaceId, bookId, quizId, parentId, updatedAt)
+                SELECT 
+                    q.title,
+                    COALESCE(q.description, ''),
+                    COALESCE(q.category, ''),
+                    'QUIZ',
+                    CAST(q.id AS TEXT),
+                    b.workspaceId,
+                    b.id, q.id, 0,
+                    q.updatedAt
+                FROM quizzes q JOIN books b ON b.id = q.bookId
+                WHERE q.deletedAt IS NULL AND b.deletedAt IS NULL
+            """)
+
+            // Questions
+            db.execSQL("""
+                INSERT INTO search_index (title, subtitle, content, entityType, entityId, workspaceId, bookId, quizId, parentId, updatedAt)
+                SELECT 
+                    q.text,
+                    z.title,
+                    COALESCE(q.explanation, '') || ' ' || COALESCE(q.notes, '') || ' ' || COALESCE(q.additionalInfo, ''),
+                    'QUESTION',
+                    CAST(q.id AS TEXT),
+                    b.workspaceId,
+                    b.id, q.quizId, 0,
+                    q.updatedAt
+                FROM questions q 
+                JOIN quizzes z ON z.id = q.quizId 
+                JOIN books b ON b.id = z.bookId
+                WHERE q.deletedAt IS NULL AND z.deletedAt IS NULL AND b.deletedAt IS NULL
+            """)
+
+            // Flashcards
+            db.execSQL("""
+                INSERT INTO search_index (title, subtitle, content, entityType, entityId, workspaceId, bookId, quizId, parentId, updatedAt)
+                SELECT 
+                    f.frontText,
+                    d.title,
+                    COALESCE(f.backText, '') || ' ' || COALESCE(f.hint, ''),
+                    'FLASHCARD',
+                    CAST(f.id AS TEXT),
+                    b.workspaceId,
+                    b.id, 0, d.id,
+                    f.updatedAt
+                FROM flashcards f 
+                JOIN flashcard_decks d ON d.id = f.deckId 
+                JOIN books b ON b.id = d.bookId
+                WHERE f.deletedAt IS NULL AND d.deletedAt IS NULL AND b.deletedAt IS NULL
+            """)
+
+            // Mistakes
+            db.execSQL("""
+                INSERT INTO search_index (title, subtitle, content, entityType, entityId, workspaceId, bookId, quizId, parentId, updatedAt)
+                SELECT 
+                    COALESCE(m.correctConcept, q.text),
+                    m.userReason,
+                    COALESCE(m.preventionNote, '') || ' ' || COALESCE(m.selectedAnswer, '') || ' ' || COALESCE(m.correctAnswer, ''),
+                    'MISTAKE',
+                    CAST(m.id AS TEXT),
+                    b.workspaceId,
+                    m.bookId, m.quizId, 0,
+                    m.updatedAt
+                FROM mistake_log_entries m 
+                JOIN questions q ON q.id = m.questionId 
+                JOIN books b ON b.id = m.bookId
+                WHERE m.deletedAt IS NULL AND b.deletedAt IS NULL
+            """)
+
+            // Annotations
+            db.execSQL("""
+                INSERT INTO search_index (title, subtitle, content, entityType, entityId, workspaceId, bookId, quizId, parentId, updatedAt)
+                SELECT 
+                    COALESCE(a.noteBody, a.selectedText),
+                    a.ownerType,
+                    COALESCE(a.selectedText, ''),
+                    'ANNOTATION',
+                    CAST(a.id AS TEXT),
+                    b.workspaceId,
+                    a.bookId, 0, a.ownerId,
+                    a.updatedAt
+                FROM annotations a 
+                JOIN books b ON b.id = a.bookId
+                WHERE a.deletedAt IS NULL AND b.deletedAt IS NULL
+            """)
+
+            // Note blueprints
+            db.execSQL("""
+                INSERT INTO search_index (title, subtitle, content, entityType, entityId, workspaceId, bookId, quizId, parentId, updatedAt)
+                SELECT 
+                    bp.title,
+                    COALESCE(bp.summary, ''),
+                    COALESCE(bp.body, ''),
+                    'BLUEPRINT',
+                    CAST(bp.id AS TEXT),
+                    b.workspaceId,
+                    b.id, 0, 0,
+                    bp.updatedAt
+                FROM note_blueprints bp 
+                JOIN note_collections c ON c.id = bp.collectionId 
+                JOIN books b ON b.id = c.bookId
+                WHERE bp.deletedAt IS NULL AND c.deletedAt IS NULL AND b.deletedAt IS NULL
+            """)
+
+            // Slides
+            db.execSQL("""
+                INSERT INTO search_index (title, subtitle, content, entityType, entityId, workspaceId, bookId, quizId, parentId, updatedAt)
+                SELECT 
+                    s.title,
+                    c.title,
+                    COALESCE(s.body, ''),
+                    'SLIDE',
+                    CAST(s.id AS TEXT),
+                    b.workspaceId,
+                    b.id, 0, c.id,
+                    s.updatedAt
+                FROM course_slides s 
+                JOIN slideshow_courses c ON c.id = s.courseId 
+                JOIN books b ON b.id = c.bookId
+                WHERE s.deletedAt IS NULL AND c.deletedAt IS NULL AND b.deletedAt IS NULL
+            """)
+
+            // Prompt decks
+            db.execSQL("""
+                INSERT INTO search_index (title, subtitle, content, entityType, entityId, workspaceId, bookId, quizId, parentId, updatedAt)
+                SELECT 
+                    p.title,
+                    COALESCE(p.description, ''),
+                    COALESCE(p.tags, ''),
+                    'PROMPT_DECK',
+                    CAST(p.id AS TEXT),
+                    b.workspaceId,
+                    b.id, 0, 0,
+                    p.updatedAt
+                FROM prompt_decks p 
+                JOIN books b ON b.id = p.bookId
+                WHERE p.deletedAt IS NULL AND b.deletedAt IS NULL
+            """)
+
+            // Source documents
+            db.execSQL("""
+                INSERT INTO search_index (title, subtitle, content, entityType, entityId, workspaceId, bookId, quizId, parentId, updatedAt)
+                SELECT 
+                    s.title,
+                    COALESCE(s.author, ''),
+                    COALESCE(s.description, ''),
+                    'SOURCE',
+                    CAST(s.id AS TEXT),
+                    b.workspaceId,
+                    b.id, 0, 0,
+                    s.updatedAt
+                FROM source_documents s 
+                JOIN books b ON b.id = s.bookId
+                WHERE s.deletedAt IS NULL AND b.deletedAt IS NULL
+            """)
+
+            // Question assets
+            db.execSQL("""
+                INSERT INTO search_index (title, subtitle, content, entityType, entityId, workspaceId, bookId, quizId, parentId, updatedAt)
+                SELECT 
+                    a.title,
+                    COALESCE(a.description, ''),
+                    COALESCE(a.textContent, ''),
+                    'ASSET',
+                    CAST(a.id AS TEXT),
+                    b.workspaceId,
+                    a.bookId, a.quizId, 0,
+                    a.updatedAt
+                FROM question_assets a 
+                JOIN books b ON b.id = a.bookId
+                WHERE a.deletedAt IS NULL AND b.deletedAt IS NULL
+            """)
+        }
+    }
+
     val ALL = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -1035,6 +1277,9 @@ object MksMigrations {
         MIGRATION_26_27,
         MIGRATION_27_28,
         MIGRATION_28_29,
-        MIGRATION_29_30
+        MIGRATION_29_30,
+        MIGRATION_30_31,
+        MIGRATION_31_32,
+        MIGRATION_32_33
     )
 }

@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.importer.detector.ImportFormatDetector
 import com.ahmedyejam.mks.data.importer.model.ImportFormat
 import com.ahmedyejam.mks.data.importer.model.ImportMode
+import com.ahmedyejam.mks.data.importer.model.ImportResult
 import com.ahmedyejam.mks.data.importer.model.ParseStats
 import com.ahmedyejam.mks.data.importer.model.ParsedQuestion
 import com.ahmedyejam.mks.data.importer.parser.GenericImageExtractor
@@ -58,6 +59,7 @@ data class CompilerUiState(
     val stats: ParseStats = ParseStats(),
     val targetQuizId: Long? = null,
     val targetDeckId: Long? = null,
+    val lastImportResult: ImportResult? = null,
 )
 
 @HiltViewModel
@@ -529,7 +531,7 @@ class CompilerViewModel @Inject constructor(
                                     if (r.warnings.size > 3) append(" …")
                                 }
                             }
-                            _uiState.update { it.copy(successMessage = msg) }
+                            _uiState.update { it.copy(successMessage = msg, lastImportResult = r) }
                         }
                         is com.ahmedyejam.mks.data.model.MksResult.Error -> {
                             _uiState.update { it.copy(error = mksResult.message) }
@@ -543,6 +545,10 @@ class CompilerViewModel @Inject constructor(
                 _uiState.update { it.copy(error = e.message, isLoading = false) }
             }
         }
+    }
+
+    fun clearLastImportResult() {
+        _uiState.update { it.copy(lastImportResult = null, successMessage = null) }
     }
 
     private fun parseCsvFile(file: java.io.File): List<List<String>> {

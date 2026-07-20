@@ -66,6 +66,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.ahmedyejam.mks.core.ui.R
 import com.ahmedyejam.mks.data.local.entity.BookEntity
 import com.ahmedyejam.mks.data.local.entity.QuizEntity
+import com.ahmedyejam.mks.data.importer.model.ImportResult
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,6 +74,7 @@ fun CompilerDialog(
     viewModel: CompilerViewModel,
     books: List<BookEntity>,
     quizzes: List<QuizEntity> = emptyList(),
+    onUndoImport: ((ImportResult) -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -123,6 +125,34 @@ fun CompilerDialog(
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(16.dp)
                     )
+                }
+
+                uiState.lastImportResult?.let { result ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = uiState.successMessage ?: "Imported ${result.importedQuestionsCount} questions",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (onUndoImport != null) {
+                                TextButton(onClick = {
+                                    onUndoImport.invoke(result)
+                                    viewModel.clearLastImportResult()
+                                }) {
+                                    Text("Undo")
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (uiState.sheetNames.isNotEmpty()) {

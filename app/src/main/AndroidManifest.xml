@@ -58,6 +58,10 @@
                 <data android:mimeType="text/csv" />
                 <data android:mimeType="text/comma-separated-values" />
                 <data android:mimeType="text/tab-separated-values" />
+                <!-- JSON / HTML / Text files -->
+                <data android:mimeType="application/json" />
+                <data android:mimeType="text/html" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
 

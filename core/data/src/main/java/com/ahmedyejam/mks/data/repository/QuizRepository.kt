@@ -614,6 +614,8 @@ class QuizRepository
                 }
             }
 
+        fun getLatestIncompleteSession(): Flow<SessionEntity?> = sessionDao.getLatestIncompleteSession()
+
         // --- Flashcard decks and cards ---
 
         suspend fun getQuizKnowledgeSummary(quizId: Long): QuizKnowledgeSummary {

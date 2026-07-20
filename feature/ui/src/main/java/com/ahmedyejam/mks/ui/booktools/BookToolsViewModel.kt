@@ -80,7 +80,8 @@ data class BookToolsUiState(
     val successMessage: String? = null,
     val isGenerating: Boolean = false,
     val aiProviderId: String = "ollama",
-    val aiProviderName: String = "Ollama (Local)"
+    val aiProviderName: String = "Ollama (Local)",
+    val pendingPrivacyConsent: Boolean = false,
 )
 
 @HiltViewModel
@@ -747,7 +748,46 @@ class BookToolsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isGenerating = false)
     }
 
+    private var pendingPrompt: String? = null
+    private var pendingImages: List<String> = emptyList()
+    private var pendingOnUpdate: ((String) -> Unit)? = null
+
     fun generateWithOllamaStream(prompt: String, images: List<String> = emptyList(), onUpdate: (String) -> Unit) {
+        cancelGeneration()
+        generationJob = viewModelScope.launch {
+            val providerId = _uiState.value.aiProviderId
+            val isCloud = !providerId.startsWith("ollama")
+            val noticeShown = dataStoreManager.aiPrivacyNoticeShown.first()
+            if (isCloud && !noticeShown) {
+                pendingPrompt = prompt
+                pendingImages = images
+                pendingOnUpdate = onUpdate
+                _uiState.value = _uiState.value.copy(pendingPrivacyConsent = true)
+                return@launch
+            }
+            executeAiGeneration(prompt, images, onUpdate)
+        }
+    }
+
+    fun confirmPrivacyConsent() {
+        val prompt = pendingPrompt ?: return
+        val images = pendingImages
+        val onUpdate = pendingOnUpdate ?: return
+        viewModelScope.launch {
+            dataStoreManager.setAiPrivacyNoticeShown(true)
+            _uiState.value = _uiState.value.copy(pendingPrivacyConsent = false)
+            executeAiGeneration(prompt, images, onUpdate)
+        }
+    }
+
+    fun cancelPrivacyConsent() {
+        pendingPrompt = null
+        pendingImages = emptyList()
+        pendingOnUpdate = null
+        _uiState.value = _uiState.value.copy(pendingPrivacyConsent = false)
+    }
+
+    private fun executeAiGeneration(prompt: String, images: List<String>, onUpdate: (String) -> Unit) {
         cancelGeneration()
         generationJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isGenerating = true, error = null)

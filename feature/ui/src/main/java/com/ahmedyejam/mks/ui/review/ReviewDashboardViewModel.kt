@@ -62,10 +62,11 @@ class ReviewDashboardViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
+            val wsId = currentWorkspaceId.value
             runCatching {
-                val summary = repository.loadSummary()
+                val summary = repository.loadSummary(wsId)
                 val knowledgeSummary = studyRepository.getLibraryKnowledgeSummary()
-                val queue = repository.loadQueues()
+                val queue = repository.loadQueues(wsId)
                 Triple(summary, knowledgeSummary, queue)
             }.onSuccess { (summary, knowledgeSummary, queue) ->
                 _state.update { it.copy(isLoading = false, summary = summary, knowledgeSummary = knowledgeSummary, queue = queue) }
@@ -126,6 +127,26 @@ class ReviewDashboardViewModel @Inject constructor(
     fun deleteAnnotation(annotationId: Long) {
         viewModelScope.launch {
             runCatching { assetRepository.softDeleteAnnotation(annotationId) }
+        }
+    }
+
+    fun restoreMistake(mistakeId: Long) {
+        viewModelScope.launch {
+            runCatching { studyRepository.restoreMistake(mistakeId) }
+            refresh()
+        }
+    }
+
+    fun restoreAnnotation(annotationId: Long) {
+        viewModelScope.launch {
+            runCatching { assetRepository.restoreAnnotation(annotationId) }
+        }
+    }
+
+    fun undoMarkReviewed(item: ReviewQueueItem) {
+        viewModelScope.launch {
+            runCatching { repository.undoMarkReviewed(item) }
+            refresh()
         }
     }
 }

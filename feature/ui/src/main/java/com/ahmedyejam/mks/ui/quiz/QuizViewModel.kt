@@ -163,6 +163,13 @@ class QuizViewModel @Inject constructor(
     val themeMode: StateFlow<String> = dataStoreManager.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "FOREST")
 
+    val quizHintsShown: StateFlow<Boolean> = dataStoreManager.quizHintsShown
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun dismissQuizHints() {
+        viewModelScope.launch { dataStoreManager.setQuizHintsShown(true) }
+    }
+
     private var timerJob: Job? = null
     private var autoAdvanceJob: Job? = null
     private var autoAdvanceDelayMs: Long = 2000L
@@ -414,11 +421,13 @@ class QuizViewModel @Inject constructor(
             }
 
             val restoredAnswers = session?.answersByIndex?.get(_uiState.value.currentIndex)?.toSet()
+            val restoredDraft = if (restoredAnswers == null) session?.draftAnswersByIndex?.get(_uiState.value.currentIndex)?.toSet() else null
             val restoredDropped = session?.droppedOptionsByIndex?.get(_uiState.value.currentIndex)?.toSet()
             val restoredVisibleCount = session?.visibleOptionsCountByIndex?.get(_uiState.value.currentIndex)
             
             prepareQuestion(
                 restoredSelection = restoredAnswers,
+                restoredDraft = restoredDraft,
                 restoredDropped = restoredDropped,
                 restoredVisibleCount = restoredVisibleCount
             )
@@ -435,11 +444,14 @@ class QuizViewModel @Inject constructor(
      * Prepares the state for the current question, including option shuffling.
      *
      * @param restoredSelection Previously selected options if resuming.
+     * @param restoredSelection Previously submitted answer if resuming.
+     * @param restoredDraft In-progress selection not yet submitted, if resuming.
      * @param restoredDropped Previously dropped options if resuming.
      * @param restoredVisibleCount Number of visible options if resuming in one-by-one mode.
      */
     private fun prepareQuestion(
         restoredSelection: Set<Int>? = null,
+        restoredDraft: Set<Int>? = null,
         restoredDropped: Set<Int>? = null,
         restoredVisibleCount: Int? = null
     ) {
@@ -460,12 +472,13 @@ class QuizViewModel @Inject constructor(
         
         val isAnswered = restoredSelection != null
         val isCorrect = restoredSelection != null && question.correctAnswers.toSet() == restoredSelection
+        val effectiveSelection = restoredSelection ?: restoredDraft ?: emptySet()
         
         _uiState.update {
             it.copy(
                 shuffledOptions = processedOptions.map { pair -> pair.second },
                 optionMapping = processedOptions.map { pair -> pair.first },
-                selectedOptions = restoredSelection ?: emptySet(),
+                selectedOptions = effectiveSelection,
                 isAnswered = isAnswered,
                 isCorrect = isCorrect,
                 droppedOptions = restoredDropped ?: emptySet(),
@@ -835,6 +848,7 @@ class QuizViewModel @Inject constructor(
             viewModelScope.launch {
                 val session = state.sessionId?.let { quizRepository.getSessionById(it) }
                 val restoredAnswers = session?.answersByIndex?.get(index)?.toSet()
+                val restoredDraft = if (restoredAnswers == null) session?.draftAnswersByIndex?.get(index)?.toSet() else null
                 val restoredDropped = session?.droppedOptionsByIndex?.get(index)?.toSet()
                 val restoredVisibleCount = session?.visibleOptionsCountByIndex?.get(index)
 
@@ -842,6 +856,7 @@ class QuizViewModel @Inject constructor(
                 
                 prepareQuestion(
                     restoredSelection = restoredAnswers,
+                    restoredDraft = restoredDraft,
                     restoredDropped = restoredDropped,
                     restoredVisibleCount = restoredVisibleCount
                 )
@@ -895,17 +910,27 @@ class QuizViewModel @Inject constructor(
         if (currentState.isRapidMode && currentQuestion.type == QuestionType.SINGLE_CHOICE) {
             submitSingleChoice(originalIndex, currentQuestion, currentState)
         } else {
-            _uiState.update { state ->
-                val newSelection = if (currentQuestion.type == QuestionType.SINGLE_CHOICE) {
-                    setOf(originalIndex)
+            val newSelection = if (currentQuestion.type == QuestionType.SINGLE_CHOICE) {
+                setOf(originalIndex)
+            } else {
+                if (currentState.selectedOptions.contains(originalIndex)) {
+                    currentState.selectedOptions - originalIndex
                 } else {
-                    if (state.selectedOptions.contains(originalIndex)) {
-                        state.selectedOptions - originalIndex
-                    } else {
-                        state.selectedOptions + originalIndex
+                    currentState.selectedOptions + originalIndex
+                }
+            }
+            _uiState.update { state -> state.copy(selectedOptions = newSelection) }
+            
+            val currentIndex = currentState.currentIndex
+            viewModelScope.launch {
+                currentState.sessionId?.let { sessionId ->
+                    sessionMutex.withLock {
+                        val session = quizRepository.getSessionById(sessionId) ?: return@withLock
+                        val updatedDrafts = session.draftAnswersByIndex.toMutableMap()
+                        updatedDrafts[currentIndex] = newSelection.toList()
+                        quizRepository.updateSession(session.copy(draftAnswersByIndex = updatedDrafts))
                     }
                 }
-                state.copy(selectedOptions = newSelection)
             }
         }
     }
@@ -1097,6 +1122,10 @@ class QuizViewModel @Inject constructor(
                     val updatedAnswersByIndex = currentSession.answersByIndex.toMutableMap()
                     updatedAnswersByIndex[currentIndex] = selectedOptions.toList()
 
+                    // Clear the draft for this index now that the answer is submitted
+                    val updatedDrafts = currentSession.draftAnswersByIndex.toMutableMap()
+                    updatedDrafts.remove(currentIndex)
+
                     val updatedVisible = currentSession.visibleOptionsCountByIndex.toMutableMap()
                     updatedVisible[currentIndex] = shuffledOptionsSize
                     
@@ -1133,6 +1162,7 @@ class QuizViewModel @Inject constructor(
                             incorrectCount = newIncorrectCount,
                             answers = updatedAnswersById,
                             answersByIndex = updatedAnswersByIndex,
+                            draftAnswersByIndex = updatedDrafts,
                             visibleOptionsCountByIndex = updatedVisible,
                             questionIds = updatedQuestionIds,
                             resultTaxonomy = updatedTaxonomy,
@@ -1241,10 +1271,17 @@ class QuizViewModel @Inject constructor(
 
             viewModelScope.launch {
                 currentState.sessionId?.let { sessionId ->
-                    quizRepository.getSessionById(sessionId)?.let { session ->
+                    sessionMutex.withLock {
+                        val session = quizRepository.getSessionById(sessionId) ?: return@withLock
                         val updatedDropped = session.droppedOptionsByIndex.toMutableMap()
                         updatedDropped[currentIndex] = nextDropped.toList()
-                        quizRepository.updateSession(session.copy(droppedOptionsByIndex = updatedDropped))
+                        val updatedDrafts = session.draftAnswersByIndex.toMutableMap()
+                        updatedDrafts[currentIndex] = (updatedDrafts[currentIndex] ?: emptyList()).filterNot { it == originalIndex }
+                        if (updatedDrafts[currentIndex].isNullOrEmpty()) updatedDrafts.remove(currentIndex)
+                        quizRepository.updateSession(session.copy(
+                            droppedOptionsByIndex = updatedDropped,
+                            draftAnswersByIndex = updatedDrafts
+                        ))
                     }
                 }
             }
@@ -1266,6 +1303,7 @@ class QuizViewModel @Inject constructor(
             viewModelScope.launch {
                 val session = currentState.sessionId?.let { quizRepository.getSessionById(it) }
                 val restoredAnswers = session?.answersByIndex?.get(nextIndex)?.toSet()
+                val restoredDraft = if (restoredAnswers == null) session?.draftAnswersByIndex?.get(nextIndex)?.toSet() else null
                 val restoredDropped = session?.droppedOptionsByIndex?.get(nextIndex)?.toSet()
                 val restoredVisibleCount = session?.visibleOptionsCountByIndex?.get(nextIndex)
 
@@ -1282,13 +1320,14 @@ class QuizViewModel @Inject constructor(
                 
                 val isAnswered = restoredAnswers != null
                 val isCorrect = restoredAnswers != null && question.correctAnswers.toSet() == restoredAnswers
+                val effectiveSelection = restoredAnswers ?: restoredDraft ?: emptySet()
                 
                 _uiState.update {
                     it.copy(
                         currentIndex = nextIndex,
                         shuffledOptions = processedOptions.map { pair -> pair.second },
                         optionMapping = processedOptions.map { pair -> pair.first },
-                        selectedOptions = restoredAnswers ?: emptySet(),
+                        selectedOptions = effectiveSelection,
                         isAnswered = isAnswered,
                         isCorrect = isCorrect,
                         droppedOptions = restoredDropped ?: emptySet(),

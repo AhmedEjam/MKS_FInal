@@ -13,6 +13,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SupportAgent
@@ -57,7 +58,9 @@ fun LibraryTopBar(
     onOverflowMenuToggle: (Boolean) -> Unit,
     onContactClick: () -> Unit,
     onWorkspaceManagerClick: () -> Unit,
-    onTrashBinClick: () -> Unit
+    onTrashBinClick: () -> Unit,
+    onGlobalSearchClick: () -> Unit = {},
+    onReviewDashboardClick: () -> Unit = {},
 ) {
     val tokens = LocalMksDesignTokens.current
     MediumTopAppBar(
@@ -152,6 +155,22 @@ fun LibraryTopBar(
                             onClick = {
                                 onOverflowMenuToggle(false)
                                 onSearchClick()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Global Search") },
+                            leadingIcon = { Icon(Icons.Rounded.Search, null) },
+                            onClick = {
+                                onOverflowMenuToggle(false)
+                                onGlobalSearchClick()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Review Dashboard") },
+                            leadingIcon = { Icon(Icons.Rounded.Refresh, null) },
+                            onClick = {
+                                onOverflowMenuToggle(false)
+                                onReviewDashboardClick()
                             }
                         )
                         DropdownMenuItem(

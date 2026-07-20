@@ -67,6 +67,8 @@ class DataStoreManager @Inject constructor(
         private val AI_VISION_MODEL = stringPreferencesKey("ai_vision_model")
         private val AI_MCQ_REVIEW_ENABLED = booleanPreferencesKey("ai_mcq_review_enabled")
         private val AI_MCQ_EXTRACTION_MODE = stringPreferencesKey("ai_mcq_extraction_mode")
+        private val AI_PRIVACY_NOTICE_SHOWN = booleanPreferencesKey("ai_privacy_notice_shown")
+        private val QUIZ_HINTS_SHOWN = booleanPreferencesKey("quiz_hints_shown")
 
         private val FCM_TOKEN = stringPreferencesKey("fcm_token")
     }
@@ -228,10 +230,10 @@ class DataStoreManager @Inject constructor(
             preferences[AI_BASE_URL] ?: "http://10.0.2.2:11434/v1"
         }.distinctUntilChanged()
 
-    /** Bearer API key (empty string for Ollama/local providers). */
+    /** Bearer API key (empty string for Ollama/local providers). Encrypted at rest via Android Keystore. */
     val aiApiKey: Flow<String> =
         context.dataStore.data.map { preferences ->
-            preferences[AI_API_KEY] ?: ""
+            preferences[AI_API_KEY]?.let { ApiKeyCrypto.decrypt(it) } ?: ""
         }.distinctUntilChanged()
 
     /** Chat/text model name (used for MCQ extraction, generation, review). */
@@ -256,6 +258,16 @@ class DataStoreManager @Inject constructor(
     val aiMcqExtractionMode: Flow<String> =
         context.dataStore.data.map { preferences ->
             preferences[AI_MCQ_EXTRACTION_MODE] ?: "full"
+        }.distinctUntilChanged()
+
+    val aiPrivacyNoticeShown: Flow<Boolean> =
+        context.dataStore.data.map { preferences ->
+            preferences[AI_PRIVACY_NOTICE_SHOWN] ?: false
+        }.distinctUntilChanged()
+
+    val quizHintsShown: Flow<Boolean> =
+        context.dataStore.data.map { preferences ->
+            preferences[QUIZ_HINTS_SHOWN] ?: false
         }.distinctUntilChanged()
 
     suspend fun setLibrarySortOption(option: String) {
@@ -379,7 +391,7 @@ class DataStoreManager @Inject constructor(
     }
 
     suspend fun setAiApiKey(apiKey: String) {
-        context.dataStore.edit { preferences -> preferences[AI_API_KEY] = apiKey }
+        context.dataStore.edit { preferences -> preferences[AI_API_KEY] = ApiKeyCrypto.encrypt(apiKey) }
     }
 
     suspend fun setAiChatModel(model: String) {
@@ -398,6 +410,14 @@ class DataStoreManager @Inject constructor(
         context.dataStore.edit { preferences ->
             preferences[AI_MCQ_EXTRACTION_MODE] = if (mode == "simple") "simple" else "full"
         }
+    }
+
+    suspend fun setAiPrivacyNoticeShown(shown: Boolean) {
+        context.dataStore.edit { preferences -> preferences[AI_PRIVACY_NOTICE_SHOWN] = shown }
+    }
+
+    suspend fun setQuizHintsShown(shown: Boolean) {
+        context.dataStore.edit { preferences -> preferences[QUIZ_HINTS_SHOWN] = shown }
     }
 
     suspend fun saveDefaultSessionSettings(

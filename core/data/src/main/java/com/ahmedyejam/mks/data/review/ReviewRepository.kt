@@ -1,12 +1,16 @@
 package com.ahmedyejam.mks.data.review
 
+import com.ahmedyejam.mks.data.local.dao.AnnotationDao
+import com.ahmedyejam.mks.data.local.dao.BookDao
 import com.ahmedyejam.mks.data.local.dao.CourseSlideDao
 import com.ahmedyejam.mks.data.local.dao.FlashcardDao
 import com.ahmedyejam.mks.data.local.dao.MistakeLogDao
 import com.ahmedyejam.mks.data.local.dao.NoteBlueprintDao
 import com.ahmedyejam.mks.data.local.dao.QuestionDao
+import com.ahmedyejam.mks.data.local.dao.SlideshowCourseDao
 import com.ahmedyejam.mks.ui.MksRoutes
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,25 +22,30 @@ class ReviewRepository @Inject constructor(
     private val mistakeLogDao: MistakeLogDao,
     private val questionDao: QuestionDao,
     private val courseSlideDao: CourseSlideDao,
+    private val annotationDao: AnnotationDao,
+    private val slideshowCourseDao: SlideshowCourseDao,
+    private val bookDao: BookDao,
 ) {
-    suspend fun loadSummary(now: Long = System.currentTimeMillis()): ReviewDashboardSummary =
+    suspend fun loadSummary(workspaceId: Long, now: Long = System.currentTimeMillis()): ReviewDashboardSummary =
         withContext(Dispatchers.IO) {
+            if (workspaceId <= 0L) return@withContext ReviewDashboardSummary()
             val weakCutoff = now - 7L * 24L * 60L * 60L * 1000L
             ReviewDashboardSummary(
-                dueFlashcards = flashcardDao.countDueFlashcards(now),
-                dueBlueprints = noteBlueprintDao.countDueBlueprints(now),
-                dueMistakes = mistakeLogDao.countDueMistakes(now),
-                pendingMistakes = mistakeLogDao.countPendingMistakes(now),
-                markedQuestions = questionDao.getMarkedQuestionsForReview(now, 200).size,
-                weakQuestions = questionDao.getWeakQuestionsDue(weakCutoff, 200).size,
-                unfinishedSlides = courseSlideDao.countUnfinishedSlides(),
+                dueFlashcards = flashcardDao.countDueFlashcardsByWorkspace(now, workspaceId),
+                dueBlueprints = noteBlueprintDao.countDueBlueprintsByWorkspace(now, workspaceId),
+                dueMistakes = mistakeLogDao.countDueMistakesByWorkspace(now, workspaceId),
+                pendingMistakes = mistakeLogDao.countPendingMistakesByWorkspace(now, workspaceId),
+                markedQuestions = questionDao.getMarkedQuestionsForReviewByWorkspace(now, workspaceId, 200).size,
+                weakQuestions = questionDao.getWeakQuestionsDueByWorkspace(weakCutoff, workspaceId, 200).size,
+                unfinishedSlides = courseSlideDao.countUnfinishedSlidesByWorkspace(workspaceId),
             )
         }
 
-    suspend fun loadQueues(now: Long = System.currentTimeMillis()): List<ReviewQueueItem> =
+    suspend fun loadQueues(workspaceId: Long, now: Long = System.currentTimeMillis()): List<ReviewQueueItem> =
         withContext(Dispatchers.IO) {
+            if (workspaceId <= 0L) return@withContext emptyList()
             val flashcards =
-                flashcardDao.getDueFlashcards(now, 20).map {
+                flashcardDao.getDueFlashcardsByWorkspace(now, workspaceId, 20).map {
                     ReviewQueueItem(
                         it.id.toString(),
                         ReviewQueueType.FLASHCARD,
@@ -47,7 +56,7 @@ class ReviewRepository @Inject constructor(
                     )
                 }
             val blueprints =
-                noteBlueprintDao.getDueBlueprints(now, 20).map {
+                noteBlueprintDao.getDueBlueprintsByWorkspace(now, workspaceId, 20).map {
                     ReviewQueueItem(
                         it.id.toString(),
                         ReviewQueueType.BLUEPRINT,
@@ -58,7 +67,7 @@ class ReviewRepository @Inject constructor(
                     )
                 }
             val mistakes =
-                mistakeLogDao.getDueMistakes(now, 20).map {
+                mistakeLogDao.getDueMistakesByWorkspace(now, workspaceId, 20).map {
                     ReviewQueueItem(
                         it.id.toString(),
                         ReviewQueueType.MISTAKE,
@@ -69,7 +78,7 @@ class ReviewRepository @Inject constructor(
                     )
                 }
             val marked =
-                questionDao.getMarkedQuestionsForReview(now, 20).map {
+                questionDao.getMarkedQuestionsForReviewByWorkspace(now, workspaceId, 20).map {
                     ReviewQueueItem(
                         it.id.toString(),
                         ReviewQueueType.MARKED_QUESTION,
@@ -81,7 +90,7 @@ class ReviewRepository @Inject constructor(
                 }
             val weakCutoff = now - 7L * 24L * 60L * 60L * 1000L
             val weak =
-                questionDao.getWeakQuestionsDue(weakCutoff, 20).map {
+                questionDao.getWeakQuestionsDueByWorkspace(weakCutoff, workspaceId, 20).map {
                     ReviewQueueItem(
                         it.id.toString(),
                         ReviewQueueType.WEAK_QUESTION,
@@ -91,7 +100,30 @@ class ReviewRepository @Inject constructor(
                         MksRoutes.quizQuestions(it.quizId),
                     )
                 }
-            flashcards + blueprints + mistakes + marked + weak
+            val unfinishedSlides =
+                courseSlideDao.getUnfinishedSlidesByWorkspace(workspaceId, 20).mapNotNull { slide ->
+                    val course = slideshowCourseDao.getCourseById(slide.courseId) ?: return@mapNotNull null
+                    ReviewQueueItem(
+                        slide.id.toString(),
+                        ReviewQueueType.UNFINISHED_SLIDE,
+                        slide.title.take(90),
+                        course.title,
+                        slide.updatedAt,
+                        MksRoutes.slideshow(course.id, slide.id),
+                    )
+                }
+            val annotations =
+                annotationDao.getAnnotationsByWorkspaceId(workspaceId).first().take(20).map {
+                    ReviewQueueItem(
+                        it.id.toString(),
+                        ReviewQueueType.ANNOTATION,
+                        (it.selectedText ?: it.noteBody ?: "Annotation #${it.id}").take(90),
+                        it.noteBody?.take(120),
+                        it.updatedAt,
+                        null,
+                    )
+                }
+            flashcards + blueprints + mistakes + marked + weak + unfinishedSlides + annotations
         }
 
     suspend fun markReviewed(item: ReviewQueueItem) =
@@ -104,6 +136,22 @@ class ReviewRepository @Inject constructor(
                 ReviewQueueType.MISTAKE -> mistakeLogDao.markFixed(itemId, now)
                 ReviewQueueType.MARKED_QUESTION -> questionDao.clearQuestionMark(itemId, now)
                 ReviewQueueType.WEAK_QUESTION -> questionDao.markQuestionReviewed(itemId, now)
+                ReviewQueueType.UNFINISHED_SLIDE -> {
+                    val slide = courseSlideDao.getSlideById(itemId)
+                    if (slide != null) courseSlideDao.updateSlide(slide.copy(isCompleted = true, updatedAt = now))
+                }
+                ReviewQueueType.ANNOTATION -> Unit
+            }
+        }
+
+    suspend fun undoMarkReviewed(item: ReviewQueueItem) =
+        withContext(Dispatchers.IO) {
+            val itemId = item.id.toLongOrNull() ?: return@withContext
+            when (item.type) {
+                ReviewQueueType.UNFINISHED_SLIDE -> {
+                    val slide = courseSlideDao.getSlideById(itemId)
+                    if (slide != null) courseSlideDao.updateSlide(slide.copy(isCompleted = false, updatedAt = System.currentTimeMillis()))
+                }
                 else -> Unit
             }
         }

@@ -27,6 +27,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -35,6 +39,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,13 +76,75 @@ fun ReviewDashboardScreen(
     val annotations by viewModel.annotations.collectAsState(initial = emptyList())
     val mistakes by viewModel.mistakes.collectAsState(initial = emptyList())
 
+    val snackbarHostState = remember { SnackbarHostState() }
     var selectedTab by remember { mutableStateOf(ReviewTab.QUEUE) }
     var itemToSnooze by remember { mutableStateOf<Any?>(null) } // Can be ReviewQueueItem or MistakeLogEntryEntity
     var editingAnnotation by remember { mutableStateOf<AnnotationEntity?>(null) }
+    var mistakeToDelete by remember { mutableStateOf<MistakeLogEntryEntity?>(null) }
+    var annotationToDelete by remember { mutableStateOf<AnnotationEntity?>(null) }
+    var pendingUndoMistake by remember { mutableStateOf<MistakeLogEntryEntity?>(null) }
+    var pendingUndoAnnotation by remember { mutableStateOf<AnnotationEntity?>(null) }
+
+    // Deep link: switch to Mistakes tab when focusedMistakeId is provided
+    LaunchedEffect(focusedMistakeId) {
+        if (focusedMistakeId != null) {
+            selectedTab = ReviewTab.MISTAKES
+        }
+    }
+
+    // Undo for mistake deletion
+    LaunchedEffect(pendingUndoMistake) {
+        if (pendingUndoMistake != null) {
+            val mistake = pendingUndoMistake!!
+            val result = snackbarHostState.showSnackbar(
+                message = "Mistake deleted",
+                actionLabel = "Undo",
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.restoreMistake(mistake.id)
+            }
+            pendingUndoMistake = null
+        }
+    }
+
+    // Undo for annotation deletion
+    LaunchedEffect(pendingUndoAnnotation) {
+        if (pendingUndoAnnotation != null) {
+            val annotation = pendingUndoAnnotation!!
+            val result = snackbarHostState.showSnackbar(
+                message = "Annotation deleted",
+                actionLabel = "Undo",
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.restoreAnnotation(annotation.id)
+            }
+            pendingUndoAnnotation = null
+        }
+    }
+
+    // Undo for "Marked reviewed"
+    var pendingUndoReviewed by remember { mutableStateOf<ReviewQueueItem?>(null) }
+    LaunchedEffect(pendingUndoReviewed) {
+        if (pendingUndoReviewed != null) {
+            val item = pendingUndoReviewed!!
+            val result = snackbarHostState.showSnackbar(
+                message = "Marked reviewed",
+                actionLabel = "Undo",
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.undoMarkReviewed(item)
+            }
+            pendingUndoReviewed = null
+        }
+    }
 
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Review Dashboard") },
@@ -129,7 +196,10 @@ fun ReviewDashboardScreen(
                                 items(state.queue, key = { it.type.name + it.id }) { item ->
                                     ReviewQueueCard(
                                         item = item,
-                                        onMarkReviewed = { viewModel.markReviewed(item) },
+                                        onMarkReviewed = {
+                                            viewModel.markReviewed(item)
+                                            pendingUndoReviewed = item
+                                        },
                                         onSnoozeOneWeek = { viewModel.snoozeOneWeek(item) },
                                         onSnoozeCustom = { itemToSnooze = item },
                                         onOpenRoute = onOpenRoute
@@ -152,7 +222,7 @@ fun ReviewDashboardScreen(
                                         dateFormat = dateFormat,
                                         onToggleFixed = { viewModel.markMistakeFixed(mistake.id) },
                                         onSnooze = { itemToSnooze = mistake },
-                                        onDelete = { viewModel.deleteMistake(mistake) }
+                                        onDelete = { mistakeToDelete = mistake }
                                     )
                                 }
                             }
@@ -170,7 +240,7 @@ fun ReviewDashboardScreen(
                                     AnnotationCard(
                                         annotation = annotation,
                                         onEdit = { editingAnnotation = annotation },
-                                        onDelete = { viewModel.deleteAnnotation(annotation.id) }
+                                        onDelete = { annotationToDelete = annotation }
                                     )
                                 }
                             }
@@ -239,6 +309,44 @@ fun ReviewDashboardScreen(
                 TextButton(onClick = { editingAnnotation = null }) {
                     Text("Cancel")
                 }
+            }
+        )
+    }
+
+    // Mistake delete confirmation
+    mistakeToDelete?.let { mistake ->
+        AlertDialog(
+            onDismissRequest = { mistakeToDelete = null },
+            title = { Text("Delete Mistake") },
+            text = { Text("Are you sure you want to delete this mistake entry?") },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.deleteMistake(mistake)
+                    pendingUndoMistake = mistake
+                    mistakeToDelete = null
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { mistakeToDelete = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Annotation delete confirmation
+    annotationToDelete?.let { annotation ->
+        AlertDialog(
+            onDismissRequest = { annotationToDelete = null },
+            title = { Text("Delete Annotation") },
+            text = { Text("Are you sure you want to delete this annotation?") },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.deleteAnnotation(annotation.id)
+                    pendingUndoAnnotation = annotation
+                    annotationToDelete = null
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { annotationToDelete = null }) { Text("Cancel") }
             }
         )
     }

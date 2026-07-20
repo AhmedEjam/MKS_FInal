@@ -24,6 +24,28 @@ interface CourseSlideDao {
     @Query("SELECT COUNT(*) FROM course_slides WHERE deletedAt IS NULL AND isCompleted = 0")
     suspend fun countUnfinishedSlides(): Int
 
+    @Query("SELECT * FROM course_slides WHERE deletedAt IS NULL AND isCompleted = 0 ORDER BY updatedAt DESC LIMIT :limit")
+    suspend fun getUnfinishedSlides(limit: Int): List<CourseSlideEntity>
+
+    @Query("""
+        SELECT s.* FROM course_slides s
+        JOIN slideshow_courses c ON s.courseId = c.id
+        JOIN books b ON c.bookId = b.id
+        WHERE s.deletedAt IS NULL AND c.deletedAt IS NULL AND b.deletedAt IS NULL AND b.workspaceId = :workspaceId
+        AND s.isCompleted = 0
+        ORDER BY s.updatedAt DESC LIMIT :limit
+    """)
+    suspend fun getUnfinishedSlidesByWorkspace(workspaceId: Long, limit: Int): List<CourseSlideEntity>
+
+    @Query("""
+        SELECT COUNT(*) FROM course_slides s
+        JOIN slideshow_courses c ON s.courseId = c.id
+        JOIN books b ON c.bookId = b.id
+        WHERE s.deletedAt IS NULL AND c.deletedAt IS NULL AND b.deletedAt IS NULL AND b.workspaceId = :workspaceId
+        AND s.isCompleted = 0
+    """)
+    suspend fun countUnfinishedSlidesByWorkspace(workspaceId: Long): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSlide(slide: CourseSlideEntity): Long
 

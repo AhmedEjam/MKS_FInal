@@ -14,6 +14,9 @@ interface AnnotationDao {
     @Query("SELECT * FROM annotations WHERE deletedAt IS NULL ORDER BY updatedAt DESC")
     fun getAllAnnotations(): Flow<List<AnnotationEntity>>
 
+    @Query("SELECT * FROM annotations WHERE deletedAt IS NULL ORDER BY updatedAt DESC LIMIT :limit")
+    suspend fun getRecentAnnotations(limit: Int): List<AnnotationEntity>
+
     @Query("SELECT * FROM annotations WHERE workspaceId = :workspaceId AND deletedAt IS NULL ORDER BY updatedAt DESC")
     fun getAnnotationsByWorkspaceId(workspaceId: Long): Flow<List<AnnotationEntity>>
 

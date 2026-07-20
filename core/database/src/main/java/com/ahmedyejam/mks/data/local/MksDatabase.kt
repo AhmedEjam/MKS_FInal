@@ -41,11 +41,12 @@ import com.ahmedyejam.mks.data.local.entity.QuizEntity
 import com.ahmedyejam.mks.data.local.entity.SessionEntity
 import com.ahmedyejam.mks.data.local.entity.SlideshowCourseEntity
 import com.ahmedyejam.mks.data.local.entity.SourceDocumentEntity
+import com.ahmedyejam.mks.data.local.entity.StudyRunEntity
 import com.ahmedyejam.mks.data.local.entity.StudySessionEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
 
-const val MKS_DATABASE_VERSION = 30
+const val MKS_DATABASE_VERSION = 33
 
 @Database(
     entities = [
@@ -74,7 +75,8 @@ const val MKS_DATABASE_VERSION = 30
         MistakeLogEntryEntity::class,
         AnnotationEntity::class,
         NoteCollectionEntity::class,
-        StudySessionEntity::class
+        StudySessionEntity::class,
+        StudyRunEntity::class
     ],
     version = MKS_DATABASE_VERSION,
     exportSchema = true
@@ -107,6 +109,8 @@ abstract class MksDatabase : RoomDatabase() {
     abstract fun annotationDao(): AnnotationDao
     abstract fun noteCollectionDao(): com.ahmedyejam.mks.data.local.dao.NoteCollectionDao
     abstract fun studySessionDao(): com.ahmedyejam.mks.data.local.dao.StudySessionDao
+    abstract fun studyRunDao(): com.ahmedyejam.mks.data.local.dao.StudyRunDao
+    abstract fun searchIndexDao(): com.ahmedyejam.mks.data.local.dao.SearchIndexDao
 
     companion object {
         const val DATABASE_NAME = "mks_database"
@@ -117,6 +121,9 @@ abstract class MksDatabase : RoomDatabase() {
         val MIGRATION_27_28 = MksMigrations.MIGRATION_27_28
         val MIGRATION_28_29 = MksMigrations.MIGRATION_28_29
         val MIGRATION_29_30 = MksMigrations.MIGRATION_29_30
+        val MIGRATION_30_31 = MksMigrations.MIGRATION_30_31
+        val MIGRATION_31_32 = MksMigrations.MIGRATION_31_32
+        val MIGRATION_32_33 = MksMigrations.MIGRATION_32_33
 
         fun addColumnIfMissing(
             db: androidx.sqlite.db.SupportSQLiteDatabase,

@@ -50,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -101,6 +102,14 @@ fun SettingsScreen(
 
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
     var showClearCategoriesDialog by rememberSaveable { mutableStateOf(false) }
+
+    val exportMessage by viewModel.exportMessage.collectAsState(initial = null)
+    LaunchedEffect(exportMessage) {
+        if (!exportMessage.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(exportMessage!!)
+            viewModel.clearExportMessage()
+        }
+    }
 
     BackHandler(onBack = onBack)
 
@@ -179,7 +188,7 @@ fun SettingsScreen(
             }
 
             var showProviderConfig by remember { mutableStateOf(false) }
-            val currentProviderId by dataStoreManager.aiProviderId.collectAsState(initial = "ollama_local")
+            val currentProviderId by dataStoreManager.aiProviderId.collectAsState(initial = "ollama")
             val currentBaseUrl by dataStoreManager.aiBaseUrl.collectAsState(initial = "")
             val currentApiKey by dataStoreManager.aiApiKey.collectAsState(initial = "")
             val currentModel by dataStoreManager.aiChatModel.collectAsState(initial = "")
@@ -196,7 +205,7 @@ fun SettingsScreen(
 
             if (showProviderConfig) {
                 val currentConfig = com.ahmedyejam.mks.data.model.AiProviderConfig(
-                    providerId = currentProviderId ?: "ollama_local",
+                    providerId = currentProviderId ?: "ollama",
                     baseUrl = currentBaseUrl ?: "",
                     apiKey = currentApiKey ?: "",
                     model = currentModel ?: ""
@@ -552,22 +561,42 @@ fun SettingsScreen(
     }
 
     if (showResetDialog) {
+        var resetConfirmText by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
             title = { Text(stringResource(R.string.reset_database_title)) },
-            text = { Text(stringResource(R.string.reset_database_msg)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.reset_database_msg))
+                    Text(
+                        text = "Type DELETE to confirm. This will permanently erase all books, quizzes, questions, and progress.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    OutlinedTextField(
+                        value = resetConfirmText,
+                        onValueChange = { resetConfirmText = it },
+                        label = { Text("Type DELETE") },
+                        isError = resetConfirmText.isNotEmpty() && resetConfirmText != "DELETE",
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
             confirmButton = {
                 TextButton(
+                    enabled = resetConfirmText == "DELETE",
                     onClick = {
                         viewModel.resetDatabase()
                         showResetDialog = false
+                        resetConfirmText = ""
                     }
                 ) {
                     Text(stringResource(R.string.reset), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showResetDialog = false }) {
+                TextButton(onClick = { showResetDialog = false; resetConfirmText = "" }) {
                     Text(stringResource(R.string.cancel))
                 }
             }

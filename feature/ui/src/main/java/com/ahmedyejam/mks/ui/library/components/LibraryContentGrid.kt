@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -31,6 +32,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.FactCheck
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -77,6 +82,10 @@ fun LibraryContentGrid(
     onBookClick: (BookEntity) -> Unit,
     onBookLongClick: (BookEntity) -> Unit,
     onQuizLongClick: (QuizEntity) -> Unit,
+    onContinueClick: () -> Unit = {},
+    onReviewDueClick: () -> Unit = {},
+    onImportClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
 ) {
     LazyVerticalGrid(
         state = gridState,
@@ -96,6 +105,16 @@ fun LibraryContentGrid(
                     currentThemeMode = currentThemeMode,
                     onQuizClick = { onQuizClick(it.id) },
                     onLinkClick = onLinkClick,
+                )
+            }
+
+            item(span = { GridItemSpan(maxLineSpan) }, key = "home_action_row") {
+                HomeActionRow(
+                    hasResume = resumeQuiz != null,
+                    onContinueClick = onContinueClick,
+                    onReviewDueClick = onReviewDueClick,
+                    onImportClick = onImportClick,
+                    onSearchClick = onSearchClick,
                 )
             }
 
@@ -251,6 +270,85 @@ private fun CategoriesSection(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeActionRow(
+    hasResume: Boolean,
+    onContinueClick: () -> Unit,
+    onReviewDueClick: () -> Unit,
+    onImportClick: () -> Unit,
+    onSearchClick: () -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val tokens = LocalMksDesignTokens.current
+    val shape = RoundedCornerShape(tokens.chipRadius)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        ActionChip(
+            icon = Icons.Rounded.PlayArrow,
+            label = if (hasResume) "Continue" else "Start",
+            onClick = onContinueClick,
+            modifier = Modifier.weight(1f),
+            shape = shape,
+            colors = colors,
+        )
+        ActionChip(
+            icon = Icons.Rounded.Refresh,
+            label = "Review due",
+            onClick = onReviewDueClick,
+            modifier = Modifier.weight(1f),
+            shape = shape,
+            colors = colors,
+        )
+        ActionChip(
+            icon = Icons.Rounded.FileDownload,
+            label = "Import",
+            onClick = onImportClick,
+            modifier = Modifier.weight(1f),
+            shape = shape,
+            colors = colors,
+        )
+        ActionChip(
+            icon = Icons.Rounded.Search,
+            label = "Search",
+            onClick = onSearchClick,
+            modifier = Modifier.weight(1f),
+            shape = shape,
+            colors = colors,
+        )
+    }
+}
+
+@Composable
+private fun ActionChip(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(12.dp),
+    colors: androidx.compose.material3.ColorScheme = MaterialTheme.colorScheme,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = shape,
+        color = colors.surfaceVariant.copy(alpha = 0.5f),
+        contentColor = colors.onSurfaceVariant,
+    ) {
+        Row(
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, maxLines = 1)
         }
     }
 }

@@ -10,6 +10,7 @@ import com.ahmedyejam.mks.data.local.dao.PromptDao
 import com.ahmedyejam.mks.data.local.dao.PromptDeckDao
 import com.ahmedyejam.mks.data.local.dao.PromptRunDao
 import com.ahmedyejam.mks.data.local.dao.SlideshowCourseDao
+import com.ahmedyejam.mks.data.local.dao.StudyRunDao
 import com.ahmedyejam.mks.data.local.dao.StudySessionDao
 import dagger.Module
 import dagger.Provides
@@ -78,5 +79,11 @@ object HiltKnowledgeDaoModule {
     @Singleton
     fun provideStudySessionDao(database: MksDatabase): StudySessionDao {
         return database.studySessionDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideStudyRunDao(database: MksDatabase): StudyRunDao {
+        return database.studyRunDao()
     }
 }

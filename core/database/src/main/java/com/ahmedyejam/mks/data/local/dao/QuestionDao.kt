@@ -252,6 +252,23 @@ interface QuestionDao {
     )
     suspend fun getMarkedQuestionsForReview(now: Long, limit: Int = 50): List<QuestionEntity>
 
+    @Query(
+        """
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND b.workspaceId = :workspaceId
+          AND q.isMarked = 1 
+          AND (q.markReviewAt IS NULL OR q.markReviewAt <= :now) 
+        ORDER BY COALESCE(q.markReviewAt, q.markedAt, q.updatedAt) ASC 
+        LIMIT :limit
+    """
+    )
+    suspend fun getMarkedQuestionsForReviewByWorkspace(now: Long, workspaceId: Long, limit: Int = 50): List<QuestionEntity>
+
     @Query("SELECT * FROM questions WHERE quizId = :quizId AND deletedAt IS NULL AND isMarked = 1 ORDER BY markedAt DESC, updatedAt DESC")
     suspend fun getMarkedQuestionsByQuiz(quizId: Long): List<QuestionEntity>
 
@@ -287,6 +304,22 @@ interface QuestionDao {
         LIMIT :limit
     """)
     suspend fun getWeakQuestionsDue(cutoff: Long, limit: Int = 50): List<QuestionEntity>
+
+    @Query("""
+        SELECT q.* FROM questions q
+        INNER JOIN quizzes qz ON q.quizId = qz.id
+        INNER JOIN books b ON qz.bookId = b.id
+        WHERE q.deletedAt IS NULL 
+          AND qz.deletedAt IS NULL 
+          AND b.deletedAt IS NULL 
+          AND b.workspaceId = :workspaceId
+          AND q.attempts > 0
+          AND q.correctCount < q.attempts
+          AND q.lastStudiedAt <= :cutoff
+        ORDER BY q.lastStudiedAt ASC, q.updatedAt DESC
+        LIMIT :limit
+    """)
+    suspend fun getWeakQuestionsDueByWorkspace(cutoff: Long, workspaceId: Long, limit: Int = 50): List<QuestionEntity>
 
     @Query(
         """

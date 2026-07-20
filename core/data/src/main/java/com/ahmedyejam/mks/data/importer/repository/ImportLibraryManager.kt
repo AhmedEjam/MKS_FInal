@@ -39,6 +39,7 @@ import com.ahmedyejam.mks.data.local.entity.KnowledgeStudySessionEntity
 import com.ahmedyejam.mks.data.model.MksResult
 import com.ahmedyejam.mks.data.network.RemoteAssetPolicy
 import com.ahmedyejam.mks.data.repository.WorkspaceRepository
+import com.ahmedyejam.mks.util.MksLogger
 import com.ahmedyejam.mks.util.readTextWithLimit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -76,6 +77,9 @@ class ImportLibraryManager(
     private val validator = ImportValidator()
     private val normalizer = BundleNormalizer()
     private val mapper = LibraryMapper()
+
+    /** Tracks files written during the current import transaction for rollback compensation. */
+    private val filesWrittenDuringImport = mutableListOf<String>()
 
     private suspend fun getOrCreateDefaultWorkspaceId(): Long {
         return workspaceRepositoryProvider.get().getOrCreateDefaultWorkspace().id
@@ -504,8 +508,10 @@ class ImportLibraryManager(
         val sanitizedBundle = validation.sanitizedBundle ?: bundle
         val normalizedBundle = normalizer.normalize(sanitizedBundle)
 
-        // 3. Save to Database (Atomically)
-        return database.withTransaction {
+        // 3. Save to Database (Atomically) — with file rollback compensation
+        filesWrittenDuringImport.clear()
+        return try {
+            database.withTransaction {
             val defaultWorkspaceId = getOrCreateDefaultWorkspaceId()
             var booksCount = 0
             var updatedBooksCount = 0
@@ -1100,6 +1106,23 @@ class ImportLibraryManager(
                 }
             }
         }
+        } catch (e: Exception) {
+            // Transaction rolled back — clean up orphaned files written during the import
+            cleanupOrphanedFiles()
+            throw e
+        }
+    }
+
+    /** Deletes files that were written during a failed import transaction to prevent orphans. */
+    private fun cleanupOrphanedFiles() {
+        filesWrittenDuringImport.forEach { path ->
+            try {
+                File(path).takeIf { it.exists() }?.delete()
+            } catch (e: Exception) {
+                MksLogger.w("ImportLibraryManager", "Failed to clean up orphaned file: $path", e)
+            }
+        }
+        filesWrittenDuringImport.clear()
     }
 
     private suspend fun refreshBookStats(bookId: Long) {
@@ -1154,11 +1177,15 @@ class ImportLibraryManager(
         // If it's a data URL, save it directly via the new sanitization helper
         if (assetRef.startsWith("data:")) {
             val saved = fileManager.saveBase64AsImageDetailed(assetRef)
-            return ResolvedImageResult(
+            val result = ResolvedImageResult(
                 path = saved.getOrNull(),
                 warning = saved.exceptionOrNull()?.message,
                 importedLocally = saved.isSuccess,
             )
+            if (result.importedLocally && result.path != null) {
+                filesWrittenDuringImport.add(result.path)
+            }
+            return result
         }
 
         // Potential directories to search for assets
@@ -1171,11 +1198,15 @@ class ImportLibraryManager(
             resolveRelativeAssetPath(searchDirs, assetRef)?.let { matchedFile ->
                 matchedFile.inputStream().use { input ->
                     val saved = fileManager.saveImageDetailed(input, matchedFile.name)
-                    return ResolvedImageResult(
+                    val result = ResolvedImageResult(
                         path = saved.getOrNull(),
                         warning = saved.exceptionOrNull()?.message,
                         importedLocally = saved.isSuccess,
                     )
+                    if (result.importedLocally && result.path != null) {
+                        filesWrittenDuringImport.add(result.path)
+                    }
+                    return result
                 }
             }
 
@@ -1189,11 +1220,15 @@ class ImportLibraryManager(
                     resolveRelativeAssetPath(searchDirs, path)?.let { manifestFile ->
                         manifestFile.inputStream().use { input ->
                             val saved = fileManager.saveImageDetailed(input, manifestFile.name)
-                            return ResolvedImageResult(
+                            val result = ResolvedImageResult(
                                 path = saved.getOrNull(),
                                 warning = saved.exceptionOrNull()?.message,
                                 importedLocally = saved.isSuccess,
                             )
+                            if (result.importedLocally && result.path != null) {
+                                filesWrittenDuringImport.add(result.path)
+                            }
+                            return result
                         }
                     }
                 }
@@ -1232,11 +1267,15 @@ class ImportLibraryManager(
             if (matchedFile != null) {
                 matchedFile.inputStream().use { input ->
                     val saved = fileManager.saveImageDetailed(input, matchedFile.name)
-                    return ResolvedImageResult(
+                    val result = ResolvedImageResult(
                         path = saved.getOrNull(),
                         warning = saved.exceptionOrNull()?.message,
                         importedLocally = saved.isSuccess,
                     )
+                    if (result.importedLocally && result.path != null) {
+                        filesWrittenDuringImport.add(result.path)
+                    }
+                    return result
                 }
             }
         }
@@ -1250,6 +1289,7 @@ class ImportLibraryManager(
                     if (allowInsecureRemoteImages) RemoteAssetPolicy.UserAllowedPlainHttp else RemoteAssetPolicy.Default,
                 )
             if (localImage is MksResult.Success) {
+                filesWrittenDuringImport.add(localImage.data)
                 return ResolvedImageResult(
                     path = localImage.data,
                     warning = null,

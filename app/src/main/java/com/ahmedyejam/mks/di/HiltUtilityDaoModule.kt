@@ -9,6 +9,7 @@ import com.ahmedyejam.mks.data.local.dao.GlobalSearchDao
 import com.ahmedyejam.mks.data.local.dao.LearningSessionDao
 import com.ahmedyejam.mks.data.local.dao.MistakeLogDao
 import com.ahmedyejam.mks.data.local.dao.QuestionAssetDao
+import com.ahmedyejam.mks.data.local.dao.SearchIndexDao
 import com.ahmedyejam.mks.data.local.dao.SourceDocumentDao
 import com.ahmedyejam.mks.data.local.dao.WorkspaceDao
 import dagger.Module
@@ -48,6 +49,12 @@ object HiltUtilityDaoModule {
     @Singleton
     fun provideAnnotationDao(database: MksDatabase): AnnotationDao {
         return database.annotationDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideSearchIndexDao(database: MksDatabase): SearchIndexDao {
+        return database.searchIndexDao()
     }
 
     @Provides

@@ -46,6 +46,26 @@ interface FlashcardDao {
     """)
     suspend fun countDueFlashcards(now: Long): Int
 
+    @Query("""
+        SELECT f.* FROM flashcards f
+        JOIN flashcard_decks d ON f.deckId = d.id
+        JOIN books b ON d.bookId = b.id
+        WHERE f.deletedAt IS NULL AND d.deletedAt IS NULL AND b.deletedAt IS NULL AND b.workspaceId = :workspaceId
+        AND ((f.dueAt > 0 AND f.dueAt <= :now) OR (f.dueAt = 0 AND f.lastReviewedAt = 0))
+        ORDER BY f.dueAt ASC, f.createdAt ASC
+        LIMIT :limit
+    """)
+    suspend fun getDueFlashcardsByWorkspace(now: Long, workspaceId: Long, limit: Int = 50): List<FlashcardEntity>
+
+    @Query("""
+        SELECT COUNT(*) FROM flashcards f
+        JOIN flashcard_decks d ON f.deckId = d.id
+        JOIN books b ON d.bookId = b.id
+        WHERE f.deletedAt IS NULL AND d.deletedAt IS NULL AND b.deletedAt IS NULL AND b.workspaceId = :workspaceId
+        AND ((f.dueAt > 0 AND f.dueAt <= :now) OR (f.dueAt = 0 AND f.lastReviewedAt = 0))
+    """)
+    suspend fun countDueFlashcardsByWorkspace(now: Long, workspaceId: Long): Int
+
     @Query("UPDATE flashcards SET lastReviewedAt = :reviewedAt, dueAt = :nextDueAt, reviewCount = reviewCount + 1, updatedAt = :reviewedAt WHERE id = :id")
     suspend fun markReviewed(id: Long, reviewedAt: Long, nextDueAt: Long)
 

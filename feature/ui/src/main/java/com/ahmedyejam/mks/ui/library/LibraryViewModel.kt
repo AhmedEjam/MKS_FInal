@@ -190,9 +190,12 @@ class LibraryViewModel @Inject constructor(
     val resumeQuiz = combine(
         dataStoreManager.lastSession,
         quizRepository.getAllQuizzesFlow(),
-    ) { lastSession, list ->
-        val lastQuizId = lastSession?.first
-        val selected = lastQuizId?.let { id -> list.find { it.id == id } }
+        quizRepository.getLatestIncompleteSession(),
+    ) { lastSession, list, incompleteSession ->
+        // Prefer the quiz with the most recently active incomplete study run
+        val selected = incompleteSession?.let { session ->
+            list.find { it.id == session.quizId }
+        } ?: lastSession?.first?.let { id -> list.find { it.id == id } }
             ?: list.maxByOrNull { it.updatedAt }
         selected?.copy(coverImage = assetRepository.resolveImagePath(selected.coverImage))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -274,6 +277,29 @@ class LibraryViewModel @Inject constructor(
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Quiz '${quiz.title}' deleted"))
             } catch (e: Exception) {
                 _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to delete quiz: ${e.message}"))
+            }
+        }
+    }
+
+    fun undoImport(result: com.ahmedyejam.mks.data.importer.model.ImportResult) {
+        viewModelScope.launch {
+            try {
+                // Delete quizzes first (cascades to questions/sessions/annotations)
+                result.affectedQuizIds.forEach { quizId ->
+                    quizRepository.getQuizById(quizId)?.let { quiz ->
+                        if (quiz.deletedAt == null) quizRepository.deleteQuiz(quiz)
+                    }
+                }
+                // Then delete books
+                result.affectedBookIds.forEach { bookId ->
+                    bookRepository.getBookById(bookId)?.let { book ->
+                        if (book.deletedAt == null) bookRepository.deleteBook(book)
+                    }
+                }
+                val totalEntities = result.affectedQuizIds.size + result.affectedBookIds.size
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Import undone — $totalEntities item(s) moved to Trash"))
+            } catch (e: Exception) {
+                _uiEvent.send(LibraryUiEvent.ShowSnackbar("Failed to undo import: ${e.message}"))
             }
         }
     }

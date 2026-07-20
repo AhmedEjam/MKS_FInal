@@ -89,8 +89,8 @@ private fun SearchResultCard(result: GlobalSearchResult, onOpenRoute: (Any) -> U
                 Text(result.type.name.replace('_', ' '), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                 Text(result.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             }
-            if (!result.subtitle!!.isNullOrBlank()) Text(result.subtitle!!, style = MaterialTheme.typography.bodySmall)
-            if (!result.snippet!!.isNullOrBlank()) Text(result.snippet!!.take(180), style = MaterialTheme.typography.bodySmall)
+            result.subtitle?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            result.snippet?.takeIf { it.isNotBlank() }?.let { Text(it.take(180), style = MaterialTheme.typography.bodySmall) }
         }
     }
 }

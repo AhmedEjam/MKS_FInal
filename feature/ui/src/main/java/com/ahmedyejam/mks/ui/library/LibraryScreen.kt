@@ -21,9 +21,12 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -81,6 +84,8 @@ fun LibraryScreen(
     onCategorySelected: (String) -> Unit,
     onSettingsSelected: () -> Unit,
     onBookDashboardSelected: (Long) -> Unit = {},
+    onGlobalSearchClick: () -> Unit = {},
+    onReviewDashboardClick: () -> Unit = {},
     returnResetSignal: Int = 0,
 ) {
     val context = LocalContext.current
@@ -100,22 +105,21 @@ fun LibraryScreen(
 
     fun handleImportUri(uri: Uri, targetQuizId: Long? = null, targetBookId: Long? = null) {
         val format = importViewModel.detectFormat(uri)
-        if ((format == com.ahmedyejam.mks.data.importer.model.ImportFormat.XLSX) ||
-            (format == com.ahmedyejam.mks.data.importer.model.ImportFormat.CSV_TSV)) {
-            compilerViewModel.onFileSelected(uri, targetQuizId, activeWorkspaceId = workspaceId)
-            showCompilerDialog = true
-        } else if (format == com.ahmedyejam.mks.data.importer.model.ImportFormat.ZIP) {
+        if (format == com.ahmedyejam.mks.data.importer.model.ImportFormat.ZIP) {
             importViewModel.getImportPreview(
                 uri = uri,
                 targetBookId = targetBookId,
                 targetQuizId = targetQuizId,
             )
+        } else if (format != com.ahmedyejam.mks.data.importer.model.ImportFormat.UNKNOWN) {
+            compilerViewModel.onFileSelected(uri, targetQuizId, activeWorkspaceId = workspaceId)
+            showCompilerDialog = true
         }
     }
 
     LaunchedEffect(sharedUris) {
-        sharedUris?.firstOrNull()?.let { uri ->
-            handleImportUri(uri)
+        if (sharedUris != null) {
+            sharedUris.forEach { uri -> handleImportUri(uri) }
             onConsumedSharedUris()
         }
     }
@@ -235,8 +239,12 @@ fun LibraryScreen(
         }
         is ImportViewModel.ImportState.Loading -> {
             AlertDialog(
-                onDismissRequest = {},
-                confirmButton = {},
+                onDismissRequest = { importViewModel.resetState() },
+                confirmButton = {
+                    TextButton(onClick = { importViewModel.resetState() }) {
+                        Text("Cancel")
+                    }
+                },
                 title = { Text(state.message) },
                 text = {
                     LinearProgressIndicator(
@@ -261,7 +269,14 @@ fun LibraryScreen(
                 } else {
                     context.getString(R.string.import_successful)
                 }
-                snackbarHostState.showSnackbar(message)
+                val snackbarResult = snackbarHostState.showSnackbar(
+                    message = message,
+                    actionLabel = "Undo",
+                    duration = SnackbarDuration.Short,
+                )
+                if (snackbarResult == SnackbarResult.ActionPerformed) {
+                    viewModel.undoImport(state.result)
+                }
                 completedImportResultState.value = state.result.takeIf { (it.warnings.isNotEmpty()) || (it.skippedRecordsCount > 0) }
                 importViewModel.resetState()
             }
@@ -278,6 +293,14 @@ fun LibraryScreen(
     completedImportResult?.let { result ->
         ImportWarningsDialog(
             result = result,
+            onOpenQuiz = { quizId ->
+                completedImportResultState.value = null
+                onQuizSelected(quizId)
+            },
+            onOpenBook = { bookId ->
+                completedImportResultState.value = null
+                onBookDashboardSelected(bookId)
+            },
         ) { completedImportResultState.value = null }
     }
 
@@ -385,7 +408,9 @@ fun LibraryScreen(
                     context.startActivity(intent)
                 },
                 onWorkspaceManagerClick = { showWorkspaceManager = true },
-                onTrashBinClick = { showTrashBin = true }
+                onTrashBinClick = { showTrashBin = true },
+                onGlobalSearchClick = onGlobalSearchClick,
+                onReviewDashboardClick = onReviewDashboardClick,
             )
         },
         floatingActionButton = {
@@ -408,6 +433,9 @@ fun LibraryScreen(
                             "text/csv",
                             "text/comma-separated-values",
                             "text/tab-separated-values",
+                            "application/json",
+                            "text/html",
+                            "text/plain",
                         ),
                     )
                 },
@@ -447,6 +475,28 @@ fun LibraryScreen(
                 onBookClick = { onBookDashboardSelected(it.id) },
                 onBookLongClick = { menuBook = it },
                 onQuizLongClick = { menuQuiz = it },
+                onContinueClick = {
+                    resumeQuiz?.let { onQuizSelected(it.id) }
+                        ?: recentQuizzes.firstOrNull()?.let { onQuizSelected(it.id) }
+                },
+                onReviewDueClick = onReviewDashboardClick,
+                onImportClick = {
+                    importLauncher.launch(
+                        arrayOf(
+                            "application/zip",
+                            "application/x-zip-compressed",
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            "application/vnd.ms-excel",
+                            "text/csv",
+                            "text/comma-separated-values",
+                            "text/tab-separated-values",
+                            "application/json",
+                            "text/html",
+                            "text/plain",
+                        ),
+                    )
+                },
+                onSearchClick = { viewModel.setSearching(searching = true) },
             )
 
             AnimatedVisibility(
@@ -548,6 +598,7 @@ fun LibraryScreen(
             viewModel = compilerViewModel,
             books = books,
             quizzes = quizzes,
+            onUndoImport = { result -> viewModel.undoImport(result) },
         ) {
             showCompilerDialogState.value = false
         }

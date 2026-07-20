@@ -264,4 +264,25 @@ class SummaryViewModel @Inject constructor(
             _uiState.value.session?.id?.let { loadSummary(it) }
         }
     }
+
+    fun retryFullSession(onCreated: (quizId: Long, newSessionId: Long) -> Unit) {
+        val session = _uiState.value.session ?: return
+        viewModelScope.launch {
+            val retrySession = SessionEntity(
+                quizId = session.quizId,
+                label = "Retry: ${session.label}",
+                shuffleQuestions = session.shuffleQuestions,
+                shuffleOptions = session.shuffleOptions,
+                rapidMode = session.rapidMode,
+                repeatWrong = session.repeatWrong,
+                quizTimerSeconds = session.quizTimerSeconds,
+                questionTimerSeconds = session.questionTimerSeconds,
+                rangeFrom = session.rangeFrom,
+                rangeTo = session.rangeTo,
+                includeFilters = session.includeFilters,
+            )
+            val id = quizRepository.insertSession(retrySession)
+            onCreated(session.quizId, id)
+        }
+    }
 }

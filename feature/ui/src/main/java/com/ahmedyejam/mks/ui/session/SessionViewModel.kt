@@ -39,6 +39,68 @@ class SessionViewModel @Inject constructor(
         }
     }
 
+    private val _filteredCount = MutableStateFlow<Int?>(null)
+    val filteredCount = _filteredCount.asStateFlow()
+
+    fun updateFilteredCount(quizId: Long, filters: Set<String>, rangeFrom: Int, rangeTo: Int) {
+        viewModelScope.launch {
+            val allQuestions = quizRepository.getQuestionsByQuizId(quizId).first().filter { !it.isDropped }
+            val filtered = if (filters.isNotEmpty()) {
+                allQuestions.filter { q ->
+                    filters.any { filter ->
+                        when (filter) {
+                            "unanswered" -> q.attempts == 0
+                            "missed" -> (q.attempts > 0) && ((q.correctCount < q.attempts) || (q.lastAttemptResult == false))
+                            "marked" -> q.isMarked
+                            "categorized" -> q.categories.isNotEmpty()
+                            "uncategorized" -> q.categories.isEmpty()
+                            else -> true
+                        }
+                    }
+                }
+            } else {
+                allQuestions
+            }
+            val from = rangeFrom.coerceAtLeast(0).coerceAtMost((filtered.size - 1).coerceAtLeast(0))
+            val to = if ((rangeTo < 0) || (rangeTo >= filtered.size)) filtered.size - 1 else rangeTo
+            val count = if (filtered.isNotEmpty() && from <= to) {
+                (to - from + 1).coerceAtLeast(0)
+            } else {
+                filtered.size
+            }
+            _filteredCount.value = count
+        }
+    }
+
+    fun clearFilteredCount() {
+        _filteredCount.value = null
+    }
+
+    fun quickStart(quizId: Long, onCreated: (Long) -> Unit) {
+        viewModelScope.launch {
+            val filters = dataStoreManager.defIncludeFilters.first()
+            val shuffleQ = dataStoreManager.defShuffleQuestions.first()
+            val shuffleO = dataStoreManager.defShuffleOptions.first()
+            val rapid = dataStoreManager.defRapidMode.first()
+            val repeatWrong = dataStoreManager.defRepeatWrong.first()
+            val quizTimer = dataStoreManager.defQuizTimer.first()
+            val qTimer = dataStoreManager.defQuestionTimer.first()
+            val session = SessionEntity(
+                quizId = quizId,
+                label = "Quick Start",
+                shuffleQuestions = shuffleQ,
+                shuffleOptions = shuffleO,
+                rapidMode = rapid,
+                repeatWrong = repeatWrong,
+                quizTimerSeconds = quizTimer,
+                questionTimerSeconds = qTimer,
+                includeFilters = filters.toList(),
+            )
+            val id = quizRepository.insertSession(session)
+            onCreated(id)
+        }
+    }
+
     fun createSession(
         quizId: Long,
         label: String,

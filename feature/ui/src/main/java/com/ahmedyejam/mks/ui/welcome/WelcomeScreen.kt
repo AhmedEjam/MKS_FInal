@@ -25,6 +25,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,6 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,8 +61,11 @@ fun WelcomeScreen(
     currentLanguage: String,
     themeMode: String,
     onLanguageChanged: (String) -> Unit,
+    onThemeChanged: (String) -> Unit = {},
     onStart: () -> Unit
 ) {
+    var currentStep by remember { mutableIntStateOf(0) }
+    val totalSteps = 3
     var showFeatures by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
     val tokens = LocalMksDesignTokens.current
@@ -166,11 +171,11 @@ fun WelcomeScreen(
 
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                repeat(3) { index ->
+                repeat(totalSteps) { index ->
                     Surface(
                         shape = RoundedCornerShape(99.dp),
-                        color = if (index == 0) colors.primary else colors.outline.copy(alpha = 0.20f),
-                        modifier = Modifier.size(width = if (index == 0) 19.dp else 7.dp, height = 7.dp),
+                        color = if (index == currentStep) colors.primary else colors.outline.copy(alpha = 0.20f),
+                        modifier = Modifier.size(width = if (index == currentStep) 19.dp else 7.dp, height = 7.dp),
                         content = {}
                     )
                 }
@@ -178,30 +183,112 @@ fun WelcomeScreen(
 
             Spacer(Modifier.height(34.dp))
 
-            Button(
-                onClick = onStart,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(tokens.chipRadius),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colors.primary,
-                    contentColor = colors.onPrimary
-                )
-            ) {
-                Text(stringResource(R.string.welcome_get_started), fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.width(12.dp))
-                androidx.compose.material3.Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            TextButton(
-                onClick = { showFeatures = true },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(tokens.chipRadius)
-            ) {
-                Text(stringResource(R.string.welcome_explore_features), fontWeight = FontWeight.SemiBold)
+            // Step content
+            when (currentStep) {
+                0 -> {
+                    // Welcome / intro step — show "Next" and "Explore Features"
+                    Button(
+                        onClick = { currentStep = 1 },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(tokens.chipRadius),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colors.primary,
+                            contentColor = colors.onPrimary
+                        )
+                    ) {
+                        Text("Next", fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.width(12.dp))
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    TextButton(
+                        onClick = { showFeatures = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(tokens.chipRadius)
+                    ) {
+                        Text(stringResource(R.string.welcome_explore_features), fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                1 -> {
+                    // Theme selection step
+                    Text(
+                        text = "Choose your theme",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onSurface,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    val themeOptions = listOf(
+                        "DAWN" to "Dawn",
+                        "FOREST" to "Forest",
+                        "MIDNIGHT" to "Midnight",
+                        "LAVENDER" to "Lavender",
+                        "PLAIN_LIGHT" to "Plain Light",
+                        "PLAIN_DARK" to "Plain Dark",
+                        "SYSTEM" to "System",
+                    )
+                    themeOptions.forEach { (key, label) ->
+                        Surface(
+                            onClick = { onThemeChanged(key) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(tokens.chipRadius),
+                            color = if (themeMode == key) colors.primary.copy(alpha = 0.12f) else colors.surface.copy(alpha = 0.5f),
+                            contentColor = if (themeMode == key) colors.primary else colors.onSurface,
+                        ) {
+                            Text(
+                                text = label,
+                                modifier = Modifier.padding(vertical = 10.dp, horizontal = 16.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (themeMode == key) FontWeight.SemiBold else FontWeight.Normal,
+                            )
+                        }
+                        Spacer(Modifier.height(4.dp))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = { currentStep = 2 },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(tokens.chipRadius),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colors.primary,
+                            contentColor = colors.onPrimary
+                        )
+                    ) {
+                        Text("Next", fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.width(12.dp))
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                    }
+                }
+                else -> {
+                    // Final step — Get Started
+                    Text(
+                        text = "You're all set! Tap Get Started to create your first workspace and begin studying.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.onSurface,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(0.85f),
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    Button(
+                        onClick = onStart,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(tokens.chipRadius),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colors.primary,
+                            contentColor = colors.onPrimary
+                        )
+                    ) {
+                        Text(stringResource(R.string.welcome_get_started), fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.width(12.dp))
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                    }
+                }
             }
 
             Spacer(Modifier.weight(1f))

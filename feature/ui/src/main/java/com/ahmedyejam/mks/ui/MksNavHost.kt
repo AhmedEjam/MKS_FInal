@@ -1,6 +1,7 @@
 package com.ahmedyejam.mks.ui
 
 import android.net.Uri
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
@@ -16,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.core.os.LocaleListCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -112,7 +114,13 @@ fun MksNavHost(
                 currentLanguage = currentLanguage,
                 themeMode = currentThemeMode,
                 onLanguageChanged = { lang ->
-                    scope.launch { dataStoreManager.setLanguage(lang) }
+                    scope.launch {
+                        dataStoreManager.setLanguage(lang)
+                        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
+                    }
+                },
+                onThemeChanged = { theme ->
+                    scope.launch { dataStoreManager.setThemeMode(theme) }
                 },
             ) {
                 scope.launch { dataStoreManager.setShowWelcomeOnStartup(enabled = false) }
@@ -142,6 +150,8 @@ fun MksNavHost(
                 onCategorySelected = { category -> navController.navigate(MksRoutes.category(category)) },
                 onSettingsSelected = { navController.navigate(MksRoutes.SETTINGS) },
                 onBookDashboardSelected = { bookId -> navController.navigate(MksRoutes.bookDashboard(bookId)) },
+                onGlobalSearchClick = { navController.navigate("global_search") },
+                onReviewDashboardClick = { navController.navigate("review_dashboard") },
             )
         }
 
@@ -608,7 +618,13 @@ fun MksNavHost(
                         popUpTo("library") { inclusive = true }
                     }
                 },
-                onRetryClick = { navController.popBackStack() },
+                onRetryClick = {
+                    summaryViewModel.retryFullSession { quizId, newSessionId ->
+                        navController.navigate("quiz/$quizId?sessionId=$newSessionId") {
+                            popUpTo("library") { inclusive = false }
+                        }
+                    }
+                },
             )
         }
 

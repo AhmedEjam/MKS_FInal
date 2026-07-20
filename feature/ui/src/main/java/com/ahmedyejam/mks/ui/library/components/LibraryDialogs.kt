@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.ahmedyejam.mks.core.ui.R
@@ -116,15 +118,15 @@ fun ImportReviewDialog(
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(stringResource(R.string.books_label))
-                            Text("${preview.booksToCreate.size + preview.booksToUpdate.size}")
+                            Text("${preview.booksToCreate.size + preview.booksToUpdate.size}  (${preview.booksToCreate.size} new, ${preview.booksToUpdate.size} update)")
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(stringResource(R.string.quizzes_label))
-                            Text("${preview.quizzesToCreate.size + preview.quizzesToUpdate.size}")
+                            Text("${preview.quizzesToCreate.size + preview.quizzesToUpdate.size}  (${preview.quizzesToCreate.size} new, ${preview.quizzesToUpdate.size} update)")
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(stringResource(R.string.questions_label))
-                            Text("${preview.questionsToCreate.size + preview.questionsToUpdate.size}")
+                            Text("${preview.questionsToCreate.size + preview.questionsToUpdate.size}  (${preview.questionsToCreate.size} new, ${preview.questionsToUpdate.size} update)")
                         }
                     }
                 }
@@ -164,7 +166,14 @@ fun ImportReviewDialog(
                 ) {
                     Checkbox(checked = allowInsecureHttpImages, onCheckedChange = { allowInsecureHttpImages = it })
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.allow_insecure_images), style = MaterialTheme.typography.bodyMedium)
+                    Column {
+                        Text(stringResource(R.string.allow_insecure_images), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = "Allows downloading images over unencrypted HTTP. Only enable for trusted local sources.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         },
@@ -184,6 +193,8 @@ fun ImportReviewDialog(
 @Composable
 fun ImportWarningsDialog(
     result: ImportResult,
+    onOpenQuiz: (Long) -> Unit = {},
+    onOpenBook: (Long) -> Unit = {},
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -227,6 +238,34 @@ fun ImportWarningsDialog(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+
+                if (result.affectedQuizIds.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Imported quizzes: ${result.affectedQuizIds.size}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    result.affectedQuizIds.firstOrNull()?.let { quizId ->
+                        TextButton(onClick = { onOpenQuiz(quizId) }, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                            Text("Open imported quiz →")
+                        }
+                    }
+                }
+
+                if (result.affectedBookIds.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Imported books: ${result.affectedBookIds.size}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    result.affectedBookIds.firstOrNull()?.let { bookId ->
+                        TextButton(onClick = { onOpenBook(bookId) }, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                            Text("Open imported book →")
+                        }
                     }
                 }
             }

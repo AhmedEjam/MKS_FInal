@@ -67,5 +67,8 @@ data class SessionEntity(
 
     // Result taxonomy (v30)
     // Key: original index, Value: result status (CORRECT_FIRST_TRY, WRONG, CORRECTED_AFTER_REPEAT, UNANSWERED, DROPPED)
-    val resultTaxonomy: Map<Int, String> = emptyMap()
+    val resultTaxonomy: Map<Int, String> = emptyMap(),
+
+    // Draft answer persistence (v31) — in-progress selections not yet submitted, keyed by sequence index
+    val draftAnswersByIndex: Map<Int, List<Int>> = emptyMap()
 )

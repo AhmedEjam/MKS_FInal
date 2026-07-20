@@ -42,4 +42,7 @@ interface SessionDao {
 
     @Query("SELECT * FROM sessions WHERE quizId = :quizId AND deletedAt IS NULL ORDER BY lastModifiedAt DESC LIMIT 1")
     fun getLatestSessionForQuiz(quizId: Long): Flow<SessionEntity?>
+
+    @Query("SELECT * FROM sessions WHERE deletedAt IS NULL AND isCompleted = 0 AND lastModifiedAt > 0 ORDER BY lastModifiedAt DESC LIMIT 1")
+    fun getLatestIncompleteSession(): Flow<SessionEntity?>
 }
