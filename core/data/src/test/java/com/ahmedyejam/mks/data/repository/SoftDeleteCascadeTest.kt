@@ -84,17 +84,26 @@ class SoftDeleteCascadeTest {
             type = QuestionType.SINGLE_CHOICE, options = listOf("B"), correctAnswers = listOf(0),
         ))
 
-        val now = System.currentTimeMillis()
-        // Delete q1 first, then delete the quiz (cascading all questions)
-        questionDao.softDeleteQuestionById(q1Id, now)
-        questionDao.softDeleteQuestionsByQuizId(quizId, now)
-        quizDao.softDeleteQuizById(quizId, now)
+        // The cascade-restore discriminates by exact deletedAt timestamp, so the standalone
+        // deletion and the cascade deletion must carry distinct times — which is what happens in
+        // reality, where a user deletes a question and only later deletes the quiz. Using one
+        // shared `now` for both makes the two cases indistinguishable and the assertion below
+        // unsatisfiable against a correct implementation.
+        val questionDeletedAt = System.currentTimeMillis()
+        val quizDeletedAt = questionDeletedAt + 1_000L
+
+        // Delete q1 on its own first, then delete the quiz (cascading the remaining questions).
+        // softDeleteQuestionsByQuizId is guarded by `deletedAt IS NULL`, so q1 keeps its original
+        // timestamp rather than being restamped by the cascade.
+        questionDao.softDeleteQuestionById(q1Id, questionDeletedAt)
+        questionDao.softDeleteQuestionsByQuizId(quizId, quizDeletedAt)
+        quizDao.softDeleteQuizById(quizId, quizDeletedAt)
 
         // Restore quiz
-        val restoreTime = System.currentTimeMillis()
+        val restoreTime = quizDeletedAt + 1_000L
         quizDao.restoreQuizById(quizId, restoreTime)
         // Restore only the questions that were deleted as part of the quiz deletion
-        questionDao.restoreQuestionsByQuizId(quizId, restoreTime, now)
+        questionDao.restoreQuestionsByQuizId(quizId, restoreTime, quizDeletedAt)
 
         val activeQuestions = questionDao.getQuestionsByQuizIdNow(quizId)
         // q1 was deleted BEFORE the quiz deletion, so it should NOT be restored

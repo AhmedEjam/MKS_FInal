@@ -176,10 +176,21 @@ state differs:
 > **Note (2026-07-20):** AGENTS.md has been updated to reflect the current state. The discrepancies
 > listed above should now be resolved. This section is retained for historical reference.
 >
-> **⚠️ Migration test coverage gap:** `core/database/src/androidTest/.../local/` has tests through
-> `Migration29To30Test`. Migrations **30→31, 31→32, and 32→33 have no tests** — including the
-> `study_runs` table creation and the FTS4 backfill, which is the most data-sensitive migration in
-> the set. Write these before the current work is committed.
+> **Migration test coverage (2026-07-20):** `core/database/src/androidTest/.../local/` now has tests
+> through `Migration32To33Test`. They are **compile-verified only** — running them needs an emulator
+> or device, which this machine does not currently have. See `docs/roadmap.md` §1.2.
+
+---
+
+> **⚠️ `study_runs` (v31→v32) is not adopted.** The table, `StudyRunDao`, `StudyRunRepository` and
+> `StudyRunRepositoryImpl` all exist and are wired into Hilt, but **no ViewModel or screen consumes
+> them.** Resume currently runs through the older per-ViewModel `LearningSessionEntity.stateJson`
+> path instead, which does work. So the app has two resume mechanisms: one live, one dormant with a
+> shipped migration behind it.
+>
+> `StudyRunRepositoryImplTest` (9 tests, JVM, no Robolectric) pins the repository contract so the
+> dormant path is at least verified. Adopting it across the four players is still an open decision —
+> see `docs/roadmap.md`. Do not add a second consumer of `stateJson` without resolving this first.
 
 ---
 

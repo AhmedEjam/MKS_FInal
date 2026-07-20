@@ -4,10 +4,37 @@
 
 ## Phase 1: Code Solidity & Testing Safety Net 🔴 PRIORITY
 
+### 1.0 Decide the fate of `study_runs` 🔴 BLOCKING
+
+**Status:** 🔴 OPEN — decision required before further study/resume work.
+
+Migration v31→v32 shipped a `study_runs` table, and `StudyRunDao` / `StudyRunRepository` /
+`StudyRunRepositoryImpl` are complete and Hilt-wired. **Nothing consumes them.** The only references
+outside their own definitions are the DI modules. Meanwhile resume works today through the older
+per-ViewModel `LearningSessionEntity.stateJson` path.
+
+The result is two parallel resume mechanisms — one live, one dormant with an already-released
+migration behind it. This is the highest-leverage architectural decision currently open, because
+every additional player that adopts `stateJson` makes the eventual unification more expensive.
+
+`StudyRunRepositoryImplTest` (9 JVM tests) now pins the dormant contract, so whichever way this goes
+the behaviour is documented. Two viable paths:
+
+1. **Adopt.** Migrate the four players onto `StudyRunRepository`, delete the per-ViewModel
+   `stateJson` handling. `StudyContentType` already covers `ADAPTIVE_QUIZ` and `REVIEW_QUEUE`, so
+   this also closes audit finding #6 (adaptive training persists nothing) in the same pass.
+   Requires a device to verify — resume is not meaningfully testable without process death.
+2. **Retire.** Keep the table (dropping it needs another migration and buys little), but delete the
+   repository and DAO, and record `study_runs` as reserved-but-unused so nobody rediscovers it and
+   assumes it works.
+
+Adoption is the better end state; the constraint is that it needs runtime verification.
+
 ### 1.1 Repository Test Harness & Test Suites
 
-**Status:** 🟡 STARTED — `core/data/src/test/.../repository/` now has `WorkspaceIsolationTest` and
-`SoftDeleteCascadeTest`. The six domain repositories below still have no direct coverage.
+**Status:** 🟡 STARTED — `core/data/src/test/.../repository/` now has `WorkspaceIsolationTest`,
+`SoftDeleteCascadeTest` and `StudyRunRepositoryImplTest`. The six domain repositories below still
+have no direct coverage.
 
 > **Note:** `GlobalErrorHandler.kt` now exists in `core:data/error/` (partially addresses crash observability in Phase 1.6).
 
@@ -20,13 +47,18 @@ Add a shared in-memory Room + Hilt test rule and fake `FileManager`/`RemoteAsset
 
 ### 1.2 Migration Test Completeness
 
-**Status:** 🔴 REOPENED — coverage stops at v30; three newer migrations are untested.
+**Status:** 🟡 WRITTEN, NOT YET RUN — coverage now extends to v33.
 
 - ~~Add `Migration26To27Test`, `Migration27To28Test`, `Migration28To29Test`~~ ✅ COMPLETED
 - `Migration29To30Test` also exists (covers v29→v30: adds `resultTaxonomy` to sessions)
-- 🔴 **Missing: `Migration30To31Test`, `Migration31To32Test`, `Migration32To33Test`.** The 32→33
-  FTS4 `search_index` backfill is the highest-risk of the three — it reads every book, quiz, and
-  question at upgrade time.
+- ~~Missing: `Migration30To31Test`, `Migration31To32Test`, `Migration32To33Test`~~ ✅ WRITTEN
+  (2026-07-20). `Migration32To33Test` asserts both failure modes that would otherwise pass
+  silently: soft-deleted content leaking into the index, and live content missing from it. It also
+  exercises `MATCH` rather than only `SELECT`, since FTS tokenization is the point of the table.
+- ⚠️ **These are instrumented tests and have only been compile-verified.** The dev machine has no
+  emulator, AVD, or system image installed, so `connectedAndroidTest` cannot run. Install a system
+  image (`sdkmanager "system-images;android-34;google_apis;arm64-v8a"`), create an AVD, then run
+  `./gradlew :core:database:connectedDebugAndroidTest` before trusting them.
 - Add one full `MigrateAll1To33Test` chain test (validates end-to-end migration integrity, catches dropped columns like `source_document_assets` in v29)
 - Fill gap coverage: `1→15`, `17→22` (may not exist in real deployments)
 
