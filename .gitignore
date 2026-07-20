@@ -8,3 +8,6 @@
 .externalNativeBuild
 .cxx
 build/
+
+# Kotlin incremental-compilation session data
+.kotlin/
