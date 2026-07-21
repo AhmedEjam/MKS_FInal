@@ -1389,24 +1389,23 @@ class KnowledgeRepository
                     "easy", "good" -> 1
                     else -> 0
                 }
-            val day = 24L * 60L * 60L * 1000L
-            val nextDueAt =
-                when (normalized) {
-                    "again" -> now + 10L * 60L * 1000L
-                    "easy" -> now + maxOf(3L, (card.reviewCount + 1L) * 2L) * day
-                    "good" -> now + maxOf(1L, card.reviewCount + 1L) * day
-                    else -> now + day
-                }
+            val fsrsRating = com.ahmedyejam.mks.data.review.FsrsScheduler.ratingFromString(normalized)
+            val fsrsResult = com.ahmedyejam.mks.data.review.FsrsScheduler.review(
+                card.fsrsStability, card.fsrsDifficulty, card.fsrsReps, fsrsRating, now,
+            )
             val updated =
                 card.copy(
                     attempts = card.attempts + 1,
                     correctCount = card.correctCount + correctIncrement,
                     difficulty = normalized,
+                    fsrsStability = fsrsResult.state.stability,
+                    fsrsDifficulty = fsrsResult.state.difficulty,
+                    fsrsReps = fsrsResult.state.reps,
                     lastReviewedAt = now,
                     updatedAt = now,
                 )
             updateFlashcard(updated)
-            flashcardDao.markReviewed(card.id, now, nextDueAt)
+            flashcardDao.markReviewed(card.id, now, fsrsResult.nextDueAt)
             val deck = flashcardDeckDao.getFlashcardDeckById(card.deckId)
             deck?.let { flashcardDeckDao.updateFlashcardDeck(it.copy(lastStudiedAt = now, updatedAt = now)) }
         }

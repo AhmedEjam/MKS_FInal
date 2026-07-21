@@ -46,7 +46,7 @@ import com.ahmedyejam.mks.data.local.entity.StudySessionEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceEntity
 import com.ahmedyejam.mks.data.local.entity.WorkspaceSettingsEntity
 
-const val MKS_DATABASE_VERSION = 33
+const val MKS_DATABASE_VERSION = 34
 
 @Database(
     entities = [
@@ -124,6 +124,7 @@ abstract class MksDatabase : RoomDatabase() {
         val MIGRATION_30_31 = MksMigrations.MIGRATION_30_31
         val MIGRATION_31_32 = MksMigrations.MIGRATION_31_32
         val MIGRATION_32_33 = MksMigrations.MIGRATION_32_33
+        val MIGRATION_33_34 = MksMigrations.MIGRATION_33_34
 
         fun addColumnIfMissing(
             db: androidx.sqlite.db.SupportSQLiteDatabase,

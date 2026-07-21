@@ -1248,6 +1248,14 @@ object MksMigrations {
         }
     }
 
+    val MIGRATION_33_34 = object : Migration(33, 34) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            MksDatabase.addColumnIfMissing(db, "flashcards", "fsrsStability", "REAL NOT NULL DEFAULT 0")
+            MksDatabase.addColumnIfMissing(db, "flashcards", "fsrsDifficulty", "REAL NOT NULL DEFAULT 0")
+            MksDatabase.addColumnIfMissing(db, "flashcards", "fsrsReps", "INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
     val ALL = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -1280,6 +1288,7 @@ object MksMigrations {
         MIGRATION_29_30,
         MIGRATION_30_31,
         MIGRATION_31_32,
-        MIGRATION_32_33
+        MIGRATION_32_33,
+        MIGRATION_33_34
     )
 }

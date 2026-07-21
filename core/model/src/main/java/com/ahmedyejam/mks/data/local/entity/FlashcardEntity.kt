@@ -46,6 +46,10 @@ data class FlashcardEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     val sourceQuestionId: Long? = null,
     val syncConfig: Map<String, Boolean> = emptyMap(),
+    // FSRS scheduling fields (v34)
+    @ColumnInfo(defaultValue = "0") val fsrsStability: Float = 0f,
+    @ColumnInfo(defaultValue = "0") val fsrsDifficulty: Float = 0f,
+    @ColumnInfo(defaultValue = "0") val fsrsReps: Int = 0,
     val deletedAt: Long? = null
 )
 

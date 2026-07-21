@@ -131,7 +131,21 @@ class ReviewRepository @Inject constructor(
             val itemId = item.id.toLongOrNull() ?: return@withContext
             val now = System.currentTimeMillis()
             when (item.type) {
-                ReviewQueueType.FLASHCARD -> flashcardDao.markReviewed(itemId, now, now + 3L * 24L * 60L * 60L * 1000L)
+                ReviewQueueType.FLASHCARD -> {
+                    val card = flashcardDao.getFlashcardById(itemId)
+                    if (card != null) {
+                        val result = FsrsScheduler.review(card.fsrsStability, card.fsrsDifficulty, card.fsrsReps, 3, now)
+                        flashcardDao.updateFlashcard(card.copy(
+                            fsrsStability = result.state.stability,
+                            fsrsDifficulty = result.state.difficulty,
+                            fsrsReps = result.state.reps,
+                            difficulty = "good",
+                        ))
+                        flashcardDao.markReviewed(itemId, now, result.nextDueAt)
+                    } else {
+                        flashcardDao.markReviewed(itemId, now, now + 3L * 24L * 60L * 60L * 1000L)
+                    }
+                }
                 ReviewQueueType.BLUEPRINT -> noteBlueprintDao.markReviewed(itemId, now)
                 ReviewQueueType.MISTAKE -> mistakeLogDao.markFixed(itemId, now)
                 ReviewQueueType.MARKED_QUESTION -> questionDao.clearQuestionMark(itemId, now)
