@@ -102,6 +102,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -372,7 +374,8 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
     val state by viewModel.uiState.collectAsState()
     val note = state.noteBlueprint
     
-    var isPlayerMode by remember { mutableStateOf(true) }
+    var isPlayerMode by rememberSaveable { mutableStateOf(true) }
+    // Transient immersive-chrome state — safe to reset on recreation.
     var controlsVisible by remember { mutableStateOf(true) }
     
     val view = androidx.compose.ui.platform.LocalView.current
@@ -402,19 +405,22 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
 
     LaunchedEffect(noteId) { viewModel.loadNote(noteId) }
 
-    var editedBody by remember(note?.id) { mutableStateOf(note?.body.orEmpty()) }
-    var isTitlePinned by remember { mutableStateOf(false) }
+    // Unsaved article edits must survive rotation/process death — this is real data loss otherwise.
+    var editedBody by rememberSaveable(note?.id) { mutableStateOf(note?.body.orEmpty()) }
+    var isTitlePinned by rememberSaveable { mutableStateOf(false) }
 
     val ttsManager = remember { com.ahmedyejam.mks.ui.utils.TtsManager(context) }
     DisposableEffect(ttsManager) { onDispose { ttsManager.shutdown() } }
 
-    var ttsRate by remember { androidx.compose.runtime.mutableFloatStateOf(1f) }
-    var ttsPitch by remember { androidx.compose.runtime.mutableFloatStateOf(1f) }
+    // Playback preferences persist; the live-playing flag must not (TtsManager is recreated).
+    var ttsRate by rememberSaveable { androidx.compose.runtime.mutableFloatStateOf(1f) }
+    var ttsPitch by rememberSaveable { androidx.compose.runtime.mutableFloatStateOf(1f) }
     var isTtsPlaying by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
+    // Live-scrolling flag stays transient; the chosen speed persists.
     var isAutoScrolling by remember { mutableStateOf(false) }
-    var scrollSpeed by remember { androidx.compose.runtime.mutableFloatStateOf(50f) }
+    var scrollSpeed by rememberSaveable { androidx.compose.runtime.mutableFloatStateOf(50f) }
 
     LaunchedEffect(isAutoScrolling, scrollSpeed, scrollState.maxValue) {
         if (isAutoScrolling && scrollState.value < scrollState.maxValue) {
@@ -841,8 +847,9 @@ fun AiPromptDeckScreen(
     val state by viewModel.uiState.collectAsState()
     val clipboard = LocalClipboardManager.current
     val context = androidx.compose.ui.platform.LocalContext.current
-    var selectedCardId by remember { mutableStateOf<Long?>(null) }
-    var outputText by remember { mutableStateOf("") }
+    var selectedCardId by rememberSaveable { mutableStateOf<Long?>(null) }
+    // The generated AI output — losing this on rotation is the worst data loss on this screen.
+    var outputText by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(promptId) { viewModel.loadPromptDeck(promptId) }
 
@@ -895,13 +902,26 @@ fun AiPromptDeckScreen(
         state.promptCards.firstOrNull { it.id == selectedCardId }
     }
 
-    var editTitle by remember(selectedCard?.id) { mutableStateOf(selectedCard?.title ?: "") }
-    var editBody by remember(selectedCard?.id) { mutableStateOf(selectedCard?.promptText ?: "") }
+    var editTitle by rememberSaveable(selectedCard?.id) { mutableStateOf(selectedCard?.title ?: "") }
+    var editBody by rememberSaveable(selectedCard?.id) { mutableStateOf(selectedCard?.promptText ?: "") }
 
     val variables = remember(editBody) { viewModel.extractVariables(editBody) }
-    val values = remember(selectedCard?.id) { mutableStateMapOf<String, String>() }
+    // Typed variable values persist across rotation via a flat key/value list saver. imageValues is
+    // left transient (re-selectable from the entity picker, and a nested-list saver is error-prone).
+    val values = rememberSaveable(
+        selectedCard?.id,
+        saver = listSaver(
+            save = { map -> map.flatMap { (k, v) -> listOf(k, v) } },
+            restore = { flat ->
+                mutableStateMapOf<String, String>().apply {
+                    var i = 0
+                    while (i + 1 < flat.size) { put(flat[i], flat[i + 1]); i += 2 }
+                }
+            },
+        ),
+    ) { mutableStateMapOf<String, String>() }
     val imageValues = remember(selectedCard?.id) { mutableStateMapOf<String, List<String>>() }
-    var showEntitySelector by remember { mutableStateOf<String?>(null) }
+    var showEntitySelector by rememberSaveable { mutableStateOf<String?>(null) }
     
     LaunchedEffect(variables) {
         variables.forEach { if (!values.containsKey(it)) values[it] = "" }
@@ -909,14 +929,14 @@ fun AiPromptDeckScreen(
         currentKeys.forEach { if (it !in variables) values.remove(it) }
     }
 
-    var includeStem by remember(seededQuestionId) { mutableStateOf(true) }
-    var includeOptions by remember(seededQuestionId) { mutableStateOf(true) }
-    var includeExplanation by remember(seededQuestionId) { mutableStateOf(true) }
-    var includeHint by remember(seededQuestionId) { mutableStateOf(true) }
-    var includeAttachedFiles by remember(seededQuestionId) { mutableStateOf(true) }
+    var includeStem by rememberSaveable(seededQuestionId) { mutableStateOf(true) }
+    var includeOptions by rememberSaveable(seededQuestionId) { mutableStateOf(true) }
+    var includeExplanation by rememberSaveable(seededQuestionId) { mutableStateOf(true) }
+    var includeHint by rememberSaveable(seededQuestionId) { mutableStateOf(true) }
+    var includeAttachedFiles by rememberSaveable(seededQuestionId) { mutableStateOf(true) }
     
-    var lastGeneratedQText by remember { mutableStateOf<String?>(null) }
-    var lastGeneratedPartName by remember { mutableStateOf<String?>(null) }
+    var lastGeneratedQText by rememberSaveable { mutableStateOf<String?>(null) }
+    var lastGeneratedPartName by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(selectedCardId, seededQuestionId, variables, state.questions, state.questionAssetsByQuestion, includeStem, includeOptions, includeExplanation, includeHint, includeAttachedFiles) {
         if (selectedCardId != null && seededQuestionId != null && variables.isNotEmpty() && state.questions.isNotEmpty()) {
