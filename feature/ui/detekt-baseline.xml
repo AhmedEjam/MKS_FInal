@@ -20,6 +20,7 @@
     <ID>CyclomaticComplexMethod:CompilerDialog.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun CompilerDialog( viewModel: CompilerViewModel, books: List&lt;BookEntity&gt;, quizzes: List&lt;QuizEntity&gt; = emptyList(), onUndoImport: ((ImportResult) -&gt; Unit)? = null, onDismiss: () -&gt; Unit )</ID>
     <ID>CyclomaticComplexMethod:CompilerViewModel.kt$CompilerViewModel$fun onSheetSelected(sheetName: String?)</ID>
     <ID>CyclomaticComplexMethod:CompilerViewModel.kt$CompilerViewModel$fun saveParsedQuestions( title: String, bookId: Long?, targetQuizId: Long? = null, targetDeckId: Long? = null, newBookTitle: String? = null )</ID>
+    <ID>CyclomaticComplexMethod:DataToolsScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun DataToolsScreen( viewModel: DataToolsViewModel, onBack: () -&gt; Unit )</ID>
     <ID>CyclomaticComplexMethod:FlashcardDeckScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun FlashcardDeckScreen( deckId: Long, focusedCardId: Long? = null, onBack: () -&gt; Unit )</ID>
     <ID>CyclomaticComplexMethod:FlashcardDeckScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable private fun FlashcardGeneratorDialog( quizzes: List&lt;com.ahmedyejam.mks.data.local.entity.QuizEntity&gt;, categories: List&lt;String&gt;, onDismiss: () -&gt; Unit, onConfirm: (source: String, sourceId: String?, config: FlashcardGenerationConfig, clearMarks: Boolean) -&gt; Unit )</ID>
     <ID>CyclomaticComplexMethod:LibraryComponents.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun LibraryBanner( resumeQuiz: QuizEntity?, recentQuizzes: List&lt;QuizEntity&gt;, currentThemeMode: String, onQuizClick: (QuizEntity) -&gt; Unit, onLinkClick: (String) -&gt; Unit, modifier: Modifier = Modifier )</ID>
@@ -36,12 +37,12 @@
     <ID>CyclomaticComplexMethod:QuizPlayerScreen.kt$@OptIn(ExperimentalLayoutApi::class) @Composable fun QuizSheetContent( state: QuizState, viewModel: QuizViewModel, onDropQuestion: () -&gt; Unit, onAskAiClick: (Long) -&gt; Unit )</ID>
     <ID>CyclomaticComplexMethod:QuizPlayerScreen.kt$@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class) @Composable fun QuizPlayerScreen( viewModel: QuizViewModel, onQuizFinished: (Long, Int, Int) -&gt; Unit, onAskAiClick: (Long) -&gt; Unit = {}, onBack: () -&gt; Unit, onViewCategoryQuestions: (String) -&gt; Unit = {}, )</ID>
     <ID>CyclomaticComplexMethod:QuizQuestionsScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun QuizQuestionsScreen( viewModel: QuizQuestionsViewModel, focusedQuestionId: Long? = null, isEmbedded: Boolean = false, onBack: () -&gt; Unit )</ID>
+    <ID>CyclomaticComplexMethod:QuizTimerEngine.kt$QuizTimerEngine$fun start( quizTimerSeconds: Int, questionTimerSeconds: Int, isCompleted: () -&gt; Boolean, isAnswered: () -&gt; Boolean, onTimeout: () -&gt; Unit, onQuizFinished: () -&gt; Unit, )</ID>
     <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$fun dropOption(shuffledIndex: Int)</ID>
     <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$fun nextQuestion()</ID>
     <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$fun startAdaptiveTraining(type: String, id: String?, limit: Int = 20)</ID>
     <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$fun startQuiz(quizId: Long, sessionId: Long? = null)</ID>
     <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$private fun finalizeSubmission( currentQuestion: QuestionEntity, isCorrect: Boolean, currentIndex: Int, selectedOptions: Set&lt;Int&gt;, sessionId: Long?, newScore: Int, newCurrentStreak: Int, newMaxStreak: Int, initialQuestionCount: Int, repeatWrong: Boolean, shuffledOptionsSize: Int, isRapidMode: Boolean )</ID>
-    <ID>CyclomaticComplexMethod:QuizViewModel.kt$QuizViewModel$private fun startTimer()</ID>
     <ID>CyclomaticComplexMethod:ReviewDashboardScreen.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun ReviewDashboardScreen( viewModel: ReviewDashboardViewModel, focusedMistakeId: Long? = null, onBack: () -&gt; Unit, onOpenRoute: (Any) -&gt; Unit )</ID>
     <ID>CyclomaticComplexMethod:ScannerViewModel.kt$ScannerViewModel$private fun parseTextToQuestions(text: String, quizId: Long): List&lt;QuestionEntity&gt;</ID>
     <ID>CyclomaticComplexMethod:SessionManagementScreen.kt$@OptIn(ExperimentalLayoutApi::class) @Composable fun StartSessionDialog( totalQuestions: Int, defaultIncludeFilters: Set&lt;String&gt;, defaultShuffleQuestions: Boolean, defaultShuffleOptions: Boolean, defaultRapidMode: Boolean, defaultRepeatWrong: Boolean, defaultQuizTimerSeconds: Int, defaultQuestionTimerSeconds: Int, filteredMatchCount: Int? = null, onFiltersChanged: ((Set&lt;String&gt;, Int, Int) -&gt; Unit)? = null, onQuickStart: (() -&gt; Unit)? = null, onDismiss: () -&gt; Unit, onConfirm: (SessionConfig, Boolean) -&gt; Unit )</ID>
@@ -69,12 +70,13 @@
     <ID>LongMethod:SummaryViewModel.kt$SummaryViewModel$fun getExportText(): String</ID>
     <ID>LongMethod:SummaryViewModel.kt$SummaryViewModel$fun loadSummary(sessionId: Long)</ID>
     <ID>LongParameterList:BookToolsViewModel.kt$BookToolsViewModel$( bookId: Long, title: String, description: String, coverImage: String?, sourceQuizIds: List&lt;Long&gt;, sourceCategories: List&lt;String&gt;, filters: QuizCreationFilters = QuizCreationFilters() )</ID>
-    <ID>LongParameterList:BookToolsViewModel.kt$BookToolsViewModel$( private val ollamaRepository: OllamaRepository, private val dataStoreManager: DataStoreManager, private val fileManager: com.ahmedyejam.mks.data.local.FileManager, private val bookRepository: BookRepository, private val knowledgeRepository: KnowledgeRepository, private val assetRepository: AssetRepository, private val quizRepository: QuizRepository, private val studyRepository: StudyRepository )</ID>
+    <ID>LongParameterList:BookToolsViewModel.kt$BookToolsViewModel$( private val ollamaRepository: OllamaRepository, private val aiClient: AiClient, private val dataStoreManager: DataStoreManager, private val fileManager: com.ahmedyejam.mks.data.local.FileManager, private val bookRepository: BookRepository, private val knowledgeRepository: KnowledgeRepository, private val assetRepository: AssetRepository, private val quizRepository: QuizRepository, private val studyRepository: StudyRepository )</ID>
     <ID>LongParameterList:FlashcardDeckViewModel.kt$FlashcardDeckViewModel$( @param:ApplicationScope private val applicationScope: kotlinx.coroutines.CoroutineScope, private val bookRepository: BookRepository, private val knowledgeRepository: KnowledgeRepository, private val assetRepository: AssetRepository, private val quizRepository: QuizRepository, private val studyRepository: StudyRepository, private val studyRunRepository: StudyRunRepository )</ID>
     <ID>LongParameterList:ImportViewModel.kt$ImportViewModel$( uri: Uri, strategy: MergeStrategy = MergeStrategy.SKIP_EXISTING, targetBookId: Long? = null, targetQuizId: Long? = null, allowInsecureRemoteImages: Boolean = false, activeWorkspaceId: Long? = null )</ID>
     <ID>LongParameterList:LibraryViewModel.kt$LibraryViewModel$( bookId: Long, title: String, description: String, coverImage: String?, sourceQuizIds: List&lt;Long&gt;, sourceCategories: List&lt;String&gt; )</ID>
     <ID>LongParameterList:LibraryViewModel.kt$LibraryViewModel$( private val dataStoreManager: DataStoreManager, private val bookRepository: BookRepository, private val workspaceRepository: WorkspaceRepository, private val knowledgeRepository: KnowledgeRepository, private val assetRepository: AssetRepository, private val quizRepository: QuizRepository, private val exportManager: com.ahmedyejam.mks.data.repository.ExportManager )</ID>
     <ID>LongParameterList:PdfExtractionViewModel.kt$PdfExtractionViewModel$( @param:dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context, private val assetRepository: com.ahmedyejam.mks.data.repository.AssetRepository, private val knowledgeRepository: com.ahmedyejam.mks.data.repository.KnowledgeRepository, private val pdfRendererService: PdfRendererService, private val pdfTextExtractor: PdfTextExtractor, private val ocrService: OcrService, val dataStoreManager: DataStoreManager, private val aiClient: AiClient, private val ollamaRepository: OllamaRepository )</ID>
+    <ID>LongParameterList:QuizTimerEngine.kt$QuizTimerEngine$( quizTimerSeconds: Int, questionTimerSeconds: Int, isCompleted: () -&gt; Boolean, isAnswered: () -&gt; Boolean, onTimeout: () -&gt; Unit, onQuizFinished: () -&gt; Unit, )</ID>
     <ID>LongParameterList:QuizViewModel.kt$QuizViewModel$( currentQuestion: QuestionEntity, isCorrect: Boolean, currentIndex: Int, selectedOptions: Set&lt;Int&gt;, sessionId: Long?, newScore: Int, newCurrentStreak: Int, newMaxStreak: Int, initialQuestionCount: Int, repeatWrong: Boolean, shuffledOptionsSize: Int, isRapidMode: Boolean )</ID>
     <ID>LongParameterList:SessionViewModel.kt$SessionViewModel$( filters: Set&lt;String&gt;, shuffleQ: Boolean, shuffleO: Boolean, rapid: Boolean, repeatWrong: Boolean, quizTimer: Int, qTimer: Int )</ID>
     <ID>LongParameterList:SessionViewModel.kt$SessionViewModel$( quizId: Long, label: String, shuffleQuestions: Boolean = true, shuffleOptions: Boolean = true, rapidMode: Boolean = false, repeatWrong: Boolean = true, quizTimerSeconds: Int = 0, questionTimerSeconds: Int = 0, rangeFrom: Int = 0, rangeTo: Int = -1, includeFilters: List&lt;String&gt; = emptyList(), onCreated: (Long) -&gt; Unit )</ID>
@@ -102,7 +104,7 @@
     <ID>MagicNumber:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$5</ID>
     <ID>MagicNumber:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$6</ID>
     <ID>MagicNumber:QuizQuestionsViewModel.kt$QuizQuestionsViewModel$7</ID>
-    <ID>MagicNumber:QuizViewModel.kt$QuizViewModel$1000</ID>
+    <ID>MagicNumber:QuizTimerEngine.kt$QuizTimerEngine$1000</ID>
     <ID>MagicNumber:QuizViewModel.kt$QuizViewModel$3</ID>
     <ID>MagicNumber:QuizViewModel.kt$QuizViewModel$4</ID>
     <ID>MagicNumber:QuizViewModel.kt$QuizViewModel$5</ID>
@@ -207,7 +209,13 @@
     <ID>MaxLineLength:CompilerDialog.kt$text = if (selectedIdx == -1) stringResource(R.string.none_selection) else "$selectedIdx: ${availableColumns.getOrNull(selectedIdx) ?: ""}"</ID>
     <ID>MaxLineLength:CompilerViewModel.kt$CompilerViewModel$_uiState.update { it.copy(isLoading = true, error = null, questions = emptyList(), targetQuizId = targetQuizId, targetDeckId = targetDeckId) }</ID>
     <ID>MaxLineLength:DataToolsScreen.kt$Text("Danger Zone", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)</ID>
+    <ID>MaxLineLength:DataToolsScreen.kt$Text("Data Integrity", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 8.dp))</ID>
     <ID>MaxLineLength:DataToolsScreen.kt$Text("Restore", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 8.dp))</ID>
+    <ID>MaxLineLength:DataToolsScreen.kt$color = if (report.missingReferencedFiles &gt; 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface</ID>
+    <ID>MaxLineLength:DataToolsScreen.kt$color = if (report.orphanedImageFiles &gt; 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface</ID>
+    <ID>MaxLineLength:DataToolsScreen.kt$color = if (report.orphanedReferences &gt; 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface</ID>
+    <ID>MaxLineLength:DataToolsScreen.kt$color = if (report.staleBookCounters &gt; 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface</ID>
+    <ID>MaxLineLength:DataToolsScreen.kt$color = if (report.staleQuizCounters &gt; 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface</ID>
     <ID>MaxLineLength:DataToolsViewModel.kt$DataToolsViewModel$_state.update { it.copy(isWorking = false, showResetConfirm = false, message = "Database reset complete. Sample data reloaded.") }</ID>
     <ID>MaxLineLength:FlashcardDeckScreen.kt$AssistChip(onClick = {}, label = { Text(stringResource(R.string.flashcard_mastery, (deck.masteryPercentage * 100).toInt())) })</ID>
     <ID>MaxLineLength:FlashcardDeckScreen.kt$DropdownMenuItem(text = { Text("All Book Questions") }, onClick = { source = "ALL"; sourceId = null; expandedSource = false })</ID>
@@ -372,7 +380,6 @@
     <ID>TooManyFunctions:SlideshowCourseViewModel.kt$SlideshowCourseViewModel : ViewModel</ID>
     <ID>UnusedParameter:BookToolsViewModel.kt$BookToolsViewModel$sourceId: Long</ID>
     <ID>UnusedParameter:ProviderConfigDialog.kt$defaultPrompt: String? = null</ID>
-    <ID>UnusedPrivateProperty:BookToolsViewModel.kt$BookToolsViewModel$private val fileManager: com.ahmedyejam.mks.data.local.FileManager</ID>
     <ID>UseCheckOrError:CompilerViewModel.kt$CompilerViewModel$throw IllegalStateException("Could not create temporary file")</ID>
     <ID>UseCheckOrError:CompilerViewModel.kt$CompilerViewModel$throw IllegalStateException("Sheet '$sheetName' exceeds ${ImportLimits.MAX_XLSX_CELLS_PER_SHEET} cell limit.")</ID>
     <ID>UseCheckOrError:CompilerViewModel.kt$CompilerViewModel$throw IllegalStateException("Sheet '$sheetName' exceeds ${ImportLimits.MAX_XLSX_ROWS_PER_SHEET} row limit.")</ID>

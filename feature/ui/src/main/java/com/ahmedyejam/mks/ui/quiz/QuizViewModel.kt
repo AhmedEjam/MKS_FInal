@@ -153,12 +153,13 @@ class QuizViewModel @Inject constructor(
     private val quizRepository: QuizRepository,
     private val studyRepository: StudyRepository
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(QuizState())
     val uiState: StateFlow<QuizState> = _uiState.asStateFlow()
 
     private val _timerState = MutableStateFlow(TimerState())
     val timerState: StateFlow<TimerState> = _timerState.asStateFlow()
+
+    private val timerEngine = QuizTimerEngine(viewModelScope, _timerState)
 
     val themeMode: StateFlow<String> = dataStoreManager.themeMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "FOREST")
@@ -170,7 +171,6 @@ class QuizViewModel @Inject constructor(
         viewModelScope.launch { dataStoreManager.setQuizHintsShown(true) }
     }
 
-    private var timerJob: Job? = null
     private var autoAdvanceJob: Job? = null
     private var autoAdvanceDelayMs: Long = 2000L
     private val sessionMutex = Mutex()
@@ -689,7 +689,7 @@ class QuizViewModel @Inject constructor(
      */
     fun finishSession() {
         _uiState.update { it.copy(isCompleted = true) }
-        timerJob?.cancel()
+        timerEngine.stop()
         autoAdvanceJob?.cancel()
         viewModelScope.launch {
             val state = _uiState.value
@@ -1394,50 +1394,14 @@ class QuizViewModel @Inject constructor(
      */
     private fun startTimer() {
         val initialState = _uiState.value
-        if (initialState.quizTimerSeconds <= 0 && initialState.questionTimerSeconds <= 0) {
-            timerJob?.cancel()
-            return
-        }
-
-        timerJob?.cancel()
-        timerJob = viewModelScope.launch {
-            while (isActive) {
-                delay(1000)
-                if (_uiState.value.isCompleted) break
-
-                var shouldSubmit = false
-                var quizFinished = false
-                
-                val currentQuizState = _uiState.value
-                
-                _timerState.update { state ->
-                    var newQuizTimeLeft = state.quizTimeLeft
-                    var newQuestionTimeLeft = state.questionTimeLeft
-
-                    if (currentQuizState.quizTimerSeconds > 0 && state.quizTimeLeft > 0) {
-                        newQuizTimeLeft--
-                        if (newQuizTimeLeft == 0) {
-                            quizFinished = true
-                        }
-                    }
-
-                    if (!currentQuizState.isAnswered && currentQuizState.questionTimerSeconds > 0 && state.questionTimeLeft > 0) {
-                        newQuestionTimeLeft--
-                        if (newQuestionTimeLeft == 0) {
-                            shouldSubmit = true
-                        }
-                    }
-
-                    state.copy(
-                        timeLeft = state.timeLeft + 1,
-                        quizTimeLeft = newQuizTimeLeft,
-                        questionTimeLeft = newQuestionTimeLeft
-                    )
-                }
-                if (shouldSubmit) submitAnswer(isTimeout = true)
-                if (quizFinished) finishSession()
-            }
-        }
+        timerEngine.start(
+            quizTimerSeconds = initialState.quizTimerSeconds,
+            questionTimerSeconds = initialState.questionTimerSeconds,
+            isCompleted = { _uiState.value.isCompleted },
+            isAnswered = { _uiState.value.isAnswered },
+            onTimeout = { submitAnswer(isTimeout = true) },
+            onQuizFinished = { finishSession() },
+        )
     }
 
     /**
@@ -1474,7 +1438,7 @@ class QuizViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        timerJob?.cancel()
+        timerEngine.stop()
         autoAdvanceJob?.cancel()
         focusManager.disableFocusMode()
     }

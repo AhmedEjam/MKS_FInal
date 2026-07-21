@@ -2,6 +2,37 @@
 
 > Last updated: 2026-07-21. Current state: Room v33, 6-module architecture, 6 domain repositories, all 28 entities in place.
 
+## Phase -1: Spaced repetition & parallel-work review (2026-07-21)
+
+A body of uncommitted parallel work (FSRS scheduling, a data-integrity tool, and a partial quiz
+engine extraction) was reviewed, corrected, and landed. Findings and their resolutions:
+
+- **FSRS scheduler — interval bug fixed.** `FsrsScheduler.computeIntervalDays` multiplied stability
+  by the exponential-forgetting factor (~0.105), collapsing every first interval to hours (a "good"
+  card came due in ~5h instead of ~2 days). Stability is now treated as a day-scale interval
+  directly. Guarded by `FsrsSchedulerTest` (7 tests). Note: this is a 3-parameter approximation, not
+  real FSRS-4.5/6; the flashcard UI offers 3 ratings (no "Hard"), so that path is under-utilised.
+- **Migration v33→v34** (3 FSRS columns on `flashcards`) is clean and now covered by
+  `Migration33To34Test`. FSRS is wired into `KnowledgeRepository` and `ReviewRepository` (unlike the
+  earlier dormant `study_runs`). Orthogonal to the flashcard/StudyRun redesign — no conflict.
+- **Data integrity tool** (`DataIntegrityService` + DataTools UI) kept as-is — well-structured,
+  reuses existing DAOs. `refreshAllCounters()` is a documented no-op stub; `checkIntegrity` does N+1
+  queries, acceptable for a manual diagnostic.
+- **Quiz engine extraction — completed the safe half, removed the unsafe half.** `QuizTimerEngine`
+  is wired and kept. `AnswerEvaluator` and `SessionProgressWriter` were **unwired orphans** (never
+  referenced), so they were deleted rather than left as illusory fixes. Notably `SessionProgressWriter`
+  was a `Mutex`-guarded rewrite that would have fixed the session-write race (audit risk #4) — but it
+  was never called, so **that race remains open** (§ below). Wiring it touches the highest-risk quiz
+  code and needs device testing; it should be redone deliberately, not left dormant.
+- **Detekt debt** rose 1001 → 1010 after absorbing the residual parallel-work findings (FSRS
+  algorithm constants were extracted to named vals instead of baselined).
+
+### Still open from this review
+
+- **Session-write race (audit #4)** — concurrent quiz submits can clobber answers/streak. The
+  deleted `SessionProgressWriter` targeted this; a wired, tested version is the proper fix.
+- **Answer-ledger drift (audit #5)** — the deleted `AnswerEvaluator` hinted at consolidating this.
+
 ## Phase 0: AI pipeline correctness 🟡 PARTIALLY DONE
 
 ### 0.1 Prompt-deck provider routing ✅ FIXED (needs device verification)

@@ -797,6 +797,33 @@ class BookToolsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(pendingPrivacyConsent = false)
     }
 
+    /**
+     * Cloud (non-Ollama) generation via the OpenAI-compatible [AiClient] — the same client the MCQ
+     * path and Settings test buttons already use. Previously the prompt deck was hardwired to
+     * OllamaRepository, so a cloud base URL was mangled into a non-existent /api/generate endpoint
+     * and every cloud run failed. AiClient is not streaming, so this returns the full response.
+     */
+    private suspend fun generateCloudCompletion(
+        config: AiProviderConfig,
+        systemPrompt: String,
+        prompt: String,
+        images: List<String>,
+    ): String {
+        if (images.isEmpty()) return aiClient.chatComplete(config, systemPrompt, prompt)
+
+        // generateWithImage wraps each string as data:image/...;base64,<x>, so it needs raw base64.
+        // FileManager.getBase64Image returns a full data URI, so strip the prefix. Unreadable images
+        // are dropped rather than failing the whole run.
+        val base64Images = images.mapNotNull { path ->
+            fileManager.getBase64Image(path).takeIf { it.isNotBlank() }?.substringAfter("base64,")
+        }
+        return if (base64Images.isEmpty()) {
+            aiClient.chatComplete(config, systemPrompt, prompt)
+        } else {
+            aiClient.generateWithImage(config, prompt, base64Images)
+        }
+    }
+
     private fun executeAiGeneration(prompt: String, images: List<String>, onUpdate: (String) -> Unit) {
         cancelGeneration()
         generationJob = viewModelScope.launch {
@@ -826,35 +853,13 @@ class BookToolsViewModel @Inject constructor(
                         onUpdate(accumulatedResponse)
                     }
                 } else {
-                    // Cloud provider: route through the OpenAI-compatible AiClient — the same client
-                    // the MCQ path and Settings test buttons already use. Previously this was
-                    // hardcoded to OllamaRepository, so a cloud base URL was mangled into a
-                    // non-existent /api/generate endpoint and every cloud run failed. AiClient is
-                    // not streaming, so the full response is delivered in a single onUpdate.
                     val config = AiProviderConfig(
                         providerId = providerId,
                         baseUrl = baseUrl,
                         apiKey = apiKey.orEmpty(),
                         model = model,
                     )
-                    val result = if (images.isEmpty()) {
-                        aiClient.chatComplete(config, systemPrompt, prompt)
-                    } else {
-                        // generateWithImage wraps each string as data:image/...;base64,<x>, so it
-                        // needs raw base64. FileManager.getBase64Image returns a full data URI, so
-                        // strip the prefix. Unreadable images are dropped rather than failing the run.
-                        val base64Images = images.mapNotNull { path ->
-                            fileManager.getBase64Image(path)
-                                .takeIf { it.isNotBlank() }
-                                ?.substringAfter("base64,")
-                        }
-                        if (base64Images.isEmpty()) {
-                            aiClient.chatComplete(config, systemPrompt, prompt)
-                        } else {
-                            aiClient.generateWithImage(config, prompt, base64Images)
-                        }
-                    }
-                    onUpdate(result)
+                    onUpdate(generateCloudCompletion(config, systemPrompt, prompt, images))
                 }
                 _uiState.value = _uiState.value.copy(isGenerating = false)
             } catch (e: kotlinx.coroutines.CancellationException) {

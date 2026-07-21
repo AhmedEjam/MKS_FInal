@@ -11,6 +11,7 @@
     <ID>ComplexCondition:MksExchangeV7Archive.kt$MksExchangeV7Archive$ch.isLetterOrDigit() || ch == '-' || ch == '_' || ch == '.'</ID>
     <ID>ComplexCondition:SpreadsheetQuestionParser.kt$SpreadsheetQuestionParser$stem.isBlank() &amp;&amp; options.isEmpty() &amp;&amp; resolvedImage.imageDataUrl.isNullOrBlank() &amp;&amp; resolvedImage.imageSource.isNullOrBlank()</ID>
     <ID>CyclomaticComplexMethod:CsvParser.kt$CsvParser$fun parse( content: String, delimiter: Char? = null, ): List&lt;List&lt;String&gt;&gt;</ID>
+    <ID>CyclomaticComplexMethod:DataIntegrityService.kt$DataIntegrityService$suspend fun checkIntegrity(): IntegrityReport</ID>
     <ID>CyclomaticComplexMethod:ExportManager.kt$ExportManager$private suspend fun buildSupplementalData( bookId: Long? = null, quizId: Long? = null, ): MksExchangeV7SupplementalData</ID>
     <ID>CyclomaticComplexMethod:GlobalSearchResult.kt$fun GlobalSearchResultRow.toResult(): GlobalSearchResult</ID>
     <ID>CyclomaticComplexMethod:ImportFormatDetector.kt$ImportFormatDetector$private fun detectFromStream(inputStream: InputStream): ImportFormat</ID>
@@ -45,6 +46,7 @@
     <ID>LargeClass:MksExchangeV7Archive.kt$MksExchangeV7Archive</ID>
     <ID>LongMethod:AiMcqRepository.kt$AiMcqRepository$suspend fun generateAndSave( bookId: Long, quizTitle: String, sectionText: String, chapterNum: String = "1", sectionName: String = "Section", )</ID>
     <ID>LongMethod:CsvParser.kt$CsvParser$fun parse( content: String, delimiter: Char? = null, ): List&lt;List&lt;String&gt;&gt;</ID>
+    <ID>LongMethod:DataIntegrityService.kt$DataIntegrityService$suspend fun checkIntegrity(): IntegrityReport</ID>
     <ID>LongMethod:ExportManager.kt$ExportManager$private suspend fun buildSupplementalData( bookId: Long? = null, quizId: Long? = null, ): MksExchangeV7SupplementalData</ID>
     <ID>LongMethod:ExportManager.kt$ExportManager$suspend fun exportAllBooksAsBundle(): LibraryBundleDto</ID>
     <ID>LongMethod:ExportManager.kt$ExportManager$suspend fun exportBookAsBundle(bookId: Long): LibraryBundleDto?</ID>
@@ -101,6 +103,7 @@
     <ID>MagicNumber:BookRepository.kt$BookRepository$300</ID>
     <ID>MagicNumber:CategoryMergePreviewService.kt$CategoryMergePreviewService$80</ID>
     <ID>MagicNumber:ClearMarksPreviewService.kt$ClearMarksPreviewService$80</ID>
+    <ID>MagicNumber:DataIntegrityService.kt$DataIntegrityService$50</ID>
     <ID>MagicNumber:FileManager.kt$FileManager$3L</ID>
     <ID>MagicNumber:FileManager.kt$FileManager$4L</ID>
     <ID>MagicNumber:FileManager.kt$FileManager$96</ID>
@@ -129,14 +132,9 @@
     <ID>MagicNumber:JsonQuestionParser.kt$JsonQuestionParser$25</ID>
     <ID>MagicNumber:JsonQuestionParser.kt$JsonQuestionParser$65</ID>
     <ID>MagicNumber:JsonQuestionParser.kt$JsonQuestionParser$8</ID>
-    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$1000L</ID>
-    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$10L</ID>
     <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$12</ID>
     <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$160</ID>
     <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$180</ID>
-    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$24L</ID>
-    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$3L</ID>
-    <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$60L</ID>
     <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$65</ID>
     <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$80</ID>
     <ID>MagicNumber:KnowledgeRepository.kt$KnowledgeRepository$999</ID>
@@ -161,6 +159,7 @@
     <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$20</ID>
     <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$200</ID>
     <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$24L</ID>
+    <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$3</ID>
     <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$3L</ID>
     <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$60L</ID>
     <ID>MagicNumber:ReviewRepository.kt$ReviewRepository$7L</ID>
@@ -194,6 +193,7 @@
     <ID>MatchingDeclarationName:FileManagerModels.kt$AssetFileSaveResult</ID>
     <ID>MatchingDeclarationName:ThemeMode.kt$MksThemeModes</ID>
     <ID>MaxLineLength:AssetRepository.kt$AssetRepository$if (path.startsWith("http") || path.startsWith("content://") || path.startsWith("assets/") || path.startsWith("data:")) return path</ID>
+    <ID>MaxLineLength:DataIntegrityService.kt$IntegrityReport$get() = orphanedImageFiles &gt; 0 || missingReferencedFiles &gt; 0 || orphanedReferences &gt; 0 || staleBookCounters &gt; 0 || staleQuizCounters &gt; 0</ID>
     <ID>MaxLineLength:GenericImageExtractor.kt$GenericImageExtractor$"""(https?://[^\s"'&lt;&gt;]+\.(?:png|jpe?g|gif|webp|svg|bmp|tiff?|avif|ico|pdf|png|jpg|jpeg)(?:[?#][^\s"'&lt;&gt;]*)|https?://[^\s"'&lt;&gt;]+)"""</ID>
     <ID>MaxLineLength:ImportLibraryManager.kt$ImportLibraryManager$"Ignoring targetBookId=$targetBookId because targetQuizId=$targetQuizId belongs to bookId=${targetQuiz.bookId}."</ID>
     <ID>MaxLineLength:ImportLibraryManager.kt$ImportLibraryManager$"This import contains plain HTTP image URLs. They will not be downloaded unless you explicitly allow insecure image downloads in the review dialog."</ID>
@@ -292,6 +292,7 @@
     <ID>ReturnCount:XlsxImageResolver.kt$XlsxImageResolver$private fun getSheetPath( zipFile: ZipFile, sheetName: String, ): String?</ID>
     <ID>ReturnCount:XlsxImageResolver.kt$XlsxImageResolver$private fun resolveAnchoredSheetImages( zipFile: ZipFile, sheetName: String, ): SheetImageResolution</ID>
     <ID>SwallowedException:ApiKeyCrypto.kt$ApiKeyCrypto$e: Exception</ID>
+    <ID>SwallowedException:DataIntegrityService.kt$DataIntegrityService$e: Exception</ID>
     <ID>SwallowedException:FileManager.kt$FileManager$e: Exception</ID>
     <ID>SwallowedException:GlobalSearchRepository.kt$GlobalSearchRepository$e: Exception</ID>
     <ID>SwallowedException:HtmlQuestionParser.kt$HtmlQuestionParser$e: Exception</ID>
@@ -303,6 +304,7 @@
     <ID>TooGenericExceptionCaught:AiMcqRepository.kt$AiMcqRepository$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ApiKeyCrypto.kt$ApiKeyCrypto$e: Exception</ID>
     <ID>TooGenericExceptionCaught:BookRepository.kt$BookRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DataIntegrityService.kt$DataIntegrityService$e: Exception</ID>
     <ID>TooGenericExceptionCaught:FileManager.kt$FileManager$e: Exception</ID>
     <ID>TooGenericExceptionCaught:FocusManager.kt$FocusManager$e: Exception</ID>
     <ID>TooGenericExceptionCaught:GlobalSearchRepository.kt$GlobalSearchRepository$e: Exception</ID>
