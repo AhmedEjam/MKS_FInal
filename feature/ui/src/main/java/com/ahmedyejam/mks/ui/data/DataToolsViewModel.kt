@@ -9,7 +9,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmedyejam.mks.data.preferences.DataStoreManager
 import com.ahmedyejam.mks.data.repository.BookRepository
+import com.ahmedyejam.mks.data.repository.DataIntegrityService
 import com.ahmedyejam.mks.data.repository.ExportManager
+import com.ahmedyejam.mks.data.repository.IntegrityReport
 import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.repository.WorkspaceRepository
 import com.ahmedyejam.mks.data.repository.SortOption
@@ -28,6 +30,8 @@ data class DataToolsUiState(
     val libraryStats: LibraryStats = LibraryStats(),
     val showResetConfirm: Boolean = false,
     val resetConfirmText: String = "",
+    val integrityReport: IntegrityReport? = null,
+    val isCheckingIntegrity: Boolean = false,
 )
 
 data class ExportSummary(
@@ -48,6 +52,7 @@ class DataToolsViewModel @Inject constructor(
     private val quizRepository: QuizRepository,
     private val workspaceRepository: WorkspaceRepository,
     private val dataStoreManager: DataStoreManager,
+    private val dataIntegrityService: DataIntegrityService,
 ) : ViewModel() {
     private val _state = MutableStateFlow(DataToolsUiState())
     val state: StateFlow<DataToolsUiState> = _state.asStateFlow()
@@ -134,5 +139,31 @@ class DataToolsViewModel @Inject constructor(
 
     fun clearMessage() {
         _state.update { it.copy(message = null, error = null) }
+    }
+
+    fun checkIntegrity() {
+        viewModelScope.launch {
+            _state.update { it.copy(isCheckingIntegrity = true) }
+            try {
+                val report = dataIntegrityService.checkIntegrity()
+                _state.update { it.copy(integrityReport = report, isCheckingIntegrity = false) }
+            } catch (e: Exception) {
+                _state.update { it.copy(isCheckingIntegrity = false, error = "Integrity check failed: ${e.message}") }
+            }
+        }
+    }
+
+    fun repairOrphanedFiles() {
+        viewModelScope.launch {
+            val report = _state.value.integrityReport ?: return@launch
+            _state.update { it.copy(isWorking = true) }
+            try {
+                val deleted = dataIntegrityService.repairOrphanedFiles(report)
+                _state.update { it.copy(isWorking = false, message = "Deleted $deleted orphaned file(s).") }
+                checkIntegrity()
+            } catch (e: Exception) {
+                _state.update { it.copy(isWorking = false, error = "Repair failed: ${e.message}") }
+            }
+        }
     }
 }

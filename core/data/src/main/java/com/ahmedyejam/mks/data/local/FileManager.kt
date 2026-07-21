@@ -260,6 +260,19 @@ class FileManager(private val context: Context) {
         return dir
     }
 
+    fun listImageFiles(): List<File> {
+        val dir = getImagesDir()
+        return dir.listFiles()?.toList() ?: emptyList()
+    }
+
+    fun deleteImageFile(path: String): Boolean {
+        return try {
+            File(path).takeIf { it.exists() && isPathInsideImagesDir(path) }?.delete() ?: false
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     private fun isPathInsideImagesDir(path: String): Boolean {
         return try {
             val file = File(path).canonicalFile

@@ -198,6 +198,106 @@ fun DataToolsScreen(
                 Text("Go to Library to Import")
             }
 
+            // Data Integrity section
+            Text("Data Integrity", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 8.dp))
+            Text(
+                "Check for orphaned files, broken references, and stale counters.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(
+                onClick = { viewModel.checkIntegrity() },
+                enabled = !state.isCheckingIntegrity,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(if (state.isCheckingIntegrity) "Checking..." else "Run Integrity Check")
+            }
+
+            if (state.isCheckingIntegrity) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+
+            state.integrityReport?.let { report ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (report.hasIssues)
+                            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f)
+                        else
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+                    ),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            if (report.hasIssues) "${report.totalIssues} issue(s) found" else "No issues found",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = if (report.hasIssues) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Image files on disk", style = MaterialTheme.typography.bodySmall)
+                            Text("${report.totalImageFiles}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Orphaned image files", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                "${report.orphanedImageFiles}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (report.orphanedImageFiles > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Missing referenced files", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                "${report.missingReferencedFiles}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (report.missingReferencedFiles > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Orphaned references", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                "${report.orphanedReferences}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (report.orphanedReferences > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Stale book counters", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                "${report.staleBookCounters}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (report.staleBookCounters > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Stale quiz counters", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                "${report.staleQuizCounters}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (report.staleQuizCounters > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        if (report.orphanedImageFiles > 0) {
+                            Spacer(Modifier.height(8.dp))
+                            Button(
+                                onClick = { viewModel.repairOrphanedFiles() },
+                                enabled = !state.isWorking,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text("Delete ${report.orphanedImageFiles} Orphaned File(s)")
+                            }
+                        }
+                    }
+                }
+            }
+
             // Danger zone
             Spacer(Modifier.height(8.dp))
             Card(
