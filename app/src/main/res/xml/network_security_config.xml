@@ -1,9 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network security policy for MKS.
+
+  Rationale: the only cleartext traffic MKS makes is to a local Ollama server, which uses no API
+  key. Every cloud AI provider is reached over HTTPS and carries a Bearer API key. So the policy is:
+
+    - Cloud (base-config): HTTPS only, and only system CAs are trusted. A user-installed CA can no
+      longer silently MITM the API-key Bearer token, and a cloud base URL cannot be downgraded to
+      cleartext. This is what protects the keys that ApiKeyCrypto encrypts at rest.
+
+    - Local Ollama (domain-config): plain HTTP is permitted for loopback and the Android emulator
+      host only. Ollama carries no secret, so cleartext on the local network is acceptable.
+
+  WARNING - Physical device + LAN Ollama: a phone talking to an Ollama server on the local network
+  (e.g. http://192.168.1.x:11434) must have that host added to the domain-config below - Android's
+  network security config cannot express IP ranges, only specific hosts. Add a <domain> line for
+  the server's IP. Debug builds additionally trust user CAs (see debug-overrides) for proxy tooling.
+-->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true">
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <!-- Android emulator alias for the host loopback -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+
+    <debug-overrides>
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
         </trust-anchors>
-    </base-config>
+    </debug-overrides>
 </network-security-config>

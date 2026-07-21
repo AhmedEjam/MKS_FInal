@@ -1,6 +1,37 @@
 # MKS Enhancement Plan
 
-> Last updated: 2026-07-20. Current state: Room v33, 6-module architecture, 6 domain repositories, all 28 entities in place.
+> Last updated: 2026-07-21. Current state: Room v33, 6-module architecture, 6 domain repositories, all 28 entities in place.
+
+## Phase 0: AI pipeline correctness 🟡 PARTIALLY DONE
+
+### 0.1 Prompt-deck provider routing ✅ FIXED (needs device verification)
+
+The prompt-deck "Run" was hardwired to `OllamaRepository`, so a cloud provider's base URL
+(`…/openai/v1`) was mangled into a non-existent `…/openai/api/generate` endpoint and every cloud run
+failed while the UI claimed success. `BookToolsViewModel.executeAiGeneration` now branches on
+`providerId.startsWith("ollama")`: local Ollama keeps native streaming; cloud routes through
+`AiClient` (the same client the MCQ path and Settings test buttons already use). Cloud responses are
+buffered (not streamed) — acceptable tradeoff. See `docs/testing/ai-provider-routing.md`.
+
+### 0.2 MCQ privacy consent ✅ FIXED
+
+The MCQ generator sent section text to cloud providers with **no consent gate** — the prompt deck
+had one, MCQ did not. `AiMcqGeneratorViewModel.startGeneration` now gates cloud runs behind the same
+one-time consent dialog.
+
+### 0.3 Remaining AI-pipeline issues 🔴 OPEN
+
+Found during the 2026-07-21 review, not yet addressed:
+
+- **Consent is global, not per-provider.** Once granted for any cloud provider, switching to a
+  different cloud provider does not re-prompt. Should be keyed per provider id.
+- **No streaming for cloud.** `AiClient` is request/response; cloud runs show a spinner then the full
+  text. Adding SSE streaming would restore token-by-token output for cloud providers.
+- **Two provider-picker UIs diverge.** Settings uses a `FilterChip` wizard; `AiMcqGeneratorScreen`
+  uses a dropdown that overwrites base URL/model on selection, silently discarding a custom base URL.
+- **DataStore AI defaults diverge from the registry.** DataStore starts at `10.0.2.2` / `llama3.1`;
+  `AI_PROVIDERS` Ollama descriptor says `192.168.1.164` / `gemma4:12b`. Pick one source of truth.
+- **`gemma4:12b` is a likely typo** — no such tag exists (`AiProviderConfig.kt:45`).
 
 ## Phase 1: Code Solidity & Testing Safety Net 🔴 PRIORITY
 

@@ -1228,7 +1228,7 @@ fun AiPromptDeckScreen(
                                         onClick = { 
                                             outputText = ""
                                             val images = imageValues.values.flatten().toList()
-                                            viewModel.generateWithOllamaStream(renderedPrompt, images) { chunk ->
+                                            viewModel.generateAiStream(renderedPrompt, images) { chunk ->
                                                 outputText = chunk
                                             }
                                         }, 

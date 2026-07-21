@@ -29,6 +29,8 @@ import com.ahmedyejam.mks.data.repository.OllamaRepository
 import com.ahmedyejam.mks.data.repository.QuizRepository
 import com.ahmedyejam.mks.data.repository.SortOption
 import com.ahmedyejam.mks.data.repository.StudyRepository
+import com.ahmedyejam.mks.data.model.AiProviderConfig
+import com.ahmedyejam.mks.data.network.AiClient
 import com.ahmedyejam.mks.ui.library.components.QuizCreationFilters
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -87,6 +89,7 @@ data class BookToolsUiState(
 @HiltViewModel
 class BookToolsViewModel @Inject constructor(
     private val ollamaRepository: OllamaRepository,
+    private val aiClient: AiClient,
     private val dataStoreManager: DataStoreManager,
     private val fileManager: com.ahmedyejam.mks.data.local.FileManager,
     private val bookRepository: BookRepository,
@@ -752,7 +755,14 @@ class BookToolsViewModel @Inject constructor(
     private var pendingImages: List<String> = emptyList()
     private var pendingOnUpdate: ((String) -> Unit)? = null
 
-    fun generateWithOllamaStream(prompt: String, images: List<String> = emptyList(), onUpdate: (String) -> Unit) {
+    /**
+     * Runs [prompt] against the user's selected AI provider and streams the result to [onUpdate].
+     *
+     * Routes by provider (see [executeAiGeneration]): local Ollama streams token-by-token; cloud
+     * providers return the full response in one update. Named generically because it is no longer
+     * Ollama-only — the previous name hid the fact that cloud providers were silently misrouted.
+     */
+    fun generateAiStream(prompt: String, images: List<String> = emptyList(), onUpdate: (String) -> Unit) {
         cancelGeneration()
         generationJob = viewModelScope.launch {
             val providerId = _uiState.value.aiProviderId
@@ -793,37 +803,70 @@ class BookToolsViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isGenerating = true, error = null)
             val providerName = _uiState.value.aiProviderName
             try {
+                val providerId = dataStoreManager.aiProviderId.first()
                 val baseUrl = dataStoreManager.aiBaseUrl.first()
                 val model = dataStoreManager.aiChatModel.first()
                 val apiKey = dataStoreManager.aiApiKey.first().takeIf { it.isNotBlank() }
-                
+
                 val systemPrompt = "You are an expert educational AI assistant inside the MKS knowledge-bank app. Generate high-quality, structured output exactly as requested by the user's prompt. Do NOT include conversational filler, greetings, or explanations unless explicitly requested."
-                
-                var accumulatedResponse = ""
-                ollamaRepository.generateCompletionStream(
-                    baseUrl,
-                    model,
-                    prompt,
-                    systemPrompt,
-                    null,
-                    images.takeIf { it.isNotEmpty() },
-                    apiKey
-                )
-                    .collect { chunk ->
+
+                if (providerId.startsWith("ollama")) {
+                    // Local Ollama: native streaming path, unchanged. Chunks arrive incrementally.
+                    var accumulatedResponse = ""
+                    ollamaRepository.generateCompletionStream(
+                        baseUrl,
+                        model,
+                        prompt,
+                        systemPrompt,
+                        null,
+                        images.takeIf { it.isNotEmpty() },
+                        apiKey,
+                    ).collect { chunk ->
                         accumulatedResponse += chunk
                         onUpdate(accumulatedResponse)
                     }
+                } else {
+                    // Cloud provider: route through the OpenAI-compatible AiClient — the same client
+                    // the MCQ path and Settings test buttons already use. Previously this was
+                    // hardcoded to OllamaRepository, so a cloud base URL was mangled into a
+                    // non-existent /api/generate endpoint and every cloud run failed. AiClient is
+                    // not streaming, so the full response is delivered in a single onUpdate.
+                    val config = AiProviderConfig(
+                        providerId = providerId,
+                        baseUrl = baseUrl,
+                        apiKey = apiKey.orEmpty(),
+                        model = model,
+                    )
+                    val result = if (images.isEmpty()) {
+                        aiClient.chatComplete(config, systemPrompt, prompt)
+                    } else {
+                        // generateWithImage wraps each string as data:image/...;base64,<x>, so it
+                        // needs raw base64. FileManager.getBase64Image returns a full data URI, so
+                        // strip the prefix. Unreadable images are dropped rather than failing the run.
+                        val base64Images = images.mapNotNull { path ->
+                            fileManager.getBase64Image(path)
+                                .takeIf { it.isNotBlank() }
+                                ?.substringAfter("base64,")
+                        }
+                        if (base64Images.isEmpty()) {
+                            aiClient.chatComplete(config, systemPrompt, prompt)
+                        } else {
+                            aiClient.generateWithImage(config, prompt, base64Images)
+                        }
+                    }
+                    onUpdate(result)
+                }
                 _uiState.value = _uiState.value.copy(isGenerating = false)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 _uiState.value = _uiState.value.copy(isGenerating = false)
             } catch (e: com.ahmedyejam.mks.data.repository.OllamaApiException) {
                 _uiState.value = _uiState.value.copy(
-                    isGenerating = false, 
+                    isGenerating = false,
                     error = "$providerName Error: ${e.message}"
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    isGenerating = false, 
+                    isGenerating = false,
                     error = "$providerName connection failed: ${e.message}. Ensure $providerName is reachable."
                 )
             }

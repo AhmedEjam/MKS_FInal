@@ -40,6 +40,10 @@ data class AiMcqGeneratorUiState(
     val savedQuizId: Long? = null,
     val error: String? = null,
     val successMessage: String? = null,
+    /** True when a cloud run is blocked awaiting first-time privacy consent. */
+    val pendingPrivacyConsent: Boolean = false,
+    /** Provider name to show in the consent dialog. */
+    val pendingProviderName: String = "",
 )
 
 @HiltViewModel
@@ -122,6 +126,39 @@ class AiMcqGeneratorViewModel @Inject constructor(
             return
         }
 
+        // Gate cloud runs behind first-time privacy consent, matching the prompt-deck path. MCQ
+        // generation sends the user's section text to an external provider, so it must not bypass
+        // the consent the prompt deck already enforces. Local Ollama needs no gate.
+        viewModelScope.launch {
+            val providerId = dataStoreManager.aiProviderId.first()
+            val isCloud = !providerId.startsWith("ollama")
+            val noticeShown = dataStoreManager.aiPrivacyNoticeShown.first()
+            if (isCloud && !noticeShown) {
+                val providerName = AI_PROVIDERS.firstOrNull { it.id == providerId }?.name ?: providerId
+                _uiState.value = _uiState.value.copy(
+                    pendingPrivacyConsent = true,
+                    pendingProviderName = providerName,
+                )
+                return@launch
+            }
+            runGeneration()
+        }
+    }
+
+    fun confirmPrivacyConsent() {
+        viewModelScope.launch {
+            dataStoreManager.setAiPrivacyNoticeShown(true)
+            _uiState.value = _uiState.value.copy(pendingPrivacyConsent = false)
+            runGeneration()
+        }
+    }
+
+    fun cancelPrivacyConsent() {
+        _uiState.value = _uiState.value.copy(pendingPrivacyConsent = false)
+    }
+
+    private fun runGeneration() {
+        val state = _uiState.value
         _uiState.value = state.copy(isRunning = true, error = null, savedQuizId = null, successMessage = null)
 
         generationJob = viewModelScope.launch {
