@@ -138,36 +138,44 @@
     <ID>MaxLineLength:BookToolScreens.kt$BookToolListScaffold</ID>
     <ID>MaxLineLength:BookToolScreens.kt$ConfirmDeleteDialog("Delete article?", "Delete '${note.title}'?", { deletingState.value = null }, { viewModel.deleteNote(note); deletingState.value = null })</ID>
     <ID>MaxLineLength:BookToolScreens.kt$ConfirmDeleteDialog("Delete prompt deck?", "Delete '${deck.title}' and its cards/runs?", { deletingState.value = null }, { viewModel.deletePromptDeck(deck); deletingState.value = null })</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.appendBlueprintToQuestionNote(note.id) }) { Text("Append to question note") }</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.recordPromptCardRun(selectedCard, values.toMap(), renderedPrompt, outputText.takeIf { it.isNotBlank() }) }) { Text("Save run") }</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsBlueprint(selectedCard, outputText, "$editTitle article") }, enabled = outputText.isNotBlank()) { Text("To article") }</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsFlashcards(selectedCard, outputText, "$editTitle flashcards") }, enabled = outputText.isNotBlank()) { Text("To flashcards") }</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsNote(selectedCard, outputText, "$editTitle note") }, enabled = outputText.isNotBlank()) { Text("To note") }</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsQuiz(selectedCard, outputText, "$editTitle quiz") }, enabled = outputText.isNotBlank()) { Text("To quiz") }</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$Icon(if (isPlayerMode) Icons.Rounded.Edit else Icons.Rounded.PlayArrow, if (isPlayerMode) "Edit Mode" else "Player Mode")</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.appendBlueprintToQuestionNote(note.id) }) { Text(stringResource(R.string.notes_append_to_question)) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.createFlashcardsFromBlueprint(note.id) }) { Text(stringResource(R.string.prompt_to_flashcards)) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.recordNoteReview(note) }) { Text(stringResource(R.string.notes_mark_reviewed)) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.recordPromptCardRun(selectedCard, values.toMap(), renderedPrompt, outputText.takeIf { it.isNotBlank() }) }) { Text(stringResource(R.string.prompt_save_run)) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsBlueprint(selectedCard, outputText, "$editTitle article") }, enabled = outputText.isNotBlank()) { Text(stringResource(R.string.prompt_to_article)) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsFlashcards(selectedCard, outputText, "$editTitle flashcards") }, enabled = outputText.isNotBlank()) { Text(stringResource(R.string.prompt_to_flashcards)) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsNote(selectedCard, outputText, "$editTitle note") }, enabled = outputText.isNotBlank()) { Text(stringResource(R.string.prompt_to_note)) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.savePromptOutputAsQuiz(selectedCard, outputText, "$editTitle quiz") }, enabled = outputText.isNotBlank()) { Text(stringResource(R.string.prompt_to_quiz)) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$FilledTonalButton(onClick = { viewModel.updateNote(note.copy(body = editedBody)) }) { Text(stringResource(R.string.notes_save)) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Icon(if (isAutoScrolling) Icons.Rounded.Pause else Icons.Rounded.ArrowDownward, stringResource(R.string.notes_autoscroll_toggle))</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Icon(if (isPlayerMode) Icons.Rounded.Edit else Icons.Rounded.PlayArrow, stringResource(if (isPlayerMode) R.string.notes_edit_mode else R.string.notes_player_mode))</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Icon(if (isTtsPlaying) Icons.Rounded.Stop else Icons.Rounded.RecordVoiceOver, stringResource(R.string.notes_tts_toggle))</ID>
     <ID>MaxLineLength:BookToolScreens.kt$IconButton(onClick = { clipboard.setText(AnnotatedString(renderedPrompt)) }) { Icon(Icons.Rounded.ContentCopy, "Copy") }</ID>
     <ID>MaxLineLength:BookToolScreens.kt$IconButton(onClick = { viewModel.deletePromptCard(card) }) { Icon(Icons.Rounded.Delete, "Delete") }</ID>
     <ID>MaxLineLength:BookToolScreens.kt$LaunchedEffect</ID>
     <ID>MaxLineLength:BookToolScreens.kt$LinearProgressIndicator(progress = { if (summary.totalQuestions == 0) 0f else (summary.totalQuestions - summary.unansweredQuestions).toFloat() / summary.totalQuestions }, modifier = Modifier.fillMaxWidth())</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$OutlinedTextField(editedBody, { editedBody = it }, modifier = Modifier.fillMaxWidth(), minLines = 8, label = { Text("Article body") })</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$OutlinedTextField(editedBody, { editedBody = it }, modifier = Modifier.fillMaxWidth(), minLines = 8, label = { Text(stringResource(R.string.notes_article_body)) })</ID>
     <ID>MaxLineLength:BookToolScreens.kt$OutlinedTextField(prompt, { prompt = it }, label = { Text("Prompt text, use {variables}") }, modifier = Modifier.fillMaxWidth(), minLines = 5)</ID>
     <ID>MaxLineLength:BookToolScreens.kt$Row</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$Text("Configure Question Context", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$Text("Select which parts of the question to inject into the prompt:", style = MaterialTheme.typography.bodySmall)</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$Text("Used ${card.usageCount} time(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
     <ID>MaxLineLength:BookToolScreens.kt$Text(source.description.orEmpty().take(100), style = MaterialTheme.typography.bodySmall, maxLines = 2)</ID>
     <ID>MaxLineLength:BookToolScreens.kt$Text(state.promptDeck?.title.orEmpty(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Text(stringResource(R.string.prompt_configure_context), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$Text(stringResource(R.string.prompt_usage_count, card.usageCount), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$TextButton(onClick = { viewModel.movePromptCard(card, false) }) { Text(stringResource(R.string.player_move_down)) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$TextButton(onClick = { viewModel.movePromptCard(card, true) }) { Text(stringResource(R.string.player_move_up)) }</ID>
     <ID>MaxLineLength:BookToolScreens.kt$androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[itemId] = previewText to null else selectedItems.remove(itemId) })</ID>
     <ID>MaxLineLength:BookToolScreens.kt$androidx.compose.material3.Checkbox(checked = isSelected, onCheckedChange = { if (it) selectedItems[itemId] = previewText to source else selectedItems.remove(itemId) })</ID>
     <ID>MaxLineLength:BookToolScreens.kt$append("Title: ${source.title}\nType: ${source.sourceType}\nDetails:\n${source.description.orEmpty()}")</ID>
     <ID>MaxLineLength:BookToolScreens.kt$colors = CardDefaults.cardColors(containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)</ID>
     <ID>MaxLineLength:BookToolScreens.kt$confirmButton = { Button(onClick = { onConfirm(sourceTitle, sourceType, details, url) }, enabled = sourceTitle.isNotBlank()) { Text(confirmLabel) } }</ID>
     <ID>MaxLineLength:BookToolScreens.kt$confirmButton = { Button(onClick = { onConfirm(title, prompt, type) }, enabled = title.isNotBlank() &amp;&amp; prompt.isNotBlank()) { Text("Save") } }</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeAttachedFiles, onClick = { includeAttachedFiles = !includeAttachedFiles }, label = { Text("Attached Files") }) }</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeExplanation, onClick = { includeExplanation = !includeExplanation }, label = { Text("Explanation") }) }</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeHint, onClick = { includeHint = !includeHint }, label = { Text("Hint") }) }</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeOptions, onClick = { includeOptions = !includeOptions }, label = { Text("Options") }) }</ID>
-    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeStem, onClick = { includeStem = !includeStem }, label = { Text("Stem") }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeAttachedFiles, onClick = { includeAttachedFiles = !includeAttachedFiles }, label = { Text(stringResource(R.string.prompt_part_attached)) }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeExplanation, onClick = { includeExplanation = !includeExplanation }, label = { Text(stringResource(R.string.prompt_part_explanation)) }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeHint, onClick = { includeHint = !includeHint }, label = { Text(stringResource(R.string.prompt_part_hint)) }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeOptions, onClick = { includeOptions = !includeOptions }, label = { Text(stringResource(R.string.prompt_part_options)) }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { FilterChip(selected = includeStem, onClick = { includeStem = !includeStem }, label = { Text(stringResource(R.string.prompt_part_stem)) }) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { Text(stringResource(R.string.prompt_run_history), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$item { Text(stringResource(R.string.prompt_variables), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }</ID>
     <ID>MaxLineLength:BookToolScreens.kt$items(state.promptRuns.filter { it.promptCardId == selectedCard.id }.take(10), key = { "run_${it.id}" }) { run -&gt; PromptRunItem(run) }</ID>
     <ID>MaxLineLength:BookToolScreens.kt$onCreate = { title, body, mode -&gt; viewModel.updateNote(note.copy(title = title, body = body, blueprintMode = mode)); editingState.value = null }</ID>
     <ID>MaxLineLength:BookToolScreens.kt$prompt = "&lt;system_role&gt;You are a highly organized academic advisor.&lt;/system_role&gt;\n&lt;instructions&gt;Based on the following material, create a structured, step-by-step study schedule. Break down the topics into manageable daily or weekly tasks.&lt;/instructions&gt;\n&lt;material&gt;\n{material}\n&lt;/material&gt;"</ID>
@@ -179,6 +187,7 @@
     <ID>MaxLineLength:BookToolScreens.kt$prompt = "&lt;system_role&gt;You are an expert tutor in {relevant_speciality}.&lt;/system_role&gt;\n&lt;instructions&gt;Please explain the following question part: {part_to_explain}.\n\nHere is the full question context:\n{question}&lt;/instructions&gt;"</ID>
     <ID>MaxLineLength:BookToolScreens.kt$run.outputText?.takeIf { it.isNotBlank() }?.let { Text("Output: ${it.take(160)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }</ID>
     <ID>MaxLineLength:BookToolScreens.kt$scrollState.animateScrollTo(scrollState.maxValue, animationSpec = androidx.compose.animation.core.tween(duration, easing = androidx.compose.animation.core.LinearEasing))</ID>
+    <ID>MaxLineLength:BookToolScreens.kt$state.promptDeck == null -&gt; MessagePane(Modifier.padding(padding), stringResource(R.string.prompt_deck_title), stringResource(R.string.prompt_deck_not_found))</ID>
     <ID>MaxLineLength:BookToolScreens.kt$style = MaterialTheme.typography.bodyLarge.copy(lineHeight = androidx.compose.ui.unit.TextUnit(28f, androidx.compose.ui.unit.TextUnitType.Sp))</ID>
     <ID>MaxLineLength:BookToolScreens.kt$val explainCard = state.promptCards.find { it.title.contains("Explain", ignoreCase = true) || it.title.contains("Ask AI", ignoreCase = true) }</ID>
     <ID>MaxLineLength:BookToolScreens.kt$val filteredQuestions = if (selectedQuizId == null) state.questions else state.questions.filter { it.quizId == selectedQuizId }</ID>

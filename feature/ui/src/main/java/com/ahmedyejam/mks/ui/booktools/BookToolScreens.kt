@@ -434,8 +434,8 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
     }
 
     if (note == null && !state.isLoading) {
-        Scaffold(topBar = { ToolTopBar("Article", onBack) }) { padding ->
-            MessagePane(Modifier.padding(padding), "Article", "Article not found.")
+        Scaffold(topBar = { ToolTopBar(stringResource(R.string.notes_article), onBack) }) { padding ->
+            MessagePane(Modifier.padding(padding), stringResource(R.string.notes_article), stringResource(R.string.notes_article_not_found))
         }
         return
     }
@@ -443,12 +443,12 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
     Scaffold(
         topBar = {
             AnimatedVisibility(visible = controlsVisible || !isPlayerMode, enter = androidx.compose.animation.slideInVertically { -it }, exit = androidx.compose.animation.slideOutVertically { -it }) {
-                ToolTopBar(note?.title ?: "Article", onBack) {
+                ToolTopBar(note?.title ?: stringResource(R.string.notes_article), onBack) {
                     IconButton(onClick = {
                         isPlayerMode = !isPlayerMode
                         if (!isPlayerMode) controlsVisible = true
                     }) {
-                        Icon(if (isPlayerMode) Icons.Rounded.Edit else Icons.Rounded.PlayArrow, if (isPlayerMode) "Edit Mode" else "Player Mode")
+                        Icon(if (isPlayerMode) Icons.Rounded.Edit else Icons.Rounded.PlayArrow, stringResource(if (isPlayerMode) R.string.notes_edit_mode else R.string.notes_player_mode))
                     }
                 }
             }
@@ -465,20 +465,20 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                             isTtsPlaying = true
                         }
                     }) {
-                        Icon(if (isTtsPlaying) Icons.Rounded.Stop else Icons.Rounded.RecordVoiceOver, "TTS Play/Stop")
+                        Icon(if (isTtsPlaying) Icons.Rounded.Stop else Icons.Rounded.RecordVoiceOver, stringResource(R.string.notes_tts_toggle))
                     }
                     Spacer(Modifier.width(8.dp))
                     IconButton(onClick = { isTitlePinned = !isTitlePinned }) {
-                        Icon(if (isTitlePinned) Icons.Rounded.PushPin else Icons.Outlined.PushPin, "Pin Title")
+                        Icon(if (isTitlePinned) Icons.Rounded.PushPin else Icons.Outlined.PushPin, stringResource(R.string.notes_pin_title))
                     }
                     Spacer(Modifier.width(8.dp))
                     IconButton(onClick = { isAutoScrolling = !isAutoScrolling }) {
-                        Icon(if (isAutoScrolling) Icons.Rounded.Pause else Icons.Rounded.ArrowDownward, "Autoscroll")
+                        Icon(if (isAutoScrolling) Icons.Rounded.Pause else Icons.Rounded.ArrowDownward, stringResource(R.string.notes_autoscroll_toggle))
                     }
                     Spacer(Modifier.weight(1f))
                     var showSettings by remember { mutableStateOf(false) }
                     IconButton(onClick = { showSettings = true }) {
-                        Icon(Icons.Rounded.Settings, "Player Settings")
+                        Icon(Icons.Rounded.Settings, stringResource(R.string.notes_player_settings))
                     }
 
                     if (showSettings) {
@@ -486,28 +486,22 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                             Column(Modifier
                                 .padding(16.dp)
                                 .fillMaxWidth()) {
-                                Text("Player Settings", style = MaterialTheme.typography.titleLarge)
+                                Text(stringResource(R.string.notes_player_settings), style = MaterialTheme.typography.titleLarge)
                                 Spacer(Modifier.height(16.dp))
-                                Text("Auto-scroll speed: ${scrollSpeed.toInt()} px/s")
+                                Text(stringResource(R.string.notes_autoscroll_speed, scrollSpeed.toInt()))
                                 Slider(value = scrollSpeed, onValueChange = { scrollSpeed = it }, valueRange = 10f..200f)
                                 Text(
-                                    "TTS Rate: ${
-                                        String.format(
-                                            java.util.Locale.getDefault(),
-                                            "%.1f",
-                                            ttsRate
-                                        )
-                                    }x"
+                                    stringResource(
+                                        R.string.notes_tts_rate,
+                                        String.format(java.util.Locale.getDefault(), "%.1f", ttsRate),
+                                    )
                                 )
                                 Slider(value = ttsRate, onValueChange = { ttsRate = it }, valueRange = 0.5f..2.0f)
                                 Text(
-                                    "TTS Pitch: ${
-                                        String.format(
-                                            java.util.Locale.getDefault(),
-                                            "%.1f",
-                                            ttsPitch
-                                        )
-                                    }"
+                                    stringResource(
+                                        R.string.notes_tts_pitch,
+                                        String.format(java.util.Locale.getDefault(), "%.1f", ttsPitch),
+                                    )
                                 )
                                 Slider(value = ttsPitch, onValueChange = { ttsPitch = it }, valueRange = 0.5f..2.0f)
                                 Spacer(Modifier.height(32.dp))
@@ -595,7 +589,7 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                     ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("${note?.blueprintMode} - ${note?.reviewStatus}", style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(editedBody, { editedBody = it }, modifier = Modifier.fillMaxWidth(), minLines = 8, label = { Text("Article body") })
+                        OutlinedTextField(editedBody, { editedBody = it }, modifier = Modifier.fillMaxWidth(), minLines = 8, label = { Text(stringResource(R.string.notes_article_body)) })
                         Spacer(Modifier.height(16.dp))
                         @OptIn(ExperimentalLayoutApi::class)
                         FlowRow(
@@ -604,10 +598,10 @@ fun ReviewBlueprintScreen(noteId: Long, viewModel: BookToolsViewModel, onBack: (
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             if (note != null) {
-                                FilledTonalButton(onClick = { viewModel.updateNote(note.copy(body = editedBody)) }) { Text("Save") }
-                                FilledTonalButton(onClick = { viewModel.recordNoteReview(note) }) { Text("Mark reviewed") }
-                                FilledTonalButton(onClick = { viewModel.createFlashcardsFromBlueprint(note.id) }) { Text("To flashcards") }
-                                FilledTonalButton(onClick = { viewModel.appendBlueprintToQuestionNote(note.id) }) { Text("Append to question note") }
+                                FilledTonalButton(onClick = { viewModel.updateNote(note.copy(body = editedBody)) }) { Text(stringResource(R.string.notes_save)) }
+                                FilledTonalButton(onClick = { viewModel.recordNoteReview(note) }) { Text(stringResource(R.string.notes_mark_reviewed)) }
+                                FilledTonalButton(onClick = { viewModel.createFlashcardsFromBlueprint(note.id) }) { Text(stringResource(R.string.prompt_to_flashcards)) }
+                                FilledTonalButton(onClick = { viewModel.appendBlueprintToQuestionNote(note.id) }) { Text(stringResource(R.string.notes_append_to_question)) }
                             }
                         }
                     } }
@@ -856,22 +850,16 @@ fun AiPromptDeckScreen(
     if (state.pendingPrivacyConsent) {
         AlertDialog(
             onDismissRequest = { viewModel.cancelPrivacyConsent() },
-            title = { Text("Data will be sent to ${state.aiProviderName}") },
-            text = {
-                Text(
-                    "This prompt and any attached content will be sent to an external AI provider (${state.aiProviderName}). " +
-                    "Your data will be processed on their servers according to their privacy policy. " +
-                    "Do you want to continue?"
-                )
-            },
+            title = { Text(stringResource(R.string.prompt_consent_title, state.aiProviderName)) },
+            text = { Text(stringResource(R.string.prompt_consent_body, state.aiProviderName)) },
             confirmButton = {
                 Button(onClick = { viewModel.confirmPrivacyConsent() }) {
-                    Text("Send")
+                    Text(stringResource(R.string.player_send))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.cancelPrivacyConsent() }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -1008,7 +996,7 @@ fun AiPromptDeckScreen(
     }
 
     Scaffold(
-        topBar = { ToolTopBar(state.promptDeck?.title ?: "Prompt deck", handleBack) },
+        topBar = { ToolTopBar(state.promptDeck?.title ?: stringResource(R.string.prompt_deck_title), handleBack) },
         floatingActionButton = {
             if (selectedCardId == null) {
                 var showCreateOptions by remember { mutableStateOf(false) }
@@ -1021,7 +1009,7 @@ fun AiPromptDeckScreen(
                         onDismissRequest = { showCreateOptions = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Create empty prompt") },
+                            text = { Text(stringResource(R.string.prompt_create_empty)) },
                             onClick = {
                                 state.promptDeck?.let { viewModel.createPromptCard(it.id, "New Prompt", "") }
                                 showCreateOptions = false
@@ -1029,28 +1017,28 @@ fun AiPromptDeckScreen(
                         )
                         androidx.compose.material3.HorizontalDivider()
                         DropdownMenuItem(
-                            text = { Text("Template: Quiz generator") },
+                            text = { Text(stringResource(R.string.prompt_template_quiz)) },
                             onClick = {
                                 state.promptDeck?.let { viewModel.createTemplatePromptCard(it.id, "QUIZ") }
                                 showCreateOptions = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Template: Flashcard generator") },
+                            text = { Text(stringResource(R.string.prompt_template_flashcards)) },
                             onClick = {
                                 state.promptDeck?.let { viewModel.createTemplatePromptCard(it.id, "FLASHCARDS") }
                                 showCreateOptions = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Template: Blueprint maker") },
+                            text = { Text(stringResource(R.string.prompt_template_blueprint)) },
                             onClick = {
                                 state.promptDeck?.let { viewModel.createTemplatePromptCard(it.id, "BLUEPRINT") }
                                 showCreateOptions = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Template: Explain & Teach") },
+                            text = { Text(stringResource(R.string.prompt_template_explain)) },
                             onClick = {
                                 state.promptDeck?.let {
                                     viewModel.createTemplatePromptCard(
@@ -1069,7 +1057,7 @@ fun AiPromptDeckScreen(
         when {
             state.isLoading -> LoadingPane(Modifier.padding(padding))
             state.error != null -> MessagePane(Modifier.padding(padding), "Error", state.error ?: "Unknown error")
-            state.promptDeck == null -> MessagePane(Modifier.padding(padding), "Prompt deck", "Prompt deck not found.")
+            state.promptDeck == null -> MessagePane(Modifier.padding(padding), stringResource(R.string.prompt_deck_title), stringResource(R.string.prompt_deck_not_found))
             selectedCardId == null -> {
                 // List View
                 LazyColumn(
@@ -1104,11 +1092,11 @@ fun AiPromptDeckScreen(
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                         Column(Modifier.weight(1f)) {
                                             Text(card.title, fontWeight = FontWeight.Bold)
-                                            Text("Used ${card.usageCount} time(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(stringResource(R.string.prompt_usage_count, card.usageCount), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                         Row {
-                                            TextButton(onClick = { viewModel.movePromptCard(card, true) }) { Text("Up") }
-                                            TextButton(onClick = { viewModel.movePromptCard(card, false) }) { Text("Down") }
+                                            TextButton(onClick = { viewModel.movePromptCard(card, true) }) { Text(stringResource(R.string.player_move_up)) }
+                                            TextButton(onClick = { viewModel.movePromptCard(card, false) }) { Text(stringResource(R.string.player_move_down)) }
                                             IconButton(onClick = { viewModel.deletePromptCard(card) }) { Icon(Icons.Rounded.Delete, "Delete") }
                                         }
                                     }
@@ -1138,20 +1126,20 @@ fun AiPromptDeckScreen(
                                 value = editTitle,
                                 onValueChange = { editTitle = it },
                                 modifier = Modifier.fillMaxWidth(),
-                                label = { Text("Prompt Title") },
+                                label = { Text(stringResource(R.string.prompt_title_label)) },
                                 singleLine = true
                             )
                             OutlinedTextField(
                                 value = editBody,
                                 onValueChange = { editBody = it },
                                 modifier = Modifier.fillMaxWidth(),
-                                label = { Text("Prompt Body (Use {}, [], or () for variables)") },
+                                label = { Text(stringResource(R.string.prompt_body_label)) },
                                 minLines = 4
                             )
                             Button(onClick = {
                                 viewModel.updatePromptCard(selectedCard.copy(title = editTitle, promptText = editBody))
                             }, modifier = Modifier.align(Alignment.End)) {
-                                Text("Save Prompt Template")
+                                Text(stringResource(R.string.prompt_save_template))
                             }
                         } }
                     }
@@ -1165,17 +1153,17 @@ fun AiPromptDeckScreen(
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                             ) {
                                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text("Configure Question Context", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                    Text("Select which parts of the question to inject into the prompt:", style = MaterialTheme.typography.bodySmall)
+                                    Text(stringResource(R.string.prompt_configure_context), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.prompt_configure_context_desc), style = MaterialTheme.typography.bodySmall)
                                     LazyRow(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        item { FilterChip(selected = includeStem, onClick = { includeStem = !includeStem }, label = { Text("Stem") }) }
-                                        item { FilterChip(selected = includeOptions, onClick = { includeOptions = !includeOptions }, label = { Text("Options") }) }
-                                        item { FilterChip(selected = includeExplanation, onClick = { includeExplanation = !includeExplanation }, label = { Text("Explanation") }) }
-                                        item { FilterChip(selected = includeHint, onClick = { includeHint = !includeHint }, label = { Text("Hint") }) }
-                                        item { FilterChip(selected = includeAttachedFiles, onClick = { includeAttachedFiles = !includeAttachedFiles }, label = { Text("Attached Files") }) }
+                                        item { FilterChip(selected = includeStem, onClick = { includeStem = !includeStem }, label = { Text(stringResource(R.string.prompt_part_stem)) }) }
+                                        item { FilterChip(selected = includeOptions, onClick = { includeOptions = !includeOptions }, label = { Text(stringResource(R.string.prompt_part_options)) }) }
+                                        item { FilterChip(selected = includeExplanation, onClick = { includeExplanation = !includeExplanation }, label = { Text(stringResource(R.string.prompt_part_explanation)) }) }
+                                        item { FilterChip(selected = includeHint, onClick = { includeHint = !includeHint }, label = { Text(stringResource(R.string.prompt_part_hint)) }) }
+                                        item { FilterChip(selected = includeAttachedFiles, onClick = { includeAttachedFiles = !includeAttachedFiles }, label = { Text(stringResource(R.string.prompt_part_attached)) }) }
                                     }
                                 }
                             }
@@ -1183,7 +1171,7 @@ fun AiPromptDeckScreen(
                     }
 
                     if (variables.isNotEmpty()) {
-                        item { Text("Variables", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+                        item { Text(stringResource(R.string.prompt_variables), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
                         items(variables, key = { it }) { variable ->
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedTextField(
@@ -1207,7 +1195,7 @@ fun AiPromptDeckScreen(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
                         ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text("Live Rendered Prompt", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.prompt_live_rendered), fontWeight = FontWeight.Bold)
                                 Row {
                                     IconButton(onClick = { clipboard.setText(AnnotatedString(renderedPrompt)) }) { Icon(Icons.Rounded.ContentCopy, "Copy") }
                                     IconButton(onClick = {
@@ -1230,7 +1218,7 @@ fun AiPromptDeckScreen(
                             elevation = CardDefaults.cardElevation(defaultElevation = tokens.cardElevation)
                         ) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Text("AI Output Review", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.prompt_output_review), fontWeight = FontWeight.Bold)
                                 if (state.isGenerating) {
                                     FilledTonalButton(
                                         onClick = { viewModel.cancelGeneration() },
@@ -1241,7 +1229,7 @@ fun AiPromptDeckScreen(
                                     ) {
                                         Icon(Icons.Rounded.Stop, null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(8.dp))
-                                        Text("Stop")
+                                        Text(stringResource(R.string.player_stop))
                                     }
                                 } else {
                                     FilledTonalButton(
@@ -1256,7 +1244,7 @@ fun AiPromptDeckScreen(
                                     ) {
                                         Icon(Icons.Rounded.SmartToy, null, modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(8.dp))
-                                        Text("Run with ${state.aiProviderName}")
+                                        Text(stringResource(R.string.prompt_run_with, state.aiProviderName))
                                     }
                                 }
                             }
@@ -1265,7 +1253,7 @@ fun AiPromptDeckScreen(
                                 onValueChange = { outputText = it },
                                 modifier = Modifier.fillMaxWidth(),
                                 minLines = 5,
-                                label = { Text("AI generated output") }
+                                label = { Text(stringResource(R.string.prompt_output_placeholder)) }
                             )
                             @OptIn(ExperimentalLayoutApi::class)
                             (FlowRow(
@@ -1273,8 +1261,8 @@ fun AiPromptDeckScreen(
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                FilledTonalButton(onClick = { viewModel.recordPromptCardRun(selectedCard, values.toMap(), renderedPrompt, outputText.takeIf { it.isNotBlank() }) }) { Text("Save run") }
-                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsNote(selectedCard, outputText, "$editTitle note") }, enabled = outputText.isNotBlank()) { Text("To note") }
+                                FilledTonalButton(onClick = { viewModel.recordPromptCardRun(selectedCard, values.toMap(), renderedPrompt, outputText.takeIf { it.isNotBlank() }) }) { Text(stringResource(R.string.prompt_save_run)) }
+                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsNote(selectedCard, outputText, "$editTitle note") }, enabled = outputText.isNotBlank()) { Text(stringResource(R.string.prompt_to_note)) }
                             })
                             @OptIn(ExperimentalLayoutApi::class)
                             (FlowRow(
@@ -1282,14 +1270,14 @@ fun AiPromptDeckScreen(
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsBlueprint(selectedCard, outputText, "$editTitle article") }, enabled = outputText.isNotBlank()) { Text("To article") }
-                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsFlashcards(selectedCard, outputText, "$editTitle flashcards") }, enabled = outputText.isNotBlank()) { Text("To flashcards") }
-                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsQuiz(selectedCard, outputText, "$editTitle quiz") }, enabled = outputText.isNotBlank()) { Text("To quiz") }
+                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsBlueprint(selectedCard, outputText, "$editTitle article") }, enabled = outputText.isNotBlank()) { Text(stringResource(R.string.prompt_to_article)) }
+                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsFlashcards(selectedCard, outputText, "$editTitle flashcards") }, enabled = outputText.isNotBlank()) { Text(stringResource(R.string.prompt_to_flashcards)) }
+                                FilledTonalButton(onClick = { viewModel.savePromptOutputAsQuiz(selectedCard, outputText, "$editTitle quiz") }, enabled = outputText.isNotBlank()) { Text(stringResource(R.string.prompt_to_quiz)) }
                             })
                         } }
                     }
                     if (state.promptRuns.filter { it.promptCardId == selectedCard.id }.isNotEmpty()) {
-                        item { Text("Run history", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
+                        item { Text(stringResource(R.string.prompt_run_history), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) }
                         items(state.promptRuns.filter { it.promptCardId == selectedCard.id }.take(10), key = { "run_${it.id}" }) { run -> PromptRunItem(run) }
                     }
                 }

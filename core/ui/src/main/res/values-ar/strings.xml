@@ -475,4 +475,58 @@
     <string name="player_show_additional_info">إظهار معلومات إضافية</string>
     <string name="player_options">خيارات</string>
     <string name="player_toggle_study_mode">تبديل وضع المذاكرة</string>
+    <string name="player_send">إرسال</string>
+    <string name="player_stop">إيقاف</string>
+    <string name="player_move_up">أعلى</string>
+    <string name="player_move_down">أسفل</string>
+
+    <!-- بطاقات الذكاء الاصطناعي -->
+    <string name="prompt_consent_title">ستُرسَل البيانات إلى %1$s</string>
+    <string name="prompt_consent_body">سيُرسَل هذا البرومبت وأي محتوى مرفق إلى مزوّد ذكاء اصطناعي خارجي (%1$s). ستُعالَج بياناتك على خوادمه وفقًا لسياسة الخصوصية الخاصة به. هل تريد المتابعة؟</string>
+    <string name="prompt_create_empty">إنشاء برومبت فارغ</string>
+    <string name="prompt_template_quiz">قالب: مولّد الاختبارات</string>
+    <string name="prompt_template_flashcards">قالب: مولّد البطاقات</string>
+    <string name="prompt_template_blueprint">قالب: صانع المخطّطات</string>
+    <string name="prompt_template_explain">قالب: اشرح وعلّم</string>
+    <string name="prompt_usage_count">استُخدم %1$d مرّة</string>
+    <string name="prompt_title_label">عنوان البرومبت</string>
+    <string name="prompt_body_label">نصّ البرومبت (استخدم {} أو [] أو () للمتغيّرات)</string>
+    <string name="prompt_save_template">حفظ قالب البرومبت</string>
+    <string name="prompt_configure_context">تهيئة سياق السؤال</string>
+    <string name="prompt_configure_context_desc">اختر أجزاء السؤال التي تريد إدراجها في البرومبت:</string>
+    <string name="prompt_part_stem">نصّ السؤال</string>
+    <string name="prompt_part_options">الخيارات</string>
+    <string name="prompt_part_explanation">الشرح</string>
+    <string name="prompt_part_hint">التلميح</string>
+    <string name="prompt_part_attached">الملفات المرفقة</string>
+    <string name="prompt_variables">المتغيّرات</string>
+    <string name="prompt_live_rendered">البرومبت المُصاغ مباشرةً</string>
+    <string name="prompt_output_review">مراجعة مخرجات الذكاء الاصطناعي</string>
+    <string name="prompt_run_with">شغّل عبر %1$s</string>
+    <string name="prompt_output_placeholder">المخرجات المولّدة</string>
+    <string name="prompt_save_run">حفظ التشغيل</string>
+    <string name="prompt_to_note">إلى ملاحظة</string>
+    <string name="prompt_to_article">إلى مقال</string>
+    <string name="prompt_to_flashcards">إلى بطاقات</string>
+    <string name="prompt_to_quiz">إلى اختبار</string>
+    <string name="prompt_run_history">سجلّ التشغيل</string>
+    <string name="prompt_deck_title">مجموعة البرومبتات</string>
+    <string name="prompt_deck_not_found">مجموعة البرومبتات غير موجودة.</string>
+
+    <!-- مشغّل المقالات والملاحظات -->
+    <string name="notes_edit_mode">وضع التحرير</string>
+    <string name="notes_player_mode">وضع القارئ</string>
+    <string name="notes_player_settings">إعدادات المشغّل</string>
+    <string name="notes_autoscroll_speed">سرعة التمرير التلقائي: %1$d بكسل/ث</string>
+    <string name="notes_article_body">نصّ المقال</string>
+    <string name="notes_tts_toggle">تشغيل أو إيقاف السرد</string>
+    <string name="notes_pin_title">تثبيت العنوان</string>
+    <string name="notes_autoscroll_toggle">تبديل التمرير التلقائي</string>
+    <string name="notes_article">مقال</string>
+    <string name="notes_article_not_found">المقال غير موجود.</string>
+    <string name="notes_tts_rate">سرعة النطق: %1$s×</string>
+    <string name="notes_tts_pitch">حِدّة النطق: %1$s</string>
+    <string name="notes_save">حفظ</string>
+    <string name="notes_mark_reviewed">تحديد كمُراجَع</string>
+    <string name="notes_append_to_question">إلحاق بملاحظة السؤال</string>
 </resources>

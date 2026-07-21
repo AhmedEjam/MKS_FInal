@@ -467,4 +467,58 @@ grow in every session.</string>
     <string name="player_show_additional_info">Show additional info</string>
     <string name="player_options">Options</string>
     <string name="player_toggle_study_mode">Toggle study mode</string>
+    <string name="player_send">Send</string>
+    <string name="player_stop">Stop</string>
+    <string name="player_move_up">Up</string>
+    <string name="player_move_down">Down</string>
+
+    <!-- AI prompt deck -->
+    <string name="prompt_consent_title">Data will be sent to %1$s</string>
+    <string name="prompt_consent_body">This prompt and any attached content will be sent to an external AI provider (%1$s). Your data will be processed on their servers according to their privacy policy. Do you want to continue?</string>
+    <string name="prompt_create_empty">Create empty prompt</string>
+    <string name="prompt_template_quiz">Template: Quiz generator</string>
+    <string name="prompt_template_flashcards">Template: Flashcard generator</string>
+    <string name="prompt_template_blueprint">Template: Blueprint maker</string>
+    <string name="prompt_template_explain">Template: Explain &amp; Teach</string>
+    <string name="prompt_usage_count">Used %1$d time(s)</string>
+    <string name="prompt_title_label">Prompt title</string>
+    <string name="prompt_body_label">Prompt body (use {}, [], or () for variables)</string>
+    <string name="prompt_save_template">Save prompt template</string>
+    <string name="prompt_configure_context">Configure question context</string>
+    <string name="prompt_configure_context_desc">Select which parts of the question to inject into the prompt:</string>
+    <string name="prompt_part_stem">Stem</string>
+    <string name="prompt_part_options">Options</string>
+    <string name="prompt_part_explanation">Explanation</string>
+    <string name="prompt_part_hint">Hint</string>
+    <string name="prompt_part_attached">Attached files</string>
+    <string name="prompt_variables">Variables</string>
+    <string name="prompt_live_rendered">Live rendered prompt</string>
+    <string name="prompt_output_review">AI output review</string>
+    <string name="prompt_run_with">Run with %1$s</string>
+    <string name="prompt_output_placeholder">AI generated output</string>
+    <string name="prompt_save_run">Save run</string>
+    <string name="prompt_to_note">To note</string>
+    <string name="prompt_to_article">To article</string>
+    <string name="prompt_to_flashcards">To flashcards</string>
+    <string name="prompt_to_quiz">To quiz</string>
+    <string name="prompt_run_history">Run history</string>
+    <string name="prompt_deck_title">Prompt deck</string>
+    <string name="prompt_deck_not_found">Prompt deck not found.</string>
+
+    <!-- Article / notes player -->
+    <string name="notes_edit_mode">Edit mode</string>
+    <string name="notes_player_mode">Player mode</string>
+    <string name="notes_player_settings">Player settings</string>
+    <string name="notes_autoscroll_speed">Auto-scroll speed: %1$d px/s</string>
+    <string name="notes_article_body">Article body</string>
+    <string name="notes_tts_toggle">Play or stop narration</string>
+    <string name="notes_pin_title">Pin title</string>
+    <string name="notes_autoscroll_toggle">Toggle auto-scroll</string>
+    <string name="notes_article">Article</string>
+    <string name="notes_article_not_found">Article not found.</string>
+    <string name="notes_tts_rate">TTS rate: %1$s×</string>
+    <string name="notes_tts_pitch">TTS pitch: %1$s</string>
+    <string name="notes_save">Save</string>
+    <string name="notes_mark_reviewed">Mark reviewed</string>
+    <string name="notes_append_to_question">Append to question note</string>
 </resources>
